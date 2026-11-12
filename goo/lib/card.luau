@@ -92,18 +92,13 @@ local watchers = {}
 function M.watch(f) watchers[#watchers + 1] = f end
 local function tell() for _, f in ipairs(watchers) do f(M.id()) end end
 
--- The card's spring undershoots when it closes (to -0.4) and rebounds (to +0.16): the body showed again as a capsule for a moment. It is
--- drawn only while `card_alive`: from its opening until just after it has closed, when the spring has gone below nothing the first time.
-local function alive_after(open)
-    if open then fact.card_alive = true
-    else after(120, function() if not fact.card_open then fact.card_alive = false end end) end
-end
-
--- the scene closes the card too (a press away from it): whoever changes `card_open`, this follows it
-on("fact:card_open", function() alive_after(fact.card_open == true) end)
-
 function M.close()
-    if fact.card_open then fact.card_open = false alive_after(false) end
+    -- drawn back into its ear, the ear swells for a moment and the level under it stirs
+    if fact.card_open then
+        fact.card_open = false
+        local d = ear
+        if d then after(150, function() d:squash() d:tremble(2.5) end) end
+    end
     actions, rights, wheels, slides, tab_runs, copies = {}, {}, {}, {}, {}, {}
     release()
     tell()
@@ -287,7 +282,8 @@ function M.open(rows, opts)
     local owner = opts.owner
     if owner and engine.can_rise(owner) then
         if ear and ear ~= owner then release() end
-        if ear ~= owner then ear = owner engine.raise(owner, RISE) end
+        -- it crouches before the card bursts out of it
+        if ear ~= owner then ear = owner owner:squash() engine.raise(owner, RISE) end
         fact.card_owner = owner.k
     elseif not opts.keep then
         release()
@@ -375,7 +371,6 @@ function M.open(rows, opts)
     fact.card_grow = opts.grow == true
     fact.card_field = field ~= nil
     fact.card_open = #out > 0 or field ~= nil or opts.custom ~= nil
-    alive_after(fact.card_open)
     tell()
 end
 

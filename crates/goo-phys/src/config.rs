@@ -29,7 +29,7 @@ config! {
     tier = 2.0, "0 drawn by the processor or SAFE (nothing moves), 1 saving, 2 standard, 3 full";
     hz = 240.0, "fixed steps a second";
     max_steps = 12.0, "steps a frame at most: a frame longer than this many is cut short";
-    columns = 48.0, "columns of the level along the bottom edge";
+    columns = 96.0, "columns of the level along the bottom edge";
     rest_energy = 0.6, "energy under which the world counts as still";
     rest_time = 0.5, "seconds under it before everything is put exactly in place and the scene sleeps";
     // a drop at home
@@ -49,6 +49,8 @@ config! {
     lean = 1.2, "how far it leans along the edge, in radii";
     tip = 0.6, "the longest tip it reaches out, in radii";
     wake = 1.0, "how hard a fast cursor drags drops and the level along";
+    cursor_body = 1.0, "1: the cursor is a drop with a belly that lags and swings; 0: it only attracts";
+    cursor_tail = 22.0, "px its belly may lag behind its tip";
     cursor_k = 520.0, "stiffness between the cursor's tip and its belly";
     cursor_c = 26.0, "its damping";
     // drops against each other
@@ -68,11 +70,13 @@ config! {
     stick = 130.0, "let go within this many px of a side or the top, a drop clings to it";
     stick_speed = 500.0, "…unless it was thrown faster than this, px/s";
     hop_off = 300.0, "px/s sideways with which a drop leaves the top of a plate";
-    splash = 0.3, "how hard a landing pushes the level";
+    splash = 0.5, "how hard a landing pushes the level: px/s of the level for each px/s of the drop";
+    splash_max = 420.0, "…and no harder than this";
     // the level
     wave_speed = 430.0, "px/s";
     restore = 22.0, "pull of the level back to rest";
     damp = 1.5, "how fast waves die";
+    thick = 900.0, "how thick the coffee is: px² a second by which neighbouring columns even out their speed";
     wave_max = 40.0, "px a wave may rise";
     wind = 500.0, "how hard the wind pushes drops";
 }

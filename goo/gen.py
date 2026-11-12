@@ -74,12 +74,21 @@ def shapes(n):
             "to: x.{k} + {ax} * cap.{k} * (goo.{k}.cap_dir + 1), y.{k} + {ay} * cap.{k} * (goo.{k}.cap_dir + 1); "
             "width: rr.{k} * 2 * if(cap.{k} > 0.5, 1, 0); blend: link.{k} }}\n"
         ).format(k=k, ax=ax, ay=ay))
-    # The level: a hump for each column of goo-phys's surface along the bottom edge. It stands a few px over the
-    # edge with a slow swell of its own (two sines of the scene's clock: still when the desktop is), and rises and
-    # falls by the column's height, so that a wave is seen to run, come back from a plate and die.
-    for i in range(COLUMNS):
-        out.append("    ellipse {{ at: W * {x} / {n}, H + 30 - LEVEL - 2.5 * sin({a} + tick * 26) - 1.5 * sin({b} - tick * 17) - h.{i} * 4; "
-                   "radius: 30; scale: W / {n} / 30 * 1.7, 1; blend: 14 }}\n".format(i=i, n=COLUMNS, x=i + 0.5, a=i * 37 % 360, b=i * 71 % 360))
+    # The level, as the login screen's coffee is drawn (surface()): thick lines from one column of goo-phys's
+    # surface to the next, which the blend rounds into one smooth edge. It stands a few px over the bottom edge
+    # with a slow swell of its own (two sines of the scene's clock: still when the desktop is), and each column
+    # rises and falls by its height, so that a wave is seen to run, come back from a plate and die.
+    def top(i):
+        i = min(max(i, 0), COLUMNS - 1)
+        return "H + {t} - LEVEL - 2 * sin({a} + tick * 26) - 1.2 * sin({b} - tick * 17) - h.{i} * 3.5".format(t=THICK, i=i, a=i * 19 % 360, b=i * 37 % 360)
+    for i in range(-1, COLUMNS):
+        out.append("    line {{ from: W * {x0} / {n}, {y0}; to: W * {x1} / {n}, {y1}; width: {w}; blend: 18 }}\n".format(
+            n=COLUMNS, x0=i + 0.5, x1=i + 1.5, y0=top(i), y1=top(i + 1), w=2 * THICK))
+    # The cursor as a drop: its tip under the pointer's own, its belly behind it where goo-phys says, longer at
+    # speed (the area kept) and swinging when it brakes. Part of the matter: near a drop the two melt.
+    out.append("    ellipse { at: cursor.x + 2, cursor.y + 3; radius: 2.5 * cur.on; blend: 8 }\n")
+    out.append("    ellipse { at: cursor.x + 6 + cur.tailx, cursor.y + 10 + cur.taily; radius: 7.5 * cur.on; "
+               "scale: (1 + cur.st) * (1 + 0.25 * cur.wob), (1 - 0.2 * cur.wob) / (1 + cur.st); rotate: if(cur.st > 0.03, cur.rot, 0); blend: 12 }\n")
     # a window put away, on its way down into the bar: a drop goo-phys throws
     out.append("    ellipse { at: going.x, going.y; radius: 16 * going.on; scale: 0.9, 1.15; blend: 16 }\n")
     # the neck of the one drop being dragged, from its home to where it is
@@ -120,7 +129,7 @@ WAVES = ((820, "7", 22, 0), (430, "4.2", 31, 70), (250, "2.6", 44, 200), (150, "
          (1300, "6 * gale", 17, 120))
 SPAN = 32                                   # the surface is SPAN lines, from a little left of the screen to a little right
 THICK = 30                                  # half the width of a line: how far the coffee reaches up from its centre
-COLUMNS = 48                                # columns of the desktop's level: `repeat i in 0..48` in parts/drops.plm
+COLUMNS = 96                                # columns of the desktop's level: `repeat i in 0..96` in parts/drops.plm
 RAIN = 9                                    # places on the surface where a drop can fall, each at its own pace
 
 

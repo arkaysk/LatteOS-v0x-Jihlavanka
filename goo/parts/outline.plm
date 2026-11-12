@@ -1,0 +1,16 @@
+// One outline round the whole matter: the drops and their threads, the level, the card with its ear, the shore's
+// plate and its panel. Thin and sharp, it follows the edge of all of them together, so where two melt or
+// overlap there is no line between them: the goo, the level and the cards read as one piece.
+// A hollow body (a border of negative width, patches/pleamar-hollow-body.patch): it paints that line and nothing else.
+part Outline {
+    body {
+        color: coffee
+        border: 0 - look.outline, mix(coffee, cream, 0.4)
+        box { from: 0, H; size: W, 40 }
+        include "shapes.plm"
+        include "cardframe.plm"
+        // TrayShore's plate, and its panel when that is out
+        box { from: shore.x0, H - SHORE_H; size: (shore_w + 40) * if(shore_w > 0, 1, 0), SHORE_H + 40; corner: 16 }
+        box { from: card.x0, card.ay - card.ch; size: (card.w + 40) * if(card_dock and card.p > 0.02, 1, 0), card.ch + 20; corner: 18 }
+    }
+}

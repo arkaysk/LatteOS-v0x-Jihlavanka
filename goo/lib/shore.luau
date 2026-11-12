@@ -80,7 +80,7 @@ local function panel(rows, opts)
     opts.id, opts.owner, opts.dock = "shore", nil, tonumber(fact.shore_w) or 0
     opts.width = opts.width or 320
     card.open(rows, opts)
-    if not fact.shore_open then fact.shore_open = true show_signs() end
+    if not fact.shore_open then fact.shore_open = true show_signs() E.shore_moved() end
 end
 local function read_clips(then_do) clipboard.read(8, 60, function(list) clips = list then_do() end) end
 local function refresh()
@@ -325,7 +325,7 @@ function M.start()
     on("shore_bg_right", function(j) local t = shown_bg[(j or 0) + 1] if t then open_menu(t) end end)
     on("shore_hover", function(what) text.tip = tip_for(what or 0) end)
     -- the arrow turns back when the panel goes, whoever closed it
-    card.watch(function(id) if fact.shore_open and id ~= "shore" then fact.shore_open = false show_signs() end end)
+    card.watch(function(id) if fact.shore_open and id ~= "shore" then fact.shore_open = false show_signs() E.shore_moved() end end)
     lay_out()
 end
 

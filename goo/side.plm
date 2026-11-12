@@ -30,7 +30,9 @@ scene GooSide {
     include "parts/bubble.plm"
     shader velvet = file "shaders/velvet.wgsl"
     shader pegboard = file "shaders/pegboard.wgsl"
+    shader shore = file "shaders/shore.wgsl"
     include "parts/card.plm"
+    include "parts/outline.plm"          // the one outline, over the goo and the card's frame, under what they show
     include "parts/faces.plm"
     include "parts/strip.plm"
     include "parts/launch.plm"

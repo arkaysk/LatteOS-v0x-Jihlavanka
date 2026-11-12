@@ -1,5 +1,5 @@
 vytvorene 22.10.2026
-naposledy upravene 5.11.2026
+naposledy upravene 12.11.2026
 # LatteOS:0.5 Jihlavanka Build
 
 Nasleduju kategorie. a ich opis. Jednotlive doplnkove napady sa budu doplnat ako bod pod kategorie (napr 1.01. [x] doplnkova idea k Kernel). Podkategorie budu zase čislene (1A) [x]` `[~]` `[ ] značky na hotovo, čiastočne, nezačate. 
@@ -681,7 +681,7 @@ Týka sa kariet so sklom (PowerGoo 6C, ClockGoo, CamGoo).
 a otváranie ich kariet (popupov) začína ukazovať grafické artefakty. Zistiť, od ktorého commitu (Goo, pleamar 0.7.10, scéna WM,
 sklo 6.29/1D.42), snímky a `--record`; súvisí s 1D.43 (druhý rám za kartou).
 
-**6.31** [~] **GooEngine 2 — „Živá hladina“** (používateľ 11.–12. 11., návrh a stav `docs/goo/GOOENGINE-2.md`): fyzikálne jadro v Ruste, jedna hmota s jedným obrysom, kurzor ako kvapka, živšie karty, kývanie okien, MareaGoo, DockShore, herné efekty podľa hardvéru, jeden súbor nastavení `gooengine.json`. Rieši 6.09, 6.21, 6.27–6.30, 6M, 1D.25–1D.27. 12. 11.: kroky 0–3 hotové a nasadené (pleamar 0.7.27, pleamar-wm 0.6.15, `pleamar-step-hook.patch`, `crates/goo-phys` so 17 testami, `crates/latte-goo`; `drops.plm` číta jadro, `time` → `tick`, plocha v pokoji berie 1 % jadra namiesto 17–44 %, hodená kvapka letí; vlákna iba zo zlepenia, gravitácia iba dole a lepenie k bokom, viditeľná hladina so svetlom slnka a mesiaca). Chýba: krok 4 (jedna hmota a obrys) až 9; susedia a spoje z jadra, vietor, dych v pokoji; stránka Nastavenia › Kvapky › Engine; §20 (osvetlenie, mäkké telesá, SDF).
+**6.31** [~] **GooEngine 2 — „Živá hladina“** (používateľ 11.–12. 11., návrh a stav `docs/goo/GOOENGINE-2.md`): fyzikálne jadro v Ruste, jedna hmota s jedným obrysom, kurzor ako kvapka, živšie karty, kývanie okien, MareaGoo, DockShore, herné efekty podľa hardvéru, jeden súbor nastavení `gooengine.json`. Rieši 6.09, 6.21, 6.27–6.30, 6M, 1D.25–1D.27. 12. 11.: kroky 0–3 hotové a nasadené (pleamar 0.7.27, pleamar-wm 0.6.15, `pleamar-step-hook.patch`, `crates/goo-phys` s 19 testami, `crates/latte-goo`; `drops.plm` číta jadro, `time` → `tick`, plocha v pokoji berie 1 % jadra namiesto 17–44 %, hodená kvapka letí; vlákna iba zo zlepenia, gravitácia iba dole a lepenie k bokom, viditeľná hladina so svetlom slnka a mesiaca). Krok 4 náhradnou cestou: jeden obrys okolo celej hmoty dutým telom (`pleamar-hollow-body.patch`, `outline.plm`); vlny s priehlbinou a lemom, hladina hladkou čiarou, svetlo `shore.wgsl`. Krok 5 z časti: karta sa zatvára vlastnou pružinou bez vyskočenia (rieši 6.30), obsah zhasne prvý, ucho sa prikrčí a nafúkne, panel TrayShore vlní hladinu. Chýba: karta v jednej výplni s kvapkami (§7 body 2–5), vlna po obryse karty, krok 6 z časti (telo kurzora z goo pod systémovým kurzorom, od stupňa 2); chýba skrytie systémového kurzora, téma xcursor, adaptívna farba; kroky 7 až 9; susedia a spoje z jadra, vietor, dych v pokoji; stránka Nastavenia › Kvapky › Engine; §20 (osvetlenie, mäkké telesá, SDF).
 
 ### 6A. [~] BarGoo
 Zdroje: `goo/lib/bar.luau`, `goo/side.plm`; LATTEOS-GOO §4.1

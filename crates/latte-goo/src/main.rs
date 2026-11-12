@@ -136,10 +136,12 @@ impl Goo {
         self.tier = hw["tier"].as_f64().map_or_else(tier_of_session, |t| (t as f32).clamp(0.0, 3.0));
         cfg.tier = self.tier;
         // the level's columns by the tier, unless the file says how many
-        cfg.columns = hw["columns"].as_f64().filter(|c| *c >= 2.0).map_or(match self.tier as u32 { 0 | 1 => 24.0, 2 => 48.0, _ => 64.0 }, |c| c as f32);
+        cfg.columns = hw["columns"].as_f64().filter(|c| *c >= 2.0).map_or(match self.tier as u32 { 0 | 1 => 48.0, 2 => 96.0, _ => 128.0 }, |c| c as f32);
         if let Some(hz) = hw["physics_hz"].as_f64() {
             cfg.hz = hz as f32;
         }
+        // the cursor as a drop: where the file says so, from the standard tier up (GOOENGINE-2.md §8)
+        cfg.cursor_body = if json["cursor"]["live"].as_bool().unwrap_or(false) && json["cursor"]["mode"].as_str() != Some("off") && self.tier >= 2.0 { 1.0 } else { 0.0 };
         // Settings › Drops › Liveliness: one slider over the reactions to the cursor
         if let Some(l) = json["look"]["liveliness"].as_f64() {
             cfg.liveliness = l as f32;
@@ -194,7 +196,7 @@ impl Goo {
         self.ripple_n = vec![f32::NAN; m.ripples.len()];
         self.gone_n = f32::NAN;
         m.walls = (0..32).map_while(|n| at(&format!("wall.{n}.x0")).map(|x0| [Some(x0), at(&format!("wall.{n}.y0")), at(&format!("wall.{n}.x1")), at(&format!("wall.{n}.y1"))])).collect();
-        for n in ["screen.width", "screen.height", "cursor.x", "cursor.y", "pointer.x", "pointer.y", "cur.down", "gale", "splash.n", "splash.x", "splash.w", "splash.p", "stir", "tier", "cur.x", "cur.y", "cur.st", "cur.rot", "cur.wob", "cur.tailx", "cur.taily", "ev.landed", "ev.bumped", "ev.joined", "ev.parted", "ev.flicked", "ev.lx", "ev.ly", "ev.le",
+        for n in ["screen.width", "screen.height", "cursor.x", "cursor.y", "pointer.x", "pointer.y", "cur.down", "gale", "splash.n", "splash.x", "splash.w", "splash.p", "stir", "tier", "cur.on", "cur.x", "cur.y", "cur.st", "cur.rot", "cur.wob", "cur.tailx", "cur.taily", "ev.landed", "ev.bumped", "ev.joined", "ev.parted", "ev.flicked", "ev.lx", "ev.ly", "ev.le",
             "gone_n", "gone.x0", "gone.y0", "gone.x1", "going.x", "going.y", "going.on", "shore_w", "lens_edge", "lens_a", "lens_b"] {
             if let Some(k) = at(n) {
                 m.one.insert(n, k);
@@ -232,7 +234,7 @@ impl Goo {
                 facts[k] = x;
             }
         }
-        if self.map.slots.is_empty() && self.map.columns.is_empty() && !self.map.one.contains_key("cur.x") {
+        if self.map.slots.is_empty() && self.map.columns.is_empty() && !self.map.one.contains_key("cur.x") && !self.map.one.contains_key("cur.st") {
             return false; // a scene that asks nothing of the physics
         }
         let one = |m: &Map, n: &str, facts: &[f32]| m.one.get(n).map(|k| facts[*k]);
@@ -339,7 +341,7 @@ impl Goo {
             let n = get(a[4], facts);
             if n != self.ripple_n[i] && !self.ripple_n[i].is_nan() {
                 let (x, force, tremble) = (get(a[0], facts) * sw + get(a[1], facts), get(a[2], facts), get(a[3], facts) > 0.5);
-                w.splash(x, if tremble { 90.0 } else { 150.0 }, -force * if tremble { 14.0 } else { 30.0 });
+                w.splash(x, if tremble { 70.0 } else { 110.0 }, force * if tremble { 12.0 } else { 26.0 });
             }
             self.ripple_n[i] = n;
         }
@@ -444,7 +446,7 @@ impl Goo {
         }
         let c = &w.cursor;
         let g = &w.drops[ghost];
-        for (n, x) in [("going.x", g.pos.x), ("going.y", g.pos.y), ("going.on", (g.r > 0.0) as u32 as f32), ("stir", stir), ("tier", self.tier), ("cur.x", c.tip.x), ("cur.y", c.tip.y), ("cur.st", c.stretch), ("cur.rot", c.rot), ("cur.wob", c.wobble), ("cur.tailx", c.belly.x - c.tip.x), ("cur.taily", c.belly.y - c.tip.y)] {
+        for (n, x) in [("going.x", g.pos.x), ("going.y", g.pos.y), ("going.on", (g.r > 0.0) as u32 as f32), ("stir", stir), ("tier", self.tier), ("cur.on", w.cfg.cursor_body), ("cur.x", c.tip.x), ("cur.y", c.tip.y), ("cur.st", c.stretch), ("cur.rot", c.rot), ("cur.wob", c.wobble), ("cur.tailx", c.belly.x - c.tip.x), ("cur.taily", c.belly.y - c.tip.y)] {
             if let Some(k) = m.one.get(n) {
                 facts[*k] = x;
             }

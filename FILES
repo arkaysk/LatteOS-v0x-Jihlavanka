@@ -80,6 +80,7 @@
 /usr/share/latteos/goo/shaders/crest.wgsl               <- goo/shaders/crest.wgsl
 /usr/share/latteos/goo/shaders/sea.wgsl                 <- goo/shaders/sea.wgsl
 /usr/share/latteos/goo/shaders/pegboard.wgsl            <- goo/shaders/pegboard.wgsl
+/usr/share/latteos/goo/shaders/shore.wgsl               <- goo/shaders/shore.wgsl
 /usr/share/latteos/goo/shaders/velvet.wgsl              <- goo/shaders/velvet.wgsl
 /usr/share/latteos/goo/shaders/water.wgsl               <- goo/shaders/water.wgsl
 /usr/share/latteos/goo/login.luau                       <- goo/login.luau
@@ -643,6 +644,8 @@
 /usr/share/latteos/goo/parts/bubble.plm                 <- goo/parts/bubble.plm
 /usr/share/latteos/goo/parts/picks.plm                  <- goo/parts/picks.plm
 /usr/share/latteos/goo/parts/body.plm                   <- goo/parts/body.plm
+/usr/share/latteos/goo/parts/cardframe.plm              <- goo/parts/cardframe.plm
+/usr/share/latteos/goo/parts/outline.plm                <- goo/parts/outline.plm
 /usr/share/latteos/goo/parts/shapes.plm                 <- goo/parts/shapes.plm
 /usr/share/latteos/goo/parts/card.plm                   <- goo/parts/card.plm
 /usr/share/latteos/goo/parts/waves.plm                   <- goo/parts/waves.plm

@@ -1,0 +1,42 @@
+diff --git a/docs/11-language-reference.md b/docs/11-language-reference.md
+index 006d20e..536f064 100644
+--- a/docs/11-language-reference.md
++++ b/docs/11-language-reference.md
+@@ -535,7 +535,7 @@ Each element accepts these properties and no others; another one is an error, wi
+ | `line` | `from` · `to` · `width` |
+ | `path` | `at` (what its points hang from) · `size: w, h` (what it takes up in a layout), and inside it its steps: `move x, y` (once, the first one) · `line x, y` · `curve x, y via cx, cy` · `close`. Closed, it is filled; open, or with `stroke`, it is a line |
+ | …and every shape | `color` · `opacity` · `rotate` · `stroke` (the outline only) · `blend` (inside a `body`: how much it melts into what came before) · `active` · `cursor` · `carries` · `carry_icon` (below) · `show` · `label` · `agent` · `role` · `value` · `checked` · `selected` (§13, *Told to an agent*) |
+-| `body` | `color` or `gradient` (below) · `rim` · `light: amount, from_y, height` · `shadow: dx, dy, blur, alpha[, color]` · `border: width, #color` · `glass` · `lens` · `opacity` · `show`, and inside it its shapes, melted into one silhouette |
++| `body` | `color` or `gradient` (below) · `rim` · `light: amount, from_y, height` · `shadow: dx, dy, blur, alpha[, color]` · `border: width, #color` (a **negative** width is a hollow body: only that outline, as wide, with no fill, glass or shadow — one line round shapes that other bodies paint, and none where they overlap) · `glass` · `lens` · `opacity` · `show`, and inside it its shapes, melted into one silhouette |
+ | `text` | `at` · `anchor` · `width` · `lines` · `size` · `weight` · `color` · `opacity` · `align:` `left` `center` `right` · `line_height` · `family` · `measure` · `show` · and its effects: `gradient` · `outline` · `shadow` · `letter_move` · `letter_opacity` · `letter_scale` (§8.4) · `selectable` · `selection` · `markdown` |
+ | `image` | `at` (its **top-left corner**, not its centre: it is a rectangle of pixels, not a shape) · `size` · `opacity` · `tint` · `cell: which, columns, rows` (one picture of a sheet: below) · `fit: fill`, `contain` or `cover` (below) · `show` |
+ | `particles` | `at` · `area` · `count` · `life` · `speed` · `direction` · `spread` · `gravity` · `drag` · `size` · `colors` · `opacity` · `shape` · `emit` or `burst` · `show`: §8.3 |
+diff --git a/src/gpu.rs b/src/gpu.rs
+index d45aa34..34d1d18 100644
+--- a/src/gpu.rs
++++ b/src/gpu.rs
+@@ -2710,7 +2710,7 @@ impl DrawList {
+                             e[20..23].copy_from_slice(&[l.amount, l.from_y.eval(c), l.height]);
+                         }
+                         if let Some((thickness, col)) = border {
+-                            e[23] = thickness.eval(c).max(0.0);
++                            e[23] = thickness.eval(c); // negative: a hollow body, its outline alone (shape.wgsl)
+                             e[24..27].copy_from_slice(&color(col));
+                         }
+                         if let Some((sx, sy, sd, sa)) = shadow {
+diff --git a/src/shape.wgsl b/src/shape.wgsl
+index 7bc9bdf..9779895 100644
+--- a/src/shape.wgsl
++++ b/src/shape.wgsl
+@@ -561,6 +561,11 @@ fn fs(e: VertexOut) -> @location(0) vec4<f32> {
+     // follows how much the distance really changes per pixel instead: only ever sharper, never softer.
+     let edge_g = vec2<f32>(dpdx(d), dpdy(d));
+     let de = d / clamp(length(edge_g) * u.header.w, 0.2, 1.0);
++    // A hollow body (`border:` with a negative width): only its outline, that wide, round the whole silhouette.
++    // No fill, no glass, no shadow: one line round several bodies painted under it, with none where they overlap.
++    if (el.light.w < 0.0) {
++        return over(c, el.border.rgb, edge_coverage(abs(de - el.light.w * 0.5) + el.light.w * 0.5, el.border.rgb) * alpha);
++    }
+     // Glass: from 0 to 1, in the `uv` slot, which a body does not use.
+     let glass = el.uv.x;
+     if (has_shadow) {

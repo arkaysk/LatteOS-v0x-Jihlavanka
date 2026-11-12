@@ -30,6 +30,11 @@ part Drops {
     let gold = #f7c873
     let W = screen.width
     let H = screen.height
+    // TrayShore's plate (parts/shore.plm), known here because the outline goes round it: how long it is, 0 none
+    fact shore_w = 0
+    let SHORE_H = 46
+    let shore.x0 = W - shore_w
+    fact look.outline = 1.25                   // the outline's width, px (gooengine.json › look)
     let LEVEL = 6                              // the surface lies this far inside each edge of the screen (goo-phys: `level`)
 
     // ── the world, from goo-phys ────────────────────────────────────────────────────────────────────────────
@@ -44,8 +49,21 @@ part Drops {
     fact ev.ly = 0
     fact ev.le = 0
     fact freed.e = 0
+    // The cursor as a drop (GOOENGINE-2.md §8): behind the pointer a belly of goo that lags, stretches at speed and
+    // swings when it brakes. From the standard tier up and where gooengine.json › cursor says so; `cur.on` is 0 else.
+    fact cur.on = 0
+    fact cur.st = 0                            // stretched the way it goes, and that way in radians
+    fact cur.rot = 0
+    fact cur.wob = 0                           // the swing left when it brakes, −1…1
+    fact cur.tailx = 0                         // where its belly is from its tip, px
+    fact cur.taily = 0
+    fact ev.flicked = 0
+    event goo_flick                            // it turned back on itself at speed: droplets come off it (body.plm)
+    on change ev.flicked { emit goo_flick }
+    event goo_spray                            // …on the bottom edge: droplets fly up where it went in (body.plm)
     on change ev.landed { freed.x = ev.lx; freed.y = ev.ly; freed.e = ev.le; emit goo_landed(mod(ev.landed, 4096)) }
-    repeat i in 0..48 {
+    on change ev.landed while ev.le < 0.5 { emit goo_spray }
+    repeat i in 0..96 {
         fact h.$i = 0                          // the level's height in column i, px above rest
     }
 

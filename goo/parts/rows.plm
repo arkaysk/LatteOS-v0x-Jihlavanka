@@ -47,9 +47,9 @@ part Rows {
     let tab.eq = (card.tw - (tab.count - 1) * 6) / max(tab.count, 1)
 
     group {
-        opacity: clamp(card.p * 2 - 1, 0, 1)
+        opacity: clamp(card.p * 2 - 1, 0, 1) * card.ink
         // A closed card is most of the time: nothing of it is worked out then.
-        show: card.p > 0.01 and card_alive
+        show: card.p > 0.01
         // what is written is not drawn past the frame, which is still narrow while it grows from the ear
         // (LensShore's panel goes on into its plate: so does what is drawn in it, with no round corner there)
         clip box { at: card.ax + card.sx * card.cw / 2, card.ay + card.sy * (card.ch - if(card_lens, 40, 0)) / 2; size: card.cw, card.ch + if(card_lens, 40, 0); corner: if(card_menu, 12, min(if(ear > 14, 26, 18) + (card.round - 18), min(card.cw, card.ch) / 2)) }
@@ -171,7 +171,7 @@ part Rows {
         let ey.$k = if(goo.$k.edge == 1 or goo.$k.edge == 3, eo.$k, 0)
         let et.$k = ef.$k * if(goo.$k.zoom < 0.8, 1.25, 1)
         group {
-            show: card_owner == k and card.p > 0.01 and card_alive and goo.$k.on
+            show: card_owner == k and card.p > 0.01 and goo.$k.on
             group {
                 pivot: x.$k, y.$k
                 scale: ef.$k

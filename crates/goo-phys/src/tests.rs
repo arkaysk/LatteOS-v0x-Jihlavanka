@@ -22,7 +22,7 @@ fn run(w: &mut World, seconds: f32, fps: f32, input: &Input) -> f32 {
 #[test]
 fn a_wave_comes_back_from_the_wall_and_dies() {
     let mut w = world();
-    w.splash(60.0, 80.0, -200.0);
+    w.splash(60.0, 80.0, 200.0);
     run(&mut w, 0.3, 60.0, &Input::default());
     assert!(w.surface.h[2].abs() > 0.05, "the wave is there");
     assert!(w.level(700.0).abs() < 0.01, "and has not got far yet");
@@ -40,7 +40,7 @@ fn a_wave_comes_back_from_the_wall_and_dies() {
 fn a_plate_stands_in_the_water() {
     let mut w = world();
     w.set_walls(vec![Wall { x0: 800.0, y0: 1000.0, x1: 1100.0, y1: 1080.0 }]);
-    w.splash(300.0, 80.0, -300.0);
+    w.splash(300.0, 80.0, 300.0);
     let mut beyond = 0.0f32;
     for _ in 0..300 {
         w.step(1.0 / 60.0, &Input::default());
@@ -303,4 +303,45 @@ fn a_drop_that_falls_on_others_lands_too() {
     assert_eq!(w.drops[k].mode, Mode::Sits);
     assert_eq!(run(&mut w, 8.0, 60.0, &Input::default()), 0.0, "and the world comes to rest");
     let _ = (a, b);
+}
+
+#[test]
+fn what_falls_in_makes_a_hollow_with_a_rim_and_spills_nothing() {
+    let mut w = world();
+    w.splash(960.0, 120.0, 300.0);
+    run(&mut w, 0.05, 240.0, &Input::default());
+    let (mid, rim) = (w.level(960.0), w.level(960.0 + 55.0));
+    assert!(mid < -0.5 && rim > 0.2, "down in the middle, up around it: {mid} {rim}");
+    let sum: f32 = w.surface.h.iter().sum();
+    assert!(sum.abs() < 0.05 * w.surface.h.iter().map(|h| h.abs()).sum::<f32>(), "as much up as down: {sum}");
+    // a big drop makes a bigger wave than a small one, and neither a wall: the level is never cut flat at its top
+    let wave = |r: f32| {
+        let mut w = world();
+        let k = seated(&mut w, 900.0, r);
+        w.drops[k].pos = v(900.0, 300.0);
+        w.throw(k, V::default());
+        let mut high = 0.0f32;
+        for _ in 0..240 {
+            w.step(1.0 / 60.0, &Input::default());
+            high = w.surface.h.iter().fold(high, |a, h| a.max(h.abs()));
+        }
+        high
+    };
+    let (small, big) = (wave(20.0), wave(57.0));
+    assert!(big > small * 1.3 && big < w.cfg.wave_max * 0.9, "{small} {big}");
+}
+
+#[test]
+fn a_pointer_far_from_everything_wakes_nothing() {
+    let mut w = world();
+    w.cfg.cursor_body = 0.0;
+    seated(&mut w, 300.0, 26.0);
+    let mut x = 900.0;
+    let mut left = 1.0;
+    for _ in 0..120 {
+        x += 5.0;
+        left = w.step(1.0 / 60.0, &Input { pointer: Some(v(x, 300.0)), ..Input::default() });
+    }
+    assert_eq!(left, 0.0, "over a window in the middle of the screen the world sleeps on");
+    assert!(run(&mut w, 0.2, 60.0, &Input { pointer: Some(v(320.0, 1000.0)), ..Input::default() }) > 0.0, "by a drop it wakes");
 }

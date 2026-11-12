@@ -48,21 +48,28 @@ part Body {
         include "shapes.plm"
     }
 
-    // The light of the sun or the moon, low over the surface from the side they stand on: the level there and
-    // the edges of the goo around it catch it, fading with the distance. Light added, never paint; none of it is
-    // worked out when there is no such light.
+    // The light of the sun or the moon, which are never seen, on the surface and on the goo that stands in it:
+    // as on the login screen's coffee, a bright hair along the top edge, a glow over it, crema under it, and the
+    // flanks that face the light (shaders/shore.wgsl reads this group's silhouette). Strongest on the side the
+    // light stands on. Only the lower part of the screen: the light is low over the surface. Light added, never
+    // paint; none of it is worked out when there is no such light.
     group {
         show: sunlit > 0.02
-        mask: radial sun.x, H radius 60 to W * 0.5
         mode: add
+        shader: shore, sunlit, sun.x, tick, if(sun_moon, 1, 0), warmth
+        clip box { from: 0, H - 260; size: W, 260 }
         body {
-            color: mix(#000000, sunlight, 0.14)
-            rim: 100%
-            opacity: sunlit
+            color: #ffffff
             box { from: 0, H; size: W, 40 }
             include "shapes.plm"
         }
     }
+    // droplets that come off the cursor's drop when it turns back on itself at speed
+    particles { at: cursor.x + 6, cursor.y + 10; count: 3; life: 0.5s .. 0.9s; speed: 40 .. 160; direction: 90deg; spread: 160deg
+                gravity: 0, 900; drag: 0.4; size: 4, 2; colors: coffee, coffee; opacity: 95%, 60%; shape: dot; burst: goo_flick; show: cur.on > 0.5 }
+    // droplets thrown up where a drop went into the surface
+    particles { at: ev.lx, H - LEVEL - 4; area: 30, 4; count: 22; life: 0.35s .. 0.8s; speed: 140 .. 360; direction: -90deg; spread: 75deg
+                gravity: 0, 900; drag: 0.6; size: 4, 1; colors: mix(coffee, cream, 0.25), coffee; opacity: 90%, 0%; shape: dot; burst: goo_spray }
 
     // a window put away shrinks into a drop where it was; from there it falls as part of the goo
     body {

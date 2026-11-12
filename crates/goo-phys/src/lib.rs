@@ -264,16 +264,18 @@ impl World {
         self.surface.h[i] * (1.0 - t) + self.surface.h[(i + 1).min(n - 1)] * t
     }
 
-    /// A push to the level around `x`, `width` wide: negative is something that fell in (up in the middle, down
-    /// at the rims, and from there waves). A drop that lands, a plate that comes out, a window at the edge.
+    /// Something falls into the level at `x`, `width` wide, `push` px/s hard: it presses a hollow and throws up a
+    /// rim around it, as much up as down (the coffee goes nowhere), and from there the rings run out, come back
+    /// from the walls and die. A negative push lifts instead: a plate coming up out of the water.
     pub fn splash(&mut self, x: f32, width: f32, push: f32) {
         let dx = self.column_width();
-        let half = (width * 0.5).max(dx);
-        for i in 0..self.surface.h.len() {
-            let d = ((i as f32 + 0.5) * dx - x).abs() / half;
-            if d < 1.0 && !self.surface.still[i] {
-                self.surface.vel[i] += push * (0.5 - (1.0 - d * d)) * 2.0;
-            }
+        let half = (width * 0.5).max(dx * 1.5);
+        // a hollow with a rim, the same volume in both, sampled so that a narrow one on wide columns keeps that
+        let shape = |d: f32| (1.0 - 4.0 * d * d) * (-2.0 * d * d).exp();
+        let near: Vec<(usize, f32)> = (0..self.surface.h.len()).map(|i| (i, ((i as f32 + 0.5) * dx - x) / half)).filter(|(i, d)| d.abs() < 2.4 && !self.surface.still[*i]).collect();
+        let mean = near.iter().map(|(_, d)| shape(*d)).sum::<f32>() / near.len().max(1) as f32;
+        for (i, d) in near {
+            self.surface.vel[i] -= push * (shape(d) - mean);
         }
         self.wake();
     }
@@ -376,7 +378,14 @@ impl World {
         } else {
             c.vel = V::default();
         }
-        if (c.tip, c.there, c.down) != was || input.gale != 0.0 {
+        // A pointer that moves stirs the world only where there is something to stir: its own body if it has one,
+        // a drop within reach, the level under it. Over a window in the middle of the screen it wakes nothing.
+        let moved = (c.tip, c.there, c.down) != was;
+        let tip = c.tip;
+        let near = self.cfg.cursor_body > 0.5
+            || self.size.y - tip.y < 90.0
+            || self.drops.iter().any(|d| d.there() && (d.mode != Mode::Sits || (d.pos - tip).len() < self.cfg.reach * d.reach.max(1.0) * self.cfg.liveliness.max(0.0).sqrt() + d.r));
+        if (moved && near) || input.gale != 0.0 {
             self.quiet_for = 0.0;
         }
         if self.cfg.tier < 0.5 {
@@ -441,6 +450,16 @@ impl World {
             let side = |j: isize| if j < 0 || j >= n as isize || s.still[j as usize] { s.h[i] } else { s.h[j as usize] };
             let pull = k * (side(i as isize - 1) + side(i as isize + 1) - 2.0 * s.h[i]) - cfg.restore * s.h[i] - cfg.damp * s.vel[i];
             s.vel[i] += pull * h;
+        }
+        // thick as coffee: a column drags its neighbours' speed along, so ripples a column wide die first and
+        // what is left is smooth
+        let before = s.vel.clone();
+        let visc = (cfg.thick * h / (dx * dx)).min(0.24);
+        for i in 0..n {
+            if !s.still[i] {
+                let side = |j: isize| if j < 0 || j >= n as isize || s.still[j as usize] { before[i] } else { before[j as usize] };
+                s.vel[i] += visc * (side(i as isize - 1) + side(i as isize + 1) - 2.0 * before[i]);
+            }
         }
         for i in 0..n {
             s.h[i] = (s.h[i] + s.vel[i] * h).clamp(-cfg.wave_max, cfg.wave_max);
@@ -562,7 +581,7 @@ impl World {
                         // what is left of the speed along the edge stays: it slides to a stop, it does not freeze
                         let nrm = edge.inward();
                         d.vel = (d.vel - nrm * d.vel.dot(nrm)) * 0.35;
-                        landed.push((i, edge, d.pos, m * speed, d.r));
+                        landed.push((i, edge, d.pos, (speed * m.sqrt() * cfg.splash).min(cfg.splash_max), d.r));
                     }
                 }
             }
@@ -579,7 +598,7 @@ impl World {
         }
         for (i, edge, at, push, r) in landed {
             if edge == Edge::Bottom {
-                self.splash(at.x, r * 3.0, -push * cfg.splash);
+                self.splash(at.x, 60.0 + r * 1.6, push);
             }
             self.events.push(Event::Landed(i, edge, at));
         }
@@ -656,14 +675,21 @@ impl World {
 
         // ── the cursor's own body ───────────────────────────────────────────────────────────────────────────
         let c = &mut self.cursor;
-        if c.there {
+        if c.there && cfg.cursor_body > 0.5 {
             let off = c.belly - c.tip;
             let before = c.belly_v;
             c.belly_v += (off * -cfg.cursor_k + c.belly_v * -cfg.cursor_c) * h;
             c.belly += c.belly_v * h;
+            // the belly is never further behind than its neck is long: past that it is dragged along
+            let behind = c.belly - c.tip;
+            if behind.len() > cfg.cursor_tail {
+                let out = behind.unit();
+                c.belly = c.tip + out * cfg.cursor_tail;
+                c.belly_v = c.belly_v - out * c.belly_v.dot(out).max(0.0);
+            }
             // what is left when it brakes: the mass goes on and swings back, two swings and still
             let braking = (before - c.belly_v).len() / h;
-            c.wobble_v += (-260.0 * c.wobble - 9.0 * c.wobble_v) * h + braking * 0.000_02;
+            c.wobble_v += (-260.0 * c.wobble - 9.0 * c.wobble_v) * h + braking * 0.000_006;
             c.wobble = (c.wobble + c.wobble_v * h).clamp(-1.0, 1.0);
             let fast = c.vel.len();
             c.stretch += ((fast / 2000.0 * 0.35).min(0.5) - c.stretch) * (h * 20.0).min(1.0);

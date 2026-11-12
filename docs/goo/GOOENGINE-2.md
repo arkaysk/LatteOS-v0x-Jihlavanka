@@ -234,6 +234,25 @@ okraj hladiny a okraje Goo okolo neho, s diaľkou svetlo slabne. Cez deň slabé
 mesiac, ak je nad obzorom. Kreslí to skupina `mode: add` s radiálnou maskou nad tou istou siluetou (`body.plm`);
 bez svetla sa nepočíta.
 
+**Druhé znenie (používateľ 12. 11.: vlny sú nerealisticky vykreslené aj vypočítané; svetlo skoro nevidno, na
+prihlasovaní je hladina viacvrstvová):**
+
+- **Fyzika dopadu.** Dopad dvíhal stred a tlačil okraje dole — naopak. Teraz vytlačí **priehlbinu s lemom**, hore
+  toľko čo dole (objem sa zachováva), a z nej sa šíria kruhy. Sila je `rýchlosť × √hmotnosť` so stropom
+  (`splash`, `splash_max`): veľká kvapka dá väčšiu vlnu, nie stenu orezanú o `wave_max`. Šírka dopadu rastie
+  s polomerom (`60 + 1,6 r`). Susedné stĺpce si vyrovnávajú rýchlosť (`thick`, viskozita kávy), takže zubaté
+  vlnky na šírku stĺpca zaniknú prvé. Stĺpcov je 96 (stupeň 1: 48, stupeň 3: 128).
+- **Kreslenie.** Hrbole (elipsa na stĺpec) nahradili **hrubé úsečky od stĺpca k stĺpcu**, ktoré `blend` zleje do
+  jednej hladkej hrany — tak kreslí hladinu prihlasovanie (`surface.plm`). Pri dopade na spodný okraj vyletí
+  **spŕška** kvapôčok (`particles`, udalosť `goo_spray`).
+- **Svetlo: `goo/shaders/shore.wgsl`.** Hľadal som hotový shader najbližší cieľu: je ním náš vlastný
+  `crest.wgsl` z prihlasovania (ostrý vlas svetla na hrane, žiara nad ňou a pod ňou, pás cremy pod hladinou).
+  Ten si však hladinu počíta sám z tabuľky vĺn; na ploche hladinu určuje fyzika a patria k nej aj kvapky. Preto
+  je `shore.wgsl` **shader skupiny**: číta siluetu hmoty cez `inside()`, pre každý bod nájde, ako hlboko je pod
+  povrchom (krok nahor, štyri polenia), a z tej hĺbky skladá tie isté vrstvy ako `crest.wgsl` + osvetlený bok
+  kvapiek otočený k svetlu. Farba podľa slnka (teplejšia, keď je nízko) alebo mesiaca; trblet podľa hodín scény,
+  takže v pokoji stojí. Iba spodných 260 px obrazovky a iba keď nejaké svetlo je. Cudzí kód neprevzatý.
+
 Rad stĺpcov pozdĺž spodného okraja (48 pri stupni 2, 64 pri stupni 3, 24 pri stupni 1). Každý stĺpec má výšku
 a rýchlosť; ťahá ho späť k nule a k priemeru susedov:
 
@@ -803,6 +822,10 @@ aby sa dala spojiť s ostatnými doskami v jednej hmote, musí sa jej doska kres
 | 12. 11. | nasadenie | `/usr/bin/pleamar` 0.7.27, `/usr/bin/latte-goo` (plochu spúšťa `latte-goo.service`), `/usr/bin/pleamar-wm` 0.6.15 — **ten sa prejaví až po novom prihlásení**. Staré programy ostali ako `/usr/bin/pleamar-0.7.10` a `/usr/bin/pleamar-wm-0.6.9` |
 | 12. 11. | vlákna (oprava po pohľade používateľa) | padajúca kvapka ťahala dlhé vlákno k okraju a k susedovi (stopka a vlákno sa kreslili z domovov). Vlákna sú teraz spoje z jadra so živými koncami (nález D7 tým odpadá), vznikajú iba dotykom a ukážu sa pri odďaľovaní; `left_*`/`right_*` ostávajú logike už iba na vodu medzi susedmi a spoločné dvíhanie |
 | 12. 11. | gravitácia, hladina, svetlo (po pohľade používateľa) | gravitácia iba dole, k boku a stropu sa Goo prilepí; hladina je viditeľný pás s vlnením a väčšími vlnami; okraj hladiny a blízke okraje Goo osvetľuje nevidené slnko alebo mesiac; kvapka, ktorá dopadla na iné kvapky, už neostane visieť (svet sa predtým neupokojil). 17 testov jadra |
+| 12. 11. | vlny a svetlo, druhé znenie | dopad robí priehlbinu s lemom (bol naopak), sila podľa veľkosti bez orezania, viskozita, 96 stĺpcov; hladina kreslená hladkými úsečkami; spŕška; svetlo slnka a mesiaca shaderom `shore.wgsl` po skutočnej siluete (vlas, žiara, crema, bok kvapiek). 18 testov jadra |
+| 12. 11. | 4 — jeden obrys (náhradná cesta z §7) | výplne ostávajú vo svojich telách (kvapky, karta so svojím materiálom, doska), nad nimi je **jedno duté telo iba s obrysom** zo všetkých tvarov: kvapky, vlákna, hladina, rám karty s uchom, doska TrayShore a jej panel (`goo/parts/outline.plm`, `cardframe.plm`). Kde sa tvary zlejú alebo prekryjú, čiara nie je. Svetlejšie podkladové rámčeky dosiek (`shore.rim`) odišli. Duté telo je nová záplata `pleamar-hollow-body.patch` (`border:` so zápornou šírkou); číre sklo s obrysom fungovalo tiež, ale stálo 8,3 ms procesora na snímku namiesto 3,0. Karta ako súčasť **jednej výplne** (bod 2–5 §7) sa nerobila: jej sklo a farba panela by sa museli prepísať |
+| 12. 11. | 5 — karty a Shore (časť) | dve pružiny: von `land` s dvoma odskokmi, dnu `shut` kriticky tlmená — zatvorenie z 1 na 0 za necelých 200 ms bez návratu; `card_alive` a časovač 120 ms v `card.luau` zrušené. Obsah zhasne prvý (70 ms). Ucho sa pred otvorením prikrčí a po zatvorení nafúkne a rozvlní hladinu pod sebou. Panel TrayShore pri vysunutí a zasunutí štuchne hladinu pri konci dosky. **Nerobené:** vlna po obryse karty pri rozliatí (`cardrip` z Vitreusu), samostatné fázy nádych–výron–rozliatie nad rámec dnešného tvaru (šírka rastie s t³, takže karta už vychádza úzka a rozlieva sa), LensShore |
+| 12. 11. | 6 — kurzor (bezpečná časť) | kurzor má **telo z goo**: pod systémovým kurzorom hrot a za ním bruško z jadra, ktoré mešká (najviac 22 px), pri rýchlosti sa natiahne a pri zabrzdení zakýve; je súčasťou hmoty (obrys, zlieva sa s kvapkou), pri prudkom obrate z neho odletia kvapôčky. Zapnuté od stupňa 2 a keď `gooengine.json` › `cursor.live` (relácia na latte-lab má `LATTE_TIER=full`, teda je zapnuté). Kurzor ďaleko od kvapiek a hladiny už svet nebudí, keď telo nemá. **Nerobené:** skrytie systémového kurzora (záplata pleamar-wm — nedá sa overiť bez nového prihlásenia a hrozí neviditeľný kurzor nad oknom na celú obrazovku), téma xcursor „LatteOS Goo“ (chýba `xcursorgen` a kresby), adaptívna farba, tvary ruka/písanie/ťahanie, Nastavenia › Kurzor |
 | 12. 11. | 3 — scéna na jadre | `drops.plm` číta polohy z `g.*`, hladinu z `h.*`; `time` v `goo.plm` a `side.plm` nahradil `tick`, ktorý beží iba pri `stir > 0`, otvorenej karte, klávesnici alebo pulzujúcom jadre. `latte-goo` číta záznam `goo.k.*` priamo, rozhranie kvapiek sa nezmenilo. Z `engine.luau` odišli `GRAVITY`, časovače pádu a zvláštny prípad dosky (doska je stena, kvapka z nej odskočí). Pustená kvapka letí v smere hodu (`goo_landed`), pri boku a hore sa prilepí (do 130 px, pomalá). Okno do BarGoo hádže jadro. Overené bez obrazovky (pokoj, kurzor, hod) a nasadené: **Goo v pokoji berie 1 % jadra** (predtým 17–44 %) |
 
 **Čo krok 3 zatiaľ nerobí (vedome):**

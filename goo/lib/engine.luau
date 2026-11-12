@@ -234,6 +234,11 @@ function E.shore(w, h)
     shore.w, shore.h = w, h
     E.apart() E.publish()
 end
+-- The plate stands in the water: its panel coming out or going in pushes the level at its end, and the wave runs off.
+function E.shore_moved()
+    local w = num(fact.sw, 0)
+    if shore.w > 0 and w > 0 then E.ripple((w - shore.w - 30) / w, 3.5, "stone") end
+end
 
 -- A drop beside another keeps to where that one is now, until the user moves it away himself.
 local function follow_anchor(d, depth)
@@ -798,11 +803,11 @@ local function sky()
         -- the light on the level: the sun low on its side (below the horizon, the glow where it went down or
         -- comes up), by day faint from where it stands, at night the moon's if it is up
         local sun, moon = type(t.sun) == "table" and t.sun or {}, type(t.moon) == "table" and t.moon or {}
-        local low = clamp(1 - math.abs(alt - 2) / 10, 0, 1)
-        if alt > -8 then
+        local low = clamp(1 - math.abs(alt - 2) / 14, 0, 1)       -- strongest when it is low: from 12° under to 16° over
+        if alt > -12 then
             fact.sun_moon = false
             fact.sun_at = alt > 0 and clamp(num(sun.t, 0.5), 0.03, 0.97) or (sun.west and 0.97 or 0.03)
-            fact.sun_k = math.max(low, alt > 12 and 0.3 or 0)
+            fact.sun_k = math.max(low, alt > 0 and 0.45 or 0)       -- by day never less than this
         elseif num(moon.alt, -90) > 0 then
             fact.sun_moon, fact.sun_at, fact.sun_k = true, clamp(num(moon.t, 0.5), 0.03, 0.97), 0.25 + 0.35 * num(moon.lit, 0)
         else

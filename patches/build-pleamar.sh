@@ -18,7 +18,7 @@ get() {   # get NAME COMMIT
     git -C "$src/$1" clean -qfd
 }
 get pleamar dc902feb0ee9058b7db7c2bc2c9d59d9f655fd86          # v0.7.27
-for p in apps-reload right-selection steady-glass windows-and-icons window-carry field-select speed-edges-wheel step-hook; do      # speed-edges-wheel after the six before it
+for p in apps-reload right-selection steady-glass windows-and-icons window-carry field-select speed-edges-wheel step-hook hollow-body; do      # speed-edges-wheel after the six before it
     git -C "$src/pleamar" apply "$here/patches/pleamar-$p.patch"
 done
 get pleamar-wm 96f37e486fd90d66d5f68c4b941fd7294dd4553c       # v0.6.15

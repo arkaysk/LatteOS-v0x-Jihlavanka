@@ -3,10 +3,10 @@
 // off into the goo (lib/engine.luau knows where it is). On it, from the left: the arrow that brings out the
 // panel above it (lib/shore.luau: the quick settings and the clipboard), the programs that run in the
 // background, the network, the volume, and on a laptop the battery.
-// The logic says how long it is (`shore_w`); with 0 there is none, as on a monitor that is not the main one.
+// The logic says how long it is (`shore_w`, declared in drops.plm for the outline's sake); with 0 there is none,
+// as on a monitor that is not the main one.
 part Shore {
     model bg max 10 { icon: image 22, 22; has_icon: bool; glyph: text; title: text }
-    fact shore_w = 0
     fact shore_open = false                    // the panel is out: the arrow points down
     fact shore_signs = 2                       // how many signs stand at its end: the network, the volume, the battery
     text shore_arrow = ""                      // glyphs of the icon font, from the logic
@@ -23,8 +23,6 @@ part Shore {
     event shore_wheel ->                       // over the volume: 1 up, 0 down
     event shore_hover ->                       // the pointer rests on: 0 the arrow, 1… the signs, 10… the programs
 
-    let SHORE_H = 46
-    let shore.x0 = W - shore_w
     let shore.cy = H - SHORE_H / 2 + 1
     let shore.plate = shore.goo
     prop ring = 0 ~grow
@@ -33,7 +31,6 @@ part Shore {
     group {
         show: shore_w > 0
         // the plate reaches past the screen's corner, so only its corner towards the desktop is round
-        box { from: shore.x0 - 1, H - SHORE_H - 1; size: shore_w + 40, SHORE_H + 40; corner: 17; color: shore.rim }
         box { from: shore.x0, H - SHORE_H; size: shore_w + 40, SHORE_H + 40; corner: 16; color: shore.plate }
         box { from: shore.x0 + 14, H - SHORE_H + 1; size: shore_w, 1; color: cream; opacity: 7% }
 
