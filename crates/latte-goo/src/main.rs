@@ -103,6 +103,37 @@ struct Goo {
     count: [f32; 5],
 }
 
+/// Where the mouse is on the whole desktop, as pleamar-wm says it (`cursor.sock` beside the session's other
+/// sockets: a line `x y` each time it moves), from this scene's monitor's corner. pleamar's own `cursor.x` places
+/// the mouse in the plane of whichever of the scene's surfaces it finds first, and with the desktop's icons a
+/// surface of their own that is theirs, 20 000 px away: the drops never knew a cursor that was not over a zone.
+static MOUSE: std::sync::Mutex<Option<(f32, f32)>> = std::sync::Mutex::new(None);
+
+fn watch_mouse(screen: Option<String>) {
+    let Some(dir) = std::env::var_os("PLEAMAR_SOCKETS").map(std::path::PathBuf::from) else { return };
+    let _ = std::thread::Builder::new().name("mouse".into()).spawn(move || loop {
+        use std::io::BufRead;
+        if let Ok(stream) = std::os::unix::net::UnixStream::connect(dir.join("cursor.sock")) {
+            // the monitor's corner on the desktop: `monitor NAME w h x y …` in the file beside the socket
+            let corner = |name: &Option<String>| {
+                let file = std::fs::read_to_string(dir.join("desktop")).unwrap_or_default();
+                let monitors: Vec<Vec<&str>> = file.lines().filter(|l| l.starts_with("monitor ")).map(|l| l.split_whitespace().collect()).collect();
+                let m = monitors.iter().find(|m| name.as_deref() == m.get(1).copied()).or(monitors.first());
+                m.and_then(|m| Some((m.get(4)?.parse::<f32>().ok()?, m.get(5)?.parse::<f32>().ok()?))).unwrap_or((0.0, 0.0))
+            };
+            for line in std::io::BufReader::new(stream).lines().map_while(Result::ok) {
+                let mut at = line.split_whitespace().filter_map(|n| n.parse::<f32>().ok());
+                if let (Some(x), Some(y)) = (at.next(), at.next()) {
+                    let c = corner(&screen);
+                    *MOUSE.lock().unwrap() = Some((x - c.0, y - c.1));
+                }
+            }
+        }
+        *MOUSE.lock().unwrap() = None;
+        std::thread::sleep(std::time::Duration::from_secs(2));
+    });
+}
+
 fn tier_of_session() -> f32 {
     match std::env::var("LATTE_TIER").unwrap_or_default().as_str() {
         "safe" | "software" => 0.0,
@@ -417,6 +448,13 @@ impl Goo {
             self.splash = n;
             w.splash(one(m, "splash.x", facts).unwrap_or(0.0), one(m, "splash.w", facts).unwrap_or(80.0), one(m, "splash.p", facts).unwrap_or(0.0));
         }
+        if let Some((x, y)) = *MOUSE.lock().unwrap() {
+            for (n, value) in [("cursor.x", x), ("cursor.y", y)] {
+                if let Some(k) = m.one.get(n) {
+                    facts[*k] = value;
+                }
+            }
+        }
         let pointer = match (one(m, "cursor.x", facts), one(m, "cursor.y", facts)) {
             (Some(x), Some(y)) => Some(v(x, y)),
             _ => one(m, "pointer.x", facts).zip(one(m, "pointer.y", facts)).map(|(x, y)| v(x, y)),
@@ -520,6 +558,7 @@ fn main() {
     let home = std::env::var_os("XDG_CONFIG_HOME").map(std::path::PathBuf::from).or_else(|| std::env::var_os("HOME").map(|h| std::path::PathBuf::from(h).join(".config"))).unwrap_or_default();
     let mut goo = Goo { world: World::new(1920.0, 1080.0, Config::default()), map: Map::default(), file: home.join("latteos/gooengine.json"), read_at: None, looked: Instant::now(), extra: serde_json::Value::Null, tier: 2.0, splash: 0.0, ripple_n: Vec::new(), gone_n: f32::NAN, landings: VecDeque::new(), told: Default::default(), count: [0.0; 5] };
     goo.settings();
+    watch_mouse(args.iter().position(|a| a == "--screen").and_then(|k| args.get(k + 1)).cloned());
     pleamar::provide_step(Box::new(move |dt, names, facts| goo.step(dt, names, facts)));
     pleamar::run();
 }

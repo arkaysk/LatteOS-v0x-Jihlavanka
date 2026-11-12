@@ -1,0 +1,10 @@
+// The shores' plates as shapes of the goo's own body: TrayShore in the bottom right corner and LensShore's line on
+// its edge are of the same matter as the drops and the level, so the level runs up into them, they take the
+// same light and the one outline goes round all of it (the user, 12 Nov: "the shore is still not part of the goo").
+// What is ON a plate (its buttons, the line's field) is drawn over it, in parts/shore.plm and parts/lensline.plm.
+part Plates {
+    // TrayShore: it reaches past the screen's corner, so only its corner towards the desktop is round
+    box { from: shore.x0, H - SHORE_H; size: (shore_w + 40) * if(shore_w > 0, 1, 0), SHORE_H + 40; corner: 16; blend: 10 }
+    // LensShore: at rest. With its panel out the panel's own body holds the plate (parts/cardframe.plm).
+    box { from: lens_a, if(lens_edge == 2, -40, H - 46); size: (lens_b - lens_a) * if(lens_shore and lens_b > lens_a and not (card_lens and card.p > 0.02), 1, 0), 86; corner: 18; blend: 10 }
+}

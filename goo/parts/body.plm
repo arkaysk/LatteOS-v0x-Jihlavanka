@@ -38,6 +38,7 @@ part Body {
         // The bottom edge is a band just under the screen: the drops come out of it and spread at it.
         box { from: 0, H; size: W, 40 }
         include "shapes.plm"
+        include "plates.plm"
     }
     // the coffee inside the glass: the same shapes, see-through, over what the glass bent
     body {
@@ -46,6 +47,7 @@ part Body {
         show: material > 0.02
         box { from: 0, H; size: W, 40 }
         include "shapes.plm"
+        include "plates.plm"
     }
 
     // The light of the sun or the moon, which are never seen, on the surface and on the goo that stands in it:
@@ -62,6 +64,8 @@ part Body {
             color: #ffffff
             box { from: 0, H; size: W, 40 }
             include "shapes.plm"
+            include "plates.plm"
+        include "plates.plm"
         }
     }
     // droplets that come off the cursor's drop when it turns back on itself at speed

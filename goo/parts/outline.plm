@@ -8,9 +8,9 @@ part Outline {
         border: 0 - look.outline, mix(coffee, cream, 0.4)
         box { from: 0, H; size: W, 40 }
         include "shapes.plm"
+        include "plates.plm"
         include "cardframe.plm"
-        // TrayShore's plate, and its panel when that is out
-        box { from: shore.x0, H - SHORE_H; size: (shore_w + 40) * if(shore_w > 0, 1, 0), SHORE_H + 40; corner: 16 }
+        // TrayShore's panel when it is out
         box { from: card.x0, card.ay - card.ch; size: (card.w + 40) * if(card_dock and card.p > 0.02, 1, 0), card.ch + 20; corner: 18 }
     }
 }

@@ -2269,9 +2269,11 @@ scene Session {
                 show: jbend
                 shader: jelly, jelly.lx, jelly.ly, clamp(grab.x / max(w, 1), 0, 1), clamp(grab.y / max(h, 1), 0, 1), JPAD
                 box { from: x - JPAD, y - JPAD; size: w + 2 * JPAD, h + 2 * JPAD; color: #000000; opacity: 0.4% }
+                box { from: x, y; size: w, h; corner: 12; color: #0c0e10 }
                 box { from: x, y; size: w, tb * hb.$i; corner: 12; color: cup.bar; opacity: if(glass.on > 0.5, 88%, 100%); show: hb.$i > 0.01 }
                 text win.$i.title { at: x + 14 + 28 * cvpt.$i, y + tb / 2 - tb * (1 - hb.$i); anchor: left center; size: 13; weight: 600; width: max(w - 110, 10); lines: 1; color: ink; opacity: hb.$i; show: hb.$i > 0.01 }
                 window win.$i { at: x, y + tb * hb.$i; size: w, max(h - tb * hb.$i, 1); ask: ask.w, ask.h - tb * ours; show: drawn and not win.$i.fullscreen and jbend }
+                box { from: x, y; size: w, h; corner: 12; stroke: 1.5; color: cup.edge; opacity: lit.$i * 70% }
             }
             group {
                 show: wet <= 0.001 and cold <= 0.001 and not jbend
@@ -2328,7 +2330,7 @@ scene Session {
                 box { at: x + w - 20, by; size: 8.5, 1.6; corner: 0.8; rotate: 45deg; color: #ffffff }
                 box { at: x + w - 20, by; size: 8.5, 1.6; corner: 0.8; rotate: -45deg; color: #ffffff }
             }
-            box { from: x, y; size: w, h; corner: 12; stroke: 1.5; color: cup.edge; opacity: lit.$i * 70% * (1 - ov) * smooth(0.75, 1, water) }
+            box { from: x, y; size: w, h; corner: 12; stroke: 1.5; color: cup.edge; opacity: lit.$i * 70% * (1 - ov) * smooth(0.75, 1, water) * if(jbend, 0, 1) }
             // LatteOS: a window says it itself, with its edge (system/hypr/latte/windows.lua): asking to be looked at, red and
             // quick until it is in front; playing a sound, pale and slow, not the one worked in; cut off the internet, cold steel
             box { from: x, y; size: w, h; corner: 12; stroke: 2.5; color: #e5484d; opacity: (55% + 45% * sin(edgeclock * 720)) * smooth(0.75, 1, water); show: win.$i.urgent }
@@ -3146,7 +3148,8 @@ scene Session {
             body {
                 color: #0c0e10
                 shadow: 0, 26, 50, 60%
-                box { from: x, y; size: w, h; corner: 12 }
+                // LatteOS: bent, the window's own back is in the jelly; this one draws in under it and keeps the shadow
+                box { from: x + if(jelly.bent and dragging == i and wet <= 0.001 and cold <= 0.001, 30, 0), y + if(jelly.bent and dragging == i and wet <= 0.001 and cold <= 0.001, 30, 0); size: w - if(jelly.bent and dragging == i and wet <= 0.001 and cold <= 0.001, 60, 0), h - if(jelly.bent and dragging == i and wet <= 0.001 and cold <= 0.001, 60, 0); corner: 12 }
             }
             let carried = dragging == i or (landing == i and win.$i.open and win.$i.screen != landing.to)
             let cbend = jelly.bent and dragging == i and wet <= 0.001 and cold <= 0.001
@@ -3155,9 +3158,11 @@ scene Session {
                 show: cbend
                 shader: jelly, jelly.lx, jelly.ly, clamp(grab.x / max(w, 1), 0, 1), clamp(grab.y / max(h, 1), 0, 1), JPAD
                 box { from: x - JPAD, y - JPAD; size: w + 2 * JPAD, h + 2 * JPAD; color: #000000; opacity: 0.4% }
+                box { from: x, y; size: w, h; corner: 12; color: #0c0e10 }
                 box { from: x, y; size: w, tb * hb.$i; corner: 12; color: cup.bar; show: hb.$i > 0.01 }
                 text win.$i.title { at: x + 14, y + tb / 2 - tb * (1 - hb.$i); anchor: left center; size: 12; weight: 500; width: max(w - 90, 10); lines: 1; color: ink; opacity: hb.$i; show: hb.$i > 0.01 }
                 window win.$i { at: x, y + tb * hb.$i; size: w, max(h - tb * hb.$i, 1); ask: win.$i.width, win.$i.height; show: carried and cbend }
+                box { from: x, y; size: w, h; corner: 12; stroke: 1.5; color: mint; opacity: 80% }
             }
             group {
                 show: wet <= 0.001 and cold <= 0.001 and not cbend
@@ -3184,7 +3189,8 @@ scene Session {
                 text win.$i.title { at: x + 14, y + tb / 2 - tb * (1 - hb.$i); anchor: left center; size: 12; weight: 500; width: max(w - 90, 10); lines: 1; color: ink; opacity: hb.$i; show: hb.$i > 0.01 }
                 window win.$i { at: x, y + tb * hb.$i; size: w, max(h - tb * hb.$i, 1); ask: win.$i.width, win.$i.height; show: carried and cold > 0.001 and wet <= 0.001 }
             }
-            box { from: x, y; size: w, h; corner: 12; stroke: 1.5; color: mint; opacity: 80% }
+            // (bent, the frame is the jelly's own, drawn with the window)
+            box { from: x, y; size: w, h; corner: 12; stroke: 1.5; color: mint; opacity: 80% * if(cbend, 0, 1) }
         }
     }
 

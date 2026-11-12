@@ -646,6 +646,7 @@
 /usr/share/latteos/goo/parts/body.plm                   <- goo/parts/body.plm
 /usr/share/latteos/goo/parts/cardframe.plm              <- goo/parts/cardframe.plm
 /usr/share/latteos/goo/parts/outline.plm                <- goo/parts/outline.plm
+/usr/share/latteos/goo/parts/plates.plm                 <- goo/parts/plates.plm
 /usr/share/latteos/goo/parts/shapes.plm                 <- goo/parts/shapes.plm
 /usr/share/latteos/goo/parts/card.plm                   <- goo/parts/card.plm
 /usr/share/latteos/goo/parts/waves.plm                   <- goo/parts/waves.plm

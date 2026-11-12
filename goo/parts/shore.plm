@@ -31,7 +31,7 @@ part Shore {
     group {
         show: shore_w > 0
         // the plate reaches past the screen's corner, so only its corner towards the desktop is round
-        box { from: shore.x0, H - SHORE_H; size: shore_w + 40, SHORE_H + 40; corner: 16; color: shore.plate }
+        // (the plate itself is a shape of the goo's body: parts/plates.plm)
         box { from: shore.x0 + 14, H - SHORE_H + 1; size: shore_w, 1; color: cream; opacity: 7% }
 
         // the arrow, in a round button
