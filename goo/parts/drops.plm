@@ -49,9 +49,11 @@ part Drops {
     fact ev.ly = 0
     fact ev.le = 0
     fact freed.e = 0
-    // The cursor as a drop (GOOENGINE-2.md §8): behind the pointer a belly of goo that lags, stretches at speed and
-    // swings when it brakes. From the standard tier up and where gooengine.json › cursor says so; `cur.on` is 0 else.
+    // The cursor as a drop (GOOENGINE-2.md §8): its tip is the pointer itself, the point a press lands on; its body
+    // hangs from the tip, is dragged behind it like a stick held by one end, stretches at speed and swings when
+    // the tip stops. From the standard tier up and where gooengine.json › cursor says so; `cur.on` is 0 else.
     fact cur.on = 0
+    fact cur.big = 0                           // 0…1: shaken, it grows to be found
     fact cur.st = 0                            // stretched the way it goes, and that way in radians
     fact cur.rot = 0
     fact cur.wob = 0                           // the swing left when it brakes, −1…1

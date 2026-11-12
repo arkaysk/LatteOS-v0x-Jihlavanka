@@ -163,6 +163,11 @@ pub struct Cursor {
     pub rot: f32,
     pub wobble: f32,
     wobble_v: f32,
+    /// 0…1: grown, to be found: it was shaken.
+    pub big: f32,
+    big_for: f32,
+    /// When it last turned back on itself, on the world's clock: three in a row are a shake.
+    turns: [f32; 3],
     pub there: bool,
     pub down: bool,
 }
@@ -367,7 +372,14 @@ impl World {
         if let Some(p) = input.pointer {
             let moved = if was.1 && dt > 1e-4 { (p - c.tip) * (1.0 / dt.max(1.0 / 240.0)) } else { V::default() };
             if !was.1 {
-                c.belly = p;
+                c.belly = p + v(self.cfg.cursor_dx, self.cfg.cursor_dy);
+            }
+            // turned back on itself three times within a second: it is being shaken, by someone who lost it
+            if moved.len() > 500.0 && c.vel.len() > 500.0 && moved.unit().dot(c.vel.unit()) < -0.3 {
+                c.turns = [c.turns[1], c.turns[2], self.clock];
+                if c.turns[0] > 0.0 && self.clock - c.turns[0] < 1.0 {
+                    c.big_for = 0.9;
+                }
             }
             // a turn back on itself at speed throws droplets off
             if moved.len() > 900.0 && c.vel.len() > 900.0 && moved.unit().dot(c.vel.unit()) < -0.3 {
@@ -425,7 +437,7 @@ impl World {
         self.surface.h.iter_mut().for_each(|h| *h = 0.0);
         self.surface.vel.iter_mut().for_each(|h| *h = 0.0);
         let c = &mut self.cursor;
-        (c.belly, c.belly_v, c.stretch, c.wobble, c.wobble_v) = (c.tip, V::default(), 0.0, 0.0, 0.0);
+        (c.belly, c.belly_v, c.stretch, c.wobble, c.wobble_v, c.big) = (c.tip + v(self.cfg.cursor_dx, self.cfg.cursor_dy), V::default(), 0.0, 0.0, 0.0, 0.0);
         self.stir = 0.0;
         self.owed = 0.0;
     }
@@ -674,29 +686,33 @@ impl World {
         self.joints.retain(|t| drops.get(t.a).is_some_and(Drop::there) && drops.get(t.b).is_some_and(Drop::there));
 
         // ── the cursor's own body ───────────────────────────────────────────────────────────────────────────
+        // Its tip IS the pointer: the point a press lands on, never late. Its belly hangs from the tip as a drop
+        // from a needle, down and to the right at rest as an arrow's body lies; moved, it is dragged behind like a
+        // stick held by one end, longer at speed, and swings back when the tip stops.
         let c = &mut self.cursor;
         if c.there && cfg.cursor_body > 0.5 {
-            let off = c.belly - c.tip;
+            let rest = v(cfg.cursor_dx, cfg.cursor_dy) * if c.down { 0.8 } else { 1.0 };
+            let off = c.belly - (c.tip + rest);
             let before = c.belly_v;
             c.belly_v += (off * -cfg.cursor_k + c.belly_v * -cfg.cursor_c) * h;
             c.belly += c.belly_v * h;
-            // the belly is never further behind than its neck is long: past that it is dragged along
-            let behind = c.belly - c.tip;
-            if behind.len() > cfg.cursor_tail {
+            // a neck of goo: it gives, from a little shorter than at rest to as long as `cursor_tail` lets it
+            let (behind, long) = (c.belly - c.tip, rest.len());
+            let far = behind.len().clamp(long * 0.75, long * cfg.cursor_tail);
+            if far != behind.len() {
                 let out = behind.unit();
-                c.belly = c.tip + out * cfg.cursor_tail;
-                c.belly_v = c.belly_v - out * c.belly_v.dot(out).max(0.0);
+                c.belly = c.tip + out * far;
+                c.belly_v = c.belly_v - out * c.belly_v.dot(out);
             }
             // what is left when it brakes: the mass goes on and swings back, two swings and still
             let braking = (before - c.belly_v).len() / h;
             c.wobble_v += (-260.0 * c.wobble - 9.0 * c.wobble_v) * h + braking * 0.000_006;
             c.wobble = (c.wobble + c.wobble_v * h).clamp(-1.0, 1.0);
-            let fast = c.vel.len();
-            c.stretch += ((fast / 2000.0 * 0.35).min(0.5) - c.stretch) * (h * 20.0).min(1.0);
-            if fast > 30.0 {
-                c.rot = c.vel.y.atan2(c.vel.x);
-            }
-            energy += (c.belly - c.tip).len() * 0.2 + c.belly_v.len() * 0.02 + c.wobble.abs() * 20.0 + c.stretch * 20.0;
+            c.stretch = ((c.belly - c.tip).len() / long - 1.0).max(0.0);
+            c.rot = (c.belly.y - c.tip.y).atan2(c.belly.x - c.tip.x);
+            c.big_for = (c.big_for - h).max(0.0);
+            c.big += (if c.big_for > 0.0 { 1.0 } else { 0.0 } - c.big) * (h * 12.0).min(1.0);
+            energy += off.len() * 0.2 + c.belly_v.len() * 0.02 + c.wobble.abs() * 20.0 + c.big * 30.0;
         }
         energy
     }

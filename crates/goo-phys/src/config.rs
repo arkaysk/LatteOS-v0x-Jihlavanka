@@ -50,8 +50,10 @@ config! {
     tip = 0.6, "the longest tip it reaches out, in radii";
     wake = 1.0, "how hard a fast cursor drags drops and the level along";
     cursor_body = 1.0, "1: the cursor is a drop with a belly that lags and swings; 0: it only attracts";
-    cursor_tail = 22.0, "px its belly may lag behind its tip";
-    cursor_k = 520.0, "stiffness between the cursor's tip and its belly";
+    cursor_dx = 7.0, "where its belly hangs from its tip at rest, px: to the right…";
+    cursor_dy = 15.0, "…and down, as an arrow's body lies";
+    cursor_tail = 1.7, "how many times its length at rest its neck may stretch";
+    cursor_k = 620.0, "stiffness between the cursor's tip and its belly";
     cursor_c = 26.0, "its damping";
     // drops against each other
     push = 900.0, "how hard two overlapping drops push apart";

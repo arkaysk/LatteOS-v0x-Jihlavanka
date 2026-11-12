@@ -38,6 +38,7 @@
  "cursor": {
   "mode": "adaptive",
   "lift": "glow",
-  "live": true
+  "live": true,
+  "hide_arrow": true
  }
 }

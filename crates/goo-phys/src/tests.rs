@@ -159,26 +159,39 @@ fn tier_zero_moves_nothing() {
 }
 
 #[test]
-fn the_cursor_is_a_drop() {
+fn the_cursor_is_a_drop_with_a_tip() {
     let mut w = world();
+    let rest = v(w.cfg.cursor_dx, w.cfg.cursor_dy);
     let mut x = 100.0;
     for _ in 0..30 {
-        x += 30.0; // 1800 px/s
+        x += 30.0; // 1800 px/s to the right
         w.step(1.0 / 60.0, &Input { pointer: Some(v(x, 300.0)), ..Input::default() });
     }
-    assert!(w.cursor.stretch > 0.2, "longer at speed: {}", w.cursor.stretch);
-    assert!(w.cursor.belly.x < w.cursor.tip.x - 5.0, "its belly behind it");
-    assert_eq!(w.cursor.tip, v(x, 300.0), "the tip is the pointer itself");
+    assert_eq!(w.cursor.tip, v(x, 300.0), "the tip is the pointer itself, never late");
+    assert!(w.cursor.belly.x < w.cursor.tip.x - 8.0, "its belly is dragged behind, like a stick held by one end: {:?}", w.cursor.belly - w.cursor.tip);
+    assert!(w.cursor.stretch > 0.2, "and its neck is longer at speed: {}", w.cursor.stretch);
     let stop = Input { pointer: Some(v(x, 300.0)), ..Input::default() };
-    w.step(1.0 / 60.0, &stop);
     let mut swung = 0.0f32;
     for _ in 0..20 {
         w.step(1.0 / 60.0, &stop);
-        swung = swung.max(w.cursor.wobble.abs());
+        swung = swung.max(w.cursor.belly.x - w.cursor.tip.x - rest.x);
     }
-    assert!(swung > 0.02, "it swings when it brakes: {swung}");
+    assert!(swung > 0.5, "it swings past its rest when the tip stops: {swung}");
     assert_eq!(run(&mut w, 3.0, 60.0, &stop), 0.0, "and is still");
-    assert_eq!(w.cursor.belly, w.cursor.tip);
+    assert_eq!(w.cursor.belly, w.cursor.tip + rest, "hanging down and to the right, as an arrow lies");
+}
+
+#[test]
+fn a_shaken_cursor_grows_to_be_found() {
+    let mut w = world();
+    let mut x = 500.0f32;
+    for i in 0..40 {
+        x += if (i / 5) % 2 == 0 { 30.0 } else { -30.0 }; // back and forth, five frames each way
+        w.step(1.0 / 60.0, &Input { pointer: Some(v(x, 300.0)), ..Input::default() });
+    }
+    assert!(w.cursor.big > 0.5, "{}", w.cursor.big);
+    assert_eq!(run(&mut w, 4.0, 60.0, &Input { pointer: Some(v(x, 300.0)), ..Input::default() }), 0.0);
+    assert_eq!(w.cursor.big, 0.0, "and is its own size again");
 }
 
 #[test]

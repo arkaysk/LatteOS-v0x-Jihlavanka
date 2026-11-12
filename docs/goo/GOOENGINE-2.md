@@ -356,6 +356,36 @@ Tvary podľa toho, čo ukazovateľ robí: **šípka** (kvapka s hrotom vľavo ho
 zaguľatí do prsta), **písanie** (zvislá tenká kvapka), **ťahanie** (kvapka sa zovrie). Prechod medzi nimi je
 pretečenie, nie výmena obrázka. Farba: káva používateľa s jedným svetlým odleskom; obrys podľa §7.
 
+### 8.0 Druhé znenie (používateľ 12. 11.)
+
+**Pravidlo:** kurzor má vlastnosti kvapky, ale **bod presného kliku — špička ukazovateľa — je hrot**. Nikdy nemešká
+a nikdy nie je rozmazaný.
+
+**Čo som si pozrel** (správanie, nie kód):
+
+- [hypr-dynamic-cursors](https://github.com/VirtCode/hypr-dynamic-cursors) (Hyprland, MIT): kurzor ako **palička
+  ťahaná za jeden koniec** (režim *rotate*), naklonenie a natiahnutie podľa rýchlosti, a **zatrasením sa zväčší**,
+  aby sa dal nájsť. To je najbližšie k cieľu a z neho je model: hrot je pevný bod, telo sa okolo neho otáča.
+- Zatrasenie na nájdenie kurzora poznajú aj macOS a KDE; je to jediný z týchto efektov, ktorý je aj užitočný.
+- iPadOS: ukazovateľ sa pri cieli **zleje s tlačidlom**. U nás to robí hmota sama — kurzor pri kvapke s ňou splynie.
+- Webové „magnetické“ a stopové kurzory (supermouse, cursor-effects): pružinová stopa za kurzorom; z nich nič
+  nepreberáme, stopu máme z fyziky.
+
+**Model (`goo-phys`):** hrot = ukazovateľ, bez pružiny. Bruško visí z hrotu vpravo dole (7, 15 px — ako leží telo
+šípky) na pružine; pri pohybe ho hrot ťahá za sebou, krk sa natiahne najviac na 1,7 násobok, po zastavení sa
+bruško prehupne a ustáli. Stlačenie tlačidla telo stiahne o pätinu. Tri obraty do sekundy = trasenie: kurzor
+narastie na 2,4 násobok a do sekundy sa vráti.
+
+**Kreslenie:** štyri kruhy od hrotu (polomer 0,6 px) po bruško (7,2 px), zliate do kužeľa so zaobleným koncom;
+sú súčasťou hmoty, takže majú ten istý obrys a pri kvapke sa s ňou zlejú.
+
+**Skrytie systémového kurzora — `patches/pleamar-wm-shell-cursor.patch`:** `latte-goo` zapíše svoje číslo procesu
+do `$XDG_RUNTIME_DIR/pleamar-wm-shell-cursor`; pleamar-wm raz za sekundu pozrie a svoj kurzor skryje, kým ten
+proces žije. Tri poistky: (1) skrýva sa **iba obyčajná šípka** — kurzor nad textom, na hrane okna, ruka aj vlastný
+kurzor programu ostávajú systémové, lebo ich tvar scéna nepozná; (2) nikdy nad oknom na celú obrazovku ani pri
+zámku; (3) keď `latte-goo` spadne, kurzor sa do sekundy vráti. Vypínač: `cursor.hide_arrow` v `gooengine.json`.
+**Platí až po novom prihlásení** (nový pleamar-wm) a na obrazovke to **overené nie je**.
+
 ### 8.2 Kde sa kreslí — a riziko
 
 Systémový kurzor kreslí pleamar-wm na kurzorovej rovine grafickej karty z témy `XCURSOR_THEME` **[zdroj]**; má
@@ -826,6 +856,7 @@ aby sa dala spojiť s ostatnými doskami v jednej hmote, musí sa jej doska kres
 | 12. 11. | 4 — jeden obrys (náhradná cesta z §7) | výplne ostávajú vo svojich telách (kvapky, karta so svojím materiálom, doska), nad nimi je **jedno duté telo iba s obrysom** zo všetkých tvarov: kvapky, vlákna, hladina, rám karty s uchom, doska TrayShore a jej panel (`goo/parts/outline.plm`, `cardframe.plm`). Kde sa tvary zlejú alebo prekryjú, čiara nie je. Svetlejšie podkladové rámčeky dosiek (`shore.rim`) odišli. Duté telo je nová záplata `pleamar-hollow-body.patch` (`border:` so zápornou šírkou); číre sklo s obrysom fungovalo tiež, ale stálo 8,3 ms procesora na snímku namiesto 3,0. Karta ako súčasť **jednej výplne** (bod 2–5 §7) sa nerobila: jej sklo a farba panela by sa museli prepísať |
 | 12. 11. | 5 — karty a Shore (časť) | dve pružiny: von `land` s dvoma odskokmi, dnu `shut` kriticky tlmená — zatvorenie z 1 na 0 za necelých 200 ms bez návratu; `card_alive` a časovač 120 ms v `card.luau` zrušené. Obsah zhasne prvý (70 ms). Ucho sa pred otvorením prikrčí a po zatvorení nafúkne a rozvlní hladinu pod sebou. Panel TrayShore pri vysunutí a zasunutí štuchne hladinu pri konci dosky. **Nerobené:** vlna po obryse karty pri rozliatí (`cardrip` z Vitreusu), samostatné fázy nádych–výron–rozliatie nad rámec dnešného tvaru (šírka rastie s t³, takže karta už vychádza úzka a rozlieva sa), LensShore |
 | 12. 11. | 6 — kurzor (bezpečná časť) | kurzor má **telo z goo**: pod systémovým kurzorom hrot a za ním bruško z jadra, ktoré mešká (najviac 22 px), pri rýchlosti sa natiahne a pri zabrzdení zakýve; je súčasťou hmoty (obrys, zlieva sa s kvapkou), pri prudkom obrate z neho odletia kvapôčky. Zapnuté od stupňa 2 a keď `gooengine.json` › `cursor.live` (relácia na latte-lab má `LATTE_TIER=full`, teda je zapnuté). Kurzor ďaleko od kvapiek a hladiny už svet nebudí, keď telo nemá. **Nerobené:** skrytie systémového kurzora (záplata pleamar-wm — nedá sa overiť bez nového prihlásenia a hrozí neviditeľný kurzor nad oknom na celú obrazovku), téma xcursor „LatteOS Goo“ (chýba `xcursorgen` a kresby), adaptívna farba, tvary ruka/písanie/ťahanie, Nastavenia › Kurzor |
+| 12. 11. | 6 — kurzor, druhé znenie | hrot je ukazovateľ, telo visí z hrotu a ťahá sa ako palička za koniec, zatrasenie ho zväčší (§8.0); skrytie systémovej šípky záplatou `pleamar-wm-shell-cursor.patch` s tromi poistkami. 20 testov jadra |
 | 12. 11. | 3 — scéna na jadre | `drops.plm` číta polohy z `g.*`, hladinu z `h.*`; `time` v `goo.plm` a `side.plm` nahradil `tick`, ktorý beží iba pri `stir > 0`, otvorenej karte, klávesnici alebo pulzujúcom jadre. `latte-goo` číta záznam `goo.k.*` priamo, rozhranie kvapiek sa nezmenilo. Z `engine.luau` odišli `GRAVITY`, časovače pádu a zvláštny prípad dosky (doska je stena, kvapka z nej odskočí). Pustená kvapka letí v smere hodu (`goo_landed`), pri boku a hore sa prilepí (do 130 px, pomalá). Okno do BarGoo hádže jadro. Overené bez obrazovky (pokoj, kurzor, hod) a nasadené: **Goo v pokoji berie 1 % jadra** (predtým 17–44 %) |
 
 **Čo krok 3 zatiaľ nerobí (vedome):**

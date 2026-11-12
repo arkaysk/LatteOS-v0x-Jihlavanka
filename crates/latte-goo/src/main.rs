@@ -17,7 +17,8 @@
 //!                                         for `rotate:`; tipa in degrees, for `sin()` and `cos()`)
 //!           h.i                           the level's height in column i
 //!           j.on.k j.w.k j.ax.k j.ay.k j.bx.k j.by.k    the thread from drop k
-//!           cur.x cur.y cur.st cur.rot cur.wob cur.tailx cur.taily     the cursor as a drop
+//!           cur.on cur.big cur.x cur.y cur.st cur.rot cur.wob cur.tailx cur.taily     the cursor as a drop: whether,
+//!                                         grown to be found, its tip, its neck's stretch and angle, its belly from its tip
 //!           stir tier                     energy left 0…1; the tier 0…3
 //!           ev.landed ev.bumped ev.joined ev.parted ev.flicked   one event each: a running number × 4096 + what
 //!                                         (the drop; for a bump, drop × 64 + the other; for a flick, how many)
@@ -196,7 +197,7 @@ impl Goo {
         self.ripple_n = vec![f32::NAN; m.ripples.len()];
         self.gone_n = f32::NAN;
         m.walls = (0..32).map_while(|n| at(&format!("wall.{n}.x0")).map(|x0| [Some(x0), at(&format!("wall.{n}.y0")), at(&format!("wall.{n}.x1")), at(&format!("wall.{n}.y1"))])).collect();
-        for n in ["screen.width", "screen.height", "cursor.x", "cursor.y", "pointer.x", "pointer.y", "cur.down", "gale", "splash.n", "splash.x", "splash.w", "splash.p", "stir", "tier", "cur.on", "cur.x", "cur.y", "cur.st", "cur.rot", "cur.wob", "cur.tailx", "cur.taily", "ev.landed", "ev.bumped", "ev.joined", "ev.parted", "ev.flicked", "ev.lx", "ev.ly", "ev.le",
+        for n in ["screen.width", "screen.height", "cursor.x", "cursor.y", "pointer.x", "pointer.y", "cur.down", "gale", "splash.n", "splash.x", "splash.w", "splash.p", "stir", "tier", "cur.on", "cur.big", "cur.x", "cur.y", "cur.st", "cur.rot", "cur.wob", "cur.tailx", "cur.taily", "ev.landed", "ev.bumped", "ev.joined", "ev.parted", "ev.flicked", "ev.lx", "ev.ly", "ev.le",
             "gone_n", "gone.x0", "gone.y0", "gone.x1", "going.x", "going.y", "going.on", "shore_w", "lens_edge", "lens_a", "lens_b"] {
             if let Some(k) = at(n) {
                 m.one.insert(n, k);
@@ -218,6 +219,18 @@ impl Goo {
                 if let Some(x) = x {
                     m.settings.push((k, x));
                 }
+            }
+        }
+        // A scene that draws the cursor as a drop stands in for the session's arrow: pleamar-wm hides its own while
+        // this process lives and says so (patches/pleamar-wm-shell-cursor.patch), and only the plain arrow, never
+        // over a window that has the whole screen. Another window manager never reads the file.
+        if let Some(dir) = std::env::var_os("XDG_RUNTIME_DIR").filter(|_| m.one.contains_key("cur.on")) {
+            let marker = std::path::Path::new(&dir).join("pleamar-wm-shell-cursor");
+            let ours = std::process::id().to_string();
+            if self.world.cfg.cursor_body > 0.5 && self.extra["cursor"]["hide_arrow"].as_bool() != Some(false) {
+                let _ = std::fs::write(&marker, &ours);
+            } else if std::fs::read_to_string(&marker).is_ok_and(|s| s.trim() == ours) {
+                let _ = std::fs::remove_file(&marker);
             }
         }
         self.world.drops.resize_with(m.slots.len() + 1, || Drop::new(v(0.0, 0.0), 0.0, Edge::Bottom));
@@ -446,7 +459,7 @@ impl Goo {
         }
         let c = &w.cursor;
         let g = &w.drops[ghost];
-        for (n, x) in [("going.x", g.pos.x), ("going.y", g.pos.y), ("going.on", (g.r > 0.0) as u32 as f32), ("stir", stir), ("tier", self.tier), ("cur.on", w.cfg.cursor_body), ("cur.x", c.tip.x), ("cur.y", c.tip.y), ("cur.st", c.stretch), ("cur.rot", c.rot), ("cur.wob", c.wobble), ("cur.tailx", c.belly.x - c.tip.x), ("cur.taily", c.belly.y - c.tip.y)] {
+        for (n, x) in [("going.x", g.pos.x), ("going.y", g.pos.y), ("going.on", (g.r > 0.0) as u32 as f32), ("stir", stir), ("tier", self.tier), ("cur.on", w.cfg.cursor_body), ("cur.big", c.big), ("cur.x", c.tip.x), ("cur.y", c.tip.y), ("cur.st", c.stretch), ("cur.rot", c.rot), ("cur.wob", c.wobble), ("cur.tailx", c.belly.x - c.tip.x), ("cur.taily", c.belly.y - c.tip.y)] {
             if let Some(k) = m.one.get(n) {
                 facts[*k] = x;
             }

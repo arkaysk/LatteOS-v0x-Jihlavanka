@@ -1,0 +1,135 @@
+diff --git a/src/config.rs b/src/config.rs
+index df1f9c9..8fc5096 100644
+--- a/src/config.rs
++++ b/src/config.rs
+@@ -547,6 +547,19 @@ pub fn idle_hold_path() -> std::path::PathBuf {
+     std::path::PathBuf::from(dir).join("pleamar-wm-idle-hold")
+ }
+ 
++/// The file that says a shell draws the cursor itself (`pleamar-wm cursor shell PID`): it holds that
++/// program's process number, and counts only while that process lives, so a shell that crashes cannot
++/// leave the session without a cursor.
++pub fn shell_cursor_path() -> std::path::PathBuf {
++    let dir = std::env::var("XDG_RUNTIME_DIR").ok().filter(|d| !d.is_empty()).unwrap_or_else(|| "/tmp".into());
++    std::path::PathBuf::from(dir).join("pleamar-wm-shell-cursor")
++}
++
++/// Whether that file names a process that is alive.
++pub fn shell_cursor() -> bool {
++    std::fs::read_to_string(shell_cursor_path()).ok().and_then(|s| s.trim().parse::<u32>().ok()).is_some_and(|pid| std::path::Path::new(&format!("/proc/{pid}")).exists())
++}
++
+ /// The session's configuration, read once.
+ pub fn get() -> &'static Config {
+     static CONFIG: OnceLock<Config> = OnceLock::new();
+diff --git a/src/layers.rs b/src/layers.rs
+index ba70a5c..d4c2096 100644
+--- a/src/layers.rs
++++ b/src/layers.rs
+@@ -598,9 +598,42 @@ pub fn set_cursor_hidden_sink(tx: channel::Sender<bool>) {
+     *CURSOR_HIDDEN.lock().unwrap() = Some(tx);
+ }
+ 
++/// What a program asked (`hide_cursor`), and whether a shell draws the cursor itself (`shell_draws_cursor`).
++static PROGRAM_HIDES: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
++static SHELL_DRAWS: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
++/// Whether the cursor to show is the plain arrow: a shell's own cursor stands in for that one only.
++static PLAIN_ARROW: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(true);
++
+ /// Told only when it changes: a program's cursor changes on every link.
+ pub fn hide_cursor(hidden: bool) {
+-    if HIDDEN_NOW.swap(hidden, std::sync::atomic::Ordering::Relaxed) == hidden {
++    PROGRAM_HIDES.store(hidden, std::sync::atomic::Ordering::Relaxed);
++    cursor_as_asked();
++}
++
++/// A shell that draws the cursor as part of its own scene (`pleamar-wm cursor shell PID`): the session's is
++/// hidden meanwhile. Never over a window that has the whole screen, nor while the session is locked: the
++/// shell is not seen there, and a cursor nobody draws is a mouse that is lost.
++pub fn shell_draws_cursor(yes: bool) {
++    if SHELL_DRAWS.swap(yes, std::sync::atomic::Ordering::Relaxed) != yes {
++        cursor_as_asked();
++    }
++}
++
++/// The shape the session would show: the arrow, or anything else (a text's beam, an edge to stretch, a hand, a
++/// program's own picture). A shell's cursor replaces the arrow alone: every other shape says something the
++/// shell does not know, and is shown as ever.
++pub fn shell_cursor_plain(arrow: bool) {
++    if PLAIN_ARROW.swap(arrow, std::sync::atomic::Ordering::Relaxed) != arrow {
++        cursor_as_asked();
++    }
++}
++
++/// The cursor hidden or shown by what is asked of it now: called again whenever a part of that changes.
++pub fn cursor_as_asked() {
++    use std::sync::atomic::Ordering::Relaxed;
++    let covered = locked() || MONITORS.lock().unwrap().iter().any(|(_, sc)| sc.0.lock().unwrap().fullscreen);
++    let hidden = PROGRAM_HIDES.load(Relaxed) || (SHELL_DRAWS.load(Relaxed) && !covered && PLAIN_ARROW.load(Relaxed));
++    if HIDDEN_NOW.swap(hidden, Relaxed) == hidden {
+         return;
+     }
+     if let Some(tx) = CURSOR_HIDDEN.lock().unwrap().as_ref() {
+diff --git a/src/main.rs b/src/main.rs
+index e863e92..e279be5 100644
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -98,6 +98,28 @@ fn main() {
+     if args.first().map(String::as_str) == Some("remote") {
+         std::process::exit(remote::run(&args[1..]));
+     }
++    // `pleamar-wm cursor shell PID|session|status`: a shell (that process) draws the cursor in its own scene and
++    // the session hides its own, until `session` is said or the process is gone. Within a second.
++    if args.first().map(String::as_str) == Some("cursor") {
++        let path = config::shell_cursor_path();
++        match (args.get(1).map(String::as_str), args.get(2).and_then(|p| p.parse::<u32>().ok())) {
++            (Some("shell"), Some(pid)) => {
++                if let Err(e) = std::fs::write(&path, pid.to_string()) {
++                    eprintln!("cursor · {}: {e}", path.display());
++                    std::process::exit(1);
++                }
++            }
++            (Some("session"), _) => {
++                let _ = std::fs::remove_file(&path);
++            }
++            (Some("status"), _) => println!("{}", if config::shell_cursor() { "shell" } else { "session" }),
++            _ => {
++                eprintln!("cursor · `pleamar-wm cursor shell PID|session|status`");
++                std::process::exit(1);
++            }
++        }
++        return;
++    }
+     // `pleamar-wm idle hold|release|status`: keep the monitors from going dark
+     // (`idle off-after`) while the session runs, and let them go dark again.
+     if args.first().map(String::as_str) == Some("idle") {
+diff --git a/src/session.rs b/src/session.rs
+index 6ac8e01..53708aa 100644
+--- a/src/session.rs
++++ b/src/session.rs
+@@ -1365,6 +1365,7 @@ impl State {
+         // A program's own, on every monitor (as it is: not turned). The
+         // theme's stops turning meanwhile.
+         if let Some((bo, hot, picture)) = &self.custom {
++            layers::shell_cursor_plain(false);
+             let (image, hot) = (|| CursorImage { size: Buffer::size(bo), format: Buffer::format(bo), pitch: Buffer::pitch(bo), handle: Buffer::handle(bo) }, *hot);
+             let crtcs: Vec<_> = self.monitors.iter().filter_map(|m| m.crtc).collect();
+             layers::set_pointer_picture((!self.hidden).then(|| picture.clone()));
+@@ -1383,6 +1384,7 @@ impl State {
+         let want = if matches!(self.route.hit, Hit::Client(..)) { self.program_cursor } else { self.scene_cursor };
+         // A shape the theme lacks is shown as the arrow.
+         let want = if self.load_cursor(want.name()) { want } else { Cursor::Normal };
++        layers::shell_cursor_plain(want == Cursor::Normal);
+         if !self.load_cursor(want.name()) || self.shown == Some(want) {
+             self.queued = None;
+             return;
+@@ -1877,6 +1879,9 @@ impl State {
+     /// Once a second: dark after `idle off-after` seconds without input,
+     /// unless a program keeps the screen awake or `pleamar-wm idle hold` was said.
+     fn idle_check(&mut self) {
++        // (the same second: whether a shell draws the cursor itself, and whether what would cover it changed)
++        layers::shell_draws_cursor(config::shell_cursor());
++        layers::cursor_as_asked();
+         let Some(secs) = config::get().off_after else { return };
+         if !self.dark_for_idle && !layers::inhibited() && !config::idle_hold_path().exists() && self.last_input.elapsed() > Duration::from_secs(secs) && self.monitors.iter().any(|m| m.on) {
+             println!("session · {secs} s without input: the monitors go dark");

@@ -491,3 +491,4 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 - **Vlákno je následok zlepenia** (12. 11.): vzniká pri odďaľovaní vecí, ktoré sa dotkli, a trvá do pretrhnutia; nikdy pri približovaní, kým zlepené nie sú. Padajúca kvapka nemá vlákno k okraju ani k inému Goo.
 - **Gravitácia je iba dole** (12. 11.): k bokom ani k stropu nič nepadá, ale Goo sa na bok či strop dokáže prilepiť.
 - **Hladina podobnejšia prihlasovaniu** (12. 11.): vlnenie bolo skoro nepoznateľné. Hladina má byť prirodzenejšia, ako v Greeteri, ale iba 2D (bez šikmého pohľadu na more), nasvietená slnkom alebo mesiacom, ktoré nevidno: ráno pri východe ten okraj hladiny a okolité okraje Goo.
+- **Kurzor** (12. 11.): má vlastnosti kvapky, ale bod presného kliku, špička ukazovateľa, je hrot. Systémový kurzor sa skryje (iba obyčajná šípka; ostatné tvary ostávajú systémové — rozhodnutie Clauda kvôli tvarom, ktoré scéna nepozná).

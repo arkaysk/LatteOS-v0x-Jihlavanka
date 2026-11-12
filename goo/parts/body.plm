@@ -65,7 +65,7 @@ part Body {
         }
     }
     // droplets that come off the cursor's drop when it turns back on itself at speed
-    particles { at: cursor.x + 6, cursor.y + 10; count: 3; life: 0.5s .. 0.9s; speed: 40 .. 160; direction: 90deg; spread: 160deg
+    particles { at: cursor.x + cur.tailx, cursor.y + cur.taily; count: 3; life: 0.5s .. 0.9s; speed: 40 .. 160; direction: 90deg; spread: 160deg
                 gravity: 0, 900; drag: 0.4; size: 4, 2; colors: coffee, coffee; opacity: 95%, 60%; shape: dot; burst: goo_flick; show: cur.on > 0.5 }
     // droplets thrown up where a drop went into the surface
     particles { at: ev.lx, H - LEVEL - 4; area: 30, 4; count: 22; life: 0.35s .. 0.8s; speed: 140 .. 360; direction: -90deg; spread: 75deg
