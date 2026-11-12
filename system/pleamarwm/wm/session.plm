@@ -293,6 +293,30 @@ scene Session {
         lag.y: mouse.y ~0ms
     }
 
+    // LatteOS: a window is jelly (ROADMAP 1D.27, docs/goo/GOOENGINE-2.md §10.1). One point chases the hand on a
+    // spring that overshoots: how far the hand is ahead of it is how far the window's far corners lag behind
+    // (shaders/jelly.wgsl), and when the window is let go the point swings in to where it was left, twice and still.
+    // Only the window carried last has it; at rest nothing reads it and no group gets a pass of its own.
+    shader jelly = file "shaders/jelly.wgsl"
+    spring wobble = 240, 11
+    fact jelly.on = 1                    // Settings may switch it off (gooengine.json › effects.wobble)
+    fact jelly.win = -1                  // the window carried last
+    fact jelly.rx = 0                    // where the hand let go of it
+    fact jelly.ry = 0
+    prop jelly.x = 0 ~wobble
+    prop jelly.y = 0 ~wobble
+    let jelly.tx = if(dragging >= 0, mouse.x, jelly.rx)
+    let jelly.ty = if(dragging >= 0, mouse.y, jelly.ry)
+    follow jelly.x = jelly.tx
+    follow jelly.y = jelly.ty
+    // (a rule's `while` sees the frame before: `dragging < 0` there is a carry that begins, `>= 0` one that ends)
+    on change dragging while dragging < 0 { jelly.win = dragging; jelly.x: mouse.x ~0ms; jelly.y: mouse.y ~0ms }
+    on change dragging while dragging >= 0 { jelly.rx = mouse.x; jelly.ry = mouse.y }
+    let jelly.lx = jelly.tx - jelly.x
+    let jelly.ly = jelly.ty - jelly.y
+    let jelly.bent = jelly.on > 0.5 and abs(jelly.lx) + abs(jelly.ly) > 0.6
+    let JPAD = 70
+
     // The agents' and the wires' own clock: it turns only while something of theirs moves —an agent working or
     // waiting, a wire carrying something—. Naming `time` kept the clock going from the start, with no agent at all,
     // and the compositor never slept (#36: 70–105 % of a core at idle). Only copy 0 turns it: what is loose here
@@ -2239,8 +2263,18 @@ scene Session {
             }
             // Without the keyboard, only its title bar steps back: what it shows
             // stays as it is (a video left playing on another monitor, full colour).
+            let jbend = jelly.bent and jelly.win == i and dragging < 0 and water >= 0.999 and wet <= 0.001 and cold <= 0.001
+            // LatteOS: let go a moment ago, it still swings (the same title bar and window, bent by jelly.wgsl)
             group {
-                show: wet <= 0.001 and cold <= 0.001
+                show: jbend
+                shader: jelly, jelly.lx, jelly.ly, clamp(grab.x / max(w, 1), 0, 1), clamp(grab.y / max(h, 1), 0, 1), JPAD
+                box { from: x - JPAD, y - JPAD; size: w + 2 * JPAD, h + 2 * JPAD; color: #000000; opacity: 0.4% }
+                box { from: x, y; size: w, tb * hb.$i; corner: 12; color: cup.bar; opacity: if(glass.on > 0.5, 88%, 100%); show: hb.$i > 0.01 }
+                text win.$i.title { at: x + 14 + 28 * cvpt.$i, y + tb / 2 - tb * (1 - hb.$i); anchor: left center; size: 13; weight: 600; width: max(w - 110, 10); lines: 1; color: ink; opacity: hb.$i; show: hb.$i > 0.01 }
+                window win.$i { at: x, y + tb * hb.$i; size: w, max(h - tb * hb.$i, 1); ask: ask.w, ask.h - tb * ours; show: drawn and not win.$i.fullscreen and jbend }
+            }
+            group {
+                show: wet <= 0.001 and cold <= 0.001 and not jbend
                 shader: tide, water while water < 0.999
                 clip box { from: x, y; size: w, h; corner: 12 }
                 box { from: x, y; size: w, tb * hb.$i; color: cup.bar; opacity: if(glass.on > 0.5, 88%, 100%); show: hb.$i > 0.01 }
@@ -3115,8 +3149,18 @@ scene Session {
                 box { from: x, y; size: w, h; corner: 12 }
             }
             let carried = dragging == i or (landing == i and win.$i.open and win.$i.screen != landing.to)
+            let cbend = jelly.bent and dragging == i and wet <= 0.001 and cold <= 0.001
+            // LatteOS: carried, it is jelly: held where the hand has it, the rest of it lags and swings
             group {
-                show: wet <= 0.001 and cold <= 0.001
+                show: cbend
+                shader: jelly, jelly.lx, jelly.ly, clamp(grab.x / max(w, 1), 0, 1), clamp(grab.y / max(h, 1), 0, 1), JPAD
+                box { from: x - JPAD, y - JPAD; size: w + 2 * JPAD, h + 2 * JPAD; color: #000000; opacity: 0.4% }
+                box { from: x, y; size: w, tb * hb.$i; corner: 12; color: cup.bar; show: hb.$i > 0.01 }
+                text win.$i.title { at: x + 14, y + tb / 2 - tb * (1 - hb.$i); anchor: left center; size: 12; weight: 500; width: max(w - 90, 10); lines: 1; color: ink; opacity: hb.$i; show: hb.$i > 0.01 }
+                window win.$i { at: x, y + tb * hb.$i; size: w, max(h - tb * hb.$i, 1); ask: win.$i.width, win.$i.height; show: carried and cbend }
+            }
+            group {
+                show: wet <= 0.001 and cold <= 0.001 and not cbend
                 clip box { from: x, y; size: w, h; corner: 12 }
                 box { from: x, y; size: w, tb * hb.$i; color: cup.bar; show: hb.$i > 0.01 }
                 text win.$i.title { at: x + 14, y + tb / 2 - tb * (1 - hb.$i); anchor: left center; size: 12; weight: 500; width: max(w - 90, 10); lines: 1; color: ink; opacity: hb.$i; show: hb.$i > 0.01 }

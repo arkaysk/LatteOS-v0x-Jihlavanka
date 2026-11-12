@@ -699,6 +699,7 @@
 /usr/share/latteos/pleamarwm/wm/shaders/rain.wgsl       <- system/pleamarwm/wm/shaders/rain.wgsl
 /usr/share/latteos/pleamarwm/wm/shaders/snow.wgsl       <- system/pleamarwm/wm/shaders/snow.wgsl
 /usr/share/latteos/pleamarwm/wm/shaders/tide.wgsl       <- system/pleamarwm/wm/shaders/tide.wgsl
+/usr/share/latteos/pleamarwm/wm/shaders/jelly.wgsl      <- system/pleamarwm/wm/shaders/jelly.wgsl
 /usr/share/latteos/marea-plm/                           <- pleamar:marea-plm/**
 /usr/bin/latte-marea                                    <- bin/latte-marea
 /usr/share/latteos/labwc/rc.xml                         <- system/labwc/rc.xml
