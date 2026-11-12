@@ -414,7 +414,7 @@ library Slovak {
         "Search apps and settings" = "Hľadať aplikácie a nastavenia"
         "Run a command" = "Spustiť príkaz"
         "Ask the AI" = "Opýtať sa AI"
-        "The shore: sound, network, clipboard" = "Pobrežie: zvuk, sieť, schránka"
+        "TrayShore: sound, network, clipboard" = "TrayShore: zvuk, sieť, schránka"
         "Notes" = "Poznámky"
         "Clock and calendar" = "Hodiny a kalendár"
         "Lock the session" = "Zamknúť reláciu"

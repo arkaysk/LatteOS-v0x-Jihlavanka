@@ -158,7 +158,7 @@ bol GooPower); **kvapka** = každý samostatný tekutý prvok; **karta Goo** = o
 
 **Jadro** (nedá sa skryť, iba zmeniť veľkosť): **PowerGoo, LensGoo.** **Voliteľné** (Nastavenia › Kvapky):
 **BarGoo** (od 27. 10.; aj Nastavenia › Okná, Alt+Tab ostáva), **QueenGoo, ClockGoo, ChatGoo.** Predvolene dole: PowerGoo – LensGoo – hlava BarGoo s ikrami, vpravo ClockGoo
-a v rohu tvrdé Pobrežie (vo Fresh; do v0.3 rohová lišta Noctalie); QuickGoo (rýchle spúšťanie) vľavo od PowerGoo.
+a v rohu tvrdý TrayShore (vo Fresh; do v0.3 rohová lišta Noctalie); QuickGoo (rýchle spúšťanie) vľavo od PowerGoo.
 
 | Goo | Ľavý klik | Pravý klik | Koliesko |
 |---|---|---|---|
@@ -265,7 +265,7 @@ okraji, pri písaní sa vysunie ostrovček od spodného okraja ako v Marei, kont
   druhá časť bočného panela je **Sieť**: Pripojenie a **Inšpektor siete** — radar podľa predlohy z 26. 9.
   (`bin/latte-network`: kto je v sieti, mená z mDNS a routera, výrobca z adresy, pamätá si, kto je nový);
   „Dobre vedieť“ z `latte-boot compat`; Kopírovať správu. Nič nemení — sieť, zvuk a Bluetooth sa nastavujú
-  v paneli Pobrežia. Oproti v0.3 chýba: režimy obrazoviek, zvukové karty a profily, tlačiarne a skenery, telefóny,
+  v paneli TrayShore. Oproti v0.3 chýba: režimy obrazoviek, zvukové karty a profily, tlačiarne a skenery, telefóny,
   firewall, skúšky (kamera, mikrofón, ovládač), oprava chýbajúceho ovládača cez App Manager.
 
 ### 4.5 ClockGoo — čas, upozornenia, kalendár a pohoda (voliteľná)
@@ -316,7 +316,7 @@ okraji, pri písaní sa vysunie ostrovček od spodného okraja ako v Marei, kont
 
 ### 4.8 Rohová lišta Noctalie — vpravo dole
 *(Fresh, 13. 10.: namiesto nej je vlastné **Pobrežie** — tvrdý roh, popis v §8. Nasledujúce platilo do v0.3.)*
-*(27. 10.: Pobrežie sa premenúva na **TrayShore** — oznamovacia oblasť, upozornenia a dashboard s widgetmi ako
+*(27. 10.: Pobrežie sa premenovalo na **TrayShore** — oznamovacia oblasť, upozornenia a dashboard s widgetmi ako
 v Androide; príboj vĺn o TrayShore. ROADMAP 6H.05–6H.08.)*
 - Iba **pravá časť** lišty Noctalie, **natvrdo prilepená** do rohu, šírka podľa počtu widgetov. Obsahuje ikony
   programov na pozadí, sieť, hlasitosť, ovládacie centrum; **ďalšie widgety a komunitné doplnky** Noctalie sa
@@ -612,14 +612,14 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
   aplikáciu spustí a páska sa zasunie, druhý klik na kvapku tiež. Aplikáciu na pásku pridá alebo odoberie LensGoo ›
   pravý klik na aplikáciu, odobrať ju dá aj pravý klik na ikonu. Kým si používateľ nič nevybral, stoja na páske
   naposledy spúšťané aplikácie.
-- **Pobrežie** (používateľ, 13. 10.; `goo/parts/shore.plm`, `goo/lib/shore.luau`): **tvrdý roh** vpravo dole, kde
+- **TrayShore** (do 27. 10. „Pobrežie“; používateľ, 13. 10.; `goo/parts/shore.plm`, `goo/lib/shore.luau`): **tvrdý roh** vpravo dole, kde
   goo končí — doska z materiálu šálky (ako titulky okien), dlhá podľa obsahu. Kvapky sa k nemu **nelepia**:
   pustená nad ním dopadne na dosku a odskočí do goo, na okraji sa pred ním zastaví a skĺzne mimo. Na ňom zľava:
   **okrúhla šípka**, **programy na pozadí** (klik ako v každom tray, pravý klik ponuka programu), **sieť**,
   **hlasitosť** (koliesko mení, pravý klik stlmí, zmena sa na chvíľu ukáže prstencom), na notebooku **batéria**.
   Šípka (aj Win+A) vysunie **panel až po horný okraj**: Wi-Fi a Bluetooth, hlasitosť a jas, siete, zariadenia,
   výstupy zvuku a **schránka** — čo sa naposledy skopírovalo (uchováva `cliphist`), klik to skopíruje znova.
-  Hodiny v ňom nie sú, ostávajú v ClockGoo. Na ďalších monitoroch Pobrežie nie je.
+  Hodiny v ňom nie sú, ostávajú v ClockGoo. Na ďalších monitoroch TrayShore nie je.
 - **Okno s heslom** (polkit): samostatná scéna spustená compositorom je agentom grafickej relácie. Citlivú požiadavku môže spustiť iba po prijatí úzkeho requestu cez Pleamar IPC; jej výsledok sa vráti volajúcej aplikácii. Goo karta ukáže dôvod, vybranú akciu, heslo a povolenie/zrušenie; kliknutie mimo nej ju nezruší, zavrieť ju možno tlačidlom Zrušiť alebo klávesom Escape.
 - **Nastavenia Goo** (27. 10.): PowerGoo › Nastavenia otvorí rovno aplikáciu Nastavenia (karta Goo zrušená). Prostredie ›
   Kvapky (Goo): správanie, kvapky na ploche, vrátiť kvapky na miesto (`latte-say "emit reset_places"`) a stránka každej

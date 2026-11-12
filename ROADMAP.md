@@ -1005,7 +1005,7 @@ posúvania** (~300 ms patrí koliesko zoznamu, ktorý sa začal posúvať, aj ke
 časovač). Platí pre všetky karty Goo aj aplikácie LatteOS.
 - [x] 27. 10.: `card_spin` zrušený — záložky karty Goo prepína koliesko iba nad pásom záložiek (overené: nad pásom
   prepne; prázdne miesto karty už nemá obsluhu kolieska).
-- [ ] Prilepenie posúvania a bez prelievania v kartách Goo — vec enginu pleamaru (posúvanie zoznamu); v aplikáciách
+- [ ] (11. 11.: bez skutočného kolieska sa nedá overiť — pointer.py do okien qs netrafí; čaká na skúšku na obrazovke) Prilepenie posúvania a bez prelievania v kartách Goo — vec enginu pleamaru (posúvanie zoznamu); v aplikáciách
   LatteOS vnorené `Flickable` (Qt na konci posiela koliesko rodičovi).
 
 **6B.16** [ ] **Hľadanie aplikácií podľa kľúčových slov** (z 6B.04, 27. 10.): „prehliadač“ / „browser“ → Firefox,
@@ -1398,7 +1398,7 @@ z `latte-sky` už vlny dvíha (6.23). Zmerať cenu na snímku.
 prepínač A/B, poslať snímky; sledovať kontrast kvapiek nad hladinou a cenu na snímku (scéna v pokoji 17 % jadra).
 Ak sa osvedčí: jeden vzhľad hladiny pre prihlásenie, plochu aj okná.
 
-**6H.08** [ ] Premenovať Pobrežie → TrayShore v kóde, prekladoch, Nastaveniach a dokumentoch (LATTEOS-GOO §4.8, §8).
+**6H.08** [x] (11. 11.: popis skratky Win+A, preklad a LATTEOS-GOO; v kóde ostávajú vnútorné mená `shore` — súbory a udalosti, používateľ ich nevidí; „shore“ na stránke Dok je dok pleamar-wm, nie TrayShore) Premenovať Pobrežie → TrayShore v kóde, prekladoch, Nastaveniach a dokumentoch (LATTEOS-GOO §4.8, §8).
 
 
 ### 6I. ChatGoo
