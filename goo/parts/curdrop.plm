@@ -1,0 +1,14 @@
+// The cursor's shapes, for a body: the main one's (it is part of the matter, and near a drop the two melt), the
+// outline's, and its own on top of everything (parts/cursor.plm).
+//
+// An arrow: four discs from the tip (the pointer itself, half a px: the point a press lands on) to the belly where
+// goo-phys says it hangs, each bigger than the one before, melted into a cone that ends round. Dragged, the belly
+// lags and the cone leans and lengthens; shaken, it all grows. Over a text, an edge to stretch or something to
+// carry the belly runs in to the tip (`cur.round`) and the discs swell into one round drop about the pointer,
+// which over a text is pressed flat into a bar (`cur.flat`).
+part CurDrop {
+    ellipse { at: cursor.x, cursor.y; radius: (0.6 + 4 * cur.round) * cur.size; blend: 0 }
+    ellipse { at: cursor.x + cur.tailx * 0.2 * cur.zoom, cursor.y + cur.taily * 0.2 * cur.zoom; radius: (2.2 + 5 * cur.round) * cur.size; scale: 1 - 0.5 * cur.flat, 1 + 0.2 * cur.flat; blend: 2 }
+    ellipse { at: cursor.x + cur.tailx * 0.5 * cur.zoom, cursor.y + cur.taily * 0.5 * cur.zoom; radius: (4.6 + 5 * cur.round) * cur.size; scale: 1 - 0.5 * cur.flat, 1 + 0.2 * cur.flat; blend: 3 }
+    ellipse { at: cursor.x + cur.tailx * cur.zoom, cursor.y + cur.taily * cur.zoom; radius: (7.6 + 5.4 * cur.round) * cur.size * (1 + 0.2 * cur.wob); scale: 1 - 0.56 * cur.flat, 1 + 0.2 * cur.flat; blend: 4 }
+}

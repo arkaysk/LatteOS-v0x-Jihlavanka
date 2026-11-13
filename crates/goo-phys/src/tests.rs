@@ -153,7 +153,7 @@ fn tier_zero_moves_nothing() {
     w.cfg.tier = 0.0;
     let k = seated(&mut w, 600.0, 26.0);
     w.nudge(k, v(500.0, -500.0));
-    let over = Input { pointer: Some(v(610.0, 1000.0)), down: true, gale: 1.0 };
+    let over = Input { pointer: Some(v(610.0, 1000.0)), down: true, gale: 1.0, centred: false };
     assert_eq!(run(&mut w, 1.0, 60.0, &over), 0.0);
     assert_eq!(w.drops[k].pos, w.drops[k].home);
 }
@@ -179,6 +179,25 @@ fn the_cursor_is_a_drop_with_a_tip() {
     assert!(swung > 0.5, "it swings past its rest when the tip stops: {swung}");
     assert_eq!(run(&mut w, 3.0, 60.0, &stop), 0.0, "and is still");
     assert_eq!(w.cursor.belly, w.cursor.tip + rest, "hanging down and to the right, as an arrow lies");
+}
+
+#[test]
+fn over_a_text_the_cursor_is_a_round_drop_about_the_pointer() {
+    let mut w = World::new(1920.0, 1080.0, Config { cursor_body: 1.0, ..Config::default() });
+    let rest = v(w.cfg.cursor_dx, w.cfg.cursor_dy);
+    let at = v(600.0, 300.0);
+    run(&mut w, 3.0, 60.0, &Input { pointer: Some(at), ..Input::default() });
+    assert_eq!(w.cursor.belly, at + rest);
+    // the shape changes under a pointer that stands still: the world wakes for it, and the body flows in
+    let text = Input { pointer: Some(at), centred: true, ..Input::default() };
+    assert!(w.step(1.0 / 60.0, &text) > 0.0, "a change of shape stirs it");
+    run(&mut w, 0.1, 60.0, &text);
+    assert!(w.cursor.round > 0.3 && w.cursor.round < 1.0, "it flows, it does not jump: {}", w.cursor.round);
+    assert_eq!(run(&mut w, 3.0, 60.0, &text), 0.0, "and comes to rest");
+    assert_eq!((w.cursor.round, w.cursor.belly, w.cursor.stretch), (1.0, at, 0.0), "round, the pointer in its middle");
+    // and back to the arrow
+    assert_eq!(run(&mut w, 3.0, 60.0, &Input { pointer: Some(at), ..Input::default() }), 0.0);
+    assert_eq!((w.cursor.round, w.cursor.belly), (0.0, at + rest));
 }
 
 #[test]

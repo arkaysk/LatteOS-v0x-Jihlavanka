@@ -2198,7 +2198,8 @@ scene Session {
             // above it, which takes nothing from the program.
             // With Super held, all of it.
             let whole = keys.super > 0.5 or dragging == i
-            zone box title.$i { from: x.$i + if(whole or F > 0.5 or ours, 0, 12) + if(not whole and wired.ok, 32, 0), y.$i - if(whole or F > 0.5 or ours, 0, gap - 1); size: if(whole, w, if(F > 0.5 or ours, w - 86, w - 24)) - if(not whole and wired.ok, 32, 0), if(whole, h, if(F > 0.5 or ours, tb, gap - 2)); cursor: pointer; active: here and not overview and not win.$i.dialog and (ours or F < 0.5 or whole or win.$i.held > 0.5) and wiring < 0; label: "{win.$i.title}"; role: button; handle: i }
+            // LatteOS: what a window is carried by shows an open hand, closed while it carries (the cursor as a drop wears it, goo/parts/cursor.plm)
+            zone box title.$i { from: x.$i + if(whole or F > 0.5 or ours, 0, 12) + if(not whole and wired.ok, 32, 0), y.$i - if(whole or F > 0.5 or ours, 0, gap - 1); size: if(whole, w, if(F > 0.5 or ours, w - 86, w - 24)) - if(not whole and wired.ok, 32, 0), if(whole, h, if(F > 0.5 or ours, tb, gap - 2)); cursor: if(dragging == i, grabbing, grab); active: here and not overview and not win.$i.dialog and (ours or F < 0.5 or whole or win.$i.held > 0.5) and wiring < 0; label: "{win.$i.title}"; role: button; handle: i }
             // Free, its port: a drop at the start of its title bar, dragged to
             // another window to wire the two. The title bar's own zone starts
             // after it: under it, a press and the first move of a real mouse

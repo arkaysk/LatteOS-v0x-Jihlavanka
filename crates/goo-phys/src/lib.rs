@@ -170,6 +170,10 @@ pub struct Cursor {
     turns: [f32; 3],
     pub there: bool,
     pub down: bool,
+    /// 0…1: how far it is from an arrow, a point with a body hanging from it, to a round drop with the pointer in
+    /// its middle: what it is over a text, an edge to stretch, something to carry.
+    pub round: f32,
+    centred: bool,
 }
 
 /// A thread from drop `a` to drop `b`.
@@ -209,6 +213,8 @@ pub struct Input {
     pub down: bool,
     /// −1…1: how hard the wind blows, and which way.
     pub gale: f32,
+    /// The cursor is not the arrow now but a shape whose point is its middle (`Cursor::round`).
+    pub centred: bool,
 }
 
 pub struct World {
@@ -366,13 +372,15 @@ impl World {
     pub fn step(&mut self, dt: f32, input: &Input) -> f32 {
         // the cursor's speed is the frame's, not the step's: the pointer only moves between frames
         let c = &mut self.cursor;
-        let was = (c.tip, c.there, c.down);
+        let was = (c.tip, c.there, c.down, c.centred);
         c.there = input.pointer.is_some();
         c.down = input.down;
+        c.centred = input.centred;
         if let Some(p) = input.pointer {
             let moved = if was.1 && dt > 1e-4 { (p - c.tip) * (1.0 / dt.max(1.0 / 240.0)) } else { V::default() };
             if !was.1 {
-                c.belly = p + v(self.cfg.cursor_dx, self.cfg.cursor_dy);
+                c.round = if c.centred { 1.0 } else { 0.0 };
+                c.belly = p + v(self.cfg.cursor_dx, self.cfg.cursor_dy) * (1.0 - c.round);
             }
             // turned back on itself three times within a second: it is being shaken, by someone who lost it
             if moved.len() > 500.0 && c.vel.len() > 500.0 && moved.unit().dot(c.vel.unit()) < -0.3 {
@@ -392,7 +400,7 @@ impl World {
         }
         // A pointer that moves stirs the world only where there is something to stir: its own body if it has one,
         // a drop within reach, the level under it. Over a window in the middle of the screen it wakes nothing.
-        let moved = (c.tip, c.there, c.down) != was;
+        let moved = (c.tip, c.there, c.down, c.centred) != was;
         let tip = c.tip;
         let near = self.cfg.cursor_body > 0.5
             || self.size.y - tip.y < 90.0
@@ -437,7 +445,8 @@ impl World {
         self.surface.h.iter_mut().for_each(|h| *h = 0.0);
         self.surface.vel.iter_mut().for_each(|h| *h = 0.0);
         let c = &mut self.cursor;
-        (c.belly, c.belly_v, c.stretch, c.wobble, c.wobble_v, c.big) = (c.tip + v(self.cfg.cursor_dx, self.cfg.cursor_dy), V::default(), 0.0, 0.0, 0.0, 0.0);
+        c.round = if c.centred { 1.0 } else { 0.0 };
+        (c.belly, c.belly_v, c.stretch, c.wobble, c.wobble_v, c.big) = (c.tip + v(self.cfg.cursor_dx, self.cfg.cursor_dy) * (1.0 - c.round), V::default(), 0.0, 0.0, 0.0, 0.0);
         self.stir = 0.0;
         self.owed = 0.0;
     }
@@ -691,14 +700,18 @@ impl World {
         // stick held by one end, longer at speed, and swings back when the tip stops.
         let c = &mut self.cursor;
         if c.there && cfg.cursor_body > 0.5 {
-            let rest = v(cfg.cursor_dx, cfg.cursor_dy) * if c.down { 0.8 } else { 1.0 };
+            // from an arrow to a round drop and back the body flows: its rest runs in to the tip, and out again
+            let want = if c.centred { 1.0 } else { 0.0 };
+            c.round += (want - c.round) * (h * 16.0).min(1.0);
+            let rest = v(cfg.cursor_dx, cfg.cursor_dy) * (if c.down { 0.8 } else { 1.0 } * (1.0 - c.round));
             let off = c.belly - (c.tip + rest);
             let before = c.belly_v;
             c.belly_v += (off * -cfg.cursor_k + c.belly_v * -cfg.cursor_c) * h;
             c.belly += c.belly_v * h;
             // a neck of goo: it gives, from a little shorter than at rest to as long as `cursor_tail` lets it
             let (behind, long) = (c.belly - c.tip, rest.len());
-            let far = behind.len().clamp(long * 0.75, long * cfg.cursor_tail);
+            // (round, it still lags a little behind the pointer: a drop carried, not a stamp)
+            let far = behind.len().clamp(long * 0.75, (long * cfg.cursor_tail).max(7.0));
             if far != behind.len() {
                 let out = behind.unit();
                 c.belly = c.tip + out * far;
@@ -708,11 +721,13 @@ impl World {
             let braking = (before - c.belly_v).len() / h;
             c.wobble_v += (-260.0 * c.wobble - 9.0 * c.wobble_v) * h + braking * 0.000_006;
             c.wobble = (c.wobble + c.wobble_v * h).clamp(-1.0, 1.0);
-            c.stretch = ((c.belly - c.tip).len() / long - 1.0).max(0.0);
-            c.rot = (c.belly.y - c.tip.y).atan2(c.belly.x - c.tip.x);
+            c.stretch = if long > 4.0 { ((c.belly - c.tip).len() / long - 1.0).max(0.0) } else { 0.0 };
+            if (c.belly - c.tip).len() > 0.5 {
+                c.rot = (c.belly.y - c.tip.y).atan2(c.belly.x - c.tip.x);
+            }
             c.big_for = (c.big_for - h).max(0.0);
             c.big += (if c.big_for > 0.0 { 1.0 } else { 0.0 } - c.big) * (h * 12.0).min(1.0);
-            energy += off.len() * 0.2 + c.belly_v.len() * 0.02 + c.wobble.abs() * 20.0 + c.big * 30.0;
+            energy += off.len() * 0.2 + c.belly_v.len() * 0.02 + c.wobble.abs() * 20.0 + c.big * 30.0 + (want - c.round).abs() * 30.0;
         }
         energy
     }

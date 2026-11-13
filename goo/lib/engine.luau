@@ -25,6 +25,9 @@
 -- A press it has nothing for makes the drop shiver: a button does something or says that it does not.
 local icons = require("lib/icons")
 local card = require("lib/card")
+-- the marks the cursor wears (parts/cursor.plm): an open hand, a closed one, the arrows of an edge, move, not allowed
+text["cg.hand"], text["cg.fist"], text["cg.ew"], text["cg.ns"] = icons["hand-stop"], icons["hand-grab"], icons["arrows-horizontal"], icons["arrows-vertical"]
+text["cg.d1"], text["cg.d2"], text["cg.move"], text["cg.no"] = icons["arrows-diagonal-2"], icons["arrows-diagonal"], icons["arrows-move"], icons["ban"]
 local wm = require("lib/wm")
 local born = require("lib/born")
 local E = {}
@@ -266,8 +269,9 @@ local function publish()
             local d = slots[k]
             if d and not d.hidden and (d.core or 0) > 0 and d.core_beat == true then beats = true end
             local r = d and record(d) or { on = false }
-            if d and d.left then r.left, r.left_at, r.left_shift = true, d.left.at, d.left.shift + (d.left.aside or 0) end
-            if d and d.right then
+            -- a drop raised into its card's corner is not on the edge: no water runs to it nor from it
+            if d and d.left and not d.rest and not d.left.rest then r.left, r.left_at, r.left_shift = true, d.left.at, d.left.shift + (d.left.aside or 0) end
+            if d and d.right and not d.rest and not d.right.rest then
                 local o = d.right
                 r.right, r.right_at, r.right_shift, r.right_rise, r.right_r = true, o.at, o.shift + (o.aside or 0), o.rise, radius(o)
             end

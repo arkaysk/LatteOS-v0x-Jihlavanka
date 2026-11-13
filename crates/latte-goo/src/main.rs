@@ -19,6 +19,9 @@
 //!           j.on.k j.w.k j.ax.k j.ay.k j.bx.k j.by.k    the thread from drop k
 //!           cur.on cur.big cur.x cur.y cur.st cur.rot cur.wob cur.tailx cur.taily     the cursor as a drop: whether,
 //!                                         grown to be found, its tip, its neck's stretch and angle, its belly from its tip
+//!           cur.round cur.shape cur.down  …how far from an arrow to a round drop about the pointer (0…1), the shape the
+//!                                         session would show (SHAPES) and whether a button is held
+//!           click.n click.x click.y       a press of the mouse anywhere on the desktop: a count, and where
 //!           stir tier                     energy left 0…1; the tier 0…3
 //!           ev.landed ev.bumped ev.joined ev.parted ev.flicked   one event each: a running number × 4096 + what
 //!                                         (the drop; for a bump, drop × 64 + the other; for a flick, how many)
@@ -33,7 +36,7 @@
 //! Settings: `/usr/share/latteos/gooengine.json` and over it `~/.config/latteos/gooengine.json`, read again when the
 //! user's changes (docs/goo/GOOENGINE-2.md §18).
 
-use goo_phys::{v, Config, Drop, Edge, Event, Input, Mode, Wall, World};
+use goo_phys::{v, Config, Drop, Edge, Event, Input, Mode, Wall, World, V};
 use std::collections::VecDeque;
 use std::time::{Instant, SystemTime};
 
@@ -97,6 +100,11 @@ struct Goo {
     splash: f32,
     ripple_n: Vec<f32>,
     gone_n: f32,
+    /// The drop a card carried last frame, and by how much: let go, it hops home.
+    carried: (usize, f32),
+    /// What the marker that hides the session's cursor says now, and the presses of the mouse seen so far.
+    marker: Option<String>,
+    presses: f32,
     /// Events wait their turn: a fact holds one a frame. A landing with where it was: x, y, the edge.
     landings: VecDeque<(f32, f32, f32)>,
     told: [VecDeque<f32>; 5],
@@ -107,13 +115,35 @@ struct Goo {
 /// sockets: a line `x y` each time it moves), from this scene's monitor's corner. pleamar's own `cursor.x` places
 /// the mouse in the plane of whichever of the scene's surfaces it finds first, and with the desktop's icons a
 /// surface of their own that is theirs, 20 000 px away: the drops never knew a cursor that was not over a zone.
-static MOUSE: std::sync::Mutex<Option<(f32, f32)>> = std::sync::Mutex::new(None);
+static MOUSE: std::sync::Mutex<Option<Mouse>> = std::sync::Mutex::new(None);
+
+/// What pleamar-wm says of the mouse. The shape the session would show and the buttons come only from a
+/// pleamar-wm that knows them (patches/pleamar-wm-shell-cursor.patch: asked for with `more`); `more` says so.
+#[derive(Clone, Copy, Default, PartialEq)]
+struct Mouse {
+    at: (f32, f32),
+    /// The shape, as `cur.shape` numbers it (SHAPES); 99: one the scene does not draw.
+    shape: f32,
+    presses: f32,
+    held: bool,
+    more: bool,
+}
+
+/// The shapes the scene draws itself (goo/parts/cursor.plm), by their standard names, and `cur.shape` for each:
+/// 0 the arrow, 1 over something to press, 2 a text, 3 a hand to carry with, 4 carrying, 5–8 an edge to stretch
+/// (↔ ↕ ⤡ ⤢), 9 to move, 10 not allowed.
+const SHAPES: [(&str, f32); 23] = [("default", 0.0), ("pointer", 1.0), ("text", 2.0), ("vertical-text", 2.0), ("grab", 3.0), ("grabbing", 4.0), ("ew-resize", 5.0), ("e-resize", 5.0), ("w-resize", 5.0), ("col-resize", 5.0),
+    ("ns-resize", 6.0), ("n-resize", 6.0), ("s-resize", 6.0), ("row-resize", 6.0), ("nwse-resize", 7.0), ("nw-resize", 7.0), ("se-resize", 7.0), ("nesw-resize", 8.0), ("ne-resize", 8.0), ("sw-resize", 8.0),
+    ("move", 9.0), ("all-scroll", 9.0), ("not-allowed", 10.0)];
+/// The scene has the cursor's facts: it is woken for a press or a new shape under a mouse that stands still.
+static WAKES: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 fn watch_mouse(screen: Option<String>) {
     let Some(dir) = std::env::var_os("PLEAMAR_SOCKETS").map(std::path::PathBuf::from) else { return };
     let _ = std::thread::Builder::new().name("mouse".into()).spawn(move || loop {
-        use std::io::BufRead;
-        if let Ok(stream) = std::os::unix::net::UnixStream::connect(dir.join("cursor.sock")) {
+        use std::io::{BufRead, Write};
+        if let Ok(mut stream) = std::os::unix::net::UnixStream::connect(dir.join("cursor.sock")) {
+            let _ = stream.write_all(b"more\n");
             // the monitor's corner on the desktop: `monitor NAME w h x y …` in the file beside the socket
             let corner = |name: &Option<String>| {
                 let file = std::fs::read_to_string(dir.join("desktop")).unwrap_or_default();
@@ -121,17 +151,42 @@ fn watch_mouse(screen: Option<String>) {
                 let m = monitors.iter().find(|m| name.as_deref() == m.get(1).copied()).or(monitors.first());
                 m.and_then(|m| Some((m.get(4)?.parse::<f32>().ok()?, m.get(5)?.parse::<f32>().ok()?))).unwrap_or((0.0, 0.0))
             };
+            let mut poke = 0.0;
             for line in std::io::BufReader::new(stream).lines().map_while(Result::ok) {
-                let mut at = line.split_whitespace().filter_map(|n| n.parse::<f32>().ok());
-                if let (Some(x), Some(y)) = (at.next(), at.next()) {
+                let said: Vec<&str> = line.split_whitespace().collect();
+                let number = |k: usize| said.get(k).and_then(|n| n.parse::<f32>().ok());
+                if let (Some(x), Some(y)) = (number(0), number(1)) {
                     let c = corner(&screen);
-                    *MOUSE.lock().unwrap() = Some((x - c.0, y - c.1));
+                    let mut now = Mouse { at: (x - c.0, y - c.1), ..Mouse::default() };
+                    if let (Some(shape), Some(presses), Some(held)) = (said.get(2), number(3), number(4)) {
+                        (now.shape, now.presses, now.held, now.more) = (SHAPES.iter().find(|s| s.0 == *shape).map_or(99.0, |s| s.1), presses, held > 0.0, true);
+                    }
+                    let was = MOUSE.lock().unwrap().replace(now);
+                    // a press, or another shape, with the mouse where it was: nothing else would wake the scene
+                    if WAKES.load(std::sync::atomic::Ordering::Relaxed) && was.is_some_and(|w| (w.shape, w.presses, w.held) != (now.shape, now.presses, now.held)) {
+                        poke += 1.0;
+                        pleamar::tell_fact("cur.poke", poke);
+                    }
                 }
             }
         }
         *MOUSE.lock().unwrap() = None;
         std::thread::sleep(std::time::Duration::from_secs(2));
     });
+}
+
+/// The speed across that makes a drop let go at `from`, `up` px/s upwards, come down at `to`: the flight as the
+/// world will step it, gravity and air.
+fn aim(cfg: &Config, from: V, to: V, up: f32) -> V {
+    let (h, g, drag) = (1.0 / cfg.hz, cfg.gravity, cfg.drag);
+    let (mut y, mut vy, mut reach, mut unit) = (from.y, -up, 0.0f32, 1.0f32);
+    while (y < to.y || vy < 0.0) && reach < 1e6 {
+        vy = (vy + g * h) * (1.0 - drag * h);
+        unit *= 1.0 - drag * h;
+        y += vy * h;
+        reach += unit * h;
+    }
+    v(if reach > 0.0 { (to.x - from.x) / reach } else { 0.0 }, -up)
 }
 
 fn tier_of_session() -> f32 {
@@ -145,8 +200,30 @@ fn tier_of_session() -> f32 {
 
 impl Goo {
     /// gooengine.json, if it changed: the physics' numbers by name, the tier, and the rest kept for the scene.
+    /// A scene that draws the cursor as a drop stands in for the session's own: pleamar-wm hides its own while this
+    /// process lives and says so (patches/pleamar-wm-shell-cursor.patch), for the shapes named after the process
+    /// number, and never over a window that has the whole screen. A pleamar-wm that does not tell the shape gets
+    /// the number alone, and hides the plain arrow. Another window manager never reads the file.
+    fn marker(&mut self) {
+        let Some(dir) = std::env::var_os("XDG_RUNTIME_DIR") else { return };
+        let draws = self.map.one.contains_key("cur.on") && self.world.cfg.cursor_body > 0.5 && self.extra["cursor"]["hide_arrow"].as_bool() != Some(false);
+        let shapes = MOUSE.lock().unwrap().is_some_and(|m| m.more) && self.map.one.contains_key("cur.shape");
+        let says = draws.then(|| std::iter::once(std::process::id().to_string()).chain(SHAPES.iter().filter(|_| shapes).map(|s| s.0.to_owned())).collect::<Vec<_>>().join(" "));
+        if says != self.marker {
+            let file = std::path::Path::new(&dir).join("pleamar-wm-shell-cursor");
+            let ours = std::process::id().to_string();
+            match &says {
+                Some(s) => drop(std::fs::write(&file, s)),
+                None if std::fs::read_to_string(&file).is_ok_and(|s| s.split_whitespace().next() == Some(&ours)) => drop(std::fs::remove_file(&file)),
+                None => {}
+            }
+            self.marker = says;
+        }
+    }
+
     fn settings(&mut self) {
         self.looked = Instant::now();
+        self.marker();
         let at = std::fs::metadata(&self.file).and_then(|m| m.modified()).ok();
         if at == self.read_at && !self.extra.is_null() {
             return;
@@ -228,8 +305,8 @@ impl Goo {
         self.ripple_n = vec![f32::NAN; m.ripples.len()];
         self.gone_n = f32::NAN;
         m.walls = (0..32).map_while(|n| at(&format!("wall.{n}.x0")).map(|x0| [Some(x0), at(&format!("wall.{n}.y0")), at(&format!("wall.{n}.x1")), at(&format!("wall.{n}.y1"))])).collect();
-        for n in ["screen.width", "screen.height", "cursor.x", "cursor.y", "pointer.x", "pointer.y", "cur.down", "gale", "splash.n", "splash.x", "splash.w", "splash.p", "stir", "tier", "cur.on", "cur.big", "cur.x", "cur.y", "cur.st", "cur.rot", "cur.wob", "cur.tailx", "cur.taily", "ev.landed", "ev.bumped", "ev.joined", "ev.parted", "ev.flicked", "ev.lx", "ev.ly", "ev.le",
-            "gone_n", "gone.x0", "gone.y0", "gone.x1", "going.x", "going.y", "going.on", "shore_w", "lens_edge", "lens_a", "lens_b"] {
+        for n in ["screen.width", "screen.height", "cursor.x", "cursor.y", "pointer.x", "pointer.y", "cur.down", "gale", "splash.n", "splash.x", "splash.w", "splash.p", "stir", "tier", "cur.on", "cur.big", "cur.x", "cur.y", "cur.st", "cur.rot", "cur.wob", "cur.tailx", "cur.taily", "cur.round", "cur.shape", "cur.poke", "click.n", "click.x", "click.y", "ev.landed", "ev.bumped", "ev.joined", "ev.parted", "ev.flicked", "ev.lx", "ev.ly", "ev.le",
+            "card_owner", "ear.ox", "ear.oy", "gone_n", "gone.x0", "gone.y0", "gone.x1", "going.x", "going.y", "going.on", "shore_w", "lens_edge", "lens_a", "lens_b"] {
             if let Some(k) = at(n) {
                 m.one.insert(n, k);
             }
@@ -252,18 +329,7 @@ impl Goo {
                 }
             }
         }
-        // A scene that draws the cursor as a drop stands in for the session's arrow: pleamar-wm hides its own while
-        // this process lives and says so (patches/pleamar-wm-shell-cursor.patch), and only the plain arrow, never
-        // over a window that has the whole screen. Another window manager never reads the file.
-        if let Some(dir) = std::env::var_os("XDG_RUNTIME_DIR").filter(|_| m.one.contains_key("cur.on")) {
-            let marker = std::path::Path::new(&dir).join("pleamar-wm-shell-cursor");
-            let ours = std::process::id().to_string();
-            if self.world.cfg.cursor_body > 0.5 && self.extra["cursor"]["hide_arrow"].as_bool() != Some(false) {
-                let _ = std::fs::write(&marker, &ours);
-            } else if std::fs::read_to_string(&marker).is_ok_and(|s| s.trim() == ours) {
-                let _ = std::fs::remove_file(&marker);
-            }
-        }
+        WAKES.store(m.one.contains_key("cur.poke"), std::sync::atomic::Ordering::Relaxed);
         self.world.drops.resize_with(m.slots.len() + 1, || Drop::new(v(0.0, 0.0), 0.0, Edge::Bottom));
         self.map = m;
     }
@@ -308,6 +374,11 @@ impl Goo {
             w.wake();
         }
         let level = w.cfg.level;
+        let ear = (one(m, "card_owner", facts), v(one(m, "ear.ox", facts).unwrap_or(0.0), one(m, "ear.oy", facts).unwrap_or(0.0)));
+        // let go by its card far from home, it hops back: a flight from the card's corner down to where it belongs
+        let now = (ear.0.filter(|k| *k >= 0.0).map_or(usize::MAX, |k| k as usize), ear.1.len());
+        let hops = Some(self.carried.0).filter(|k| self.carried.1 > 0.0 && (now.0 != *k || now.1 == 0.0) && w.drops.get(*k).is_some_and(|d| self.carried.1 > d.r && d.edge == Edge::Bottom && d.mode == Mode::Sits));
+        self.carried = now;
         for (k, s) in m.slots.iter_mut().enumerate().filter(|_| m.desktop) {
             let r = |i: usize| get(s.record[i], facts);
             let hand = |i: usize| get(s.hand[i], facts);
@@ -321,7 +392,9 @@ impl Goo {
                 Edge::Left => v(level, along),
                 Edge::Right => v(sw - level, along),
             };
-            let home = on_edge + inward * r(4);
+            // the drop a card grows from goes where the card's corner is, and back when the card shuts (6.34)
+            let carried = if ear.0 == Some(k as f32) { ear.1 } else { v(0.0, 0.0) };
+            let home = on_edge + inward * r(4) + carried;
             let radius = if r(0) > 0.5 { r(5) * r(6) } else { 0.0 };
             let d = &mut w.drops[k];
             let appears = d.r == 0.0 && radius > 0.0;
@@ -380,6 +453,11 @@ impl Goo {
                 w.wake();
             }
         }
+        if let Some(k) = hops {
+            let (from, to) = (w.drops[k].pos, w.drops[k].home);
+            let speed = aim(&w.cfg, from, to, 330.0);
+            w.jump(k, speed);
+        }
         // the level: the logic's ripples are pushes (kind 1 a tremble on the spot: narrower, weaker)
         for (i, a) in m.ripples.iter().enumerate() {
             let n = get(a[4], facts);
@@ -394,19 +472,10 @@ impl Goo {
         if let Some(n) = one(m, "gone_n", facts) {
             if n != self.gone_n && !self.gone_n.is_nan() {
                 let (x0, y0, x1) = (one(m, "gone.x0", facts).unwrap_or(0.0), one(m, "gone.y0", facts).unwrap_or(0.0), one(m, "gone.x1", facts).unwrap_or(0.0));
-                // the fall as the world will step it, to know how long it takes and how far a push carries
-                let (h, g, drag) = (1.0 / w.cfg.hz, w.cfg.gravity, w.cfg.drag);
-                let (mut y, mut vy, mut reach) = (y0, 0.0f32, 0.0f32);
-                let mut unit = 1.0f32;
-                while y < sh - level - 16.0 * w.cfg.seat && reach < 1e6 {
-                    vy = (vy + g * h) * (1.0 - drag * h);
-                    unit *= 1.0 - drag * h;
-                    y += vy * h;
-                    reach += unit * h;
-                }
+                let fall = aim(&w.cfg, v(x0, y0), v(x1, sh - level - 16.0 * w.cfg.seat), 0.0);
                 let d = &mut w.drops[ghost];
                 *d = Drop::new(v(x0, y0), 16.0, Edge::Bottom);
-                w.throw(ghost, v(if reach > 0.0 { (x1 - x0) / reach } else { 0.0 }, 0.0));
+                w.throw(ghost, fall);
             }
             self.gone_n = n;
         }
@@ -448,18 +517,24 @@ impl Goo {
             self.splash = n;
             w.splash(one(m, "splash.x", facts).unwrap_or(0.0), one(m, "splash.w", facts).unwrap_or(80.0), one(m, "splash.p", facts).unwrap_or(0.0));
         }
-        if let Some((x, y)) = *MOUSE.lock().unwrap() {
-            for (n, value) in [("cursor.x", x), ("cursor.y", y)] {
-                if let Some(k) = m.one.get(n) {
+        let mouse = *MOUSE.lock().unwrap();
+        if let Some(mo) = mouse {
+            let press = mo.more && mo.presses != self.presses && !self.presses.is_nan();
+            for (n, value, told) in [("cursor.x", mo.at.0, true), ("cursor.y", mo.at.1, true), ("cur.shape", mo.shape, mo.more), ("cur.down", mo.held as u32 as f32, mo.more),
+                ("click.x", mo.at.0, press), ("click.y", mo.at.1, press), ("click.n", mo.presses, press)] {
+                if let Some(k) = m.one.get(n).filter(|_| told) {
                     facts[*k] = value;
                 }
+            }
+            if mo.more {
+                self.presses = mo.presses;
             }
         }
         let pointer = match (one(m, "cursor.x", facts), one(m, "cursor.y", facts)) {
             (Some(x), Some(y)) => Some(v(x, y)),
             _ => one(m, "pointer.x", facts).zip(one(m, "pointer.y", facts)).map(|(x, y)| v(x, y)),
         };
-        let input = Input { pointer: pointer.filter(|p| p.x != 0.0 || p.y != 0.0), down: one(m, "cur.down", facts).is_some_and(|d| d > 0.5), gale: one(m, "gale", facts).unwrap_or(0.0) };
+        let input = Input { pointer: pointer.filter(|p| p.x != 0.0 || p.y != 0.0), down: one(m, "cur.down", facts).is_some_and(|d| d > 0.5), gale: one(m, "gale", facts).unwrap_or(0.0), centred: mouse.is_some_and(|mo| (2.0..=10.0).contains(&mo.shape)) };
         let stir = w.step(dt, &input);
 
         for (k, s) in m.slots.iter().enumerate() {
@@ -497,7 +572,7 @@ impl Goo {
         }
         let c = &w.cursor;
         let g = &w.drops[ghost];
-        for (n, x) in [("going.x", g.pos.x), ("going.y", g.pos.y), ("going.on", (g.r > 0.0) as u32 as f32), ("stir", stir), ("tier", self.tier), ("cur.on", w.cfg.cursor_body), ("cur.big", c.big), ("cur.x", c.tip.x), ("cur.y", c.tip.y), ("cur.st", c.stretch), ("cur.rot", c.rot), ("cur.wob", c.wobble), ("cur.tailx", c.belly.x - c.tip.x), ("cur.taily", c.belly.y - c.tip.y)] {
+        for (n, x) in [("going.x", g.pos.x), ("going.y", g.pos.y), ("going.on", (g.r > 0.0) as u32 as f32), ("stir", stir), ("tier", self.tier), ("cur.on", w.cfg.cursor_body), ("cur.big", c.big), ("cur.x", c.tip.x), ("cur.y", c.tip.y), ("cur.st", c.stretch), ("cur.rot", c.rot), ("cur.wob", c.wobble), ("cur.round", c.round), ("cur.tailx", c.belly.x - c.tip.x), ("cur.taily", c.belly.y - c.tip.y)] {
             if let Some(k) = m.one.get(n) {
                 facts[*k] = x;
             }
@@ -556,7 +631,7 @@ fn main() {
         return;
     }
     let home = std::env::var_os("XDG_CONFIG_HOME").map(std::path::PathBuf::from).or_else(|| std::env::var_os("HOME").map(|h| std::path::PathBuf::from(h).join(".config"))).unwrap_or_default();
-    let mut goo = Goo { world: World::new(1920.0, 1080.0, Config::default()), map: Map::default(), file: home.join("latteos/gooengine.json"), read_at: None, looked: Instant::now(), extra: serde_json::Value::Null, tier: 2.0, splash: 0.0, ripple_n: Vec::new(), gone_n: f32::NAN, landings: VecDeque::new(), told: Default::default(), count: [0.0; 5] };
+    let mut goo = Goo { world: World::new(1920.0, 1080.0, Config::default()), map: Map::default(), file: home.join("latteos/gooengine.json"), read_at: None, looked: Instant::now(), extra: serde_json::Value::Null, tier: 2.0, splash: 0.0, ripple_n: Vec::new(), gone_n: f32::NAN, carried: (usize::MAX, 0.0), marker: None, presses: f32::NAN, landings: VecDeque::new(), told: Default::default(), count: [0.0; 5] };
     goo.settings();
     watch_mouse(args.iter().position(|a| a == "--screen").and_then(|k| args.get(k + 1)).cloned());
     pleamar::provide_step(Box::new(move |dt, names, facts| goo.step(dt, names, facts)));

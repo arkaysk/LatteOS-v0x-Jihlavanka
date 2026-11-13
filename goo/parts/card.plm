@@ -171,6 +171,16 @@ part Card {
     let card.y0 = if(card_lens, if(lens_edge == 2, 46, H - 46 - card.h), 0) + if(card_lens, 0, 1) * if(card_dock, H - 46 - card.h, clamp(if(card.sy > 0, card.y, card.y - card.h), 12, H - 12 - card.h))
     let card.ax = if(card.sx > 0, card.x0, card.x0 + card.w)
     let card.ay = if(card.sy > 0, card.y0, card.y0 + card.h)
+    // The card carries its drop: where the card cannot have its corner at the drop (it is wider or taller than the
+    // room beside it), the drop goes to the corner, lifted and aside, and is the card's ear there; shut, it springs
+    // back (6.34). latte-goo adds this to the home of the drop `card_owner`; the card itself stays anchored where
+    // the drop belongs, so the two do not chase each other.
+    fact ear.ox = 0
+    fact ear.oy = 0
+    every 16ms while card_open and card_owner >= 0 and not card_menu and not card_dock and not card_lens { ear.ox = card.ax - card.bx; ear.oy = min(card.ay, H - 46) - min(card.by, H - 46) }
+    on change card_open while card_open { ear.ox = 0; ear.oy = 0 }
+    // shut, the card is drawn back into its ear first: only then is the drop let go
+    every 16ms while not card_open and card.p < 0.04 and (ear.ox != 0 or ear.oy != 0) { ear.ox = 0; ear.oy = 0 }
     let card.pn = card_pane > 0 and pane_a >= 0 and not true_glass and not card_dock and not card_menu   // its glass is the windows' side panel
     let card.glass = if(card_dock or card_menu, 0, if(true_glass, 1, max(material, card_pane * panes)))                  // the shore is hard: its panel is never glass
     let card.q = clamp(card.p, 0, 1.08)

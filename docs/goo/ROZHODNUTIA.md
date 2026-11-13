@@ -495,3 +495,4 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 - **Kurzor sa pretvára podľa stavu** (12. 11., mení predošlý bod): fluidnosť a kývanie ostávajú („to wobble je skvelé“), ale znak vnútri kvapky sa má meniť — nad okrajom okna znak ťahania okraja, nad poľom na písanie sa kvapka sploští na kurzor písania, nad ťahateľným povrchom otvorená ruka. Ostatné tvary teda nemajú ostať systémové (6.32).
 - **Kurzor musí byť dobre viditeľný na tmavom aj svetlom** (12. 11.): dnes je nad tmavým pozadím veľmi nenápadný (6.33).
 - **Karta nadvihne svoju kvapku** (12. 11.): keď je karta väčšia než miesto kvapky (ClockGoo), nesmie ostať prázdne priehľadné ucho; karta kvapku pri otvorení zdvihne a posunie bokom, po zatvorení kvapka odskočí späť (6.34).
+- **Kruh po kliknutí platí všade** (12. 11.): rozširujúci sa kruh okolo miesta kliku, ktorý je dnes v oknách, má fungovať všeobecne, aj na ploche (6.35).

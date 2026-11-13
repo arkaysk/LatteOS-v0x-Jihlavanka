@@ -1,0 +1,76 @@
+// The cursor, over everything: Goo draws it itself, and pleamar-wm hides its own meanwhile (GOOENGINE-2.md §8).
+//
+// It changes itself by what it is over, as the session's cursor would change its picture: an arrow of goo; gold
+// over what can be pressed; over a text pressed flat into a bar with the beam in it; over an edge of a window a
+// round drop with the two arrows of that edge; over what can be carried an open hand, and a closed one while it
+// is carried. One shape flows into the next: the body is goo-phys's (`cur.round`), the marks fade through each
+// other. A shape the scene does not know (a program's own picture) stays the session's.
+//
+// Seen on anything: the body is dark with a light line round it and a shadow under it, the marks are light with
+// a dark edge. And a press of the mouse anywhere —a window, the desktop, a drop— sends a ring of light out from
+// where it was (`click.*`, from pleamar-wm through latte-goo).
+part Cursor {
+    fact cur.shape = 0                         // what the session would show: 0 arrow, 1 to press, 2 text, 3 hand, 4 carrying, 5 ↔, 6 ↕, 7 ⤡, 8 ⤢, 9 move, 10 no; 99 its own
+    fact cur.poke = 0                          // latte-goo counts up to wake the scene: a press or a new shape under a mouse that stands still
+    fact cur.down = 0
+    fact click.n = 0                           // a press of the mouse, anywhere on the desktop: a count, and where
+    fact click.x = 0
+    fact click.y = 0
+    text cg.hand = ""                          // glyphs of the icon font, which the logic fills (lib/engine.luau)
+    text cg.fist = ""
+    text cg.ew = ""
+    text cg.ns = ""
+    text cg.d1 = ""
+    text cg.d2 = ""
+    text cg.move = ""
+    text cg.no = ""
+
+    let cur.dark = #160c07
+    spring curs = 420, 30
+    prop cur.gold = 0 ~curs
+    follow cur.gold = if(cur.shape == 1, 1, 0)
+    // one mark at a time is in; each fades by itself, so two cross for a moment as the body flows
+    repeat n in 2..11 {
+        prop cur.m.$n = 0 ~curs
+        follow cur.m.$n = if(cur.shape == n, 1, 0)
+    }
+    prop cur.press = 0 ~curs
+    follow cur.press = cur.down
+
+    group {
+        show: cur.on > 0.5
+        // its own body, the same shapes as in the matter under it
+        body {
+            gradient: radial cursor.x - 3, cursor.y - 3 radius 26, mix(coffee, cream, 0.22), mix(coffee, cur.dark, 0.35)
+            border: 1.5, mix(mix(cream, coffee, 0.12), gold, cur.gold)
+            shadow: 0, 1.5, 5, 60%
+            include "curdrop.plm"
+        }
+        // ── the marks, about the pointer ────────────────────────────────────────────────────────────────────
+        // a text: the beam, a line with a foot at each end
+        group {
+            opacity: cur.m.2
+            show: cur.m.2 > 0.02
+            line { from: cursor.x, cursor.y - 9 * cur.size; to: cursor.x, cursor.y + 9 * cur.size; width: 1.8 * cur.size; color: cream }
+            line { from: cursor.x - 3.2 * cur.size, cursor.y - 9.4 * cur.size; to: cursor.x + 3.2 * cur.size, cursor.y - 9.4 * cur.size; width: 1.8 * cur.size; color: cream }
+            line { from: cursor.x - 3.2 * cur.size, cursor.y + 9.4 * cur.size; to: cursor.x + 3.2 * cur.size, cursor.y + 9.4 * cur.size; width: 1.8 * cur.size; color: cream }
+        }
+        text cg.hand { at: cursor.x, cursor.y; anchor: center; size: 17 * cur.size; color: cream; opacity: cur.m.3; family: "tabler-icons"; show: cur.m.3 > 0.02 }
+        text cg.fist { at: cursor.x, cursor.y; anchor: center; size: 17 * cur.size; color: gold; opacity: cur.m.4; family: "tabler-icons"; show: cur.m.4 > 0.02 }
+        text cg.ew { at: cursor.x, cursor.y; anchor: center; size: 18 * cur.size; color: cream; opacity: cur.m.5; family: "tabler-icons"; show: cur.m.5 > 0.02 }
+        text cg.ns { at: cursor.x, cursor.y; anchor: center; size: 18 * cur.size; color: cream; opacity: cur.m.6; family: "tabler-icons"; show: cur.m.6 > 0.02 }
+        text cg.d1 { at: cursor.x, cursor.y; anchor: center; size: 18 * cur.size; color: cream; opacity: cur.m.7; family: "tabler-icons"; show: cur.m.7 > 0.02 }
+        text cg.d2 { at: cursor.x, cursor.y; anchor: center; size: 18 * cur.size; color: cream; opacity: cur.m.8; family: "tabler-icons"; show: cur.m.8 > 0.02 }
+        text cg.move { at: cursor.x, cursor.y; anchor: center; size: 18 * cur.size; color: cream; opacity: cur.m.9; family: "tabler-icons"; show: cur.m.9 > 0.02 }
+        text cg.no { at: cursor.x, cursor.y; anchor: center; size: 18 * cur.size; color: #ff8a80; opacity: cur.m.10; family: "tabler-icons"; show: cur.m.10 > 0.02 }
+    }
+
+    // ── a press anywhere: the ring of light a press sends through a window's glass (pleamar's `ripple:`, which the
+    // user knew from windows), the same where there is no glass: the desktop, a drop, a solid window. pleamar's own
+    // sums (shaders/ring.wgsl), so over glass the two are one ring.
+    prop click.p = 1 ~0ms
+    prop click.ax = 0 ~0ms
+    prop click.ay = 0 ~0ms
+    on change click.n { click.ax: click.x ~0ms; click.ay: click.y ~0ms; click.p: 0 ~0ms; click.p: 1 ~900ms after 16ms }
+    shader ring { at: click.ax - 190, click.ay - 190; size: 380, 380; values: click.p; show: click.p < 0.99 and fx.click > 0.5 }
+}

@@ -59,6 +59,13 @@ part Drops {
     fact cur.wob = 0                           // the swing left when it brakes, −1…1
     fact cur.tailx = 0                         // where its belly is from its tip, px
     fact cur.taily = 0
+    fact cur.round = 0                         // 0 an arrow … 1 a round drop about the pointer (a text, an edge, a hand)
+    fact curs.size = 1                         // gooengine.json › cursor.size: how big it is drawn
+    fact fx.click = 1                          // …› effects.click: a ring where the mouse was pressed
+    let cur.zoom = 1 + 1.4 * cur.big
+    let cur.size = cur.on * cur.zoom * curs.size * (1 - 0.12 * cur.press)
+    prop cur.flat = 0 ~spring(520, 34)                // over a text it is pressed flat into a bar
+    follow cur.flat = if(cur.shape == 2, cur.round, 0)
     fact ev.flicked = 0
     event goo_flick                            // it turned back on itself at speed: droplets come off it (body.plm)
     on change ev.flicked { emit goo_flick }
@@ -294,7 +301,8 @@ part Drops {
         let small.$k = clamp(26 / max(r0.$k, 1), 0.6, 1.8)
         // Back at an edge it dives under the surface and comes up again.
         prop dive.$k = 0 ~0ms
-        on change goo.$k.dip { dive.$k: 1 ~180ms; dive.$k: 0 ~900ms after 240ms }
+        // (not the drop its card carried to a corner: that one hops home through the air)
+        on change goo.$k.dip while card_owner != k or (ear.ox == 0 and ear.oy == 0) { dive.$k: 1 ~180ms; dive.$k: 0 ~900ms after 240ms }
         // A jump crouches first; the flight itself is the world's.
         on change goo.$k.jump { impulse sq.$k 7 }
         let air.$k = g.fly.$k * 100
@@ -315,7 +323,7 @@ part Drops {
         let fx.y.$k = goo.$k.fx_k * if(goo.$k.fx == 3, 2.5 * noise(k + 9, tick * 18), 0) + noise(k * 5.7, tick * 0.2) + drift.$k * ty.$k + shake.$k * 4 * sin(tick * 2600 + k * 40) * ty.$k
 
         // Where it is comes from the world; what is drawn adds the flow, the dive and the sinking to rest.
-        let rises.$k = (4 * flow.$k * small.$k * (1 - up.$k) - dive.$k * r0.$k * 1.4) * docked.$k - sink.$k
+        let rises.$k = (4 * flow.$k * small.$k * (1 - up.$k) - dive.$k * r0.$k * 1.4 * (1 - g.fly.$k)) * docked.$k - sink.$k
 
         // ── what the body and the faces need ────────────────────────────────────────────────────────────────
         prop x.$k = 0 ~0ms
@@ -387,7 +395,7 @@ part Drops {
             at: if(held.$k > 0, W / 2, x.$k - nx.$k * foot.$k / 2 + tx.$k * cap.$k * goo.$k.cap_dir), if(held.$k > 0, H / 2, y.$k - ny.$k * foot.$k / 2 + ty.$k * cap.$k * goo.$k.cap_dir)
             size: if(held.$k > 0, W * 3, max(rr.$k * 2, 24) + ty.$k * foot.$k + tx.$k * cap.$k * 2), if(held.$k > 0, H * 3, max(rr.$k * 2, 24) + tx.$k * foot.$k + ty.$k * cap.$k * 2)
             corner: max(rr.$k, 12)
-            cursor: pointer
+            cursor: if(held.$k > 0, grabbing, pointer)     // carried, the hand closes on it (parts/cursor.plm)
             active: goo.$k.on
             label: "{goo.$k.name}"
             role: button

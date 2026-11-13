@@ -28,7 +28,8 @@
   "ao": "auto",
   "soft_shadow": "auto",
   "halo": "auto",
-  "harmonics": "auto"
+  "harmonics": "auto",
+  "click": true
  },
  "physics": {},
  "look": {
@@ -37,6 +38,7 @@
  },
  "cursor": {
   "mode": "adaptive",
+  "size": 1,
   "lift": "glow",
   "live": true,
   "hide_arrow": true

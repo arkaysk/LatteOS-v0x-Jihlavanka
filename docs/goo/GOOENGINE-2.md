@@ -386,6 +386,42 @@ kurzor programu ostávajú systémové, lebo ich tvar scéna nepozná; (2) nikdy
 zámku; (3) keď `latte-goo` spadne, kurzor sa do sekundy vráti. Vypínač: `cursor.hide_arrow` v `gooengine.json`.
 **Platí až po novom prihlásení** (nový pleamar-wm) a na obrazovke to **overené nie je**.
 
+### 8.4 Tretie znenie: kurzor sa pretvára sám (používateľ 12. 11., ROADMAP 6.32, 6.33, 6.35)
+
+Používateľ: fluidnosť a kývanie ostávajú, ale kurzor má **sám seba meniť podľa toho, nad čím je**, a musí ho byť
+**vidno na tmavom aj svetlom**. Kruh po kliknutí, ktorý poznal z okien, má byť **všade**.
+
+| Stav (tvar, ktorý by ukázala relácia) | Ako vyzerá kvapka |
+|---|---|
+| šípka (`default`) | kužeľ z hrotu po bruško, ako doteraz; hrot je bod kliku |
+| dá sa stlačiť (`pointer`) | tá istá šípka, obrys zozlatne |
+| text (`text`) | bruško vbehne do hrotu, kvapka sa **sploští do zvislej tyčinky** a je v nej kurzor písania |
+| hrana okna (`ew/ns/nwse/nesw-resize` a ich jednostranné mená) | okrúhla kvapka okolo ukazovateľa s dvojšípkou toho smeru |
+| dá sa ťahať (`grab`) · ťahá sa (`grabbing`) | otvorená ruka · zovretá, zlatá |
+| presun (`move`) · nedá sa (`not-allowed`) | štvoršípka · červený zákaz |
+| čokoľvek iné (vlastný obrázok programu, čakanie…) | ostáva kurzor relácie |
+
+**Odkiaľ scéna vie tvar:** pleamar-wm ho pozná (tvar žiada okno cez `wp_cursor_shape`, zóny jeho scény cez
+`cursor:`). Záplata `pleamar-wm-shell-cursor.patch` ho posiela socketom `cursor.sock`: kto sa po pripojení ohlási
+slovom `more`, dostáva riadky `x y tvar stlačenia držané`; ostatní (pleamar, Marea) ďalej iba `x y`. V súbore
+`pleamar-wm-shell-cursor` za číslom procesu `latte-goo` vymenuje tvary, ktoré kreslí sám — pleamar-wm skryje svoj
+kurzor iba pri nich. Staršiemu pleamar-wm ostáva iba číslo procesu a skrýva sa iba šípka, ako predtým.
+
+**Pretečenie, nie výmena:** v jadre je `Cursor::round` (0 šípka … 1 okrúhla kvapka), ktoré sa k cieľu blíži
+pružne; s ním bruško vbieha do hrotu a kotúče kužeľa sa nafúknu do jednej kvapky (`goo/parts/curdrop.plm`). Znaky
+vnútri (`goo/parts/cursor.plm`) sa cez seba prelínajú. Zmena tvaru pod stojacou myšou svet zobudí (test
+`over_a_text_the_cursor_is_a_round_drop_about_the_pointer`).
+
+**Viditeľnosť:** kurzor má vlastné telo **nad všetkým** (predtým bol iba v hmote pod kartami, takže nad otvorenou
+kartou zmizol): tmavá výplň, svetlý obrys 1,5 px a tieň pod ním; znaky sú svetlé. Na tmavom ho drží obrys, na
+svetlom výplň. Adaptívna farba podľa pozadia (§8.3) tým odpadá ako nutnosť a ostáva ako možná voľba.
+
+**Kruh po kliknutí:** pleamar-wm počíta stlačenia tlačidiel myši a posiela ich tým istým socketom; `latte-goo`
+zapíše `click.n/x/y` a scéna pustí z miesta kliku **ten istý kruh svetla, aký robí sklo okien** — vzorec prevzatý z pleamaru do `goo/shaders/ring.wgsl` (pleamar
+`ripple:`; používateľ 13. 11.: „kruh už tam bol“) — rovnako široký, mäkký a rýchly, takže nad sklom splynú do
+jedného a na ploche, kvapke či nesklenenom okne je iba tento. Keď myš stojí, scénu zobudí `pleamar::tell_fact` (doplnok záplaty `pleamar-step-hook.patch`).
+Vypínač `effects.click` v `gooengine.json`; veľkosť kurzora `cursor.size`.
+
 ### 8.2 Kde sa kreslí — a riziko
 
 Systémový kurzor kreslí pleamar-wm na kurzorovej rovine grafickej karty z témy `XCURSOR_THEME` **[zdroj]**; má
@@ -860,6 +896,9 @@ aby sa dala spojiť s ostatnými doskami v jednej hmote, musí sa jej doska kres
 | 12. 11. | 7 — kývanie okien (časť) | `wm/shaders/jelly.wgsl` a blok `// LatteOS:` v `wm/session.plm`: okno ťahané za titulok drží v bode, kde ho má ruka, zvyšok za ním mešká podľa vzdialenosti a po pustení sa dvakrát prehupne. Jeden bod na pružine (`wobble` 240, 11) naháňa ruku — dve vlastnosti pre celú scénu, nie štyri rohy na okno ako v §10.1; v pokoji nečíta nič. Vypínač `jelly.on`. Overené bez obrazovky (softvérové kreslenie): obsah okna sa pri ťahaní ohne. **Nerobené:** kývanie pri zmene veľkosti a pri preskladaní dlaždíc, šplech hladiny od okna pri spodnom okraji, spoločné pružiny s Goo; tmavé pozadie a tieň okna sa neohýbajú |
 | 12. 11. | opravy po prihlásení (používateľ) | **Kurzor nad plochou nebolo vidno:** pleamar dáva `cursor.x/y` v rovine prvej plochy scény, ktorú nájde, a tou bola plocha ikon posunutá o 20 000 px — kvapka kurzora sa kreslila mimo obrazovky a kvapky nevedeli o kurzore mimo svojich zón. `latte-goo` si teraz polohu číta sám z `cursor.sock` pleamar-wm a fakty prepíše. **Rám okna sa nekýval:** obrys a tmavý podklad okna sú teraz v želé skupine. **Shore nebol súčasťou Goo:** doska TrayShore a pokojná doska LensShore sú tvary tela kvapiek (`goo/parts/plates.plm`) — tá istá hmota, svetlo, hladina do nich vbieha, jeden obrys |
 | 12. 11. | 3 — scéna na jadre | `drops.plm` číta polohy z `g.*`, hladinu z `h.*`; `time` v `goo.plm` a `side.plm` nahradil `tick`, ktorý beží iba pri `stir > 0`, otvorenej karte, klávesnici alebo pulzujúcom jadre. `latte-goo` číta záznam `goo.k.*` priamo, rozhranie kvapiek sa nezmenilo. Z `engine.luau` odišli `GRAVITY`, časovače pádu a zvláštny prípad dosky (doska je stena, kvapka z nej odskočí). Pustená kvapka letí v smere hodu (`goo_landed`), pri boku a hore sa prilepí (do 130 px, pomalá). Okno do BarGoo hádže jadro. Overené bez obrazovky (pokoj, kurzor, hod) a nasadené: **Goo v pokoji berie 1 % jadra** (predtým 17–44 %) |
+
+| 12. 11. | karta nesie svoju kvapku (6.34) | karta širšia alebo vyššia než miesto pri kvapke mala roh inde než kvapku a kreslila tam prázdne ucho. Scéna teraz povie jadru, o koľko je roh karty od domova kvapky (`ear.ox/oy`), `latte-goo` to pripočíta k domovu kvapky `card_owner` a kvapka do rohu dôjde na svojej pružine; ucho je kvapka sama. Po zatvorení (karta sa najprv nasaje) kvapka **odskočí domov oblúkom** (`aim`, 0,6 s), bez ponoru. Overené na ploche používateľa s ClockGoo |
+| 12. 11. | 6 — kurzor, tretie znenie (§8.4) | tvary podľa stavu, vlastné telo nad všetkým so svetlým obrysom, kruh po kliknutí všade; `pleamar-wm-shell-cursor.patch` posiela tvar a tlačidlá, `pleamar-step-hook.patch` má `tell_fact`. 21 testov jadra. Titulok okna žiada `grab` (otvorená ruka) |
 
 **Čo krok 3 zatiaľ nerobí (vedome):**
 

@@ -31,6 +31,7 @@ scene GooSide {
     shader velvet = file "shaders/velvet.wgsl"
     shader pegboard = file "shaders/pegboard.wgsl"
     shader shore = file "shaders/shore.wgsl"
+    shader ring = file "shaders/ring.wgsl"          // the ring of a press (parts/cursor.plm)
     include "parts/card.plm"
     include "parts/outline.plm"          // the one outline, over the goo and the card's frame, under what they show
     include "parts/faces.plm"
@@ -40,6 +41,7 @@ scene GooSide {
     include "parts/rows.plm"
     include "parts/desk.plm"
     include "parts/ctx.plm"
+    include "parts/cursor.plm"           // last: the cursor is over everything
 
     // The scene's clock (parts/drops.plm): it runs while the world is stirred, a card is out, the keyboard walks
     // the drops or something asked for a moment of it. At rest it stands, and the scene paints nothing.

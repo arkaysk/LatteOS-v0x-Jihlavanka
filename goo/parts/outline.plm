@@ -8,6 +8,7 @@ part Outline {
         border: 0 - look.outline, mix(coffee, cream, 0.4)
         box { from: 0, H; size: W, 40 }
         include "shapes.plm"
+        include "curdrop.plm"
         include "plates.plm"
         include "cardframe.plm"
         // TrayShore's panel when it is out

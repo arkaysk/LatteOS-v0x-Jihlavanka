@@ -84,15 +84,6 @@ def shapes(n):
     for i in range(-1, COLUMNS):
         out.append("    line {{ from: W * {x0} / {n}, {y0}; to: W * {x1} / {n}, {y1}; width: {w}; blend: 18 }}\n".format(
             n=COLUMNS, x0=i + 0.5, x1=i + 1.5, y0=top(i), y1=top(i + 1), w=2 * THICK))
-    # The cursor as a drop of goo with a point: four discs from the tip (the pointer itself, half a px: the point a
-    # press lands on) to the belly where goo-phys says it hangs, each bigger than the one before, melted into a
-    # cone that ends round. Dragged, the belly lags and the cone leans and lengthens; shaken, it all grows.
-    # Part of the matter: one outline, and near a drop the two melt.
-    size = "cur.on * (1 + 1.4 * cur.big)"
-    for t, r, blend in ((0, 0.6, 0), (0.2, 2.1, 2), (0.5, 4.3, 3), (1, 7.2, 4)):
-        swing = " * (1 + 0.2 * cur.wob)" if t == 1 else ""
-        out.append("    ellipse {{ at: cursor.x + cur.tailx * {t} * (1 + 1.4 * cur.big), cursor.y + cur.taily * {t} * (1 + 1.4 * cur.big); "
-                   "radius: {r} * {size}{swing}; blend: {blend} }}\n".format(t=t, r=r, size=size, swing=swing, blend=blend))
     # a window put away, on its way down into the bar: a drop goo-phys throws
     out.append("    ellipse { at: going.x, going.y; radius: 16 * going.on; scale: 0.9, 1.15; blend: 16 }\n")
     # the neck of the one drop being dragged, from its home to where it is

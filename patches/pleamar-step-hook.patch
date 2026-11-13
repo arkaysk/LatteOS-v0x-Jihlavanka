@@ -1,12 +1,20 @@
 diff --git a/src/lib.rs b/src/lib.rs
-index 501651c..5127477 100644
+index 501651c..9761385 100644
 --- a/src/lib.rs
 +++ b/src/lib.rs
-@@ -35,6 +35,7 @@ pub mod terminal;
+@@ -35,6 +35,15 @@ pub mod terminal;
  
  pub use platform::{host_keymap, provide_layer_hooks, provide_platform, provide_windows, set_host_keymap, LayerHooks, NestSender, Platform, PlatformWindow};
  pub use gpu::{Frames, NewSheet, Sent, Target, View};
 +pub use render::{provide_step, HostStep};
++
++/// A fact told by the host from any of its threads, as the logic tells one: the scene wakes for it. For what the
++/// host hears between frames —a press of the mouse over another program's window— and its step cannot wait for.
++pub fn tell_fact(name: &'static str, value: f32) {
++    if let Some(tx) = QUIT_TX.get().map(|t| t.lock().unwrap().clone()) {
++        let _ = tx.send(scene::ToRender::Fact(name, value));
++    }
++}
  /// The same wgpu the render paints with, for a platform that lends it textures.
  pub use wgpu;
  pub use scenes::from_file::read as read_scene;
