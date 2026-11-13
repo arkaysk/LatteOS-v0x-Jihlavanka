@@ -22,6 +22,8 @@
 //!           cur.round cur.shape cur.down  …how far from an arrow to a round drop about the pointer (0…1), the shape the
 //!                                         session would show (SHAPES) and whether a button is held
 //!           click.n click.x click.y       a press of the mouse anywhere on the desktop: a count, and where
+//!           click.win click.drop          …and whether it fell on a program's window, or on a drop
+//!           covered                       the shells cannot be seen: locked, or a window has a whole monitor
 //!           stir tier                     energy left 0…1; the tier 0…3
 //!           ev.landed ev.bumped ev.joined ev.parted ev.flicked   one event each: a running number × 4096 + what
 //!                                         (the drop; for a bump, drop × 64 + the other; for a flick, how many)
@@ -126,6 +128,10 @@ struct Mouse {
     shape: f32,
     presses: f32,
     held: bool,
+    /// The last press fell on a program's window, which pleamar-wm draws in its scene.
+    on_window: bool,
+    /// The shells cannot be seen: locked, or a window has a whole monitor (a game, a film).
+    covered: bool,
     more: bool,
 }
 
@@ -160,10 +166,12 @@ fn watch_mouse(screen: Option<String>) {
                     let mut now = Mouse { at: (x - c.0, y - c.1), ..Mouse::default() };
                     if let (Some(shape), Some(presses), Some(held)) = (said.get(2), number(3), number(4)) {
                         (now.shape, now.presses, now.held, now.more) = (SHAPES.iter().find(|s| s.0 == *shape).map_or(99.0, |s| s.1), presses, held > 0.0, true);
+                        now.on_window = number(5).is_some_and(|w| w > 0.0);
+                        now.covered = number(6).is_some_and(|c| c > 0.0);
                     }
                     let was = MOUSE.lock().unwrap().replace(now);
                     // a press, or another shape, with the mouse where it was: nothing else would wake the scene
-                    if WAKES.load(std::sync::atomic::Ordering::Relaxed) && was.is_some_and(|w| (w.shape, w.presses, w.held) != (now.shape, now.presses, now.held)) {
+                    if WAKES.load(std::sync::atomic::Ordering::Relaxed) && was.is_some_and(|w| (w.shape, w.presses, w.held, w.covered) != (now.shape, now.presses, now.held, now.covered)) {
                         poke += 1.0;
                         pleamar::tell_fact("cur.poke", poke);
                     }
@@ -305,7 +313,7 @@ impl Goo {
         self.ripple_n = vec![f32::NAN; m.ripples.len()];
         self.gone_n = f32::NAN;
         m.walls = (0..32).map_while(|n| at(&format!("wall.{n}.x0")).map(|x0| [Some(x0), at(&format!("wall.{n}.y0")), at(&format!("wall.{n}.x1")), at(&format!("wall.{n}.y1"))])).collect();
-        for n in ["screen.width", "screen.height", "cursor.x", "cursor.y", "pointer.x", "pointer.y", "cur.down", "gale", "splash.n", "splash.x", "splash.w", "splash.p", "stir", "tier", "cur.on", "cur.big", "cur.x", "cur.y", "cur.st", "cur.rot", "cur.wob", "cur.tailx", "cur.taily", "cur.round", "cur.shape", "cur.poke", "click.n", "click.x", "click.y", "ev.landed", "ev.bumped", "ev.joined", "ev.parted", "ev.flicked", "ev.lx", "ev.ly", "ev.le",
+        for n in ["screen.width", "screen.height", "cursor.x", "cursor.y", "pointer.x", "pointer.y", "cur.down", "gale", "splash.n", "splash.x", "splash.w", "splash.p", "stir", "tier", "cur.on", "cur.big", "cur.x", "cur.y", "cur.st", "cur.rot", "cur.wob", "cur.tailx", "cur.taily", "cur.round", "cur.shape", "cur.poke", "click.n", "click.x", "click.y", "click.win", "click.drop", "covered", "ev.landed", "ev.bumped", "ev.joined", "ev.parted", "ev.flicked", "ev.lx", "ev.ly", "ev.le",
             "card_owner", "ear.ox", "ear.oy", "gone_n", "gone.x0", "gone.y0", "gone.x1", "going.x", "going.y", "going.on", "shore_w", "lens_edge", "lens_a", "lens_b"] {
             if let Some(k) = at(n) {
                 m.one.insert(n, k);
@@ -520,7 +528,9 @@ impl Goo {
         let mouse = *MOUSE.lock().unwrap();
         if let Some(mo) = mouse {
             let press = mo.more && mo.presses != self.presses && !self.presses.is_nan();
-            for (n, value, told) in [("cursor.x", mo.at.0, true), ("cursor.y", mo.at.1, true), ("cur.shape", mo.shape, mo.more), ("cur.down", mo.held as u32 as f32, mo.more),
+            // whether it fell on a drop: the scene leaves its own ring to the drop's glass, if it has one
+            let on_drop = w.drops.iter().any(|d| d.r > 0.0 && (d.pos - v(mo.at.0, mo.at.1)).len() < d.r * 1.3);
+            for (n, value, told) in [("click.win", mo.on_window as u32 as f32, press), ("covered", mo.covered as u32 as f32, mo.more), ("click.drop", on_drop as u32 as f32, press), ("cursor.x", mo.at.0, true), ("cursor.y", mo.at.1, true), ("cur.shape", mo.shape, mo.more), ("cur.down", mo.held as u32 as f32, mo.more),
                 ("click.x", mo.at.0, press), ("click.y", mo.at.1, press), ("click.n", mo.presses, press)] {
                 if let Some(k) = m.one.get(n).filter(|_| told) {
                     facts[*k] = value;

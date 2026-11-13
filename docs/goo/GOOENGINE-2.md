@@ -418,8 +418,13 @@ svetlom výplň. Adaptívna farba podľa pozadia (§8.3) tým odpadá ako nutnos
 
 **Kruh po kliknutí:** pleamar-wm počíta stlačenia tlačidiel myši a posiela ich tým istým socketom; `latte-goo`
 zapíše `click.n/x/y` a scéna pustí z miesta kliku **ten istý kruh svetla, aký robí sklo okien** — vzorec prevzatý z pleamaru do `goo/shaders/ring.wgsl` (pleamar
-`ripple:`; používateľ 13. 11.: „kruh už tam bol“) — rovnako široký, mäkký a rýchly, takže nad sklom splynú do
-jedného a na ploche, kvapke či nesklenenom okne je iba tento. Keď myš stojí, scénu zobudí `pleamar::tell_fact` (doplnok záplaty `pleamar-step-hook.patch`).
+`ripple:`; používateľ 13. 11.: „kruh už tam bol“) — rovnako široký, mäkký a rýchly, a kde je stlačené sklo, Goo svoj kruh **vynechá**:
+jeden kruh na jedno stlačenie (používateľ 13. 11.). Sklo pleamaru má `ripple` predvolene zapnutý, takže kruh pustí
+sklo okna (pri `win_glass` > 0), sklenená kvapka (`material` > 0,02) aj sklenená karta. pleamar-wm v šiestom údaji
+riadku `cursor.sock` hovorí, či stlačenie padlo do okna programu (`layers::window_at`, iba keď myš patrí scéne, nie
+panelu nad oknom); `latte-goo` k tomu pridá, či padlo na kvapku (`click.win`, `click.drop`), kartu zistí scéna.
+Overené na ploche: telo skleneného okna — iba kruh pleamaru; titulok, plocha, plné okno — iba kruh Goo; sklenená
+kvapka — Goo vynechá. Keď myš stojí, scénu zobudí `pleamar::tell_fact` (doplnok záplaty `pleamar-step-hook.patch`).
 Vypínač `effects.click` v `gooengine.json`; veľkosť kurzora `cursor.size`.
 
 ### 8.2 Kde sa kreslí — a riziko
@@ -592,6 +597,9 @@ Dok pleamar-wm (autor ho volá *shore*) kreslí `wm/session.plm` (`dk.*`). Ostá
 
 ## 12. Počasie pri nečinnosti
 
+**13. 11. (používateľ): počasie sa samo nezapína** — ani pri nečinnosti, ani inak. Text nižšie platí iba ako
+popis toho, čo by sa dalo zapnúť ručne (napr. budúci sporič obrazovky, 9.26).
+
 Dážď a sneh na hladine sú zrušené (používateľ 11. 11.): z `body.plm` preč tri `particles`, z `drops.plm` fakty
 `rain`, `snow`, z `engine.luau` `weather_on/off`. Stupeň nečinnosti 2 namiesto toho **zapne počasie pleamar-wm**:
 dážď alebo sneh na oknách (`rain_level`, shadery `rain.wgsl` a `snow.wgsl` v `wm/session.plm`), silou podľa
@@ -619,6 +627,10 @@ Pri stupni 1: `lens = image "~/.cache/latteos/wallpaper.png"` — sklo láme iba
 ---
 
 ## 14. Energia, stupne, rozpočet
+
+**13. 11. (používateľ): Goo je živé prostredie.** Stav „spiaci“ s 0 snímkami už neplatí pre bežnú plochu:
+kvapky dýchajú a hladina sa vlní stále, na pokojnej frekvencii. Bez snímok ostáva iba tam, kde plochu nevidno
+alebo to človek chce (ROZHODNUTIA 13. 11.).
 
 | Stav | Kedy | Snímky |
 |---|---|---|
@@ -890,7 +902,7 @@ aby sa dala spojiť s ostatnými doskami v jednej hmote, musí sa jej doska kres
 | 12. 11. | gravitácia, hladina, svetlo (po pohľade používateľa) | gravitácia iba dole, k boku a stropu sa Goo prilepí; hladina je viditeľný pás s vlnením a väčšími vlnami; okraj hladiny a blízke okraje Goo osvetľuje nevidené slnko alebo mesiac; kvapka, ktorá dopadla na iné kvapky, už neostane visieť (svet sa predtým neupokojil). 17 testov jadra |
 | 12. 11. | vlny a svetlo, druhé znenie | dopad robí priehlbinu s lemom (bol naopak), sila podľa veľkosti bez orezania, viskozita, 96 stĺpcov; hladina kreslená hladkými úsečkami; spŕška; svetlo slnka a mesiaca shaderom `shore.wgsl` po skutočnej siluete (vlas, žiara, crema, bok kvapiek). 18 testov jadra |
 | 12. 11. | 4 — jeden obrys (náhradná cesta z §7) | výplne ostávajú vo svojich telách (kvapky, karta so svojím materiálom, doska), nad nimi je **jedno duté telo iba s obrysom** zo všetkých tvarov: kvapky, vlákna, hladina, rám karty s uchom, doska TrayShore a jej panel (`goo/parts/outline.plm`, `cardframe.plm`). Kde sa tvary zlejú alebo prekryjú, čiara nie je. Svetlejšie podkladové rámčeky dosiek (`shore.rim`) odišli. Duté telo je nová záplata `pleamar-hollow-body.patch` (`border:` so zápornou šírkou); číre sklo s obrysom fungovalo tiež, ale stálo 8,3 ms procesora na snímku namiesto 3,0. Karta ako súčasť **jednej výplne** (bod 2–5 §7) sa nerobila: jej sklo a farba panela by sa museli prepísať |
-| 12. 11. | 5 — karty a Shore (časť) | dve pružiny: von `land` s dvoma odskokmi, dnu `shut` kriticky tlmená — zatvorenie z 1 na 0 za necelých 200 ms bez návratu; `card_alive` a časovač 120 ms v `card.luau` zrušené. Obsah zhasne prvý (70 ms). Ucho sa pred otvorením prikrčí a po zatvorení nafúkne a rozvlní hladinu pod sebou. Panel TrayShore pri vysunutí a zasunutí štuchne hladinu pri konci dosky. **Nerobené:** vlna po obryse karty pri rozliatí (`cardrip` z Vitreusu), samostatné fázy nádych–výron–rozliatie nad rámec dnešného tvaru (šírka rastie s t³, takže karta už vychádza úzka a rozlieva sa), LensShore |
+| 12. 11. | 5 — karty a Shore (časť) | dve pružiny: von `land` s dvoma odskokmi, dnu `shut` kriticky tlmená — zatvorenie z 1 na 0 za necelých 200 ms bez návratu; `card_alive` a časovač 120 ms v `card.luau` zrušené. Obsah zhasne prvý (70 ms). Ucho sa pred otvorením prikrčí a po zatvorení nafúkne a rozvlní hladinu pod sebou. Panel TrayShore pri vysunutí a zasunutí štuchne hladinu pri konci dosky. **Nerobené:** (vlna po obryse karty je od 13. 11. hotová, nižšie), samostatné fázy nádych–výron–rozliatie nad rámec dnešného tvaru (šírka rastie s t³, takže karta už vychádza úzka a rozlieva sa), LensShore |
 | 12. 11. | 6 — kurzor (bezpečná časť) | kurzor má **telo z goo**: pod systémovým kurzorom hrot a za ním bruško z jadra, ktoré mešká (najviac 22 px), pri rýchlosti sa natiahne a pri zabrzdení zakýve; je súčasťou hmoty (obrys, zlieva sa s kvapkou), pri prudkom obrate z neho odletia kvapôčky. Zapnuté od stupňa 2 a keď `gooengine.json` › `cursor.live` (relácia na latte-lab má `LATTE_TIER=full`, teda je zapnuté). Kurzor ďaleko od kvapiek a hladiny už svet nebudí, keď telo nemá. **Nerobené:** skrytie systémového kurzora (záplata pleamar-wm — nedá sa overiť bez nového prihlásenia a hrozí neviditeľný kurzor nad oknom na celú obrazovku), téma xcursor „LatteOS Goo“ (chýba `xcursorgen` a kresby), adaptívna farba, tvary ruka/písanie/ťahanie, Nastavenia › Kurzor |
 | 12. 11. | 6 — kurzor, druhé znenie | hrot je ukazovateľ, telo visí z hrotu a ťahá sa ako palička za koniec, zatrasenie ho zväčší (§8.0); skrytie systémovej šípky záplatou `pleamar-wm-shell-cursor.patch` s tromi poistkami. 20 testov jadra |
 | 12. 11. | 7 — kývanie okien (časť) | `wm/shaders/jelly.wgsl` a blok `// LatteOS:` v `wm/session.plm`: okno ťahané za titulok drží v bode, kde ho má ruka, zvyšok za ním mešká podľa vzdialenosti a po pustení sa dvakrát prehupne. Jeden bod na pružine (`wobble` 240, 11) naháňa ruku — dve vlastnosti pre celú scénu, nie štyri rohy na okno ako v §10.1; v pokoji nečíta nič. Vypínač `jelly.on`. Overené bez obrazovky (softvérové kreslenie): obsah okna sa pri ťahaní ohne. **Nerobené:** kývanie pri zmene veľkosti a pri preskladaní dlaždíc, šplech hladiny od okna pri spodnom okraji, spoločné pružiny s Goo; tmavé pozadie a tieň okna sa neohýbajú |
@@ -899,6 +911,12 @@ aby sa dala spojiť s ostatnými doskami v jednej hmote, musí sa jej doska kres
 
 | 12. 11. | karta nesie svoju kvapku (6.34) | karta širšia alebo vyššia než miesto pri kvapke mala roh inde než kvapku a kreslila tam prázdne ucho. Scéna teraz povie jadru, o koľko je roh karty od domova kvapky (`ear.ox/oy`), `latte-goo` to pripočíta k domovu kvapky `card_owner` a kvapka do rohu dôjde na svojej pružine; ucho je kvapka sama. Po zatvorení (karta sa najprv nasaje) kvapka **odskočí domov oblúkom** (`aim`, 0,6 s), bez ponoru. Overené na ploche používateľa s ClockGoo |
 | 12. 11. | 6 — kurzor, tretie znenie (§8.4) | tvary podľa stavu, vlastné telo nad všetkým so svetlým obrysom, kruh po kliknutí všade; `pleamar-wm-shell-cursor.patch` posiela tvar a tlačidlá, `pleamar-step-hook.patch` má `tell_fact`. 21 testov jadra. Titulok okna žiada `grab` (otvorená ruka) |
+
+| 13. 11. | 5 — vlna po okraji karty | pri otvorení vybehnú z ucha dva hrebene po dvoch okrajoch karty, ktoré sa v ňom stretajú, vystúpia asi o 12 px a do 0,7 s doznejú (`card.rip`, `rip.h`, `rip.go`). Správanie z Vitreusu (`cardrip.wgsl`, MIT); tam shader posúva obraz karty, tu sú hrebene tvarmi rámu karty (`cardframe.plm`), lebo ten je aj v tele karty, aj v jednom obryse hmoty — výplň a obrys sa vydujú spolu, bez čiary medzi nimi. Nie pri ponuke, TrayShore ani LensShore. Kývnutie hladiny v karte (`velvet`) nerobené |
+| 13. 11. | kruh po kliknutí, jeden | Goo vynechá svoj kruh tam, kde je stlačené sklo, ktoré kruh pustí samo (okno so sklom, sklenená kvapka či karta); overené na ploche (§8.4) |
+
+| 13. 11. | živé prostredie na grafickej karte (používateľ) | kvapky dýchajú a hladina sa vlní stále, aj bez myši: obe hlavné telá goo a jeden obrys sú v skupine so shaderom `goo/shaders/breathe.wgsl`, ktorý obraz hmoty pomaly ohýba (2,6 px, perióda 6–9 s) iba podľa `s.time` — scéna nepočíta ani jedno číslo, procesor odpočíva. Neohýba sa otvorená karta, tvrdé dosky (LensShore, TrayShore) ani okolie kurzora. Skupina má `shader: … while alive`: bez neho nie je ani priechod navyše. `alive` = Nastavenia › Kvapky › Živé, stupeň ≥ 1 (pri stupni < 2 bez shadera), nie slabá batéria, nie zakryté. Zakryté hlási pleamar-wm v siedmom údaji `cursor.sock` (`layers::covered`: zámok alebo okno na celú obrazovku) |
+| 13. 11. | meranie (i7-4820K, jedno jadro, pokoj bez myši) | doterajší pokoj 0,4–1,2 %; dýchanie cez hodiny scény (procesor) 13,8 %, so sklom 38,9 %; **na grafickej karte 7,0 %, so sklom 6,6 %**; pod oknom na celú obrazovku 1,1 %. Zvyšných asi 6 % je réžia pleamaru: pri každej snímke číta celú scénu (≈ 3,4 ms), aj keď sa v nej nič nezmenilo — dá sa znížiť iba záplatou pleamaru alebo nižšou frekvenciou pokoja (dnes 20 snímok/s). Hra v okne (nie na celú obrazovku) dýchanie nezastaví |
 
 **Čo krok 3 zatiaľ nerobí (vedome):**
 

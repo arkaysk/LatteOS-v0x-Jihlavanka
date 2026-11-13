@@ -32,7 +32,7 @@ index df1f9c9..3cf1dce 100644
  pub fn get() -> &'static Config {
      static CONFIG: OnceLock<Config> = OnceLock::new();
 diff --git a/src/cursor.rs b/src/cursor.rs
-index 07a8b8b..2e3f85e 100644
+index 07a8b8b..67e2a7b 100644
 --- a/src/cursor.rs
 +++ b/src/cursor.rs
 @@ -5,7 +5,8 @@
@@ -45,7 +45,7 @@ index 07a8b8b..2e3f85e 100644
  //! mouse moves, at most sixty times a second, and the first one at once. It
  //! costs nothing while nobody listens: each listener is a thread that looks
  //! sixty times a second at where the pointer was last seen, and goes when
-@@ -40,14 +41,25 @@ pub fn serve(dir: &str) {
+@@ -40,14 +41,27 @@ pub fn serve(dir: &str) {
      });
  }
  
@@ -53,14 +53,15 @@ index 07a8b8b..2e3f85e 100644
 +/// One listener: where the pointer is, each time it moves, until it goes. One that says `more` as it connects (a
 +/// line, within a twentieth of a second) is a shell that draws the cursor itself: after the two numbers it gets the
 +/// shape the session would show (`default`, `text`, `ew-resize`…, `custom`), how many presses of a button there
-+/// have been and how many are held, and a line too when one of those changes. Everyone else gets `x y`, as ever.
++/// have been, how many are held, whether the last fell on a program's window (1) and whether the shells are covered
++/// (locked, or a window has a whole monitor: 1), and a line too when one of those changes. Everyone else gets `x y`, as ever.
  fn tell(mut stream: std::os::unix::net::UnixStream) {
 -    let mut last = u64::MAX;
 +    use std::io::Read;
 +    let mut said = [0u8; 8];
 +    let _ = stream.set_read_timeout(Some(Duration::from_millis(50)));
 +    let more = matches!(stream.read(&mut said), Ok(n) if said[..n].starts_with(b"more"));
-+    let mut last = (u64::MAX, u64::MAX, (u64::MAX, u32::MAX));
++    let mut last = (u64::MAX, u64::MAX, (u64::MAX, u32::MAX, false), false);
      loop {
          if let Some(p) = crate::layers::pointer_seen() {
 -            if p.moves != last {
@@ -68,19 +69,20 @@ index 07a8b8b..2e3f85e 100644
 -                if writeln!(stream, "{:.1} {:.1}", p.at.0, p.at.1).is_err() {
 +            let (shape, shapes) = crate::layers::cursor_shape();
 +            let buttons = crate::layers::pointer_buttons();
-+            let now = if more { (p.moves, shapes, buttons) } else { (p.moves, 0, (0, 0)) };
++            let covered = more && crate::layers::covered();
++            let now = if more { (p.moves, shapes, buttons, covered) } else { (p.moves, 0, (0, 0, false), false) };
 +            if now != last {
 +                last = now;
-+                let told = if more { writeln!(stream, "{:.1} {:.1} {shape} {} {}", p.at.0, p.at.1, buttons.0, buttons.1) } else { writeln!(stream, "{:.1} {:.1}", p.at.0, p.at.1) };
++                let told = if more { writeln!(stream, "{:.1} {:.1} {shape} {} {} {} {}", p.at.0, p.at.1, buttons.0, buttons.1, buttons.2 as u8, covered as u8) } else { writeln!(stream, "{:.1} {:.1}", p.at.0, p.at.1) };
 +                if told.is_err() {
                      return;
                  }
              }
 diff --git a/src/layers.rs b/src/layers.rs
-index ba70a5c..4c23024 100644
+index ba70a5c..76a57f4 100644
 --- a/src/layers.rs
 +++ b/src/layers.rs
-@@ -598,9 +598,78 @@ pub fn set_cursor_hidden_sink(tx: channel::Sender<bool>) {
+@@ -598,9 +598,94 @@ pub fn set_cursor_hidden_sink(tx: channel::Sender<bool>) {
      *CURSOR_HIDDEN.lock().unwrap() = Some(tx);
  }
  
@@ -91,8 +93,9 @@ index ba70a5c..4c23024 100644
 +/// The shape the session would show, by its standard name (`default`, `text`, `ew-resize`…; `custom` for a
 +/// program's own picture), and how many times it changed: `cursor.sock` tells it to whoever listens.
 +static SHAPE: Mutex<(&'static str, u64)> = Mutex::new(("default", 0));
-+/// The mouse's buttons: how many presses there have been, and how many are held now (`cursor.sock`).
-+static BUTTONS: Mutex<(u64, u32)> = Mutex::new((0, 0));
++/// The mouse's buttons: how many presses there have been, how many are held now, and whether the last press fell
++/// on a program's window, which the scene draws (`cursor.sock`).
++static BUTTONS: Mutex<(u64, u32, bool)> = Mutex::new((0, 0, false));
 +
  /// Told only when it changes: a program's cursor changes on every link.
  pub fn hide_cursor(hidden: bool) {
@@ -138,21 +141,36 @@ index ba70a5c..4c23024 100644
 +    *SHAPE.lock().unwrap()
 +}
 +
-+/// A button of the mouse went down or up.
-+pub fn pointer_button(down: bool) {
++/// A button of the mouse went down or up; `on_scene`: the scene has the pointer, not a program's surface of its own
++/// (a panel over a window takes the press, and the window is not pressed).
++pub fn pointer_button(down: bool, on_scene: bool) {
++    // where it went down, in a monitor's pixels: a window is seen there
++    let on_window = down
++        && on_scene
++        && pointer_seen().is_some_and(|p| {
++            monitors().iter().any(|m| {
++                let (x, y) = ((p.at.0 - m.x as f64) * m.scale, (p.at.1 - m.y as f64) * m.scale);
++                x >= 0.0 && y >= 0.0 && x < m.size.0 as f64 && y < m.size.1 as f64 && window_at(&m.name, x, y)
++            })
++        });
 +    let mut b = BUTTONS.lock().unwrap();
-+    *b = if down { (b.0 + 1, b.1 + 1) } else { (b.0, b.1.saturating_sub(1)) };
++    *b = if down { (b.0 + 1, b.1 + 1, on_window) } else { (b.0, b.1.saturating_sub(1), b.2) };
 +}
 +
-+/// How many presses there have been, and how many buttons are held.
-+pub fn pointer_buttons() -> (u64, u32) {
++/// How many presses there have been, how many buttons are held, and whether the last press was on a window.
++pub fn pointer_buttons() -> (u64, u32, bool) {
 +    *BUTTONS.lock().unwrap()
++}
++
++/// Whether the shells cannot be seen: the session is locked, or a window has a whole monitor (a game, a film).
++pub fn covered() -> bool {
++    locked() || MONITORS.lock().unwrap().iter().any(|(_, sc)| sc.0.lock().unwrap().fullscreen)
 +}
 +
 +/// The cursor hidden or shown by what is asked of it now: called again whenever a part of that changes.
 +pub fn cursor_as_asked() {
 +    use std::sync::atomic::Ordering::Relaxed;
-+    let covered = locked() || MONITORS.lock().unwrap().iter().any(|(_, sc)| sc.0.lock().unwrap().fullscreen);
++    let covered = covered();
 +    let shape = SHAPE.lock().unwrap().0;
 +    let drawn = SHELL_DRAWS.lock().unwrap().as_ref().is_some_and(|shapes| shape == "default" || shapes.iter().any(|s| s == shape));
 +    let hidden = PROGRAM_HIDES.load(Relaxed) || (drawn && !covered);
@@ -196,7 +214,7 @@ index e863e92..6f2bb15 100644
      // (`idle off-after`) while the session runs, and let them go dark again.
      if args.first().map(String::as_str) == Some("idle") {
 diff --git a/src/session.rs b/src/session.rs
-index 6ac8e01..b293e4a 100644
+index 6ac8e01..02dfbeb 100644
 --- a/src/session.rs
 +++ b/src/session.rs
 @@ -1365,6 +1365,7 @@ impl State {
@@ -207,7 +225,8 @@ index 6ac8e01..b293e4a 100644
              let (image, hot) = (|| CursorImage { size: Buffer::size(bo), format: Buffer::format(bo), pitch: Buffer::pitch(bo), handle: Buffer::handle(bo) }, *hot);
              let crtcs: Vec<_> = self.monitors.iter().filter_map(|m| m.crtc).collect();
              layers::set_pointer_picture((!self.hidden).then(|| picture.clone()));
-@@ -1383,6 +1384,8 @@ impl State {
+@@ -1382,6 +1383,8 @@ impl State {
+         }
          let want = if matches!(self.route.hit, Hit::Client(..)) { self.program_cursor } else { self.scene_cursor };
          // A shape the theme lacks is shown as the arrow.
 +        // (a shell that draws the cursor is told the shape asked for: it may know one this theme lacks)
@@ -215,16 +234,15 @@ index 6ac8e01..b293e4a 100644
          let want = if self.load_cursor(want.name()) { want } else { Cursor::Normal };
          if !self.load_cursor(want.name()) || self.shown == Some(want) {
              self.queued = None;
-             return;
-@@ -1629,6 +1631,7 @@ impl State {
+@@ -1629,6 +1632,7 @@ impl State {
              InputEvent::DeviceRemoved { device } => self.keyboards.retain(|k| *k != device),
              InputEvent::PointerButton { event } => {
                  let down = event.state() == ButtonState::Pressed;
-+                layers::pointer_button(down);
++                layers::pointer_button(down, matches!(self.route.hit, Hit::Scene(_)));
                  let screens = self.screens();
                  if self.route.button(&screens, event.button_code(), down) && !down {
                      self.move_pointer(0.0, 0.0);
-@@ -1877,6 +1880,9 @@ impl State {
+@@ -1877,6 +1881,9 @@ impl State {
      /// Once a second: dark after `idle off-after` seconds without input,
      /// unless a program keeps the screen awake or `pleamar-wm idle hold` was said.
      fn idle_check(&mut self) {

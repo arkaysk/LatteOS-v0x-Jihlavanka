@@ -156,7 +156,14 @@
     "name": "Lock and idle",
     "icon": "lock",
     "status": "ready",
-    "words": "lock screen idle sleep timeout screensaver"
+    "words": "lock screen idle sleep timeout"
+   },
+   {
+    "id": "screensaver",
+    "name": "Screen saver",
+    "icon": "device-desktop",
+    "status": "planned",
+    "words": "screen saver screensaver idle picture weather rain"
    },
    {
     "id": "loginscreen",

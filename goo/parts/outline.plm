@@ -3,6 +3,9 @@
 // overlap there is no line between them: the goo, the level and the cards read as one piece.
 // A hollow body (a border of negative width, patches/pleamar-hollow-body.patch): it paints that line and nothing else.
 part Outline {
+    // bent as the goo is (body.plm), so the two go together
+    group {
+    shader: breathe, card.x0, card.y0, card.w * if(card.p > 0.02, 1, 0), card.h, cursor.x, cursor.y, if(lens_shore and lens_edge != 2 and lens_b > lens_a, floor(lens_a) * 4096 + floor(lens_b), 0), W - shore_w while alive and tier >= 2
     body {
         color: coffee
         border: 0 - look.outline, mix(coffee, cream, 0.4)
@@ -13,5 +16,6 @@ part Outline {
         include "cardframe.plm"
         // TrayShore's panel when it is out
         box { from: card.x0, card.ay - card.ch; size: (card.w + 40) * if(card_dock and card.p > 0.02, 1, 0), card.ch + 20; corner: 18 }
+    }
     }
 }

@@ -31,6 +31,7 @@ scene GooSide {
     shader velvet = file "shaders/velvet.wgsl"
     shader pegboard = file "shaders/pegboard.wgsl"
     shader shore = file "shaders/shore.wgsl"
+    shader breathe = file "shaders/breathe.wgsl"     // the goo alive at rest (parts/body.plm)
     shader ring = file "shaders/ring.wgsl"          // the ring of a press (parts/cursor.plm)
     include "parts/card.plm"
     include "parts/outline.plm"          // the one outline, over the goo and the card's frame, under what they show
@@ -44,6 +45,7 @@ scene GooSide {
     include "parts/cursor.plm"           // last: the cursor is over everything
 
     // The scene's clock (parts/drops.plm): it runs while the world is stirred, a card is out, the keyboard walks
-    // the drops or something asked for a moment of it. At rest it stands, and the scene paints nothing.
+    // the drops or something asked for a moment of it. At rest it stands: the goo's breath is the graphics card's
+    // (shaders/breathe.wgsl), and no number of the scene changes (pleamar still reads it once a frame: about 7 % of a core).
     spin tick by if(stir > 0.001 or buzz > 0.001 or card.p > 0.01 or kb.p > 0.01 or beats, 1, 0)
 }

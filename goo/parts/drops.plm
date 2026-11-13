@@ -155,9 +155,18 @@ part Drops {
     event coffee_changed ->                    // whoever changes the user's coffee says so
     event reset_places ->                      // Settings › Drops: every drop back where it belongs
     fact lively = true                         // drops fall asleep, watch the weather and play when left alone
+    // Goo is alive (the user, 13. 11.): its drops breathe and the level swells all the time, watched or not, as the sea
+    // does. Only where it is not seen or not wanted does it stand: Settings › Drops › Still (`lively`), drawn by the
+    // processor (tier 0, latte-goo says), a battery that runs low, and while a window has the whole screen (a game, a
+    // film) or the session is locked. ponytail: a game in a window of its own does not stop it; gamemode could say so.
+    fact tier = 2
+    fact low_power = false
+    fact covered = 0                           // a window has the whole screen (a game, a film) or it is locked: pleamar-wm says, through latte-goo
+    let alive = lively and tier >= 1 and not low_power and covered < 0.5
     fact glassy = 0                            // the material, one number: 0 plain coffee … 1 clear glass
     fact panes = 1                             // 0 where nothing is blurred (software drawing): a card that wants a pane of glass stays plain
     fact glass_ripple = 1                      // a press on glass sends a ring of light through it (Settings › Glass)
+    fact win_glass = 0                         // the windows' glass as Goo asked pleamar-wm for it: 0 solid, 1 glass, 2 True Glass
     // that pane is the windows' side panel: its colour and how much of it covers (Theme.pane, Settings writes it); -1 until told
     fact pane_a = -1
     fact pane_r = 0

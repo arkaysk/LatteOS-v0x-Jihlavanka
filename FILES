@@ -82,6 +82,7 @@
 /usr/share/latteos/goo/shaders/pegboard.wgsl            <- goo/shaders/pegboard.wgsl
 /usr/share/latteos/goo/shaders/shore.wgsl               <- goo/shaders/shore.wgsl
 /usr/share/latteos/goo/shaders/ring.wgsl                <- goo/shaders/ring.wgsl
+/usr/share/latteos/goo/shaders/breathe.wgsl             <- goo/shaders/breathe.wgsl
 /usr/share/latteos/goo/shaders/velvet.wgsl              <- goo/shaders/velvet.wgsl
 /usr/share/latteos/goo/shaders/water.wgsl               <- goo/shaders/water.wgsl
 /usr/share/latteos/goo/login.luau                       <- goo/login.luau

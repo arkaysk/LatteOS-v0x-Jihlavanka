@@ -204,6 +204,15 @@ part Card {
     let card.gx = if(card.pn, min(card.w, 90), card.w)
     let card.gy = if(card.pn, min(card.h, 90), card.h)
     let card.round = if(card_menu, 12, if(card_lens, 18, 18 + 40 * (1 - card.t) * (1 - card.t)))
+    // The edge rings as the card spreads: two crests run out from the ear along the two edges that meet at it, the
+    // edge standing out where they pass, and die away (as Vitreus's `cardrip.wgsl`, MIT, natepayn3, does for its
+    // cards). There the picture of the card is bent; here the crests are shapes of the card's own frame
+    // (cardframe.plm), so its fill and the one outline round the matter swell together and no line comes between them.
+    prop card.rip = 1 ~0ms
+    on change card_open while card_open { card.rip: 0 ~0ms; card.rip: 1 ~700ms after 120ms }
+    let rip.on = if(card.p > 0.3 and card_owner >= 0 and not card_menu and not card_dock and not card_lens, 1, 0)
+    let rip.h = 28 * sin(180 * clamp(card.rip, 0, 1)) * (1 - 0.5 * card.rip) * rip.on
+    let rip.go = 1 - (1 - card.rip) * (1 - card.rip)
     body {
         gradient: card.ax, card.ay to card.ax + card.sx * card.gx, card.ay + card.sy * card.gy, pick(card.pn, coffee, coffee), pick(card.pn, mix(paper, coffee, 0.4), coffee), pick(card.pn, paper, card.pc), pick(card.pn, paper, card.pc)
         rim: 16%

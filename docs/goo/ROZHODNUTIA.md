@@ -496,3 +496,13 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 - **Kurzor musí byť dobre viditeľný na tmavom aj svetlom** (12. 11.): dnes je nad tmavým pozadím veľmi nenápadný (6.33).
 - **Karta nadvihne svoju kvapku** (12. 11.): keď je karta väčšia než miesto kvapky (ClockGoo), nesmie ostať prázdne priehľadné ucho; karta kvapku pri otvorení zdvihne a posunie bokom, po zatvorení kvapka odskočí späť (6.34).
 - **Kruh po kliknutí platí všade** (12. 11.): rozširujúci sa kruh okolo miesta kliku, ktorý je dnes v oknách, má fungovať všeobecne, aj na ploche (6.35).
+
+## 13. 11. 2026 — kruh po kliknutí (používateľ)
+
+- **Jeden kruh na jedno stlačenie, všade** (13. 11.: „kruh už tam bol“, „myslím, že sa jedná o ripple od pleamar“): kruh v oknách je `ripple` skla pleamaru a ostáva. Goo kreslí ten istý kruh (jeho vzorec) iba tam, kde žiadne sklo nie je — plocha, kvapka či okno bez skla; kde je stlačené sklo, kruh pustí sklo samo (6.35).
+
+## 13. 11. 2026 — živé prostredie, počasie, sporič (používateľ)
+
+- **Počasie sa samo nezapína** (13. 11., rozhoduje rozpor 1D.47 z 10. 11. a GOOENGINE-2 §12 z 11. 11.): ani dážď a sneh pleamar-wm, ani nič na hladine — nečinnosťou nič.
+- **Sporič obrazovky** (13. 11.): v Nastaveniach pribudne položka Sporič obrazovky (screensaver), zatiaľ iba ponuka bez funkcie (9.26).
+- **Goo je živé prostredie** (13. 11.): „Goo Engine malo byť živé prostredie… nezávisle od činnosti či nečinnosti sa mali goo kvapky hýbať aj samostatne — dýchanie, zvlnenie. Morská hladina ani les sa neprestanú hýbať, keď sa nikto nepozerá.“ Pokoj teda nie je 0 snímok: kvapky dýchajú a hladina sa vlní stále, pomalšie a na menej snímkach. Zastaví sa iba tam, kde ho nevidno alebo kde to človek chce: Nastavenia › Kvapky › Pokojné, slabá batéria (pod 20 %, nenabíja sa), zámok, okno na celú obrazovku (hra, film), stupeň hardvéru pod 2 (bez shadera nedýcha nič) — hranicu určil Claude, používateľ ju môže posunúť. Kreslí to grafická karta (`breathe.wgsl`), nie procesor (používateľ 13. 11.: „nech to vykresľuje grafika… a keď sa zapne hra, vtedy kvapky reálne ustanú“).

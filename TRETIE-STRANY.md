@@ -11,6 +11,7 @@ a inštalátor ich prekladá alebo inštaluje z balíkov. V repozitári sú iba 
 | [K4](https://github.com/k4ditano/k4) (k4ditano) | predloha ostrova LensShore (`apps/lensshore.qml`): ostrov, ktorý v pokoji leží pri okraji a pri písaní pruží von, jeho rozbaľovanie a podoba spúšťača | MIT |
 | [hypridle](https://github.com/hyprwm/hypridle) | zamknutie a zhasnutie obrazoviek pri nečinnosti | BSD-3-Clause |
 | [pleamar-wm](https://github.com/k4ditano/pleamar-wm) (k4ditano) | správca okien; `system/pleamarwm/wm/` je upravená kópia jeho scény | BSD-3-Clause |
+| [Vitreus](https://github.com/natepayn3/Vitreus) (natepayn3) | vlna po okraji karty Goo pri otváraní podľa jeho `cardrip.wgsl` (dva hrebene bežia po okraji a doznejú); prenesené správanie, kreslené tvarmi tela karty (`goo/parts/card.plm`, `cardframe.plm`) | MIT |
 | [Marea](https://github.com/k4ditano/marea-plm) (k4ditano) | spoločník plochy (guľa s tvárou); celá, bez zmien, v `/usr/share/latteos/marea-plm/`, zapína sa v Nastaveniach › Kvapky › Marea (`bin/latte-marea`) | BSD-3-Clause |
 | [skwd-wall](https://github.com/liixini/skwd-wall) | voliteľný samostatný program: výber a kreslenie tapety, prechody, paleta z tapety; LatteOS ho iba volá (`bin/latte-wall`) | GPL-3.0 |
 | [whyd](https://github.com/vmaltarello/whyd) | voliteľný samostatný program: prečo sa skončila minulá relácia (SAFE); LatteOS prikladá iba vlastné pravidlá `system/whyd/latteos.toml` | GPL-3.0-or-later |

@@ -1,0 +1,18 @@
+// LIVE-TEST: a sign over everything on latte-lab while Claude drives the real mouse and keyboard there, so that
+// nobody else does meanwhile. A small black frame with red glowing letters at the top of the screen; it takes no
+// clicks (no zone) and stays out of screenshots and remote pictures (`captures: hidden`). tests/live-test/live-test on|off.
+scene LiveTest {
+    surface { size: 300, 74; anchor: top; margin: 52, 0, 0, 0; level: overlay; captures: hidden; keyboard: none }
+    prop beat = 0 ~0ms
+    wave beat = 0.18 at 2.6
+    body {
+        color: #050505
+        border: 3, #d0101a
+        shadow: 0, 4, 14, 55%
+        box { at: 150, 37; size: 280, 54; corner: 10 }
+    }
+    group {
+        glow: 12, 85% + beat * 100%, #ff1a22
+        text "LIVE-TEST" { at: 150, 38; anchor: center; size: 30; weight: 800; color: #ff2a2a; family: "JetBrains Mono" }
+    }
+}

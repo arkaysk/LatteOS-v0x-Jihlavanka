@@ -772,6 +772,7 @@ local raining, blowing, gust_at = nil, nil, 0
 local low_battery = false
 pcall(sys.watch, "battery", function(b)
     low_battery = type(b) == "table" and b.present == true and (tonumber(b.percent) or 100) < 20 and b.charging ~= true
+    fact.low_power = low_battery              -- the drops stop breathing, to spare it (parts/drops.plm `alive`)
 end)
 local TIER = env("LATTE_TIER")
 E.busy = nil                 -- function(answer): answers true while the desktop should be left in peace (a film, a game)
@@ -944,11 +945,12 @@ local function settings()
     local clear = level == 4 and not software
     -- the AI's page: as much glass as LatteOS, or what the user chose for it (LensGoo, the right button in the conversation)
     local ai_glass = tonumber(t.ai_glass) and math.max(0, math.min(4, math.floor(t.ai_glass))) or (software and 0 or math.min(level, 2))   -- 3 and 4 make the page dark: only when chosen
-    E.tell("fact lively " .. tostring(fact.lively), "fact glassy " .. tostring(fact.glassy), "fact bends " .. tostring(fact.bends),
+    local windows = clear and 2 or ((t.windows == "glass" and level > 0) and 1 or 0)
+    -- (win_glass: where windows are glass, a press rings in them by itself, parts/cursor.plm)
+    E.tell("fact win_glass " .. tostring(windows), "fact lively " .. tostring(fact.lively), "fact glassy " .. tostring(fact.glassy), "fact bends " .. tostring(fact.bends),
            "fact ai_glass " .. tostring(ai_glass), "fact ai_soft " .. tostring(software), "fact true_glass " .. tostring(clear),
            "fact bar_off " .. tostring(hidden.bargoo == true), "fact bar_fixed " .. tostring(t.bar_fixed == true),
            "fact lens_shore " .. tostring(t.lens == "shore"))
-    local windows = clear and 2 or ((t.windows == "glass" and level > 0) and 1 or 0)
     if glass_told ~= windows then glass_told = windows wm.glass(windows) end
 end
 

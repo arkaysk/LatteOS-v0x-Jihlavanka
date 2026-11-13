@@ -1,0 +1,17 @@
+#!/bin/sh
+# live-test on|off: the LIVE-TEST sign over the session on latte-lab (live-test.plm) while a test drives the real
+# mouse and keyboard there. Started from any shell (ssh too): it finds the session's display by itself.
+here="$(cd "$(dirname "$0")" && pwd)"
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-pleamar-1}" PLEAMAR_SOCKETS="${PLEAMAR_SOCKETS:-$XDG_RUNTIME_DIR/pleamar-pleamar-1}"
+pid="$XDG_RUNTIME_DIR/latte-live-test.pid"
+case "${1:-}" in
+    on)
+        [ -f "$pid" ] && kill -0 "$(cat "$pid")" 2>/dev/null && exit 0
+        pleamar --scene "$here/live-test.plm" --no-hud >/dev/null 2>&1 &
+        echo $! > "$pid" ;;
+    off)
+        [ -f "$pid" ] && kill "$(cat "$pid")" 2>/dev/null
+        rm -f "$pid" ;;
+    *) echo "live-test on|off" >&2; exit 1 ;;
+esac

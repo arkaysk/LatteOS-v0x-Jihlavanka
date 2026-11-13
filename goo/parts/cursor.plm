@@ -16,6 +16,9 @@ part Cursor {
     fact click.n = 0                           // a press of the mouse, anywhere on the desktop: a count, and where
     fact click.x = 0
     fact click.y = 0
+    fact click.win = 0                         // …it fell on a program's window, or on a drop (latte-goo says)
+    fact click.drop = 0
+    fact click.skip = 0                        // …and glass is there, which rings by itself
     text cg.hand = ""                          // glyphs of the icon font, which the logic fills (lib/engine.luau)
     text cg.fist = ""
     text cg.ew = ""
@@ -67,10 +70,12 @@ part Cursor {
 
     // ── a press anywhere: the ring of light a press sends through a window's glass (pleamar's `ripple:`, which the
     // user knew from windows), the same where there is no glass: the desktop, a drop, a solid window. pleamar's own
-    // sums (shaders/ring.wgsl), so over glass the two are one ring.
+    // sums (shaders/ring.wgsl). Where glass is pressed —a window with glass, a drop or a card of glass— pleamar's own
+    // ring runs through it, and this one is left out: one ring a press, everywhere (the user, 13. 11.).
     prop click.p = 1 ~0ms
     prop click.ax = 0 ~0ms
     prop click.ay = 0 ~0ms
-    on change click.n { click.ax: click.x ~0ms; click.ay: click.y ~0ms; click.p: 0 ~0ms; click.p: 1 ~900ms after 16ms }
-    shader ring { at: click.ax - 190, click.ay - 190; size: 380, 380; values: click.p; show: click.p < 0.99 and fx.click > 0.5 }
+    let click.card = card.p > 0.5 and card.glass > 0.02 and click.x >= card.x0 and click.x <= card.x0 + card.w and click.y >= card.y0 and click.y <= card.y0 + card.h
+    on change click.n { click.skip = if(glass_ripple > 0 and ((click.win > 0.5 and win_glass > 0) or (click.drop > 0.5 and material > 0.02) or click.card), 1, 0); click.ax: click.x ~0ms; click.ay: click.y ~0ms; click.p: 0 ~0ms; click.p: 1 ~900ms after 16ms }
+    shader ring { at: click.ax - 190, click.ay - 190; size: 380, 380; values: click.p; show: click.p < 0.99 and fx.click > 0.5 and click.skip < 0.5 }
 }

@@ -15,6 +15,9 @@ part Body {
     particles { at: W / 2, H - 340; area: W, 12; count: 80; life: 3.5s .. 5s; speed: 60 .. 95; direction: 95deg; spread: 24deg
                 size: 6, 4; colors: #f3ebdd, #f3ebdd; opacity: 75%, 35%; shape: dot; emit: lively and idle >= 2 and rain > 0 and snow }
 
+    // the goo breathes and swells by itself, bent on the graphics card (shaders/breathe.wgsl; drops.plm `alive`)
+    group {
+    shader: breathe, card.x0, card.y0, card.w * if(card.p > 0.02, 1, 0), card.h, cursor.x, cursor.y, if(lens_shore and lens_edge != 2 and lens_b > lens_a, floor(lens_a) * 4096 + floor(lens_b), 0), W - shore_w while alive and tier >= 2
     body {
         // one coffee for all of it, and one light: the pointer
         gradient: radial cursor.x, cursor.y radius 260, mix(coffee, sky, 0.12 + 0.05 * warmth), coffee
@@ -50,6 +53,7 @@ part Body {
         include "shapes.plm"
         include "curdrop.plm"
         include "plates.plm"
+    }
     }
 
     // The light of the sun or the moon, which are never seen, on the surface and on the goo that stands in it:
