@@ -723,6 +723,13 @@ MultiShore**; **Minimal** = iba **DockShore + MultiShore**. Predvoľba iba nasta
 neduplikovať na obrazovke“ — keď beží MultiShore s hodinami, ClockGoo sa predvolene skryje. V Minimal ostáva
 prepínanie okien cez DockShore, Alt+Tab a Glance (podmienka zo 6A.05).
 
+**6.40** [ ] **Nastavenia › Kvapky s vizuálnym náhľadom a tutoriálom** (používateľ 13. 11.): výber vzhľadu plochy
+(Hravé · Profi · Minimal, 6.39) a jednotlivých Goo/Shore ukazuje **živý náhľad** rovnako ako výber režimu plochy/okien —
+malá scéna pleamaru (`goo/preview.plm`, metóda z 9A: skutočné kreslenie z tých istých faktov, nie obrázok v QML). Pri
+každej voľbe **tutoriál**: krátka interaktívna prehliadka (čo je ktorá kvapka/doska, Alt+ťahanie a spájanie Shore 6.36,
+Ctrl+Alt+Del 6.37, kde je spúšťač 6.38), spustí sa pri prvej zmene vzhľadu a dá sa pustiť znova z Nastavení; preskočiť
+jedným klikom. Súvisí s prvým spustením (2A).
+
 ### 6A. [~] BarGoo
 Zdroje: `goo/lib/bar.luau`, `goo/side.plm`; LATTEOS-GOO §4.1
 
@@ -1282,6 +1289,18 @@ rozšírenia a možnosti integrácie, aktivácie a deaktivácie“) — po 6B.28
   rozšírenia (preferences), oprávnenia (sieť, súbory, príkazy) ukázané pred inštaláciou; v Jedálnom lístku (10B.38)
   a v Nastaveniach › Kvapky › Spúšťač.
 - [ ] Rozšírenie môže pridať **mód** do pásky (6B.28) alebo iba príkazy do Hľadania.
+
+**6B.44** [ ] **Jedno textové pole pre všetky tri spúšťače** (používateľ 13. 11.): LensGoo, LensShore a MultiShore (6N.03)
+majú **to isté pole** — jeden komponent a jeden backend hľadania, príkazov, AI a rozšírení; líšia sa iba podobou
+(kvapka · doska na okraji · prekrytie s mriežkou). Schopnosti = Raycast + naše vylepšenia (6B.29, 6B.30, 6B.32). Nová
+funkcia sa pridá raz a je vo všetkých troch.
+
+**6B.45** [ ] **Ešte to nie je plný platený Raycast** (používateľ 13. 11.): zatiaľ ani zďaleka nedosahujeme Raycast Pro.
+Urobiť **porovnávaciu tabuľku Raycast Free + Pro ↔ LatteOS** (zdroj: aktuálna stránka cenníka a manuál Raycastu, overiť
+v deň porovnania — funkcie sa menia) so stavom má · čiastočne · chýba a poradím doplnenia. Kandidáti na overenie: AI
+s výberom modelov a vlastné AI príkazy, neobmedzená história schránky, synchronizácia nastavení medzi zariadeniami
+(väzba na Session Manager / mobilný účet), vlastné témy, prekladač, plávajúce poznámky, úryvky a rýchle odkazy
+s placeholdermi, správa okien, obchod rozšírení. Výstup na schválenie, potom úlohy do 6B.29/6B.30.
 
 ### 6C. [~] PowerGoo
 Zdroje: LATTEOS-GOO §4.2, `crates/latte-stats`
