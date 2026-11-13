@@ -81,5 +81,5 @@ scene Goo {
     // The scene's clock (parts/drops.plm): it runs while the world is stirred, a card is out, the keyboard walks
     // the drops or something asked for a moment of it. At rest it stands: the goo's breath is the graphics card's
     // (shaders/breathe.wgsl), and no number of the scene changes (pleamar still reads it once a frame: about 7 % of a core).
-    spin tick by if(stir > 0.001 or buzz > 0.001 or card.p > 0.01 or kb.p > 0.01 or beats or lens_busy or lens_agent, 1, 0)
+    spin tick by if(stir > 0.001 or buzz > 0.001 or card.p > 0.01 or kb.p > 0.01 or beats or lens_busy or lens_agent or breathing, 1, 0)
 }

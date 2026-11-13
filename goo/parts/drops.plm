@@ -162,7 +162,9 @@ part Drops {
     fact tier = 2
     fact low_power = false
     fact covered = 0                           // a window has the whole screen (a game, a film) or it is locked: pleamar-wm says, through latte-goo
-    let alive = lively and tier >= 1 and not low_power and covered < 0.5
+    // ponytail: OFF (13. 11., latte-lab): while breathe.wgsl runs, the cursor leaves ghosts of itself and glass cards tear (pleamar does not follow the damage of a shader that never stops). Put `alive` back as `lively and tier >= 1 and not low_power and covered < 0.5` when pleamar is mended (ROADMAP).
+    let breathing = lively and tier >= 1 and not low_power and covered < 0.5
+    let alive = false and lively and tier >= 1 and not low_power and covered < 0.5
     fact glassy = 0                            // the material, one number: 0 plain coffee … 1 clear glass
     fact panes = 1                             // 0 where nothing is blurred (software drawing): a card that wants a pane of glass stays plain
     fact glass_ripple = 1                      // a press on glass sends a ring of light through it (Settings › Glass)
