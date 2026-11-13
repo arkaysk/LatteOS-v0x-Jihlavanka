@@ -1,5 +1,5 @@
 vytvorene 22.10.2026
-naposledy upravene 12.11.2026
+naposledy upravene 13.11.2026
 # LatteOS:0.5 Jihlavanka Build
 
 Nasleduju kategorie. a ich opis. Jednotlive doplnkove napady sa budu doplnat ako bod pod kategorie (napr 1.01. [x] doplnkova idea k Kernel). Podkategorie budu zase čislene (1A) [x]` `[~]` `[ ] značky na hotovo, čiastočne, nezačate. 
@@ -36,7 +36,7 @@ Poradie drží tri pravidlá: **čo blokuje overovanie ostatného ide prvé** (�
 Hotové body sa z poradia vyškrtávajú (ostávajú zapísané pri svojej kategórii); čísla ostatných sa nemenia, odkazuje sa na ne.
 
 **Fáza 2 — Plocha Goo** → končí verziou **0.6** (14.21)
-  5. [~] Dokončenie kvapiek: BarGoo, LensGoo (vzhľad), PowerGoo, ClockGoo, QueenGoo, QuickGoo, TrayShore (Pobrežie), LensShore — (6A–6E, 6G, 6H)
+  5. [~] Dokončenie kvapiek: BarGoo, LensGoo (vzhľad), PowerGoo, ClockGoo, QueenGoo, QuickGoo, TrayShore (Pobrežie), LensShore, MultiShore; posúvanie a spájanie Shore, tri vzhľady plochy — (6A–6E, 6G, 6H, 6N, 6.36–6.39)
   6. [~] Režimy okien: Glance (náhľady v Parkingu), hyprtrizone pre ultrawide — (8A)
   7. [~] Plocha: ponuka plochy (Späť, „Tento počítač“), tapety a skwd-wall, hladina na spodku okna — (7A, 7B, 8D)
 
@@ -691,6 +691,37 @@ sklo 6.29/1D.42), snímky a `--record`; súvisí s 1D.43 (druhý rám za kartou)
 **6.34** [x] (12. 11.: karta povie jadru, kde má roh (`ear.ox/oy`), kvapka tam dôjde a je uchom; po zatvorení odskočí domov oblúkom. Overené na ploche s ClockGoo) **Chyba: prázdne ucho („duch“) pri karte väčšej než miesto kvapky** (používateľ 12. 11., napr. ClockGoo): karta sa otvára z polohy kvapky a ucho je viazané na jej aktuálne miesto na hladine; keď je karta príliš veľká, ostane po kvapke prázdne priehľadné ucho. **Návrh používateľa:** karta pri otvorení kvapku **nadvihne so sebou** a posunie ju vo výške bokom (kvapka ostane uchom na okraji karty); po zatvorení kvapka **odskočí** na pôvodné miesto. Platí pre všetky kvapky s kartou (`goo/parts/card.plm`, `goo/lib/card.luau`, jadro `goo-phys`); súvisí so 6.28 a 6.30.
 
 **6.35** [x] (12. 11.: pleamar-wm posiela stlačenia tlačidiel myši, scéna Goo pustí z miesta kliku ten istý kruh svetla, aký robí sklo pleamaru (vzorec v `goo/shaders/ring.wgsl`); 13. 11.: jeden kruh na jedno stlačenie — kde je stlačené sklo (okno so sklom, sklenená kvapka či karta), kruh pustí sklo samo a Goo svoj vynechá; na svetlej tapete je slabší; vypínač `effects.click` v `gooengine.json`) **Kruh po kliknutí všade** (používateľ 12. 11.): v oknách sa po kliknutí (aj na miesto bez funkcie) okolo miesta kliku objaví rozširujúci sa kruh. Má to fungovať všeobecne — aj na ploche, na kvapkách, kartách a doskách; jeden efekt z jedného miesta, nie zvlášť pre každú plochu.
+
+**6.36** [ ] **Shore sa posúvajú po okraji s Alt a spájajú sa** (používateľ 13. 11.): každé Shore — TrayShore, DockShore,
+LensShore, MultiShore (6N) — sa dá **posúvať po okraji obrazovky rovnako ako kvapky Goo**, ale iba pri **držanom Alt**
+(bez Alt sa doska správa ako doteraz: klik otvorí jej obsah, nič sa omylom nepohne). Shore sa **napájajú navzajom**
+(magnet a zaliatie medzery do jednej hmoty podľa `docs/goo/GOOENGINE-2.md` §21.1 „Spájanie dosiek“) **aj na okraj
+obrazovky** (roh a koniec okraja priťahujú ako magnet). Poloha, okraj a spojenia sa ukladajú. Overiť: Alt+ťahanie
+nesmie kolidovať s ťahaním okna v pleamar-wm (dnes v `system/pleamarwm/keys.conf` nie je); kurzor pri držanom Alt nad
+doskou ukáže otvorenú ruku (6.32). Predpoklad: LensShore kreslená v scéne Goo, nie iba okno QML (§21.2 [overiť]).
+
+**6.37** [ ] **Ctrl+Alt+Del vyvolá menu** (používateľ 13. 11., predloha: snímka obrazovky Windowsu po Ctrl+Alt+Del): celá
+obrazovka stmavne/rozmaže sa a v strede vľavo je zoznam **Zamknúť · Prepnúť používateľa · Odhlásiť sa · Zmeniť heslo ·
+Správca úloh (LatteMonitor)** a tlačidlo **Zrušiť** (aj Esc); vpravo dole ikony **sieť · prístupnosť · napájanie**
+(uspať, reštartovať, vypnúť). Vzhľad Goo/Shore podľa zvoleného vzhľadu plochy. Je to **záchranná cesta** ku všetkému,
+čo inak dáva PowerGoo — preto sa dá PowerGoo skryť (6.38). Dnes `keys.conf` viaže Ctrl+Alt+Delete priamo na
+`latte-app monitor` → zmeniť na toto menu. Musí fungovať aj v SAFE latteOS (5) a keď scéna Goo spadla (samostatný
+proces, nie kvapka). Pozn.: vo VM Ctrl+Alt+Del zachytí hostiteľ (VMware: Ctrl+Alt+Insert) — testovať tak, alebo cez
+`pleamar --say`.
+
+**6.38** [ ] **Každé Goo sa dá skryť, okrem jedného spúšťača** (používateľ 13. 11.): vďaka 6.37 sa dá skryť **každá**
+kvapka vrátane **PowerGoo** (Nastavenia › Kvapky, zoznam `hidden` v `settings.json` Goo). Jediné pravidlo: **aspoň jeden
+spúšťač (runner) musí bežať** — **LensGoo, LensShore alebo MultiShore** (6N). Nastavenia nedovolia vypnúť posledný
+(prepínač zošedne s vysvetlením „Aspoň jeden spúšťač musí ostať“). Doplniť do pravidiel v LATTEOS-GOO.md a
+`docs/goo/ROZHODNUTIA.md`.
+
+**6.39** [ ] **Tri vzhľady plochy: Hravé · Profi · Minimal** (používateľ 13. 11.; rozširuje 6A.05 a
+`docs/goo/GOOENGINE-2.md` §21 „Goo · Shore“): Nastavenia › Kvapky › Vzhľad plochy —
+**Hravé** = Goo (kvapky, BarGoo, LensGoo, ClockGoo…); **Profi** = výhradne Shore: **LensShore + DockShore + TrayShore +
+MultiShore**; **Minimal** = iba **DockShore + MultiShore**. Predvoľba iba nastaví existujúce prepínače (lišta okien,
+`lens`, `hidden`), človek si ju potom môže ďalej upraviť (ukáže sa „Vlastné“). Platí 6.38 (spúšťač) a „nič
+neduplikovať na obrazovke“ — keď beží MultiShore s hodinami, ClockGoo sa predvolene skryje. V Minimal ostáva
+prepínanie okien cez DockShore, Alt+Tab a Glance (podmienka zo 6A.05).
 
 ### 6A. [~] BarGoo
 Zdroje: `goo/lib/bar.luau`, `goo/side.plm`; LATTEOS-GOO §4.1
@@ -1474,6 +1505,30 @@ odpočet obnovenia, neznáme číslo ≠ nula a stav „čaká“ po obnovení.
 tapety, okien a Goo (9A), pričom jej šatník môže ostať dodatočnou voľbou.
 **6M.04** [ ] **Ďalšie možnosti pleamaru**: preskúmať `pleamar --docs recipes` a `examples/`; použiť existujúce
 schopnosti, ktoré zmysluplne nahradia LatteOS kód (napr. sklo, častice a shadery pre 9A.14).
+
+### 6N. [ ] MultiShore — tretí spúšťač, protikus TrayShore
+Shore (nie Goo) na spodnom okraji, **protikus TrayShore** (TrayShore na jednej strane, MultiShore na druhej). Je to
+**tretí spúšťač** popri LensGoo a LensShore (6.38). Patrí do vzhľadov Profi aj Minimal (6.39); posúva a spája sa ako
+ostatné Shore (6.36). Používateľ 13. 11.; predloha zoznamu aplikácií: snímka zásuvky aplikácií v telefóne (záložky
+kategórií hore, mriežka ikon s názvami, vyhľadávanie dole).
+
+**6N.01** [ ] **Hodiny na doske**: MultiShore ukazuje čas a dátum. **Pravý klik na čas** → tá istá ponuka času ako karta
+ClockGoo (6D.03: Prehľad · Časovače a budíky · Počasie) — **iba bez ucha** (karta rastie z dosky, nie z kvapky).
+**Pravý klik na dátum** → kalendárová časť karty ClockGoo, tiež bez ucha. Jeden obsah s ClockGoo, nie kópia
+(`goo/parts/calendar.plm`, `bin/latte-cal`).
+
+**6N.02** [ ] **Ľavý klik kdekoľvek na MultiShore → zoznam aplikácií na celú obrazovku** (prekrytie nad plochou): ikony a
+názvy programov v mriežke, **rolovanie hore a dole**, zatvorenie Esc, klikom mimo alebo znova na MultiShore. Spustenie
+aplikácie klikom (bublina z 6.06). Návrh na rozhodnutie: záložky/kategórie hore ako v predlohe (Všetko · kategórie
+z `.desktop` alebo AppManagera 10H), klávesa Super otvorí to isté.
+
+**6N.03** [ ] **Textové pole ako Raycast/LensShore** v prekrytí: písanie hneď filtruje mriežku a hľadá ako LensShore
+(aplikácie, nastavenia, súbory, príkazy 6B.19). Rovnaký vyhľadávací backend ako LensGoo/LensShore — **jeden mozog,
+tri podoby**, nie tretia implementácia. Ak je AI zapnutá, Enter na neznámy text pošle otázku ako LensShore (pravidlá
+6B.22 domček/oblak).
+
+**6N.04** [ ] **Vzhľad a hladina**: farba Goo ako ostatné Shore (6B.12 rozhodnutie 27. 10.), doska je stena pre hladinu
+a kvapky (§21.1), príboj ako 6H.06. Stav na doske bez otvorenia (6.26) — napr. bežiaca minútka namiesto času (6D.13).
 
 ---
 
