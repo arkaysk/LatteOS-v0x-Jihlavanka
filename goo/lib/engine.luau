@@ -977,7 +977,7 @@ end
 local function coffee()
     run("latte-login", { "coffee" }, function(out)
         local ok, c = pcall(json.decode, out or "")
-        if ok and type(c) == "table" and #c == 2 then fact.water, fact.milk = c[1], c[2] end
+        if ok and type(c) == "table" and #c == 2 then fact.water, fact.milk = c[1], c[2] wm.coffee(c[1], c[2]) end
     end)
 end
 on("coffee_changed", coffee)

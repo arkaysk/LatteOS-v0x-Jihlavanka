@@ -135,6 +135,10 @@ def emits(expr):
         return ["fact glass.on " + m.group(1), "fact glass.body %d" % glass_body(), "fact glass.ripple %d" % glass_ripple()]
     if expr == "latte.glass_body()":                 # Settings › Glass changed something: the files say what
         return ["fact glass.body %d" % glass_body(), "fact glass.ripple %d" % glass_ripple()]
+    # the coffee's water and milk, 0 to 1, for the dock's plate (DockShore): Goo tells them as it reads them
+    m = re.match(r"latte\.coffee\(([0-9.]+),\s*([0-9.]+)\)", expr)
+    if m:
+        return ["fact dkc.water " + m.group(1), "fact dkc.milk " + m.group(2)]
     # the buttons in the header of LatteOS's apps (apps/common/AppWindow.qml): the window with the keyboard
     m = re.match(r"latte\.win\.(minimize|maximize)_active\(\)", expr)
     if m:

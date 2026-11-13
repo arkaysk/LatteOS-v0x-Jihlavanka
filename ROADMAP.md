@@ -207,7 +207,8 @@ iba myšlienka): v Plávajúcich posunieš okno o pár pixelov a pri kurzore sa 
 kto komu dal úlohu (`term pair`, `by.N` z 1D.17). Pohľad pre Canvas (8A.12), Agentov v dashboarde (6B.36) a Kaviareň (10B.40).
 **1D.23** [ ] **Zrkadlenie obrazoviek v pleamar-wm** (neskôr): Nastavenia › Obrazovky › Duplikovať (ako Win+P) a virtuálny monitor vedľa skutočného ukazuje jeho obraz — na Hyprlande `mirror` v `system/hypr/hyprland.lua`; pleamar-wm to zatiaľ nevie (overiť v novej verzii, inak návrh autorovi).
 **1D.24** [ ] **Pôvodné možnosti pleamar, pleamar-wm a Marey v Nastaveniach** (neskôr, používateľ 2. 11.): čo ponúka ich ovládacie centrum a Marea (rozloženia, dok, sklo, efekty, voda…), ponúknuť aj v Nastaveniach LatteOS, oblečené do nášho štýlu (farby z témy, preklady, myš prvá). — Návrh prijatý (2. 11.): jedno miesto, Nastavenia LatteOS — rozloženia v Okná, dok ako „Panel úloh“ pod Okná, rozmazanie v Prostredie › Sklo, dážď/sneh/voda v Prostredie › Efekty (s 9A.12), skratky v Klávesnici, agent a vzdialený prístup v Súkromí/AI; Nastavenia zapisujú priamo do `session.conf` a `keys.conf` pleamar-wm, ovládacie centrum (Super+I, `pleamar-wm control`) ostáva ako pôvodné. **11. 11.:** odkaz naň je v Nastavenia › Systém („Ovládacie centrum pleamar-wm“; riadok s poľom `run` v `apps/settings/pages.json`, nasadené).
-**1D.25** [ ] **Shore pleamar-wm ako variant BarGoo** (neskôr): dok pleamar-wm (*shore*) prerobiť na kvapku enginu Goo a ponúknuť ako druhý vzhľad BarGoo. Pozor na meno: nie LensShore ani trayShore. Používateľ 3. 11. pochválil na shore: náhľad okien po prejdení
+**1D.25** [~] **Shore pleamar-wm ako variant BarGoo** (neskôr): dok pleamar-wm (*shore*) prerobiť na kvapku enginu Goo a ponúknuť ako druhý vzhľad BarGoo. Pozor na meno: nie LensShore ani trayShore. Používateľ 3. 11. pochválil na shore: náhľad okien po prejdení
+- [~] 13. 11. **DockShore, rozhodnutie používateľa:** zostáva dok pleamar-wm (`wm/session.plm`, `dk.*`) tak, ako je (funkcie, ikony, náhľady, ponuka, poloha dole/vľavo/vpravo, na stred okraja); **bez ikier** a **doska sa nezasúva ani nevysúva** (§9.4 sa na ňu nevzťahuje); mení sa iba vzhľad: bližšie k okraju, zanorená do neho ako ostatné Shore, hmota kávy a tenký obrys ako TrayShore. Hotové 13. 11.: doska z kávy (Goo ju hlási cez `latte.coffee(voda, mlieko)` → `fact dkc.*`), obrys, zaoblenie 16, 40 px za okrajom, bez krku a tieňa. Ostáva: ponuka a náhľady v tom istom vzhľade, voľba BarGoo · DockShore · vypnutá v Nastaveniach (2.), stena pre Goo.
 myšou, prepínanie medzi nimi a ponuku pravého kliku — prebrať aj do BarGoo. (Oprava v ten deň: všetky aplikácie
 LatteOS mali `app_id` `org.quickshell`, shore ich zlúčil pod ikonu LensAI; teraz `//@ pragma AppId latteos-NAME`.)
 **1D.26** [ ] **Kvapka Marey ako zapínateľná kvapka Goo** (neskôr; ďalší vývoj je v 6M): Mareu z marea-plm upraviť, aby sedela s enginom Goo (tvar, voda, farby z témy), a ponúknuť ju ako kvapku, ktorá sa zapína v Nastaveniach › Kvapky. — Pridať medzi kvapky Goo v Nastaveniach › Kvapky (2. 11.). — Stav 3. 11.: Marea **nie je nainštalovaná** — je to samostatný program (repozitár `marea-plm`, príkaz `marea start` z autostartu pleamar-wm), v LatteOS chýba (preto v logu `marea.sock: No such file`); scéna `wm/session.plm` s ňou počíta (ostrov, kam idú odložené okná, dážď z jej ponuky). Najprv stiahnuť `marea-plm`, potom ju zaradiť medzi kvapky. — Hotové 4. 11. (iba prvá časť): `marea-plm` d0cad02 pripnutý v `patches/build-pleamar.sh`, celý strom v `/usr/share/latteos/marea-plm/` (FILES, bez zmien, BSD-3 v `TRETIE-STRANY.md`); Nastavenia › Kvapky › Marea má prepínač „Ukázať na ploche“ (`bin/latte-marea on|off`, voľba v `~/.config/latteos/marea`, relácia ju pri štarte vráti). Nasadené a spustené na latte-lab. Ostáva: Marea nie je kvapka enginu Goo (tvar, voda, farby z témy), je to samostatný program hore; chat a Deriva sa z `/usr` nepostavia (npm/cargo v priečinku, ktorý nie je zapisovateľný); jej oznámenia/hľadanie sa môžu biť s Goo.
@@ -1303,6 +1304,8 @@ s výberom modelov a vlastné AI príkazy, neobmedzená história schránky, syn
 s placeholdermi, správa okien, obchod rozšírení. Výstup na schválenie, potom úlohy do 6B.29/6B.30.
 - [x] 13. 11. tabuľka hotová: `docs/lensshore/RAYCAST-PRO.md` (Free, Pro/Pro+/Max ↔ LatteOS, návrh poradia 1–7). [ ] Čaká na schválenie poradia.
 
+**6B.46** [ ] **LensShore sa nedá posunúť samostatne** (súvisí so 6.36) (používateľ 13. 11.): v Nastaveniach je dole/vľavo/vpravo, ale posunúť sa dá len spolu s ostatnými; treba posunúť iba LensShore (poloha pozdĺž okraja).
+
 ### 6C. [~] PowerGoo
 Zdroje: LATTEOS-GOO §4.2, `crates/latte-stats`
 
@@ -1460,6 +1463,8 @@ Ak sa osvedčí: jeden vzhľad hladiny pre prihlásenie, plochu aj okná.
 
 **6H.08** [x] (11. 11.: popis skratky Win+A, preklad a LATTEOS-GOO; v kóde ostávajú vnútorné mená `shore` — súbory a udalosti, používateľ ich nevidí; „shore“ na stránke Dok je dok pleamar-wm, nie TrayShore) Premenovať Pobrežie → TrayShore v kóde, prekladoch, Nastaveniach a dokumentoch (LATTEOS-GOO §4.8, §8).
 
+
+**6H.09** [ ] **TrayShore: okno sa otvára naplocho, nie na výšku; je nalepené na pravý okraj** (používateľ 13. 11.): panel TrayShore sa vždy otvorí široký a nízky, chce sa aj na výšku (portrét); a TrayShore sedí pri pravom okraji bez možnosti posunu.
 
 ### 6I. ChatGoo
 Doplnok pre Beeper (voliteľná kvapka).

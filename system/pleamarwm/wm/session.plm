@@ -85,6 +85,13 @@ scene Session {
     let cup.bar = rgb(cup.br, cup.bg, cup.bb)
     let cup.ink = rgb(cup.ir, cup.ig, cup.ib)
     let cup.edge = rgb(cup.er, cup.eg, cup.eb)
+    // LatteOS DockShore: the dock's plate is of the goo's own coffee, as TrayShore and LensShore are (goo/parts/drops.plm
+    // `coffee`, `shore.goo`): how much water and milk it has, which Goo tells on `latte.coffee(water, milk)`.
+    fact dkc.water = 0
+    fact dkc.milk = 0
+    let dkc.coffee = mix(mix(#1c0f09, #4a2410, dkc.water), #c9a47a, pow(dkc.milk, 2))
+    let dkc.plate = mix(mix(dkc.coffee, #2a1a12, smooth(0.45, 0.8, dkc.milk) * 0.85), #c9a47a, 0.08)   // + the light Goo's body has: the plates are as bright as TrayShore's
+    let dkc.rim = mix(dkc.coffee, #f3ebdd, 0.4)
     let cup.button = #e4b283
     let cup.close = #c75b4a
     let cup.mark = #1e1712
@@ -1344,7 +1351,7 @@ scene Session {
         dk.cr[s] = if(dock.side == 1, 0, if(dock.side == 2, screen.$s.width, screen.$s.height))
         dk.cs[s] = if(dock.side == 1, 1, -1)
         dk.a0[s] = if(dkvert, screen.$s.height, screen.$s.width) / 2 - dkw.$s / 2
-        dk.q[s] = 0 - (dkpl / 2 + 10) + (dkpl + 24) * shore.$s
+        dk.q[s] = 0 - (dkpl / 2 + 10) + (dkpl + 10) * shore.$s      // LatteOS: the plate stands on the edge, not 14 px off it
         // Where the mouse is along it and how far from its edge.
         dk.ma[s] = if(dkvert, mouse.y, mouse.x)
         let dk.mq.$s = if(dock.side == 1, mouse.x, if(dock.side == 2, screen.$s.width - mouse.x, screen.$s.height - mouse.y))
@@ -1392,12 +1399,12 @@ scene Session {
         group {
             z: 99982
             show: shore.$s > 0.01 and screen.index == s
+            // LatteOS DockShore: one plate of the goo's coffee with its thin outline, sunk into the edge (it reaches 40 px past
+            // it) and rounded where it faces the desktop, as TrayShore is (goo/parts/plates.plm); no neck, no shadow.
             body {
-                gradient: if(dkvert, dk.cr.$s + dk.cs.$s * (dk.q.$s + dkpl / 2), 0), if(dkvert, 0, dk.cr.$s + dk.cs.$s * (dk.q.$s + dkpl / 2)) to if(dkvert, dk.cr.$s + dk.cs.$s * (dk.q.$s - dkpl / 2), 0), if(dkvert, 0, dk.cr.$s + dk.cs.$s * (dk.q.$s - dkpl / 2)), #15181b, #0c0e10 45%, #0a0b0d
-                rim: 12%
-                shadow: 0, 12, 34, 42%
-                box { from: if(dkvert, if(dock.side == 1, -140, screen.$s.width), -80), if(dkvert, -80, screen.$s.height); size: if(dkvert, 140, screen.$s.width + 160), if(dkvert, screen.$s.height + 160, 140) }
-                box { at: if(dkvert, dk.cr.$s + dk.cs.$s * (dk.q.$s), dk.a0.$s + dkw.$s / 2), if(dkvert, dk.a0.$s + dkw.$s / 2, dk.cr.$s + dk.cs.$s * (dk.q.$s)); size: if(dkvert, dkpl, (dkw.$s + dk.grow.$s) * (0.55 + 0.45 * shore.$s)), if(dkvert, (dkw.$s + dk.grow.$s) * (0.55 + 0.45 * shore.$s), dkpl); corner: 22 * dkf; blend: 22 + 36 * 4 * shore.$s * (1 - shore.$s) }
+                color: dkc.plate
+                border: 1.25, dkc.rim
+                box { at: if(dkvert, dk.cr.$s + dk.cs.$s * (dk.q.$s - 20), dk.a0.$s + dkw.$s / 2), if(dkvert, dk.a0.$s + dkw.$s / 2, dk.cr.$s + dk.cs.$s * (dk.q.$s - 20)); size: if(dkvert, dkpl + 40, (dkw.$s + dk.grow.$s) * (0.55 + 0.45 * shore.$s)), if(dkvert, (dkw.$s + dk.grow.$s) * (0.55 + 0.45 * shore.$s), dkpl + 40); corner: 16 }
             }
             repeat j in 0..12 {
                 group {

@@ -82,6 +82,7 @@ function M.next_mode() eval("latte.mode.next()") end                      -- the
 function M.tell_mode() eval("latte.mode.tell()") end
 function M.set_mode(n) eval(string.format("latte.mode.set(%q)", ({ [0] = "tape", "tiles", "floating", "glance" })[n] or "tape")) end
 function M.glass(mode) eval("latte.glass(" .. tostring(tonumber(mode) or 0) .. ")") end   -- 0 solid windows, 1 glass, 2 True Glass, where the card can
+function M.coffee(water, milk) eval(string.format("latte.coffee(%.3f, %.3f)", tonumber(water) or 0, tonumber(milk) or 0)) end   -- the dock's plate is of the same coffee
 function M.wallpaper(path) eval(string.format("latte.wallpaper(%q)", path)) end
 function M.show_desktop() eval("latte.desk.show()") end
 -- the band along an edge that windows leave to the drops: 0 bottom, 1 left, 2 top, 3 right
