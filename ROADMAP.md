@@ -1301,6 +1301,7 @@ v deň porovnania — funkcie sa menia) so stavom má · čiastočne · chýba a
 s výberom modelov a vlastné AI príkazy, neobmedzená história schránky, synchronizácia nastavení medzi zariadeniami
 (väzba na Session Manager / mobilný účet), vlastné témy, prekladač, plávajúce poznámky, úryvky a rýchle odkazy
 s placeholdermi, správa okien, obchod rozšírení. Výstup na schválenie, potom úlohy do 6B.29/6B.30.
+- [x] 13. 11. tabuľka hotová: `docs/lensshore/RAYCAST-PRO.md` (Free, Pro/Pro+/Max ↔ LatteOS, návrh poradia 1–7). [ ] Čaká na schválenie poradia.
 
 ### 6C. [~] PowerGoo
 Zdroje: LATTEOS-GOO §4.2, `crates/latte-stats`
