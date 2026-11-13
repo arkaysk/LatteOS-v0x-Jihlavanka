@@ -1,0 +1,22 @@
+TITLE
+Bug: a group with a never-ending `shader:` leaves ghosts of what moved inside it (and tears glass cards)
+
+BODY
+**Version:** pleamar 0.7.27 (language 0.9), latte-goo scene on an AMD RX 640 (RADV POLARIS12), 1920 x 1080, Vulkan.
+
+**What we did:** a `group { shader: breathe, ...; body { ... } }` whose WGSL (`shade(s)` returning `inside(s, p + amp * field(p, s.time))`)
+bends the group's own picture a little with slow waves, so it never stops (it uses `s.time`). The group holds the goo (drops, the
+level) and one outline body; the pointer's drop (an ellipse at `cursor.x, cursor.y`) is also drawn in it.
+
+**What happens:** after the pointer has moved, a copy of its shape stays on the screen at every place it has been, never cleaned, and
+glass cards beside tear. Same movement with the shader off: clean. The state is the same for every frame after (not a one-frame glitch).
+
+**What we tried (none of it helped):**
+- taking the pointer's shapes out of the group (ghosts remained, also of the pointer's own, separate body drawn after the group);
+- `PLEAMAR_FULL_REPAINT=1` (ghosts remained), so it does not look like the damage of the swapchain frames but like the group's own
+  picture that is not cleared where its content moved away.
+
+**Expected:** what moved out of a shader group is cleaned from the group's picture, as without the shader.
+
+**Reproduction:** not minimal yet: a group with a shader that reads `s.time`, an ellipse inside it that follows the pointer, and the
+pointer moved across the screen. We can send the scene (goo/parts/body.plm, goo/shaders/breathe.wgsl in LatteOS-v0x-Jihlavanka).
