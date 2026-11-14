@@ -135,6 +135,13 @@ local function search_web(e, text) then_do(function() open.url(string.format(e.u
 -- two are Goo's settings, so the Settings can show them)
 local function aliases() local a = drops.settings().lens_aliases return type(a) == "table" and a or {} end
 local function files_roots() local r = drops.settings().lens_files_roots return type(r) == "table" and r or {} end     -- more folders for the Files view to look in (Settings › LensShore, to come)
+-- where the text of files is looked through (no index yet): the Documents and the Downloads, and the folders chosen above
+local function text_dirs()
+    local d = {}
+    for _, f in ipairs(folders) do if f.place == 1 or f.place == 2 then d[#d + 1] = f.path end end
+    for _, r in ipairs(files_roots()) do d[#d + 1] = r end
+    return d
+end
 local function hidden_apps() local h = drops.settings().lens_hidden_apps return type(h) == "table" and h or {} end
 local function ranked(q, most)
     local shown_apps, hide = {}, {}
@@ -1994,6 +2001,8 @@ local function shore_rows()
         local env = { then_do = then_do, open_path = function(p) open.path(p) end, menu = file_menu, short = short }
         local rows, filters = filesview.rows(typed, env, function() if card.id() == "lens" and shore.view == "files" then render(true) end end)
         section(near_line(rows))
+        local texts = filesview.text_rows(typed, env)
+        if texts then section(near_line(texts)) end
         section({ filters })
     elseif shore.view == "emoji" then
         for _, s in ipairs(emoji.sections(typed, emoji_env())) do section(s) end
@@ -2146,7 +2155,7 @@ go_mode = function(id)
         shore.view = id
         if id == "agents" then shore.agents = nil read_agents(again) end
         if id == "emoji" then emoji.load(again) end
-        if id == "files" then filesview.reset() filesview.load(again, home) filesview.search(typed, again, files_roots()) end
+        if id == "files" then filesview.reset() filesview.load(again, home) filesview.search(typed, again, files_roots(), text_dirs()) end
         if id == "windows" or id == "clips" or id == "emoji" then
             shore.wins = nil
             wm.windows(function(list) shore.wins = list or {} again() end)
@@ -2210,7 +2219,7 @@ local function shore_start()
             if t == typed then return end
             typed, confirm, found = t, nil, nil
             if t ~= "" and shore.view == "find" and not shore.arg then look_for_files() look_for_settings() look_for_amount() end
-            if shore.view == "files" then shore.rechoose = true filesview.search(t, function() if card.id() == "lens" and shore.view == "files" then shore.rechoose = true render(true) end end, files_roots()) end
+            if shore.view == "files" then shore.rechoose = true filesview.search(t, function() if card.id() == "lens" and shore.view == "files" then shore.rechoose = true render(true) end end, files_roots(), text_dirs()) end
             if card.id() == "lens" then
                 -- compact mode: the panel goes back into the line when the line is empty again
                 if t == "" and compact() and shore.view == "find" and not shore.arg then card.close() hist_flags() after(80, function() focus("lens_q") end)

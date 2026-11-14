@@ -63,6 +63,7 @@
 #                                     was called (LATTE_UNDO_LABEL when it was done);  clear: forgets both
 #                                     An app with a history of its own (LensAI) sets LATTE_UNDO=NAME: its journal is
 #                                     files-undo-NAME, and its undo touches nothing done elsewhere; LATTE_UNDO=- keeps none
+#   latte-files grep TEXT DIR…        the files whose text holds TEXT in those folders: PATH:LINE:the first line that holds it (40, 6 s at most)
 #   latte-files thumb FILE            a small picture of a PDF's first page or of a video (256 px), kept in
 #                                     ~/.cache/latteos/thumbs while the file is unchanged; says where it is
 #   latte-files look FILE OUT         a picture of a PDF's first page or a frame of a video, into OUT (a .png)
@@ -482,6 +483,11 @@ history) [ "${1:-}" = clear ] && { rm -f -- "$log" "$log.redo"; exit 0; }
             f="$log"; [ "$way" = redo ] && f="$log.redo"
             [ -s "$f" ] && tac -- "$f" | awk -F'\t' -v way="$way" '!seen[$1]++ { print way "\t" $5 }'
         done; exit 0 ;;
+grep)   # the files whose TEXT holds the words, in the folders given (ripgrep, fixed text, case by smart rule): "PATH:LINE:the first line that holds it",
+        # 40 at most and 6 seconds at most (no index yet: it looks through what is asked for, not the whole disk)
+        text="$1"; shift
+        timeout 6 rg -S -F --no-ignore-vcs --max-count 1 --max-filesize 2M --with-filename --line-number --no-heading --max-columns 140 --max-columns-preview \
+            -g '!node_modules' -g '!target' -g '!.git' -g '!.cache' -g '!__pycache__' -g '!*.min.*' -g '!*.svg' -- "$text" "$@" 2>/dev/null | head -n 40 ;;
 thumb)  f="$1"; m="$(stat -c %Y -- "$f" 2>/dev/null)" || exit 1
         d="${XDG_CACHE_HOME:-$HOME/.cache}/latteos/thumbs"; mkdir -p "$d"
         t="$d/$(printf '%s\t%s' "$f" "$m" | md5sum | cut -c1-32).png"

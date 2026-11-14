@@ -2849,6 +2849,7 @@ library Slovak {
         "Choose a file" = "Vyber súbor"
         "RECENTLY OPENED" = "NAPOSLEDY OTVORENÉ"
         "Search files with a preview" = "Hľadať súbory s náhľadom"
+        "IN THE TEXT OF FILES" = "V TEXTE SÚBOROV"
         "Show AppCloud" = "Zobraziť AppCloud"
         "a plate in the corner: the time, and all apps over the screen" = "doska v rohu: čas a všetky aplikácie cez celú obrazovku"
         "only DockShore and AppCloud" = "iba DockShore a AppCloud"

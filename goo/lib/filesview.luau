@@ -17,7 +17,7 @@ local FILTERS = {
 }
 local GLYPH = { images = "photo", video = "movie", audio = "music", docs = "file-text", folders = "folder" }
 
-local state = { filter = "any", recent = nil, found = nil, asked = 0, cur = nil, shown = nil }
+local state = { filter = "any", recent = nil, found = nil, texts = nil, asked = 0, cur = nil, shown = nil }
 local cache = {}                                  -- what is known of a path: { info, pic } (kept while it is unchanged)
 local home = ""
 
@@ -43,10 +43,19 @@ local function human(n)
     return string.format(n < 10 and "%.1f %s" or "%.0f %s", n, u[i])
 end
 local function when(t) t = tonumber(t) if not t or t <= 0 then return "" end return os.date("%d. %m. %Y %H:%M", t) end
-local function middle(s, n)                         -- a long value shortened in the middle: the start and the end both tell
-    if #s <= n then return s end
+local function clean(s)                         -- text from a file or a command may hold bytes that are no letters: the scene takes only UTF-8
+    s = tostring(s or "")
+    if utf8.len(s) then return s end
+    return (s:gsub("[\128-\255]+", function(m) return utf8.len(m) and m or "" end))
+end
+local function middle(s, n)                         -- a long value shortened in the middle: the start and the end both tell (by letters, not bytes)
+    s = clean(s)
+    local len = utf8.len(s) or #s
+    if len <= n then return s end
     local k = (n - 1) // 2
-    return s:sub(1, k) .. "…" .. s:sub(-k)
+    local first = (utf8.offset(s, k + 1) or (k + 1)) - 1
+    local last = utf8.offset(s, len - k + 1) or (#s - k + 1)
+    return s:sub(1, first) .. "…" .. s:sub(last)
 end
 
 -- ── the left: lately opened files, or what the line finds ────────────────────────────────────────────────────────────
@@ -61,7 +70,7 @@ function M.load(again, home_dir)
         again()
     end)
 end
-function M.reset() state.found, state.asked, state.cur, state.shown = nil, 0, nil, nil end
+function M.reset() state.found, state.texts, state.asked, state.cur, state.shown = nil, nil, 0, nil, nil end
 function M.filter_id() return state.filter end
 
 -- what the line finds by name, in the home folder and in `roots` (Goo's `lens_files_roots`, more folders to look in): fd looks for the longest
@@ -84,10 +93,25 @@ local function score(path, words, query, lately)
     end
     return s + (lately and (150 - math.min(lately, 100)) or 0) - #name / 10
 end
-function M.search(text, again, roots)
+function M.search(text, again, roots, dirs)
     state.asked += 1
     local mine = state.asked
-    state.found = nil
+    state.found, state.texts = nil, nil
+    state.dirs = dirs or state.dirs
+    -- the files whose text holds it, in the user's document folders (no index yet: ripgrep, 6 seconds at most), under the names
+    if #text >= 3 and filter().id == "any" and state.dirs and #state.dirs > 0 then
+        local args = { "grep", text }
+        for _, d in ipairs(state.dirs) do args[#args + 1] = d end
+        run("latte-files", args, function(out)
+            if mine ~= state.asked then return end
+            state.texts = {}
+            for line in (out or ""):gmatch("[^\n]+") do
+                local path, no, snip = line:match("^(.-):(%d+):(.*)$")
+                if path then state.texts[#state.texts + 1] = { path = path, line = tonumber(no), snip = (clean(snip):gsub("^%s+", "")) } end
+            end
+            again()
+        end)
+    end
     state.roots = roots or state.roots
     roots = state.roots
     if text == "" or home == "" then again() return end
@@ -109,7 +133,7 @@ function M.search(text, again, roots)
     local function finish(list)
         table.sort(list, function(a, b) return a.score > b.score end)
         state.found = {}
-        for i = 1, math.min(#list, 36) do state.found[i] = list[i].path end
+        for i = 1, math.min(#list, 26) do state.found[i] = list[i].path end
         again()
     end
     run("fd", args, function(out)
@@ -157,7 +181,7 @@ function M.rows(typed, env, again)
     for i, f in ipairs(FILTERS) do if f.id == state.filter then at = i end end
     local nextf = FILTERS[at % #FILTERS + 1]
     local pills = { { label = tr(filter().name), glyph = "adjustments-horizontal", keep = true, skip = true,
-                      run = function() state.filter = nextf.id M.search(typed, again, state.roots) again() end } }
+                      run = function() state.filter = nextf.id M.search(typed, again, state.roots, state.dirs) again() end } }
     rows[1] = { head = true, label = typed == "" and tr(N("RECENTLY OPENED")) or tr(N("FILES")) }
     local list = typed == "" and state.recent or state.found
     local n = 0
@@ -174,11 +198,31 @@ function M.rows(typed, env, again)
                                 right = function() env.menu(clean, parent, dir) end }
             n += 1
             state.shown[clean] = true
-            if n >= 36 then break end
+            if n >= 26 then break end
         end
     end
     if n == 0 then rows[#rows + 1] = { label = list == nil and typed ~= "" and tr("Searching…") or tr("Nothing found"), glyph = "search", quiet = true } end
     return rows, { pills = pills, per = #pills, line = true }
+end
+
+-- the files whose text holds what is typed, under the names found: the line that holds it is the second line of the row
+function M.text_rows(typed, env)
+    if typed == "" or not state.texts or #state.texts == 0 then return nil end
+    local rows = { { head = true, label = tr(N("IN THE TEXT OF FILES")) } }
+    local named = {}
+    for _, p in ipairs(state.found or {}) do named[p] = true end
+    for _, t in ipairs(state.texts) do
+        if not named[t.path] then
+            local parent = t.path:match("^(.*)/[^/]*$") or "/"
+            rows[#rows + 1] = { label = t.path:match("([^/]+)$") or t.path, glyph = "file-text", line2 = string.format("%d: %s", t.line, t.snip), path = t.path,
+                                main = tr("Open"), run = function() env.then_do(function() env.open_path(t.path) end) end,
+                                right = function() env.menu(t.path, parent, false) end }
+            state.shown = state.shown or {}
+            state.shown[t.path] = true
+            if #rows >= 9 then break end
+        end
+    end
+    return #rows > 1 and rows or nil
 end
 
 -- ── the right: the picture, and what is known of the file ──────────────────────────────────────────────────────────
@@ -224,7 +268,7 @@ function M.right()
         rows[1] = { pic = true, col = 2 }
     else
         model.card_pic = {}
-        rows[1] = { profile = true, glyph = i.dir and "folder" or "file", label = i.name or "", line2 = i.kind or "", quiet = true, col = 2 }
+        rows[1] = { profile = true, glyph = i.dir and "folder" or "file", label = clean(i.name), line2 = clean(i.kind), quiet = true, col = 2 }
     end
     local function add(key, value) if value and value ~= "" then rows[#rows + 1] = { label = tr(key), hint = middle(tostring(value), 24), quiet = true, col = 2 } end end
     add(N("Where"), home ~= "" and (i.where or ""):gsub("^" .. home:gsub("%p", "%%%0"), "~") or i.where)

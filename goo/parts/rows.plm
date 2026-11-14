@@ -14,8 +14,8 @@ part Rows {
     // the wheel over LensShore's panel turns its modes as a tape (the user, 29. 10.: "the scroll is to the right and
     // left"), down or to the right the next one; two fingers and a tilted wheel too (lib/lens.luau gathers the turns)
     // the list goes to the row chosen with the keys, as far as it must for it to be seen
-    on change card_sel while card_open and card_selfollow and card_sel_y >= 0 { list.scroll: clamp(list.scroll, card_sel_y + card_sel_h - list.height, card_sel_y) ~calm }
-    on change card_rev while card_open and card_selfollow and card_sel_y >= 0 { list.scroll: clamp(list.scroll, card_sel_y + card_sel_h - list.height, card_sel_y) ~calm }
+    on change card_sel while card_open and card_selfollow and card_sel_y >= 0 { list.scroll: clamp(list.scroll, max(0, card_sel_y + card_sel_h - list.height), max(0, min(card_sel_y, list.content - list.height))) ~calm }
+    on change card_rev while card_open and card_selfollow and card_sel_y >= 0 { list.scroll: clamp(list.scroll, max(0, card_sel_y + card_sel_h - list.height), max(0, min(card_sel_y, list.content - list.height))) ~calm }
     // …unless the list is longer than the panel (the files found, a long history): then the wheel scrolls it, the modes turn with the tape's other ways
     on scroll card_ground while card_lens and list.content <= list.height + 2 { emit lens_swipe(round(-wheel * 1000)) }
 
