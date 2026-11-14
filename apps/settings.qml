@@ -39,7 +39,7 @@ ShellRoot {
         mediagoo: QT_TR_NOOP("On the desktop only while something plays: the cover, play and pause, the next one, the volume on the wheel.") })
     // what each drop is, for the top of its page: how it works and what it does, from LATTEOS-GOO.md §4 (tech, funcs, tips: lists of texts)
     readonly property var dropInfo: ({
-        launcher: { tech: QT_TR_NOOP("The launcher and the magnifier: a drop in the place of Start. LensShore and LensCloud share its text field."),
+        launcher: { tech: QT_TR_NOOP("The launcher and the magnifier: a drop in the place of Start. LensShore shares its text field."),
             funcs: [QT_TR_NOOP("Left button or the Windows key: the launcher card."), QT_TR_NOOP("Right button: a quick list of apps."), QT_TR_NOOP("Modes: Apps, Files, Web, Terminal and AI."), QT_TR_NOOP("Wheel: the size.")],
             tips: [QT_TR_NOOP("The whole card works without a mouse: Tab and Shift+Tab change the mode, arrows pick a line, Enter opens, Esc closes."), QT_TR_NOOP("The AI is always inside: it answers through your own signed-in tools, never in a browser."), QT_TR_NOOP("Every result has a tag of where it came from: App, Settings, File, Folder or Web.")] },
         bargoo: { tech: QT_TR_NOOP("The window bar as a drop: its head, the biggest drop, shows how the windows are arranged (tape, tiles or floating) and the windows hang from it as berries."),
@@ -126,7 +126,7 @@ ShellRoot {
         { kind: "intro", title: QT_TR_NOOP("Drops and plates"), text: QT_TR_NOOP("Goo is drops of coffee that melt into the edge of the screen; Shore is the same made of flat plates. A look picks one, the other, or a mix of them.") },
         { kind: "carry", title: QT_TR_NOOP("Carry a plate"), text: QT_TR_NOOP("Hold Alt and drag a Shore plate along the edge. Plates stick to each other and to the corners, and join into one.") },
         { kind: "secure", title: QT_TR_NOOP("Ctrl+Alt+Del"), text: QT_TR_NOOP("This opens a menu: Lock, Switch user, Sign out, Change password, Task manager, and power at the bottom right. It works even when the drops are hidden.") },
-        { kind: "lens-shore", title: QT_TR_NOOP("The launcher stays"), text: QT_TR_NOOP("Any drop can be hidden, PowerGoo too, but one launcher always stays: LensGoo, LensShore or LensCloud. Choose it below.") } ]
+        { kind: "lens-shore", title: QT_TR_NOOP("The launcher stays"), text: QT_TR_NOOP("Any drop can be hidden, PowerGoo too, but one launcher always stays: LensGoo or LensShore. Choose it below.") } ]
     function tourEnd() { tourOn = false; tourStep = 0; tourWord.choose("seen") }
     Word { id: icons; name: "desktop-icons" }
     Word { id: screensWord; name: "screens" }
@@ -140,6 +140,7 @@ ShellRoot {
         onFileChanged: reload()
         onLoaded: { try { kept = JSON.parse(text()) } catch (e) { kept = {} } paneToGoo.restart() }
         function set(key, value) { const k = Object.assign({}, kept); k[key] = value; kept = k; setText(JSON.stringify(k)) }
+        function setMany(obj) { const k = Object.assign({}, kept, obj); kept = k; setText(JSON.stringify(k)) }
     }
     // the side panel's glass as the windows have it (kind, how see-through, theme), for the Goo cards with a pane of it (goo/parts/card.plm)
     Timer { id: paneToGoo; interval: 250
@@ -1054,33 +1055,61 @@ ShellRoot {
             // the desktop's look (ROADMAP 6.39): a preset that only sets the choices below; changed by hand, it is "Custom"
             Part { id: lookPart; visible: shell.page === "drops"; width: view.room; title: I18n.tr("Desktop look")
                    readonly property var drops: dropList.list.map(d => d.id)
-                   readonly property var hiddenNow: goo.kept.hidden || []
-                   readonly property string now: (goo.kept.lens !== "shore" && goo.kept.lens !== "cloud" && hiddenNow.length === 0) ? "playful"
-                       : (drops.length > 0 && drops.every(id => hiddenNow.indexOf(id) >= 0) && goo.kept.taskbar !== "none") ? (goo.kept.lens === "shore" && hiddenNow.indexOf("trayshore") < 0 ? "pro" : goo.kept.lens === "cloud" && hiddenNow.indexOf("trayshore") >= 0 ? "minimal" : "custom") : "custom"
-                   note: now === "custom" ? I18n.tr("Custom: changed by hand below. A look puts everything back as it has it.")
-                                          : I18n.tr("A look only sets the choices below; each of them can still be changed.")
+                   // the three looks are profiles that can be changed and kept (ROADMAP 6.45): what Goo's settings.json says in `looks`
+                   // wins over what they are made with; the user's own are kept there too, with the name they gave them
+                   readonly property var builtin: ({ playful: { lens: "goo", taskbar: "bargoo", hidden: [] },
+                                                     pro: { lens: "shore", taskbar: "dockshore", hidden: drops.slice() },
+                                                     minimal: { lens: "goo", appcloud: true, taskbar: "dockshore", hidden: drops.concat(["trayshore"]) } })
+                   readonly property var kept: goo.kept.looks || ({})
+                   readonly property var names: ({ playful: I18n.tr("Playful"), pro: I18n.tr("Pro"), minimal: I18n.tr("Minimal") })
+                   readonly property var mine: Object.keys(kept).filter(id => !builtin[id])
+                   function profile(id) { return kept[id] || builtin[id] }
+                   function same(a, b) { return !!a && !!b && a.lens === b.lens && !!a.appcloud === !!b.appcloud && a.taskbar === b.taskbar && JSON.stringify((a.hidden || []).slice().sort()) === JSON.stringify((b.hidden || []).slice().sort()) }
+                   readonly property var current: ({ lens: goo.kept.lens === "shore" ? "shore" : "goo", appcloud: goo.kept.appcloud === true || goo.kept.lens === "cloud", taskbar: goo.kept.taskbar || ((goo.kept.hidden || []).indexOf("bargoo") >= 0 ? "dockshore" : "bargoo"), hidden: goo.kept.hidden || [] })
+                   readonly property string last: goo.kept.look || ""
+                   // the look that the choices below are exactly: none when they were changed by hand
+                   readonly property string now: ["playful", "pro", "minimal"].concat(mine).find(id => same(profile(id), current)) || "custom"
+                   readonly property bool changed: last !== "" && profile(last) !== undefined && !same(profile(last), current)
+                   note: now === "custom" ? I18n.tr("Custom: changed by hand below. Keep it as a look, or a look puts everything back as it has it.")
+                                          : I18n.tr("A look only sets the choices below; each of them can still be changed, and kept in the look.")
+                   function apply(id) { const p = profile(id); if (p) goo.setMany({ lens: p.lens, appcloud: !!p.appcloud, taskbar: p.taskbar, hidden: (p.hidden || []).slice(), look: id }) }
+                   function keep(id) { const k = Object.assign({}, kept); k[id] = { lens: current.lens, appcloud: current.appcloud, taskbar: current.taskbar, hidden: current.hidden.slice() }; goo.setMany({ looks: k, look: id }) }
+                   function forget(id) { const k = Object.assign({}, kept); delete k[id]; goo.setMany({ looks: k, look: builtin[id] ? id : "" }) }
                    function choose(id) {
                        if (tourWord.value !== "seen") shell.tourOn = true
-                       if (id === "playful") { goo.set("lens", "goo"); goo.set("taskbar", "bargoo"); goo.set("hidden", []) }
-                       else if (id === "pro" || id === "minimal") { goo.set("lens", id === "pro" ? "shore" : "cloud"); goo.set("taskbar", "dockshore"); goo.set("hidden", id === "minimal" ? drops.concat(["trayshore"]) : drops.slice()) } }
-                Repeater { model: [{ id: "playful", name: QT_TR_NOOP("Playful"), hint: QT_TR_NOOP("the drops: BarGoo, LensGoo, ClockGoo and the others"), icon: "droplet" },
-                                   { id: "pro", name: QT_TR_NOOP("Pro"), hint: QT_TR_NOOP("only the Shore plates: LensShore, DockShore, TrayShore"), icon: "layout-distribute-vertical" },
-                                   { id: "minimal", name: QT_TR_NOOP("Minimal"), hint: QT_TR_NOOP("only DockShore and LensCloud"), icon: "minus" }]
-                    Choice { required property var modelData; width: 220; height: 180; text: I18n.tr(modelData.name); hint: I18n.tr(modelData.hint); 
+                       apply(id) }
+                Repeater { model: [{ id: "playful", hint: QT_TR_NOOP("the drops: BarGoo, LensGoo, ClockGoo and the others"), icon: "droplet" },
+                                   { id: "pro", hint: QT_TR_NOOP("only the Shore plates: LensShore, DockShore, TrayShore"), icon: "layout-distribute-vertical" },
+                                   { id: "minimal", hint: QT_TR_NOOP("only DockShore and AppCloud"), icon: "minus" }]
+                    Choice { required property var modelData; width: 220; height: 180; text: lookPart.names[modelData.id] + (lookPart.kept[modelData.id] ? " ✎" : ""); hint: I18n.tr(modelData.hint)
                              on: lookPart.now === modelData.id; onPressed: lookPart.choose(modelData.id)
                              DropPreview { width: parent.width; kind: "look-" + parent.parent.modelData.id; calm: goo.kept.lively === false } } }
+                Repeater { model: lookPart.mine
+                    Choice { required property string modelData; width: 220; height: 180; text: modelData; hint: I18n.tr("your own look"); on: lookPart.now === modelData; onPressed: lookPart.choose(modelData)
+                             DropPreview { width: parent.width; kind: "look-pro"; calm: goo.kept.lively === false } } }
                 Item { width: view.room; height: 0 }
+                Row { spacing: 8
+                    Pill { visible: lookPart.changed; icon: "device-floppy"; strong: true; text: I18n.tr("Keep in «{name}»", { name: lookPart.names[lookPart.last] || lookPart.last }); onPressed: lookPart.keep(lookPart.last) }
+                    Pill { visible: lookPart.last !== "" && (lookPart.kept[lookPart.last] !== undefined); icon: "arrow-back-up"; text: lookPart.builtin[lookPart.last] ? I18n.tr("Put «{name}» back as it was", { name: lookPart.names[lookPart.last] }) : I18n.tr("Delete the look"); onPressed: lookPart.forget(lookPart.last) } }
+                Row { spacing: 8
+                    Field { id: lookName; width: Math.min(300, view.room - 200); icon: "tag"; hint: I18n.tr("Name a new look…") }
+                    Pill { icon: "plus"; text: I18n.tr("Keep as a new look"); onPressed: { const n = lookName.text.trim(); if (n !== "" && !lookPart.builtin[n]) { lookPart.keep(n); lookName.text = "" } } } }
                 Pill { icon: "player-play"; text: I18n.tr("Show the tour"); onPressed: { shell.tourStep = 0; shell.tourOn = true } } }
 
             // the main page: two choices of exactly one (ROADMAP 6.41): the launcher, and what manages the windows
             Part { visible: shell.page === "drops"; width: view.room; title: I18n.tr("Launcher")
                    note: I18n.tr("One of them is there at a time; the Windows key opens whichever it is. They share the same text field.")
                 Repeater { model: [{ id: "goo", name: "LensGoo", hint: QT_TR_NOOP("a drop: a press opens it"), icon: "search" },
-                                   { id: "shore", name: "LensShore", hint: QT_TR_NOOP("a line of goo, built around the AI"), icon: "sparkles" },
-                                   { id: "cloud", name: "LensCloud", hint: QT_TR_NOOP("a plate in the corner: the time, and all apps over the screen"), icon: "cloud" }]
+                                   { id: "shore", name: "LensShore", hint: QT_TR_NOOP("a line of goo, built around the AI"), icon: "sparkles" }]
                     Choice { required property var modelData; width: 220; height: 180; text: modelData.name; hint: I18n.tr(modelData.hint); 
-                             on: (goo.kept.lens === "shore" || goo.kept.lens === "cloud" ? goo.kept.lens : "goo") === modelData.id; onPressed: goo.set("lens", modelData.id)
+                             on: (goo.kept.lens === "shore" ? "shore" : "goo") === modelData.id; onPressed: goo.set("lens", modelData.id)
                              DropPreview { width: parent.width; kind: "lens-" + parent.parent.modelData.id; calm: goo.kept.lively === false } } } }
+            // AppCloud (ROADMAP 6N.05): only the apps, as a phone's drawer; it may be there beside either launcher
+            Part { visible: shell.page === "drops"; width: view.room; title: "AppCloud"
+                   note: I18n.tr("A plate in the corner with the time; a press on it shows all apps over the screen. It only lists apps: no questions, no AI. It may stay beside LensGoo or LensShore.")
+                Switch { text: I18n.tr("Show AppCloud"); on: goo.kept.appcloud === true || goo.kept.lens === "cloud"
+                         onPressed: { if (goo.kept.lens === "cloud") goo.set("lens", "goo"); goo.set("appcloud", !on) } }
+                DropPreview { width: 220; kind: "app-cloud"; calm: goo.kept.lively === false } }
             // BarGoo is switched off as every drop is (its id in "hidden", which Goo turns into the fact bar_off); `taskbar` says what stands in its place
             Part { id: taskPart; visible: shell.page === "drops"; width: view.room; title: I18n.tr("Window management")
                    note: I18n.tr("What shows the open windows: one of them is there at a time. DockShore is the dock of pleamar-wm. With None the windows have no Minimize button.")

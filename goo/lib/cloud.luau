@@ -1,7 +1,6 @@
--- LensCloud (parts/cloud.plm, ROADMAP 6N): the third launcher, a plate in the bottom left corner with the time and the
--- date, and the apps over the whole screen. It is there only when it is the launcher chosen (Settings › Drops:
--- `lens` = "cloud"). The apps are the system's (the `apps` service, as LensShore's), started as LensShore starts them.
--- ponytail: the field filters the apps by name and words; it is not yet LensShore's whole search (6N.03 "one brain").
+-- AppCloud (parts/cloud.plm, ROADMAP 6N): the third launcher, a plate in the bottom left corner with the time and the
+-- date, and the apps over the whole screen. It is there when Settings › Drops says so (`appcloud`), beside any launcher. The apps are the system's (the `apps` service, as LensShore's), started as LensShore starts them.
+-- AppCloud is "dumb" on purpose (6N.05): the field only filters the apps by name and words; no AI, no search of files.
 local E = require("lib/engine")
 local wm = require("lib/wm")
 local icons = require("lib/icons")
@@ -10,7 +9,8 @@ local open = require("lib/open")
 local M = {}
 local function N(s) return s end
 local SHORT = { N("Su"), N("Mo"), N("Tu"), N("We"), N("Th"), N("Fr"), N("Sa") }
-local PAGE = 32
+local PAGE = 32                              -- apps on a page: columns × rows, set by size() from the screen
+local cols = 8
 -- the kinds of the freedesktop menu, in the order a phone's drawer has them
 local KINDS = { { "Network", N("Internet") }, { "Office", N("Office") }, { "AudioVideo", N("Media") }, { "Graphics", N("Graphics") },
                 { "Game", N("Games") }, { "Development", N("Development") }, { "System", N("System") } }
@@ -38,7 +38,18 @@ local function make_tabs()
     model.ctab = tabs
 end
 
+-- columns and rows from the screen: cells 150 × 130 at the least, room kept for the kinds on top and the field at the bottom
+local function size()
+    local w, h = num(fact.sw, 0), num(fact.sh, 0)
+    if w <= 0 or h <= 0 then return end
+    cols = math.max(4, math.min(10, math.floor((w - 160) / 150)))
+    local rows = math.max(2, math.min(6, math.floor((h - 250) / 130)))
+    PAGE = cols * rows
+    fact.cloud_cols, fact.cloud_rows = cols, rows
+end
+
 local function fill()
+    size()
     local q = string.lower(text.cloud_q or "")
     local kind = tabs[(num(fact.cloud_tab, 0)) + 1]
     shown = {}
@@ -78,13 +89,13 @@ end
 -- where its plate lies: a wall for the level and the drops, and a stretch they keep off (as TrayShore's)
 local function place()
     local w, h = num(fact.sw, 0), num(fact.sh, 0)
-    local on = fact.lens_cloud == true and w > 0
+    local on = fact.app_cloud == true and w > 0
     local a = num(fact.cloud_at, -1); if a < 0 then a = 0 end
     if on then
-        E.block("lenscloud", 0, a, a + 168)
+        E.block("appcloud", 0, a, a + 168)
         fact["wall.1.x0"], fact["wall.1.y0"], fact["wall.1.x1"], fact["wall.1.y1"] = a, h - 46, a + 168, h
     else
-        E.block("lenscloud", nil)
+        E.block("appcloud", nil)
         fact["wall.1.x0"], fact["wall.1.x1"] = 0, 0
         close()
     end
@@ -104,15 +115,15 @@ function M.start()
         fill()
     end)
     fact.cloud_at = num(E.settings().cloud_at, -1)
-    on("fact:lens_cloud", place)
-    on("fact:sw", place)
+    on("fact:app_cloud", place)
+    on("fact:sw", function() place() fill() end)
     on("fact:sh", place)
     on("cloud_open", function() if fact.cloud_grid then close() else fact.cloud_grid = true end end)
     -- the keys: across a row, and a row up or down (a page further at the end)
     on("cloud_key", function(k)
         k = tonumber(k) or 0
         local sel, n = num(fact.cloud_sel, 0), num(fact.cloud_n, 0)
-        local step = ({ [0] = -1, 1, -8, 8 })[k] or 0
+        local step = ({ [0] = -1, 1, -cols, cols })[k] or 0
         local to = sel + step
         if to >= n and (k == 1 or k == 3) and (page + 1) * PAGE < #shown then page = page + 1 fact.cloud_sel = 0 fill() return end
         if to < 0 and (k == 0 or k == 2) and page > 0 then page = page - 1 fill() fact.cloud_sel = num(fact.cloud_n, 1) - 1 return end
@@ -126,11 +137,8 @@ function M.start()
     on("cloud_launch", function(k) start_app(shown[page * PAGE + (tonumber(k) or 0) + 1]) end)
     on("cloud_enter", function()
         local a = shown[page * PAGE + num(fact.cloud_sel, 0) + 1] or shown[1]
-        if a then start_app(a) return end
-        -- nothing of the apps: LensAI answers it (ponytail: LensShore's whole search comes with 6N.03)
-        local q = text.cloud_q or ""
-        close()
-        if q ~= "" then run("latte-app", { "lensai", q }, function() end) end
+        if a then start_app(a) end
+        -- nothing found: nothing happens (AppCloud has no questions, 6N.05)
     end)
     place()
 end

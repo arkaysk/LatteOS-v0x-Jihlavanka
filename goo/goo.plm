@@ -59,7 +59,7 @@ scene Goo {
     include "parts/picks.plm"
     include "parts/body.plm"
     include "parts/shore.plm"            // after the body: the plate is the body's, what is on it is drawn over it
-    include "parts/cloud.plm"            // LensCloud: the third launcher's plate, and its apps over the whole screen
+    include "parts/cloud.plm"            // AppCloud: the third launcher's plate, and its apps over the whole screen
     include "parts/bubble.plm"
     shader velvet = file "shaders/velvet.wgsl"
     shader pegboard = file "shaders/pegboard.wgsl"

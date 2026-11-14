@@ -1,8 +1,8 @@
-// LensCloud (ROADMAP 6N, "MultiShore"): the third launcher, a Shore plate in the bottom left corner, TrayShore's
+// AppCloud (ROADMAP 6N, "MultiShore"): the third launcher, a Shore plate in the bottom left corner, TrayShore's
 // counterpart. On it the time and the date (the right button: ClockGoo's time card, or its calendar). A press anywhere
 // on it brings the apps over the whole screen, as a phone's app drawer: the kinds on top, a grid of icons with their
 // names, scrolled with the wheel, the field at the bottom; typing filters at once, Enter starts the first, Esc or a
-// press outside closes. The plate itself is the goo's matter (parts/plates.plm); lib/cloud.luau fills what is here.
+// press outside closes. The field only filters: no questions, no AI. The plate itself is the goo's matter (parts/plates.plm); lib/cloud.luau fills what is here.
 part Cloud {
     text cloud_hm = ""
     text cloud_date = ""
@@ -12,13 +12,15 @@ part Cloud {
     text cloud_ic_search = ""
     fact cloud_grid = false                    // the apps are out
     fact cloud_tab = 0                         // the kind chosen: 0 all
+    fact cloud_cols = 8                        // columns and rows of the grid, from the size of the screen
+    fact cloud_rows = 4
     fact cloud_n = 0                           // how many apps are shown on this page
     fact cloud_more = false                    // there is a page after this one, or before it
     fact cloud_sel = 0                         // the cell chosen with the keys: Enter starts it
     fact cloud_typed = false                   // something is typed: Left and Right then move in the field
     event cloud_key ->                         // 0 left, 1 right, 2 up, 3 down
     model ctab max 8 { name: text }
-    model capp max 32 { name: text; icon: image 96, 96; has_icon: bool }
+    model capp max 60 { name: text; icon: image 96, 96; has_icon: bool }
     event cloud_open ->
     event cloud_close ->
     event cloud_launch ->                      // the app in that cell
@@ -29,73 +31,66 @@ part Cloud {
     event cloud_calendar ->
     event cloud_opened ->                      // it came out (also when the Windows key opened it: lib/lens.luau sets cloud_grid)
 
-    // ── on the plate ──
+    // ── on the plate: the time and the date side by side ──
     let cl.cy = H - SHORE_H / 2 + 1
     group {
         show: cloud_w > 0
-        text cloud_hm { at: cloud.x0 + 22, cl.cy - 7; anchor: left center; size: 17; weight: 700; color: cream; family: "Inter" }
-        text cloud_date { at: cloud.x0 + 22, cl.cy + 11; anchor: left center; size: 11; color: cream; opacity: 72%; family: "Inter" }
-        text cloud_ic_apps { at: cloud.x1 - 26, cl.cy; anchor: center; size: 20; color: mix(cream, gold, 0.6 * cloud_hit.hover + if(cloud_grid, 0.4, 0)); family: "tabler-icons" }
-        zone box cloud_hit { from: cloud.x0, H - SHORE_H; size: cloud_w, SHORE_H; cursor: pointer; role: button; label: "LensCloud"; active: cloud_w > 0 }
-        zone box cloud_time_hit { from: cloud.x0, H - SHORE_H; size: 92, SHORE_H / 2 + 2; active: cloud_w > 0; label: "Time" }
-        zone box cloud_date_hit { from: cloud.x0, cl.cy + 2; size: 92, SHORE_H / 2; active: cloud_w > 0; label: "Calendar" }
+        text cloud_hm { at: cloud.x0 + 22, cl.cy; anchor: left center; size: 17; weight: 700; color: cream; family: "Inter" }
+        text cloud_date { at: cloud.x0 + 88, cl.cy + 1; anchor: left center; size: 12; color: cream; opacity: 72%; family: "Inter" }
+        zone box cloud_hit { from: cloud.x0, H - SHORE_H; size: cloud_w, SHORE_H; cursor: pointer; role: button; label: "AppCloud"; active: cloud_w > 0 }
+        zone box cloud_time_hit { from: cloud.x0, H - SHORE_H; size: 78, SHORE_H; active: cloud_w > 0; label: "Time" }
+        zone box cloud_date_hit { from: cloud.x0 + 78, H - SHORE_H; size: cloud_w - 78, SHORE_H; active: cloud_w > 0; label: "Calendar" }
     }
     on press cloud_hit { emit cloud_open }
     on press cloud_time_hit { emit cloud_open }
     on press cloud_date_hit { emit cloud_open }
-    // ClockGoo's own cards (drops/clockgoo.luau), growing out of the plate without an ear
+    // ClockGoo's own cards (drops/clockgoo.luau), growing out of the plate with no ear at all (card_plate)
     on press right cloud_time_hit { tap.x = cloud.x0 + 8; tap.y = H - SHORE_H - 4; emit cloud_time }
     on press right cloud_date_hit { tap.x = cloud.x0 + 8; tap.y = H - SHORE_H - 4; emit cloud_calendar }
 
-    // ── the apps over the whole screen ──
+    // ── the apps over the whole screen: columns and rows by the size of the screen (lib/cloud.luau tells how many) ──
     prop cl.p = 0 ~spring(420, 30)
     follow cl.p = if(cloud_grid, 1, 0)
-    let cl.w = min(1040, W - 80)
-    let cl.h = min(660, H - 120)
-    let cl.x = (W - cl.w) / 2
-    let cl.y = (H - SHORE_H - cl.h) / 2 + 20 * (1 - cl.p)
-    let cl.cw = (cl.w - 48) / 8                // eight in a row, four rows
-    let cl.ch = (cl.h - 150) / 4
+    let cl.cw = (W - 160) / max(cloud_cols, 1)
+    let cl.ch = (H - 250) / max(cloud_rows, 1)
+    let cl.gx = 80
+    let cl.gy = 96 + 20 * (1 - cl.p)
     group {
         show: cl.p > 0.01
         opacity: cl.p
-        // the desktop dims behind it; a press there closes it
-        box { from: 0, 0; size: W, H; color: #0c0705; opacity: 45% }
-        zone box cloud_out { from: 0, 0; size: W, H; active: cloud_grid; label: "Close" }
+        // the whole screen is the coffee's; a press on an empty place closes it
         body {
             color: coffee
-            border: look.outline, mix(coffee, cream, 0.4)
-            shadow: 0, 18, 44, 45%
-            box { from: cl.x, cl.y; size: cl.w, cl.h; corner: 22 }
+            box { from: 0, 0; size: W, H }
         }
-        zone box cloud_panel { from: cl.x, cl.y; size: cl.w, cl.h; active: cloud_grid; label: "LensCloud" }
-        // the kinds
+        zone box cloud_out { from: 0, 0; size: W, H; active: cloud_grid; label: "Close" }
+        // the kinds, in the middle on top
         repeat t in 0..8 {
-            let tx.$t = cl.x + 24 + t * 118
-            box { from: tx.$t, cl.y + 18; size: 110, 32; corner: 16; color: cream; opacity: if(cloud_tab == t, 18%, 6% * ctab_hit.$t.hover); show: t < ctab.count }
-            text ctab.$t.name { at: tx.$t + 55, cl.y + 34; anchor: center; size: 12; weight: if(cloud_tab == t, 700, 500); width: 100; lines: 1; color: cream; opacity: if(cloud_tab == t, 100%, 70%); show: t < ctab.count; family: "Inter" }
-            zone box ctab_hit.$t { from: tx.$t, cl.y + 18; size: 110, 32; cursor: pointer; role: tab; label: "{ctab.$t.name}"; active: cloud_grid and t < ctab.count }
+            let tx.$t = W / 2 - ctab.count * 59 + t * 118 + 4
+            box { from: tx.$t, 36; size: 110, 34; corner: 17; color: cream; opacity: if(cloud_tab == t, 18%, 6% * ctab_hit.$t.hover); show: t < ctab.count }
+            text ctab.$t.name { at: tx.$t + 55, 53; anchor: center; size: 13; weight: if(cloud_tab == t, 700, 500); width: 100; lines: 1; color: cream; opacity: if(cloud_tab == t, 100%, 70%); show: t < ctab.count; family: "Inter" }
+            zone box ctab_hit.$t { from: tx.$t, 36; size: 110, 34; cursor: pointer; role: tab; label: "{ctab.$t.name}"; active: cloud_grid and t < ctab.count }
             on press ctab_hit.$t { emit cloud_pick(t) }
         }
         // the grid
-        repeat k in 0..32 {
-            let gx.$k = cl.x + 24 + mod(k, 8) * cl.cw
-            let gy.$k = cl.y + 66 + floor(k / 8) * cl.ch
-            box { from: gx.$k + 4, gy.$k + 2; size: cl.cw - 8, cl.ch - 4; corner: 14; color: cream; opacity: max(9% * capp_hit.$k.hover, if(cloud_sel == k, 13%, 0)); show: k < cloud_n }
-            box { from: gx.$k + 4, gy.$k + 2; size: cl.cw - 8, cl.ch - 4; corner: 14; stroke: 1.5; color: gold; opacity: if(cloud_sel == k, 70%, 0); show: k < cloud_n }
-            image capp.$k.icon { at: gx.$k + cl.cw / 2 - 26, gy.$k + 12; size: 52, 52; show: k < cloud_n and capp.$k.has_icon }
-            text cloud_ic_apps { at: gx.$k + cl.cw / 2, gy.$k + 38; anchor: center; size: 34; color: cream; opacity: 70%; show: k < cloud_n and not capp.$k.has_icon; family: "tabler-icons" }
-            text capp.$k.name { at: gx.$k + cl.cw / 2, gy.$k + 82; anchor: center; size: 11.5; width: cl.cw - 14; lines: 1; color: cream; show: k < cloud_n; family: "Inter" }
+        repeat k in 0..60 {
+            let gx.$k = cl.gx + mod(k, max(cloud_cols, 1)) * cl.cw
+            let gy.$k = cl.gy + floor(k / max(cloud_cols, 1)) * cl.ch
+            box { from: gx.$k + 4, gy.$k + 2; size: cl.cw - 8, cl.ch - 4; corner: 16; color: cream; opacity: max(9% * capp_hit.$k.hover, if(cloud_sel == k, 13%, 0)); show: k < cloud_n }
+            box { from: gx.$k + 4, gy.$k + 2; size: cl.cw - 8, cl.ch - 4; corner: 16; stroke: 1.5; color: gold; opacity: if(cloud_sel == k, 70%, 0); show: k < cloud_n }
+            image capp.$k.icon { at: gx.$k + cl.cw / 2 - 32, gy.$k + cl.ch / 2 - 50; size: 64, 64; show: k < cloud_n and capp.$k.has_icon }
+            text cloud_ic_apps { at: gx.$k + cl.cw / 2, gy.$k + cl.ch / 2 - 18; anchor: center; size: 42; color: cream; opacity: 70%; show: k < cloud_n and not capp.$k.has_icon; family: "tabler-icons" }
+            text capp.$k.name { at: gx.$k + cl.cw / 2, gy.$k + cl.ch / 2 + 40; anchor: center; size: 13; width: cl.cw - 16; lines: 1; color: cream; show: k < cloud_n; family: "Inter" }
             zone box capp_hit.$k { from: gx.$k + 4, gy.$k + 2; size: cl.cw - 8, cl.ch - 4; cursor: pointer; role: button; label: "{capp.$k.name}"; active: cloud_grid and k < cloud_n }
             on press capp_hit.$k { emit cloud_launch(k) }
         }
-        text cloud_none { at: cl.x + cl.w / 2, cl.y + cl.h / 2 - 20; anchor: center; size: 14; color: cream; opacity: 60%; show: cloud_n == 0; family: "Inter" }
-        // the field at the bottom, as LensShore's line
-        box { from: cl.x + 24, cl.y + cl.h - 62; size: cl.w - 48, 40; corner: 20; color: cream; opacity: 9% + 5% * cloud_field.hover }
-        text cloud_ic_search { at: cl.x + 46, cl.y + cl.h - 42; anchor: center; size: 17; color: cream; opacity: 70%; family: "tabler-icons" }
-        input cloud_q { at: cl.x + 66, cl.y + cl.h - 52; width: cl.w - 120; size: 15; color: cream; selection: #5a463a; family: "Inter"; label: "Search apps, or ask" }
-        zone box cloud_field { from: cl.x + 24, cl.y + cl.h - 62; size: cl.w - 48, 40; cursor: text; label: "Search"; active: cloud_grid }
-        zone box cloud_wheel_zone { from: cl.x, cl.y + 60; size: cl.w, cl.h - 130; active: cloud_grid and cloud_more; label: "Apps" }
+        text cloud_none { at: W / 2, H / 2 - 20; anchor: center; size: 15; color: cream; opacity: 60%; show: cloud_n == 0; family: "Inter" }
+        // the field at the bottom: it only filters the apps
+        box { from: W / 2 - 280, H - 84; size: 560, 42; corner: 21; color: cream; opacity: 9% + 5% * cloud_field.hover }
+        text cloud_ic_search { at: W / 2 - 256, H - 63; anchor: center; size: 17; color: cream; opacity: 70%; family: "tabler-icons" }
+        input cloud_q { at: W / 2 - 236, H - 73; width: 500; size: 15; color: cream; selection: #5a463a; family: "Inter"; label: "Search apps" }
+        zone box cloud_field { from: W / 2 - 280, H - 84; size: 560, 42; cursor: text; label: "Search"; active: cloud_grid }
+        zone box cloud_wheel_zone { from: 0, 80; size: W, H - 180; active: cloud_grid and cloud_more; label: "Apps" }
     }
     on press cloud_out { emit cloud_close }
     on press cloud_field { focus cloud_q }

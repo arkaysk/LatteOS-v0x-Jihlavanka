@@ -168,17 +168,33 @@ local function apart()
         for _, d in ipairs(list) do
             -- even one that stays beside another: moved off, it stops following it (`moved`)
             if docked(d) and not d.dragging and not d.live and not d.def.fixed and d.v.team ~= 1 then
-                for _, b in pairs(blocks) do
-                    local l, c, r = len(d), along(d) + cap_shift(d), span(d) + 10
-                    if b.edge == d.edge and c + r > b.a and c - r < b.b then
-                        local lo, hi = 0.02 * l, limit(d)
-                        local left, right = b.a - r, b.b + r
-                        local to = (c - b.a < b.b - c) and left or right
-                        if to < lo or to > hi then to = (to == left) and right or left end
-                        if to >= lo and to <= hi then
-                            d.at = (to - cap_shift(d) - d.shift) / l
-                            d.moved, moved[d], any = true, true, true
+                local l, c, r = len(d), along(d) + cap_shift(d), span(d) + 10
+                if blocked(d, c) then
+                    -- to the nearest free spot of the edge: the stretches the shores hold, widened by the drop's own radius
+                    -- and joined where they meet, so a drop squeezed between two shores that were pushed together is put out
+                    -- beside them (6.43) and not left under them
+                    local lo, hi = 0.02 * l, limit(d)
+                    local iv = {}
+                    for _, b in pairs(blocks) do if b.edge == d.edge then iv[#iv + 1] = { b.a - r, b.b + r } end end
+                    table.sort(iv, function(x, y) return x[1] < y[1] end)
+                    local held = {}
+                    for _, v in ipairs(iv) do
+                        local m = held[#held]
+                        if m and v[1] <= m[2] then m[2] = math.max(m[2], v[2]) else held[#held + 1] = { v[1], v[2] } end
+                    end
+                    local to, far = nil, nil
+                    local cands = { lo, hi }
+                    for _, m in ipairs(held) do cands[#cands + 1] = m[1] cands[#cands + 1] = m[2] end
+                    for _, x in ipairs(cands) do
+                        if x >= lo and x <= hi then
+                            local inside = false
+                            for _, m in ipairs(held) do if x > m[1] + 0.5 and x < m[2] - 0.5 then inside = true break end end
+                            if not inside and (far == nil or math.abs(x - c) < far) then to, far = x, math.abs(x - c) end
                         end
+                    end
+                    if to then
+                        d.at = (to - cap_shift(d) - d.shift) / l
+                        d.moved, moved[d], any = true, true, true
                     end
                 end
             end
@@ -958,7 +974,7 @@ local function settings()
     E.tell("fact win_glass " .. tostring(windows), "fact lively " .. tostring(fact.lively), "fact glassy " .. tostring(fact.glassy), "fact bends " .. tostring(fact.bends),
            "fact ai_glass " .. tostring(ai_glass), "fact ai_soft " .. tostring(software), "fact true_glass " .. tostring(clear),
            "fact bar_off " .. tostring(hidden.bargoo == true), "fact bar_fixed " .. tostring(t.bar_fixed == true),
-           "fact lens_shore " .. tostring(t.lens == "shore"), "fact lens_cloud " .. tostring(t.lens == "cloud"))
+           "fact lens_shore " .. tostring(t.lens == "shore"), "fact app_cloud " .. tostring(t.appcloud == true or t.lens == "cloud"))
     if glass_told ~= windows then glass_told = windows wm.glass(windows) end
     -- what shows the windows (6.41): BarGoo unless it is hidden, then DockShore unless None was chosen
     local bar = hidden.bargoo ~= true and 0 or (t.taskbar == "none" and 2 or 1)
@@ -996,6 +1012,36 @@ on("reset_places", function() E.reset_places() end)
 
 -- DockShore, pleamar-wm's dock, is a plate on the edge as TrayShore and LensShore are: the drops keep off its stretch,
 -- the level stands still under it and its waves come back off it (wall 0, goo-phys). wm/session.plm tells where it lies.
+-- where DockShore's middle lies: from the end it is pinned by (6.42), else where it was put, else the middle of the edge
+local function dock_centre()
+    local len, pin, px = num(fact.dock_len, 0), num(fact.dock_pin, -1), num(fact.dock_pinx, 0)
+    if pin == 0 then return px + len / 2 elseif pin == 1 then return px - len / 2 end
+    local e, w, h = num(fact.dock_edge, -1), num(fact.sw, 0), num(fact.sh, 0)
+    return num(fact.dock_at, -1) >= 0 and fact.dock_at or (e == 0 and w or h) / 2
+end
+-- beside a Shore (or the end of the screen) the dock grows from that end, not from its middle, so it neither runs into the
+-- neighbour as apps open nor leaves a gap as they close (6.42): which end, or -1 where it stands alone
+local function dock_pin_of(a, b)
+    local w = num(fact.sw, 0)
+    local spans = {}
+    if shore.w > 0 then
+        local at = num(fact.tray_at, -1)
+        local x = at >= 0 and at or w - shore.w
+        spans[#spans + 1] = { x, x + shore.w }
+    end
+    if fact.lens_shore and num(fact.lens_edge, 0) ~= 2 and num(fact.lens_b, 0) > num(fact.lens_a, 0) then spans[#spans + 1] = { fact.lens_a, fact.lens_b } end
+    if fact.app_cloud then
+        local at = num(fact.cloud_at, -1)
+        local x = at > 0.5 and at or 0
+        spans[#spans + 1] = { x, x + 168 }
+    end
+    local near = 10
+    if a <= near then return 0, a end
+    for _, sp in ipairs(spans) do if math.abs(a - sp[2]) <= near then return 0, sp[2] end end
+    if b >= w - near then return 1, b end
+    for _, sp in ipairs(spans) do if math.abs(b - sp[1]) <= near then return 1, sp[1] end end
+    return -1, 0
+end
 local function dock_moved()
     local e, len, deep = num(fact.dock_edge, -1), num(fact.dock_len, 0), num(fact.dock_deep, 0)
     local w, h = num(fact.sw, 0), num(fact.sh, 0)
@@ -1004,7 +1050,7 @@ local function dock_moved()
         fact["wall.0.x0"], fact["wall.0.x1"] = 0, 0
         return
     end
-    local mid = num(fact.dock_at, -1) >= 0 and fact.dock_at or (e == 0 and w or h) / 2
+    local mid = dock_centre()
     local a, b = mid - len / 2, mid + len / 2
     local reach = num(fact.dock_grow, 0) / 2 + 12        -- drops keep off where it grows under the mouse, and a little more
     E.block("dockshore", e, a - reach, b + reach)
@@ -1016,7 +1062,14 @@ local function dock_moved()
 end
 on("dock_moved", dock_moved)
 -- A Shore plate carried along the edge with Alt and let go (parts/shoregrab.plm): where it lies is kept
-on("shore_lift", function() wm.dock_lift() end)
+on("shore_lift", function()
+    -- carried, it goes by its middle again: where that is now
+    local c = dock_centre()
+    fact.dock_at, fact.dock_pin = c, -1
+    wm.dock_pin(-1, 0)
+    wm.dock_at(c)
+    wm.dock_lift()
+end)
 on("shore_placed", function(k)
     local w = num(fact.sw, 0)
     if k == 0 then
@@ -1037,7 +1090,13 @@ on("shore_placed", function(k)
         E.apart() E.publish()
     elseif k == 2 then
         E.set("dock_at", num(fact.dock_at, -1))
-        wm.dock_at(num(fact.dock_at, -1))
+        local c, len = num(fact.dock_at, -1), num(fact.dock_len, 0)
+        local pin, px = -1, 0
+        if num(fact.dock_edge, -1) == 0 and c >= 0 and len > 0 then pin, px = dock_pin_of(c - len / 2, c + len / 2) end
+        fact.dock_pin, fact.dock_pinx = pin, px
+        E.set("dock_pin", pin) E.set("dock_pinx", px)
+        wm.dock_at(c)
+        wm.dock_pin(pin, px)
         dock_moved()
         E.apart() E.publish()
     end
@@ -1085,8 +1144,10 @@ function E.start(opts)
         -- where the plates were carried (6.36), and the dock told where it lies; then it says how long it is
         fact.tray_at = num(chosen_settings.tray_at, -1)
         fact.dock_at = num(chosen_settings.dock_at, -1)
+        fact.dock_pin, fact.dock_pinx = num(chosen_settings.dock_pin, -1), num(chosen_settings.dock_pinx, 0)
         tray_sync()
         wm.dock_at(fact.dock_at)
+        wm.dock_pin(fact.dock_pin, fact.dock_pinx)
         wm.tell_dock()
     end
 end

@@ -193,22 +193,25 @@ part Drops {
     fact dock_len = 0
     fact dock_deep = 0
     event dock_moved ->
+    fact dock_pin = -1                         // …or its end that stays where it is while it grows and shrinks (6.42): 0 the left, 1 the right, −1 neither: its middle
+    fact dock_pinx = 0                         // …and where that end lies, px
     fact dock_at = -1                          // …its middle along the edge, px; −1 the middle (6.36: Goo carries it, tells pleamar-wm)
-    let dock.c = if(dock_at < 0, if(dock_edge == 0, W / 2, H / 2), dock_at)
     fact alt_held = 0                          // Alt is held (pleamar-wm says, keys.alt): the Shore plates can be carried
     fact dock_grow = 0                         // …how much longer it grows with the mouse on it (its icons magnified)
     prop dock_l = 0 ~spring(320, 12)           // its length as the dock's own spring carries it (wm/session.plm `pop`)
     follow dock_l = if(dock_edge >= 0, dock_len, 0)
+    // where its middle is: grown from the end it is pinned by (beside a neighbouring Shore), else from the middle itself
+    let dock.c = if(dock_pin == 0, dock_pinx + dock_l / 2, if(dock_pin == 1, dock_pinx - dock_l / 2, if(dock_at < 0, if(dock_edge == 0, W / 2, H / 2), dock_at)))
     // the mouse on it, worked out here as the dock does (`dk.on`, `dk.near`), so nothing is told on every move
     let dock.across = if(dock_edge == 0, H - cursor.y, if(dock_edge == 1, cursor.x, W - cursor.x))
     let dock.along = if(dock_edge == 0, cursor.x, cursor.y) - dock.c
     prop dock_near = 0 ~180ms
     follow dock_near = if(dock_edge >= 0 and dock.across <= dock_deep + 6 and abs(dock.along) <= dock_l / 2 + dock_grow / 2 + 10, 1, 0)
     let dock.span = dock_l + dock_grow * dock_near
-    // LensCloud (parts/cloud.plm): the third launcher, a plate in the bottom left corner, there only when it is the one chosen
-    fact lens_cloud = false
+    // AppCloud (parts/cloud.plm): the third launcher, a plate in the bottom left corner, there only when it is the one chosen
+    fact app_cloud = false
     fact cloud_at = -1                         // its left end carried along the edge (6.36); −1 in the corner
-    let cloud_w = if(lens_cloud, 168, 0)
+    let cloud_w = if(app_cloud, 168, 0)
     let cloud.x0 = if(cloud_at < 0, 0, cloud_at)
     let cloud.x1 = cloud.x0 + cloud_w
     fact wall.1.x0 = 0                         // its wall for goo-phys (lib/cloud.luau sets it)

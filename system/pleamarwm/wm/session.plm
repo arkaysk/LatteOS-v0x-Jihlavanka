@@ -1286,6 +1286,8 @@ scene Session {
     // icons are lifted off (`dock.lift`), and it is put down where Goo says (`dock.at`, its middle along the edge; −1 the middle)
     fact keys.alt = 0
     fact dock.at = -1
+    fact dock.pin = -1                         // 0 or 1: its left or its right end stays where dock.pinx says while it grows (6.42)
+    fact dock.pinx = 0
     fact dock.lift = 0
     // LatteOS 6.41: what shows the windows (Settings › Drops › Window management): DockShore only when it is chosen
     // (`dock.off` 1 with BarGoo or None); with None nothing does, and the windows have no Minimize button (`win.nomin`)
@@ -1378,7 +1380,7 @@ scene Session {
         // a side and in y at the bottom. Along: from dk.a0, centred.
         dk.cr[s] = if(dock.side == 1, 0, if(dock.side == 2, screen.$s.width, screen.$s.height))
         dk.cs[s] = if(dock.side == 1, 1, -1)
-        dk.a0[s] = if(dock.at < 0, if(dkvert, screen.$s.height, screen.$s.width) / 2, dock.at) - dkw.$s / 2      // LatteOS: where Goo put it along the edge (6.36)
+        dk.a0[s] = if(dock.pin == 0 and not dkvert, dock.pinx, if(dock.pin == 1 and not dkvert, dock.pinx - dkw.$s, if(dock.at < 0, if(dkvert, screen.$s.height, screen.$s.width) / 2, dock.at) - dkw.$s / 2))      // LatteOS: where Goo put it along the edge (6.36)
         dk.q[s] = 0 - (dkpl / 2 + 10) + (dkpl + 10) * shore.$s      // LatteOS: the plate stands on the edge, not 14 px off it
         // Where the mouse is along it and how far from its edge.
         dk.ma[s] = if(dkvert, mouse.y, mouse.x)
@@ -1400,7 +1402,7 @@ scene Session {
         // LatteOS DockShore: Goo takes the plate as a wall for its level and drops and puts it in its outline
         // (goo/lib/engine.luau `dock_moved`). Told when where it lies changes, not on every frame of its springs;
         // and again when Goo starts (`dock_tell`). Edges as Goo counts them: 0 bottom, 1 left, 3 right, −1 none.
-        let dkg.edge.$s = if(free.$s > 0.5 and (dock.hide < 0.5 or dk.open.$s or dmenu.$s >= 0 or pv.$s >= 0 or dkdrag.$s >= 0), if(dock.side == 2, 3, dock.side), -1)
+        let dkg.edge.$s = if(free.$s > 0.5 and dock.off < 0.5 and (dock.hide < 0.5 or dk.open.$s or dmenu.$s >= 0 or pv.$s >= 0 or dkdrag.$s >= 0), if(dock.side == 2, 3, dock.side), -1)
         on change dkg.edge.$s * 100000 + dk.tw.$s + dkpl * 7 + dkg.grow * 13 + dktold while s == 0 { launch "latte-say 'fact dock_edge {dkg.edge.$s}' 'fact dock_len {dk.tw.$s}' 'fact dock_deep {dkpl}' 'fact dock_grow {dkg.grow}' 'emit dock_moved'" }
         repeat j in 0..12 {
             image dockicon.$s.$j = from win.dock.$s.$j.icon, 96, 96
@@ -4885,6 +4887,18 @@ scene Session {
     // (in the windows' loop). It stays while the agent is at work —thinking
     // between one action and the next is working too: the compositor says
     // when it is (`agent.active`)— and fades slowly after.
+    // Whose it is, from its name (pleamar-wm-agent-kind.patch): 0 other, 1 Claude, 2 OpenAI, 3 Gemini, 4 DeepSeek,
+    // 5 Grok, 6 Mistral, 7 Copilot, 8 Marea, 9 Qwen, 10 a local model. Its cursor wears that maker's colour and logo.
+    fact agent.kind = 0
+    let ag.col = pick(agent.kind, mint, #d97757, #10a37f, #3186ff, #4d6bfe, #e6e6e6, #fa500f, #a371f7, mint, #615ced, #f7c873)
+    let ag.logo = if(agent.kind >= 1 and agent.kind <= 7, 1, 0)
+    image ag_claude = file "/usr/share/latteos/goo/ai/claude.svg", 28, 28
+    image ag_openai = file "/usr/share/latteos/goo/ai/openai.svg", 28, 28
+    image ag_gemini = file "/usr/share/latteos/goo/ai/gemini.svg", 28, 28
+    image ag_deepseek = file "/usr/share/latteos/goo/ai/deepseek.svg", 28, 28
+    image ag_grok = file "/usr/share/latteos/goo/ai/grok.svg", 28, 28
+    image ag_mistral = file "/usr/share/latteos/goo/ai/mistral.svg", 28, 28
+    image ag_copilot = file "/usr/share/latteos/goo/ai/githubcopilot.svg", 28, 28
     fact agent.seen = 0
     fact agent.screen = -1
     fact agent.win = -1
@@ -4910,13 +4924,13 @@ scene Session {
         group {
             blur: 22
             opacity: 40% + 12% * ag.breath
-            box { from: 4, 4; size: W - 8, H - 8; corner: 18; stroke: 10; color: mint }
+            box { from: 4, 4; size: W - 8, H - 8; corner: 18; stroke: 10; color: ag.col }
         }
-        box { from: 2, 2; size: W - 4, H - 4; corner: 16; stroke: 1.5; color: mint; opacity: 55% }
+        box { from: 2, 2; size: W - 4, H - 4; corner: 16; stroke: 1.5; color: ag.col; opacity: 55% }
         // And the light going round them, soft.
         group {
             blur: 16
-            ellipse { at: ag.lx, ag.ly; radius: 34; color: mint; opacity: 35% }
+            ellipse { at: ag.lx, ag.ly; radius: 34; color: ag.col; opacity: 35% }
         }
         // The pill, in the bottom right corner (the top middle is Marea's): a
         // dot that beats, what is going on, and «Stop»: the agent's hands are
@@ -4929,12 +4943,12 @@ scene Session {
             shadow: 0, 6, 18, 40%
             box { at: ag.px, ag.py; size: 340, 30; corner: 15 }
         }
-        ellipse { at: ag.px - 152, ag.py; radius: 4 + 2 * ag.breath; color: mint }
-        ellipse { at: ag.px - 152, ag.py; radius: 9 * ag.breath + 4; stroke: 1.2; color: mint; opacity: 60% * (1 - ag.breath) }
+        ellipse { at: ag.px - 152, ag.py; radius: 4 + 2 * ag.breath; color: ag.col }
+        ellipse { at: ag.px - 152, ag.py; radius: 9 * ag.breath + 4; stroke: 1.2; color: ag.col; opacity: 60% * (1 - ag.breath) }
         text "An agent is using this monitor" { at: ag.px - 28 - 24 * min(agent.pace, 1), ag.py + 0.5; anchor: center; size: 11.5; weight: 600; color: ink }
         // Not at the default pace, it says so: the hand is not seen travelling.
-        text "fast" { at: ag.px + 40, ag.py + 0.5; anchor: left center; size: 10; weight: 700; color: mint; show: agent.pace == 1 }
-        text "instant" { at: ag.px + 40, ag.py + 0.5; anchor: left center; size: 10; weight: 700; color: mint; show: agent.pace == 2 }
+        text "fast" { at: ag.px + 40, ag.py + 0.5; anchor: left center; size: 10; weight: 700; color: ag.col; show: agent.pace == 1 }
+        text "instant" { at: ag.px + 40, ag.py + 0.5; anchor: left center; size: 10; weight: 700; color: ag.col; show: agent.pace == 2 }
         box { at: ag.px + 130, ag.py; size: 64, 22; corner: 11; color: #ef7a66; opacity: 18% + 30% * ag.stop.hover }
         box { at: ag.px + 109, ag.py; size: 7, 7; corner: 1.5; color: #ef7a66 }
         text "Stop" { at: ag.px + 136, ag.py + 0.5; anchor: center; size: 11.5; weight: 700; color: #ffb3a6 }
@@ -5002,16 +5016,16 @@ scene Session {
                 show: ag.$k.on > 0.01 and agent.$k.screen == screen.index
                 opacity: ag.$k.on
                 // Where it clicks: a ring that spreads.
-                ellipse { at: ax, ay; radius: 4 + 22 * ag.$k.ring; stroke: 2.2 * (1 - ag.$k.ring) + 0.4; color: if(k == 0, mint, #c9b3f2); opacity: 80% * (1 - ag.$k.ring) }
+                ellipse { at: ax, ay; radius: 4 + 22 * ag.$k.ring; stroke: 2.2 * (1 - ag.$k.ring) + 0.4; color: if(k == 0, ag.col, #c9b3f2); opacity: 80% * (1 - ag.$k.ring) }
                 group {
                     pivot: ax, ay
                     scale: 1 - 0.12 * ag.$k.press, 1 - 0.12 * ag.$k.press
                     // A soft light under it, so it is found on any window.
-                    ellipse { at: ax + 5, ay + 8; radius: 15; color: if(k == 0, mint, #c9b3f2); opacity: 16% }
+                    ellipse { at: ax + 5, ay + 8; radius: 15; color: if(k == 0, ag.col, #c9b3f2); opacity: 16% }
                     // The arrow: dark edge, mint body, its tip on the point.
                     path { at: ax - 1.2, ay - 1.6; color: #0c0f12
                            move 0, 0; line 0, 21; line 5.6, 16; line 9.2, 24.2; line 13, 22.6; line 9.5, 14.6; line 16.4, 14.6; close }
-                    path { at: ax, ay; color: if(k == 0, mint, #c9b3f2)
+                    path { at: ax, ay; color: if(k == 0, ag.col, #c9b3f2)
                            move 0, 0; line 0, 17.5; line 4.6, 13.4; line 7.8, 20.6; line 10.2, 19.6; line 7.1, 12.6; line 12.6, 12.6; close }
                 }
                 // Its name, up and to the right of the tip: a page's tooltip
@@ -5019,9 +5033,20 @@ scene Session {
                 body {
                     color: #0c0f12
                     rim: 14%
-                    box { from: ax + 16, ay - 21; size: tag.$k.width + 16, 18; corner: 9 }
+                    box { from: ax + 16, ay - 21; size: tag.$k.width + 16 + 16 * ag.logo * if(k == 0, 1, 0), 18; corner: 9 }
                 }
-                text agent.name { at: ax + 24, ay - 11.5; anchor: left center; size: 10; weight: 600; color: if(k == 0, mint, #c9b3f2); measure: tag.$k }
+                // the maker's logo at the start of the name; the one-colour logos take the cursor's colour
+                group {
+                    show: k == 0 and ag.logo > 0
+                    image ag_claude { at: ax + 22, ay - 19; size: 14, 14; show: agent.kind == 1 }
+                    image ag_openai { at: ax + 22, ay - 19; size: 14, 14; tint: ag.col; show: agent.kind == 2 }
+                    image ag_gemini { at: ax + 22, ay - 19; size: 14, 14; show: agent.kind == 3 }
+                    image ag_deepseek { at: ax + 22, ay - 19; size: 14, 14; show: agent.kind == 4 }
+                    image ag_grok { at: ax + 22, ay - 19; size: 14, 14; tint: ag.col; show: agent.kind == 5 }
+                    image ag_mistral { at: ax + 22, ay - 19; size: 14, 14; show: agent.kind == 6 }
+                    image ag_copilot { at: ax + 22, ay - 19; size: 14, 14; tint: ag.col; show: agent.kind == 7 }
+                }
+                text agent.name { at: ax + 24 + 16 * ag.logo * if(k == 0, 1, 0), ay - 11.5; anchor: left center; size: 10; weight: 600; color: if(k == 0, ag.col, #c9b3f2); measure: tag.$k }
             }
         }
     }

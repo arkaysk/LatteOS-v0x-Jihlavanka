@@ -47,6 +47,7 @@ part Card {
     event cal_pick ->                          // a day was pressed, by its place among the 42
     event cal_step ->                          // the arrows and the wheel: 1 the next month, 0 the one before
     fact card_open = false
+    fact card_plate = false                    // grown out of a plate (AppCloud's), not a drop: no ear at all
     fact card_owner = -1                       // the place of the drop it grows from; −1: from the last press
     fact card_dock_w = 0                       // …and how long that plate is, to join the two without a seam
     fact card_dock = false                     // it is the shore's panel: no goo, a plate that stands on the shore's own, one piece with it
@@ -56,6 +57,7 @@ part Card {
     fact card_w2 = 0                           // how wide the second column is; 0: there is none
     fact card_menu = false                     // a classic context menu: at the pointer, square-ish, solid, no ear and no neck
     fact card_pane = 0                         // 0…1: this card is glass above its wave divider, whatever the goo's material (a drop asks for it)
+    fact card_custom = 0                       // the card is a scene of its own, not rows: 1 this one, 2 CamGoo's (cam.plm)
     fact card_split = 0                        // where a `wave` row's coffee begins, from the card's top: below it the card is solid, 0 for none
     fact card_tail = 0                         // …or how far from the card's bottom (its top, hanging from the top edge) it begins, when the rows above are not known
     fact card_grow = false                     // a card with a scene of its own (the clock, the calendar) grows with the screen: card.z
@@ -182,6 +184,19 @@ part Card {
     // shut, the card is drawn back into its ear first: only then is the drop let go
     every 16ms while not card_open and card.p < 0.04 and (ear.ox != 0 or ear.oy != 0) { ear.ox = 0; ear.oy = 0 }
     let card.pn = card_pane > 0 and pane_a >= 0 and not true_glass and not card_dock and not card_menu   // its glass is the windows' side panel
+    // The writing of a card is made for coffee (light on dark). A pane of light glass needs the opposite, or it cannot be
+    // read: whatever the window theme is, the card chooses from the pane's own light (ROADMAP 6.52).
+    // The clock, the calendar and the camera are drawn by hand with their own dark tiles and light writing: their pane is
+    // made dark whatever the window theme is, so that writing on it stands on the same ground as on the tiles
+    let card.dk = if(card.pn and (card_custom == 1 or card_custom == 2 or card_custom == 4), 1, 0)
+    let card.lite = if(card.pn and card.dk < 0.5 and 0.2126 * pane_r + 0.7152 * pane_g + 0.0722 * pane_b > 0.5, 1, 0)
+    let tc = if(card.lite > 0.5, #2a1c14, cream)
+    let td = if(card.lite > 0.5, #66503f, dim)
+    let tg = if(card.lite > 0.5, #7d5200, gold)
+    let tpaper = if(card.lite > 0.5, #fff8ec, paper)
+    let tb1 = if(card.lite > 0.5, #e6d9c6, #3d2c22)
+    let tb2 = if(card.lite > 0.5, #dccdb7, #4a372b)
+    let tb3 = if(card.lite > 0.5, #c4b29a, #5a463a)
     let card.glass = if(card_dock or card_menu, 0, if(true_glass, 1, max(material, card_pane * panes)))                  // the shore is hard: its panel is never glass
     let card.q = clamp(card.p, 0, 1.08)
     prop card.ws = 290 ~grow
@@ -200,7 +215,7 @@ part Card {
     // The body's colour while the card opens and closes: the drop it grows out of is coffee, the pane's colour comes in as it opens and goes
     // as it closes (it stayed pale, so the card folded into a pale capsule that bounced for a third of a second). The ear is coffee too, as
     // the drop is: the colours run from the ear over a short stretch only, the rest of the card is as it was.
-    let card.pc = mix(coffee, rgb(pane_r, pane_g, pane_b), clamp((card.p - 0.6) * 3, 0, 1))
+    let card.pc = mix(coffee, mix(rgb(pane_r, pane_g, pane_b), paper, 0.9 * card.dk), clamp((card.p - 0.6) * 3, 0, 1))
     let card.gx = if(card.pn, min(card.w, 90), card.w)
     let card.gy = if(card.pn, min(card.h, 90), card.h)
     let card.round = if(card_menu, 12, if(card_lens, 18, 18 + 40 * (1 - card.t) * (1 - card.t)))
@@ -226,11 +241,13 @@ part Card {
         lens: material > 0.02 or card.pn
         shine: pointer
         // True Glass: clearer and bending more; the smoke stays, it is what keeps the writing readable
-        // clear as the side panel is: pleamar-wm blurs nothing under a window (0.6.9), so the panel shows what is behind sharp
-        frost: if(card.pn, 0%, if(true_glass, 45%, 100%))
+        // a pane is frosted by pleamar's own glass: the compositor's blur under the goo's surface (PLEAMAR_NO_LENS) left
+        // ghosts of the cursor and of the card at the screen's edges (ROADMAP 6.46), and a clear pane did not read
+        frost: if(card.pn, 100%, if(true_glass, 45%, 100%))
         // a pane above the wave is laid as the windows' side panel is: their blur with its colour over it, no smoke
-        smoke: 62% * card.glass * if(card.pn, 0, 1)
-        tint: if(card.pn, pane_a, 22%)
+        smoke: card.glass * if(card.pn, if(card.lite > 0.5, 0%, 35%), 62%)
+        // never thinner than 90 %: under thin glass a bright wallpaper would take the writing's contrast away
+        tint: if(card.pn, max(pane_a, 90%), 22%)
         refraction: if(true_glass, 200%, 120%) * card.glass * if(card.pn, 0, 1)
         include "cardframe.plm"
     }

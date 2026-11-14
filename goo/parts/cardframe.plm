@@ -3,7 +3,7 @@
 part CardFrame {
     // LensShore's panel reaches 40 px into its plate: the two overlap and their sides run straight on, no waist
     box { at: card.ax + card.sx * card.cw / 2, card.ay + card.sy * (card.ch - if(card_lens, 40, 0)) / 2; size: card.cw * if(card.p > 0.02 and not card_dock, 1, 0), card.ch + if(card_lens, 40, 0); corner: if(card_menu, 12, min(if(ear > 14, 26, 18) + (card.round - 18), min(card.cw, card.ch) / 2)) }
-    ellipse { at: if(card_owner >= 0, own.dx, card.ax), if(card_owner >= 0, own.dy, card.ay); radius: (ear.d * clamp(card.p * 3, 0, 1) + 1) * if(card.p > 0.02 and not card_menu and not card_lens and not card_dock, 1, 0); blend: 4 + 30 * 4 * card.t * (1 - card.t) }
+    ellipse { at: if(card_owner >= 0, own.dx, card.ax), if(card_owner >= 0, own.dy, card.ay); radius: (ear.d * clamp(card.p * 3, 0, 1) + 1) * if(card.p > 0.02 and not card_menu and not card_plate and not card_lens and not card_dock, 1, 0); blend: 4 + 30 * 4 * card.t * (1 - card.t) }
     // the crests that ring along its two edges as it spreads (card.plm): a swelling on the edge, longer than it is high
     ellipse { at: card.ax + card.sx * (ear.d + (card.cw - ear.d - 28) * rip.go), card.ay; radius: rip.h; scale: 2.2, 0.6; blend: 14 }
     ellipse { at: card.ax, card.ay + card.sy * (ear.d + (card.ch - ear.d - 28) * rip.go); radius: rip.h; scale: 0.6, 2.2; blend: 14 }

@@ -1,0 +1,125 @@
+diff --git a/src/agent.rs b/src/agent.rs
+index 1082bf6..a44bd27 100644
+--- a/src/agent.rs
++++ b/src/agent.rs
+@@ -655,6 +655,7 @@ impl State {
+                 // monitor's glow and its «An agent is using this monitor» are for agents out of sight.
+                 let quiet = if name == "Marea" { 1.0 } else { 0.0 };
+                 let _ = self.to_render.send(ToRender::Fact(pleamar::scene::intern("agent.quiet"), quiet));
++                let _ = self.to_render.send(ToRender::Fact(pleamar::scene::intern("agent.kind"), agent_kind(&name)));
+                 let _ = self.to_render.send(ToRender::Text(pleamar::scene::intern("agent.name"), name));
+                 Ok("ok".to_owned())
+             }
+@@ -2295,7 +2296,14 @@ impl State {
+         if t.slot.is_none() && t.app.is_empty() && t.did != "open" {
+             return Ok(());
+         }
+-        match crate::hands::allowed(who, &t.what) {
++        // the hands as a whole, then the one of them this takes: the pointer or the keyboard
++        let device = match t.did {
++            "type" | "key" | "keys" | "set text" | "type in terminal" => "keys",
++            "click" | "move" | "scroll" | "press" => "mouse",
++            _ => "",
++        };
++        let verdict = crate::hands::allowed(who, &t.what).and_then(|r| if device.is_empty() { Ok(r) } else { crate::hands::device_allowed(device, who, &t.what) });
++        match verdict {
+             Ok(_) => Ok(()),
+             Err(why) => {
+                 crate::hands::record(serde_json::json!({ "who": who, "slot": t.slot, "app": t.app, "title": t.title, "did": t.did, "what": t.detail, "refused": why }), false);
+@@ -2858,3 +2866,36 @@ mod tests {
+         assert_eq!((small.dimensions(), d), ((10, 10), 1.0));
+     }
+ }
++
++/// Which maker an agent's name speaks of, for a shell that dresses each one's
++/// cursor in its own colours (`agent.kind`; a scene cannot look inside a text):
++/// 0 any other, 1 Claude, 2 OpenAI (Codex, ChatGPT, GPT), 3 Gemini, 4 DeepSeek,
++/// 5 Grok, 6 Mistral, 7 Copilot, 8 Marea, 9 Qwen, 10 a local model (llama, ollama).
++pub(crate) fn agent_kind(name: &str) -> f32 {
++    let n = name.to_lowercase();
++    const KINDS: &[(&[&str], f32)] = &[
++        (&["claude", "anthropic"], 1.0),
++        (&["codex", "openai", "chatgpt", "gpt"], 2.0),
++        (&["gemini", "google"], 3.0),
++        (&["deepseek"], 4.0),
++        (&["grok", "xai"], 5.0),
++        (&["mistral", "le chat"], 6.0),
++        (&["copilot"], 7.0),
++        (&["marea"], 8.0),
++        (&["qwen"], 9.0),
++        (&["llama", "ollama", "local"], 10.0),
++    ];
++    KINDS.iter().find(|(words, _)| words.iter().any(|w| n.contains(w))).map_or(0.0, |(_, k)| *k)
++}
++
++#[cfg(test)]
++mod kind_tests {
++    #[test]
++    fn kinds() {
++        assert_eq!(super::agent_kind("Claude Code"), 1.0);
++        assert_eq!(super::agent_kind("codex"), 2.0);
++        assert_eq!(super::agent_kind("Gemini CLI"), 3.0);
++        assert_eq!(super::agent_kind("Marea"), 8.0);
++        assert_eq!(super::agent_kind("agent"), 0.0);
++    }
++}
+diff --git a/src/gate.rs b/src/gate.rs
+index a7ebb22..84d7b88 100644
+--- a/src/gate.rs
++++ b/src/gate.rs
+@@ -166,8 +166,19 @@ pub(crate) fn hands(name: &str, routine: &str, what: &str) -> Result<Option<Stri
+     hands_by(&rules().map_err(|e| format!("broken rules: {e}"))?, name, routine, what)
+ }
+ 
++/// The same for one of the hands only: TOOL `mouse` (its pointer) or `keys`
++/// (its keyboard), so a person can let an agent point but not type, or the
++/// other way round, here or there.
++pub(crate) fn device(tool: &str, name: &str, routine: &str, what: &str) -> Result<Option<String>, String> {
++    tool_by(&rules().map_err(|e| format!("broken rules: {e}"))?, tool, name, routine, what)
++}
++
+ fn hands_by(rules: &[Rule], name: &str, routine: &str, what: &str) -> Result<Option<String>, String> {
+-    let theirs = |r: &&Rule| r.tool == "hands" && (r.who == "*" || (!name.is_empty() && r.who == name.to_lowercase()) || (r.who == "routine" && !routine.is_empty()));
++    tool_by(rules, "hands", name, routine, what)
++}
++
++fn tool_by(rules: &[Rule], tool: &str, name: &str, routine: &str, what: &str) -> Result<Option<String>, String> {
++    let theirs = |r: &&Rule| r.tool == tool && (r.who == "*" || (!name.is_empty() && r.who == name.to_lowercase()) || (r.who == "routine" && !routine.is_empty()));
+     let fits = |r: &&Rule| glob(&r.what.to_lowercase(), what);
+     if let Some(r) = rules.iter().filter(theirs).find(|r| !r.allow && fits(r)) {
+         return Err(format!("rule on line {}", r.line));
+@@ -665,6 +676,16 @@ mod tests {
+         assert!(hands_by(&rules, "Prohard", "Factorial", "zen inicio").is_ok());
+     }
+ 
++    #[test]
++    fn mouse_and_keys_apart() {
++        let r = |allow, tool: &str, what: &str, line| Rule { allow, who: "*".into(), tool: tool.into(), what: what.into(), line };
++        let rules = [r(false, "keys", "*", 1), r(true, "mouse", "latte*", 2)];
++        assert!(tool_by(&rules, "keys", "claude", "", "kitty zsh").is_err());
++        assert_eq!(tool_by(&rules, "mouse", "claude", "", "latte-settings x"), Ok(Some("rule on line 2".into())));
++        assert!(tool_by(&rules, "mouse", "claude", "", "firefox x").is_err());
++        assert_eq!(hands_by(&rules, "claude", "", "firefox x"), Ok(None));
++    }
++
+     #[test]
+     fn a_name_is_a_who() {
+         let rules = [Rule { allow: true, who: "prohard".into(), tool: "*".into(), what: "*".into(), line: 1 }];
+diff --git a/src/hands.rs b/src/hands.rs
+index c7d79a5..64ebe8d 100644
+--- a/src/hands.rs
++++ b/src/hands.rs
+@@ -64,6 +64,13 @@ pub(crate) fn allowed(name: &str, what: &str) -> Result<Option<String>, String>
+     crate::gate::hands(name, &routine, what)
+ }
+ 
++/// Whether `name`'s pointer (`mouse`) or keyboard (`keys`) may do that, by the
++/// rules about that one only.
++pub(crate) fn device_allowed(tool: &str, name: &str, what: &str) -> Result<Option<String>, String> {
++    let routine = crate::mail::routine_of(name).unwrap_or_default();
++    crate::gate::device(tool, name, &routine, what)
++}
++
+ /// A step, written down; its picture's file name if it is to have one.
+ pub(crate) fn record(step: Value, picture: bool) -> Option<String> {
+     let _ = std::fs::create_dir_all(dir());

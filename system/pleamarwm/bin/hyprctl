@@ -143,6 +143,9 @@ def emits(expr):
     m = re.match(r"latte\.dock\.lift\(([01])\)", expr)
     if m:
         return ["fact dock.lift " + m.group(1)]
+    m = re.match(r"latte\.dock\.pin\((-?[0-9]+),\s*(-?[0-9.]+)\)", expr)
+    if m:
+        return ["fact dock.pin " + m.group(1), "fact dock.pinx " + m.group(2)]
     m = re.match(r"latte\.dock\.at\((-?[0-9.]+)\)", expr)
     if m:
         return ["fact dock.at " + m.group(1), "fact dock.lift 0"]

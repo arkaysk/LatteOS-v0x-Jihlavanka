@@ -88,9 +88,9 @@ part Rows {
                 for t in tab {
                     group {
                         size: if(tab.full, tab.eq, if(t.on, tab.wide, 44)), 44
-                        box { from: 0, 3; size: if(tab.full, tab.eq, if(t.on, tab.wide, 44)), 38; corner: 19; color: if(t.on, gold, #4a372b); opacity: if(t.on, 24%, 45% + 55% * tab_hit.hover) }
-                        text t.glyph { at: if(t.on or tab.full, 24, 22), 22; anchor: center; size: 16; color: if(t.on, gold, cream); opacity: 90%; family: "tabler-icons" }
-                        text t.label { at: 44, 22; anchor: left center; width: if(tab.full, tab.eq, tab.wide) - 56; lines: 1; size: 14; weight: 600; color: if(t.on, gold, cream); show: t.on or tab.full; family: "Inter" }
+                        box { from: 0, 3; size: if(tab.full, tab.eq, if(t.on, tab.wide, 44)), 38; corner: 19; color: if(t.on, tg, tb2); opacity: if(t.on, 24%, 45% + 55% * tab_hit.hover) }
+                        text t.glyph { at: if(t.on or tab.full, 24, 22), 22; anchor: center; size: 16; color: if(t.on, tg, tc); opacity: 90%; family: "tabler-icons" }
+                        text t.label { at: 44, 22; anchor: left center; width: if(tab.full, tab.eq, tab.wide) - 56; lines: 1; size: 14; weight: 600; color: if(t.on, tg, tc); show: t.on or tab.full; family: "Inter" }
                         zone box tab_hit { from: 0, 2; size: if(tab.full, tab.eq, if(t.on, tab.wide, 44)), 40; cursor: pointer; role: tab; selected: t.on; label: "{t.label}" }
                         on press tab_hit { emit card_tab(t.index) }
                         on scroll tab_hit { emit card_next(if(wheel > 0, 0, 1)) }   // the wheel over the tabs turns them, on every tab (AI too)
@@ -102,15 +102,15 @@ part Rows {
             group {
                 size: card.tw, 46
                 show: card_field
-                box { from: 0, 2; size: card.tw, 40; corner: 14; color: #3d2c22 }
-                text pick(if(card_sel > 0, 2, if(card_secret, 1, 0)), g_search, g_key, g_pencil) { at: 22, 22; anchor: center; size: 17; color: dim; family: "tabler-icons" }
-                text card_hint { at: 44, 22; anchor: left center; width: card.tw - 60; lines: 1; size: 15; color: dim; show: not card_typed; family: "Inter" }
-                input card_q { at: 44, 12; width: card.tw - 60; size: 15; color: cream; selection: #5a463a; show: not card_secret and card_sel == 0; family: "Inter" }
-                input card_stem { at: 44, if(card_sel == 1, 12, -4000); width: card.tw - 60; size: 15; color: cream; selection: #5a463a; select: stem; show: card_sel == 1; family: "Inter"; label: "Name" }
-                input card_all { at: 44, if(card_sel == 2, 12, -4000); width: card.tw - 60; size: 15; color: cream; selection: #5a463a; select: all; show: card_sel == 2; family: "Inter"; label: "Name" }
+                box { from: 0, 2; size: card.tw, 40; corner: 14; color: tb1 }
+                text pick(if(card_sel > 0, 2, if(card_secret, 1, 0)), g_search, g_key, g_pencil) { at: 22, 22; anchor: center; size: 17; color: td; family: "tabler-icons" }
+                text card_hint { at: 44, 22; anchor: left center; width: card.tw - 60; lines: 1; size: 15; color: td; show: not card_typed; family: "Inter" }
+                input card_q { at: 44, 12; width: card.tw - 60; size: 15; color: tc; selection: tb3; show: not card_secret and card_sel == 0; family: "Inter" }
+                input card_stem { at: 44, if(card_sel == 1, 12, -4000); width: card.tw - 60; size: 15; color: tc; selection: tb3; select: stem; show: card_sel == 1; family: "Inter"; label: "Name" }
+                input card_all { at: 44, if(card_sel == 2, 12, -4000); width: card.tw - 60; size: 15; color: tc; selection: tb3; select: all; show: card_sel == 2; family: "Inter"; label: "Name" }
                 on press right card_q { tap.x = cursor.x; tap.y = cursor.y; emit card_field_menu }
                 // a password is typed into a field of its own, which shows dots
-                input card_pw { at: 44, if(card_secret, 12, -4000); width: card.tw - 60; size: 15; color: cream; selection: #5a463a; secret: true; show: card_secret; family: "Inter"; agent: no }
+                input card_pw { at: 44, if(card_secret, 12, -4000); width: card.tw - 60; size: 15; color: tc; selection: tb3; secret: true; show: card_secret; family: "Inter"; agent: no }
                 zone box field_hit { from: 0, 2; size: card.tw, 40; cursor: text }
                 on press field_hit while not card_secret and card_sel == 0 { focus card_q }
                 on press field_hit while card_sel == 1 { focus card_stem }
@@ -133,25 +133,25 @@ part Rows {
                         size: card.sw, 300
                         show: cal_on
                         let cell = (card.sw - 40) / 7
-                        text cal_title { at: card.sw / 2, 20; anchor: center; size: 16; weight: 700; color: cream; family: "Inter" }
-                        text g_back { at: 34, 20; anchor: center; size: 18; color: cream; opacity: 60% + 40% * cal_prev.hover; family: "tabler-icons" }
-                        text g_more { at: card.sw - 34, 20; anchor: center; size: 18; color: cream; opacity: 60% + 40% * cal_next.hover; family: "tabler-icons" }
+                        text cal_title { at: card.sw / 2, 20; anchor: center; size: 16; weight: 700; color: tc; family: "Inter" }
+                        text g_back { at: 34, 20; anchor: center; size: 18; color: tc; opacity: 60% + 40% * cal_prev.hover; family: "tabler-icons" }
+                        text g_more { at: card.sw - 34, 20; anchor: center; size: 18; color: tc; opacity: 60% + 40% * cal_next.hover; family: "tabler-icons" }
                         zone box cal_prev { at: 34, 20; size: 48, 36; cursor: pointer; label: "Previous month" }
                         zone box cal_next { at: card.sw - 34, 20; size: 48, 36; cursor: pointer; label: "Next month" }
                         on press cal_prev { emit cal_step(0) }
                         on press cal_next { emit cal_step(1) }
                         repeat w in 0..7 {
-                            text weekday.$w.name { at: 20 + cell * (w + 0.5), 54; anchor: center; size: 12; color: dim; family: "Inter" }
+                            text weekday.$w.name { at: 20 + cell * (w + 0.5), 54; anchor: center; size: 12; color: td; family: "Inter" }
                         }
                         repeat q in 0..42 {
                             let dx.$q = 20 + cell * (q - 7 * floor(q / 7) + 0.5)
                             let dy.$q = 88 + 35 * floor(q / 7)
                             // the weeks come in one after another
                             let da.$q = clamp(reveal * 2.4 - 0.2 * floor(q / 7), 0, 1)
-                            ellipse { at: dx.$q, dy.$q; radius: 15.5; color: gold; opacity: if(day.$q.today, 100%, 22% * day_hit.$q.hover) * da.$q; show: q < day.count }
-                            ellipse { at: dx.$q, dy.$q; radius: 15.5; stroke: 1.5; color: gold; opacity: if(day.$q.chosen, 90%, 0); show: q < day.count }
-                            text day.$q.n { at: dx.$q, dy.$q; anchor: center; size: 14; weight: 600; color: if(day.$q.today, paper, cream); opacity: if(day.$q.dim, 35%, 100%) * da.$q; show: q < day.count; family: "Inter" }
-                            ellipse { at: dx.$q, dy.$q + 12; radius: 2; color: if(day.$q.today, paper, gold); show: q < day.count and day.$q.dot }
+                            ellipse { at: dx.$q, dy.$q; radius: 15.5; color: tg; opacity: if(day.$q.today, 100%, 22% * day_hit.$q.hover) * da.$q; show: q < day.count }
+                            ellipse { at: dx.$q, dy.$q; radius: 15.5; stroke: 1.5; color: tg; opacity: if(day.$q.chosen, 90%, 0); show: q < day.count }
+                            text day.$q.n { at: dx.$q, dy.$q; anchor: center; size: 14; weight: 600; color: if(day.$q.today, tpaper, tc); opacity: if(day.$q.dim, 35%, 100%) * da.$q; show: q < day.count; family: "Inter" }
+                            ellipse { at: dx.$q, dy.$q + 12; radius: 2; color: if(day.$q.today, tpaper, tg); show: q < day.count and day.$q.dot }
                             zone box day_hit.$q { at: dx.$q, dy.$q; size: cell - 2, 33; cursor: pointer; active: card_open and cal_on and q < day.count; label: "{day.$q.n}"; selected: day.$q.chosen }
                             on press day_hit.$q { emit cal_pick(q) }
                         }
@@ -204,7 +204,7 @@ part Rows {
             group {
                 size: w, 14
                 show: r.line
-                box { at: w / 2, 7; size: (w - 36) * shown, 1; color: #5a463a }
+                box { at: w / 2, 7; size: (w - 36) * shown, 1; color: tb3 }
             }
 
             // ── a plain row, a heading, a large figure, a profile ───────────────────────────────────────────
@@ -218,8 +218,8 @@ part Rows {
                 // for what is behind the card and come back through the glass a frame later.
                 // A tile is drawn row by row: each lays its piece and, unless it is the last, reaches under the next
                 // one, which covers that with its own; so the tile's corners are round only at its two ends.
-                box { from: 2, if(r.tile == 1 or r.tile == 4, 1, 0); size: w - 4, h + if(r.tile == 1 or r.tile == 2, 14 - 17 * card.glass, -1 - 2 * card.glass) - if(r.tile == 1 or r.tile == 4, 1, 0); corner: 15; color: mix(paper, cream, 0.075); glass: card.glass * 100%; frost: 100%; smoke: 38% * card.glass; milk: 10% * card.glass; refraction: 40% * card.glass; show: r.tile > 0 }
-                box { at: w / 2, h / 2; size: w - if(r.tile > 0, 12, 0), h - 4; corner: 12; color: if(r.danger, red, #4a372b); opacity: max(hit.hover, if(card_sel == (r.index + base) * 16, 1, 0)) * if(r.danger, 18%, 100%); show: r.kind == plain or r.kind == big }
+                box { from: 2, if(r.tile == 1 or r.tile == 4, 1, 0); size: w - 4, h + if(r.tile == 1 or r.tile == 2, 14 - 17 * card.glass, -1 - 2 * card.glass) - if(r.tile == 1 or r.tile == 4, 1, 0); corner: 15; color: mix(tpaper, tc, 0.075); glass: card.glass * 100%; frost: 100%; smoke: 38% * card.glass; milk: 10% * card.glass; refraction: 40% * card.glass; show: r.tile > 0 }
+                box { at: w / 2, h / 2; size: w - if(r.tile > 0, 12, 0), h - 4; corner: 12; color: if(r.danger, red, tb2); opacity: max(hit.hover, if(card_sel == (r.index + base) * 16, 1, 0)) * if(r.danger, 18%, 100%); show: r.kind == plain or r.kind == big }
 
                 // room for a widget, with none in it yet: the pegboard (LATTEOS-GOO, rule 26)
                 shader pegboard { at: 8, 0; size: w - 16, h; colors: cream, #000000; show: r.peg }
@@ -228,46 +228,46 @@ part Rows {
                 image r.icon { at: 15, if(r.tall, 13, 9); size: 26, 26; show: r.kind == plain and r.has_icon and not r.prev }
                 // a preview (the clipboard's): a picture beside its name, or what a text says, three lines of it
                 image r.icon { at: 12, 7; size: 100, 64; fit: cover; show: r.prev and r.has_icon }
-                text r.label { at: 124, 28; anchor: left center; width: w - 150; lines: 1; size: 15; weight: 500; color: cream; show: r.prev and r.has_icon; family: "Inter" }
-                text r.line2 { at: 124, 50; anchor: left center; width: w - 150; lines: 1; size: 12.5; color: dim; show: r.prev and r.has_icon; family: "Inter" }
-                text r.label { at: 56, 7; width: w - 82; lines: 3; size: 13.5; line_height: 1.2; color: cream; show: r.prev and not r.has_icon; family: "Inter" }
-                text r.line2 { at: 56, 66; anchor: left center; width: w - 82; lines: 1; size: 12; color: dim; show: r.prev and not r.has_icon; family: "Inter" }
-                text r.glyph { at: 28, if(r.tall, 26, 22); anchor: center; size: 18; color: if(r.danger, red, cream); opacity: if(r.off, 40%, 90%); show: r.kind == plain and not r.has_icon and not r.on; family: "tabler-icons" }
-                text g_check { at: 28, 22; anchor: center; size: 17; color: gold; show: r.kind == plain and r.on; family: "tabler-icons" }
-                text r.label { at: 56, if(r.tall, 17, 22); anchor: left center; width: w - if(r.more, 96, 82) - if(r.copy, 34, 0); lines: 1; size: 15; weight: 500; color: if(r.danger, red, cream); opacity: if(r.off, 45%, 100%); show: r.kind == plain and not r.prev; family: "Inter" }
-                text r.line2 { at: 56, 36; anchor: left center; width: w - 82; lines: 1; size: 12.5; color: dim; show: r.kind == plain and r.tall and not r.prev; family: "Inter" }
-                text r.hint { at: w - if(r.copy, 52, 18), if(r.tall, 17, 22); anchor: right center; size: 13; color: dim; show: r.kind == plain and not r.more; family: "Inter" }
-                text g_more { at: w - 22, h / 2; anchor: center; size: 16; color: dim; show: (r.kind == plain and r.more) or (r.kind == profile and not r.quiet); family: "tabler-icons" }
+                text r.label { at: 124, 28; anchor: left center; width: w - 150; lines: 1; size: 15; weight: 500; color: tc; show: r.prev and r.has_icon; family: "Inter" }
+                text r.line2 { at: 124, 50; anchor: left center; width: w - 150; lines: 1; size: 12.5; color: td; show: r.prev and r.has_icon; family: "Inter" }
+                text r.label { at: 56, 7; width: w - 82; lines: 3; size: 13.5; line_height: 1.2; color: tc; show: r.prev and not r.has_icon; family: "Inter" }
+                text r.line2 { at: 56, 66; anchor: left center; width: w - 82; lines: 1; size: 12; color: td; show: r.prev and not r.has_icon; family: "Inter" }
+                text r.glyph { at: 28, if(r.tall, 26, 22); anchor: center; size: 18; color: if(r.danger, red, tc); opacity: if(r.off, 40%, 90%); show: r.kind == plain and not r.has_icon and not r.on; family: "tabler-icons" }
+                text g_check { at: 28, 22; anchor: center; size: 17; color: tg; show: r.kind == plain and r.on; family: "tabler-icons" }
+                text r.label { at: 56, if(r.tall, 17, 22); anchor: left center; width: w - if(r.more, 96, 82) - if(r.copy, 34, 0); lines: 1; size: 15; weight: 500; color: if(r.danger, red, tc); opacity: if(r.off, 45%, 100%); show: r.kind == plain and not r.prev; family: "Inter" }
+                text r.line2 { at: 56, 36; anchor: left center; width: w - 82; lines: 1; size: 12.5; color: td; show: r.kind == plain and r.tall and not r.prev; family: "Inter" }
+                text r.hint { at: w - if(r.copy, 52, 18), if(r.tall, 17, 22); anchor: right center; size: 13; color: td; show: r.kind == plain and not r.more; family: "Inter" }
+                text g_more { at: w - 22, h / 2; anchor: center; size: 16; color: td; show: (r.kind == plain and r.more) or (r.kind == profile and not r.quiet); family: "tabler-icons" }
 
                 // a heading
-                text r.label { at: 22, 15; anchor: left center; width: w - 120; lines: 1; size: 11.5; weight: 700; color: dim; show: r.kind == head; family: "Inter" }
-                text r.hint { at: w - 18, 15; anchor: right center; size: 13; color: dim; show: r.kind == head; family: "Inter" }
+                text r.label { at: 22, 15; anchor: left center; width: w - 120; lines: 1; size: 11.5; weight: 700; color: td; show: r.kind == head; family: "Inter" }
+                text r.hint { at: w - 18, 15; anchor: right center; size: 13; color: td; show: r.kind == head; family: "Inter" }
 
                 // a large figure
-                text r.label { at: 22, 28; anchor: left center; width: w - 44 - if(r.copy, 34, 0); lines: 1; size: 34; weight: 700; color: cream; show: r.kind == big; family: "Inter" }
+                text r.label { at: 22, 28; anchor: left center; width: w - 44 - if(r.copy, 34, 0); lines: 1; size: 34; weight: 700; color: tc; show: r.kind == big; family: "Inter" }
 
                 // a bar under a plain row or a large figure
-                box { from: if(r.kind == big, 22, 56), if(r.kind == big, 54, 38); size: w - if(r.kind == big, 44, 74), 3; corner: 1.5; color: #5a463a; show: r.bar >= 0 and r.kind != slide and r.kind != gap }
-                box { from: if(r.kind == big, 22, 56), if(r.kind == big, 54, 38); size: (w - if(r.kind == big, 44, 74)) * clamp(r.bar, 0, 1) * shown, 3; corner: 1.5; color: gold; show: r.bar > 0 and r.kind != slide and r.kind != gap }
+                box { from: if(r.kind == big, 22, 56), if(r.kind == big, 54, 38); size: w - if(r.kind == big, 44, 74), 3; corner: 1.5; color: tb3; show: r.bar >= 0 and r.kind != slide and r.kind != gap }
+                box { from: if(r.kind == big, 22, 56), if(r.kind == big, 54, 38); size: (w - if(r.kind == big, 44, 74)) * clamp(r.bar, 0, 1) * shown, 3; corner: 1.5; color: tg; show: r.bar > 0 and r.kind != slide and r.kind != gap }
 
                 // a profile: the portrait cut round by a ring of the card's colour
                 image r.icon { at: 18, 12; size: 60, 60; show: r.kind == profile and r.has_icon }
-                ellipse { at: 48, 42; radius: 37; stroke: 14; color: paper; show: r.kind == profile and r.has_icon }
-                ellipse { at: 48, 42; radius: 30; color: #4a372b; show: r.kind == profile and not r.has_icon }
-                text r.glyph { at: 48, 42; anchor: center; size: 28; color: cream; opacity: 90%; show: r.kind == profile and not r.has_icon; family: "tabler-icons" }
-                ellipse { at: 48, 42; radius: 30.5; stroke: 1.5; color: gold; opacity: 70%; show: r.kind == profile }
-                text r.label { at: 94, 32; anchor: left center; width: w - 128 - if(r.on, 62, 0); lines: 1; size: 18; weight: 700; color: cream; show: r.kind == profile; family: "Inter" }
+                ellipse { at: 48, 42; radius: 37; stroke: 14; color: tpaper; show: r.kind == profile and r.has_icon }
+                ellipse { at: 48, 42; radius: 30; color: tb2; show: r.kind == profile and not r.has_icon }
+                text r.glyph { at: 48, 42; anchor: center; size: 28; color: tc; opacity: 90%; show: r.kind == profile and not r.has_icon; family: "tabler-icons" }
+                ellipse { at: 48, 42; radius: 30.5; stroke: 1.5; color: tg; opacity: 70%; show: r.kind == profile }
+                text r.label { at: 94, 32; anchor: left center; width: w - 128 - if(r.on, 62, 0); lines: 1; size: 18; weight: 700; color: tc; show: r.kind == profile; family: "Inter" }
                 // the badge (the role): shown when the row says `on`; its words are the row's hint
-                box { at: w - 50, 32; size: 56, 22; corner: 7; color: gold; opacity: 20%; show: r.kind == profile and r.on }
-                text r.hint { at: w - 50, 32; anchor: center; size: 11; weight: 700; color: gold; show: r.kind == profile; family: "Inter" }
-                text r.line2 { at: 94, 55; anchor: left center; width: w - 128; lines: 1; size: 12.5; color: dim; show: r.kind == profile; family: "Inter" }
+                box { at: w - 50, 32; size: 56, 22; corner: 7; color: tg; opacity: 20%; show: r.kind == profile and r.on }
+                text r.hint { at: w - 50, 32; anchor: center; size: 11; weight: 700; color: tg; show: r.kind == profile; family: "Inter" }
+                text r.line2 { at: 94, 55; anchor: left center; width: w - 128; lines: 1; size: 12.5; color: td; show: r.kind == profile; family: "Inter" }
 
                 // a slider: its icon, the track with what is filled, the knob, and the figure on the right
-                text r.glyph { at: 28, 22; anchor: center; size: 18; color: cream; opacity: 60% + 40% * knob_hit.hover; show: r.kind == slide; family: "tabler-icons" }
-                box { from: 56, 20.5; size: w - 130, 3; corner: 1.5; color: #5a463a; show: r.kind == slide }
-                box { from: 56, 20.5; size: (w - 130) * clamp(r.bar, 0, 1), 3; corner: 1.5; color: gold; opacity: if(r.off, 40%, 100%); show: r.kind == slide }
-                ellipse { at: 56 + (w - 130) * clamp(r.bar, 0, 1), 22; radius: 6 + 1.5 * hit.hover; color: if(r.off, dim, gold); show: r.kind == slide }
-                text r.hint { at: w - 18, 22; anchor: right center; size: 13; color: dim; show: r.kind == slide; family: "Inter" }
+                text r.glyph { at: 28, 22; anchor: center; size: 18; color: tc; opacity: 60% + 40% * knob_hit.hover; show: r.kind == slide; family: "tabler-icons" }
+                box { from: 56, 20.5; size: w - 130, 3; corner: 1.5; color: tb3; show: r.kind == slide }
+                box { from: 56, 20.5; size: (w - 130) * clamp(r.bar, 0, 1), 3; corner: 1.5; color: tg; opacity: if(r.off, 40%, 100%); show: r.kind == slide }
+                ellipse { at: 56 + (w - 130) * clamp(r.bar, 0, 1), 22; radius: 6 + 1.5 * hit.hover; color: if(r.off, td, tg); show: r.kind == slide }
+                text r.hint { at: w - 18, 22; anchor: right center; size: 13; color: td; show: r.kind == slide; family: "Inter" }
 
                 zone box hit { from: if(r.kind == slide, 46, 0), 1; size: w - if(r.kind == slide, 100, 0), h - 2; cursor: pointer; active: card_open and not r.off and not r.quiet and r.kind != head; label: "{r.label}"; selected: r.on }
                 zone box knob_hit { from: 4, 1; size: 42, h - 2; cursor: pointer; active: card_open and r.kind == slide; label: "{r.label}" }
@@ -279,8 +279,8 @@ part Rows {
                 on scroll hit { emit card_wheel((r.index + base) * 2 + if(wheel > 0, 1, 0)) }
 
                 // copy, as beside the AI's messages: quiet at the row's end, lit under the pointer, a tick once done
-                text g_copy { at: w - 26, if(r.kind == big, 28, h / 2); anchor: center; size: 16; color: cream; opacity: 45% + 55% * copy_hit.hover; show: r.copy and card_copied != r.index + base; family: "tabler-icons" }
-                text g_check { at: w - 26, if(r.kind == big, 28, h / 2); anchor: center; size: 16; color: gold; show: r.copy and card_copied == r.index + base; family: "tabler-icons" }
+                text g_copy { at: w - 26, if(r.kind == big, 28, h / 2); anchor: center; size: 16; color: tc; opacity: 45% + 55% * copy_hit.hover; show: r.copy and card_copied != r.index + base; family: "tabler-icons" }
+                text g_check { at: w - 26, if(r.kind == big, 28, h / 2); anchor: center; size: 16; color: tg; show: r.copy and card_copied == r.index + base; family: "tabler-icons" }
                 zone box copy_hit { from: w - 44, if(r.kind == big, 10, h / 2 - 18); size: 36, 36; cursor: pointer; active: card_open and r.copy; label: "Copy"; role: button }
                 on press copy_hit { emit card_copy(r.index + base) }
             }
@@ -300,7 +300,7 @@ part Rows {
                     fill: #3d2c22 85%
                     corner: 14
                     padding: 12
-                    text r.label { width: w - 52; lines: 14; size: 14.5; line_height: 1.4; color: cream; family: "Inter"; selectable: true; selection: #5a463a }
+                    text r.label { width: w - 52; lines: 14; size: 14.5; line_height: 1.4; color: tc; family: "Inter"; selectable: true; selection: tb3 }
                 }
             }
 
@@ -317,8 +317,8 @@ part Rows {
         // pegboard too. No cursor of its own here: a press on the letters still selects them.
         zone box msg_hit { from: 0, 0; size: w, parts.height; active: card_open and (r.hc or r.peg); agent: hidden }
         on press right msg_hit { tap.x = cursor.x; tap.y = cursor.y; emit card_right((r.index + base) * 16) }
-        text g_copy { at: w - 30, 20; anchor: center; size: 15; color: cream; opacity: 60% + 40% * hc_hit.hover; show: r.hc and (msg_hit.hover or hc_hit.hover) and card_copied != r.index + base; family: "tabler-icons" }
-        text g_check { at: w - 30, 20; anchor: center; size: 15; color: gold; show: r.hc and card_copied == r.index + base; family: "tabler-icons" }
+        text g_copy { at: w - 30, 20; anchor: center; size: 15; color: tc; opacity: 60% + 40% * hc_hit.hover; show: r.hc and (msg_hit.hover or hc_hit.hover) and card_copied != r.index + base; family: "tabler-icons" }
+        text g_check { at: w - 30, 20; anchor: center; size: 15; color: tg; show: r.hc and card_copied == r.index + base; family: "tabler-icons" }
         zone box hc_hit { from: w - 46, 4; size: 32, 32; cursor: pointer; active: card_open and r.hc and (msg_hit.hover or hc_hit.hover); label: "Copy"; role: button }
         on press hc_hit { emit card_copy(r.index + base) }
     }
@@ -376,7 +376,7 @@ part Rows {
         let lit = max(hit.hover, if(card_sel == (r.index + base) * 16 + it.index + 1, 1, 0))
 
         // a button: the chosen one gold, one that does not undo red
-        box { at: w / 2, 23; size: w - 10, 40; corner: 20; color: if(it.on, gold, if(it.danger, red, #4a372b)); opacity: if(it.on, 26%, if(it.danger, 16% + 12% * lit, 62% + 38% * lit)) * if(it.off, 0.5, 1); show: r.kind == pills and not wide }
+        box { at: w / 2, 23; size: w - 10, 40; corner: 20; color: if(it.on, tg, if(it.danger, red, tb2)); opacity: if(it.on, 26%, if(it.danger, 16% + 12% * lit, 62% + 38% * lit)) * if(it.off, 0.5, 1); show: r.kind == pills and not wide }
         row {
             at: w / 2, 23
             anchor: center middle
@@ -384,30 +384,30 @@ part Rows {
             align: center
             show: r.kind == pills and not wide
             opacity: if(it.off, 45%, 100%)
-            text it.glyph { size: 17; color: if(it.on, gold, if(it.danger, red, cream)); family: "tabler-icons" }
-            text it.label { size: 14; weight: 600; lines: 1; color: if(it.on, gold, if(it.danger, red, cream)); family: "Inter" }
+            text it.glyph { size: 17; color: if(it.on, tg, if(it.danger, red, tc)); family: "tabler-icons" }
+            text it.label { size: 14; weight: 600; lines: 1; color: if(it.on, tg, if(it.danger, red, tc)); family: "Inter" }
         }
         // a cell: a picture alone (an emoji), lit under the pointer or when chosen; one that is pinned has a gold dot
-        box { at: w / 2, if(r.tall, 60, 25); size: w - 4, if(r.tall, 116, 46); corner: 12; color: #4a372b; opacity: if(r.tall, max(lit, 0.35), lit); show: r.kind == cells }
+        box { at: w / 2, if(r.tall, 60, 25); size: w - 4, if(r.tall, 116, 46); corner: 12; color: tb2; opacity: if(r.tall, max(lit, 0.35), lit); show: r.kind == cells }
         image it.icon { at: w / 2 - 17, 8; size: 34, 34; show: r.kind == cells and it.has_icon and not r.tall }
         image it.icon { at: 6, 6; size: w - 12, 108; fit: cover; show: r.kind == cells and it.has_icon and r.tall and r.per > 1 }
         // one picture across the card has more to show than a cell's 96 px
         for c in card_wide { image c.pic { at: 6, 6; size: w - 12, 108; fit: cover; show: r.kind == cells and r.tall and r.per == 1 } }
-        text it.label { at: w / 2, 25; anchor: center; width: w - 6; lines: 1; size: 18; color: cream; align: center; show: r.kind == cells and not it.has_icon; family: "Inter" }
-        ellipse { at: w - 8, 7; radius: 2.5; color: gold; show: r.kind == cells and it.on }
+        text it.label { at: w / 2, 25; anchor: center; width: w - 6; lines: 1; size: 18; color: tc; align: center; show: r.kind == cells and not it.has_icon; family: "Inter" }
+        ellipse { at: w - 8, 7; radius: 2.5; color: tg; show: r.kind == cells and it.on }
         // a tile: the app's icon over its name
-        box { at: w / 2, 44; size: w - 6, 84; corner: 16; color: #4a372b; opacity: lit; show: r.kind == tiles and not wide }
+        box { at: w / 2, 44; size: w - 6, 84; corner: 16; color: tb2; opacity: lit; show: r.kind == tiles and not wide }
         image it.icon { at: w / 2 - 20, 12; size: 40, 40; show: r.kind == tiles and it.has_icon and not wide }
-        text it.glyph { at: w / 2, 32; anchor: center; size: 28; color: cream; opacity: 90%; show: r.kind == tiles and not it.has_icon and not wide; family: "tabler-icons" }
-        text it.label { at: w / 2, 68; anchor: center; width: w - 14; lines: 1; size: 12.5; weight: 500; color: cream; align: center; show: r.kind == tiles and not wide; family: "Inter" }
+        text it.glyph { at: w / 2, 32; anchor: center; size: 28; color: tc; opacity: 90%; show: r.kind == tiles and not it.has_icon and not wide; family: "tabler-icons" }
+        text it.label { at: w / 2, 68; anchor: center; width: w - 14; lines: 1; size: 12.5; weight: 500; color: tc; align: center; show: r.kind == tiles and not wide; family: "Inter" }
 
         // wide, two to a line: a rounded square with the icon, and the name beside it; the one that does not undo in red
-        box { at: w / 2, 31; size: w - 10, 54; corner: 17; color: if(it.danger, red, #4a372b); opacity: if(it.on, 100%, if(it.danger, 14% + 12% * lit, 62% + 38% * lit)) * if(it.off, 0.5, 1); show: wide }
-        box { at: w / 2, 31; size: w - 10, 54; corner: 17; stroke: 1; color: cream; opacity: if(it.danger, 0%, 13% + 14% * lit); show: wide }
-        box { at: 33, 31; size: 36, 36; corner: 11; color: if(it.danger, red, if(it.on, gold, paper)); opacity: if(it.danger, 22%, if(it.on, 30%, 70%)); show: wide }
-        text it.glyph { at: 33, 31; anchor: center; size: 19; color: if(it.danger, red, if(it.on, gold, cream)); opacity: if(it.off, 45%, 100%); show: wide and not it.has_icon; family: "tabler-icons" }
+        box { at: w / 2, 31; size: w - 10, 54; corner: 17; color: if(it.danger, red, tb2); opacity: if(it.on, 100%, if(it.danger, 14% + 12% * lit, 62% + 38% * lit)) * if(it.off, 0.5, 1); show: wide }
+        box { at: w / 2, 31; size: w - 10, 54; corner: 17; stroke: 1; color: tc; opacity: if(it.danger, 0%, 13% + 14% * lit); show: wide }
+        box { at: 33, 31; size: 36, 36; corner: 11; color: if(it.danger, red, if(it.on, tg, tpaper)); opacity: if(it.danger, 22%, if(it.on, 30%, 70%)); show: wide }
+        text it.glyph { at: 33, 31; anchor: center; size: 19; color: if(it.danger, red, if(it.on, tg, tc)); opacity: if(it.off, 45%, 100%); show: wide and not it.has_icon; family: "tabler-icons" }
         image it.icon { at: 33, 31; size: 26, 26; show: wide and it.has_icon }
-        text it.label { at: 60, 31; anchor: left center; width: w - 72; lines: 1; size: 14.5; weight: 600; color: if(it.danger, red, if(it.on, gold, cream)); opacity: if(it.off, 45%, 100%); show: wide; family: "Inter" }
+        text it.label { at: 60, 31; anchor: left center; width: w - 72; lines: 1; size: 14.5; weight: 600; color: if(it.danger, red, if(it.on, tg, tc)); opacity: if(it.off, 45%, 100%); show: wide; family: "Inter" }
 
         zone box hit { from: if(r.kind == cells, 2, 3), 2; size: w - if(r.kind == cells, 4, 6), if(r.kind == cells, if(r.tall, 116, 46), if(wide, if(r.kind == tiles, 60, 54), if(r.kind == tiles, 84, 42))); cursor: pointer; active: card_open and not it.off; label: "{it.label}"; selected: it.on }
         on press hit { tap.x = cursor.x; tap.y = cursor.y; emit card_pick((r.index + base) * 16 + it.index + 1) }      // a button may open a menu: it opens there

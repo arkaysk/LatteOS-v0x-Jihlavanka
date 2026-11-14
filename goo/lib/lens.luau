@@ -1018,7 +1018,6 @@ function M.open(m)
     render(false)
 end
 function M.toggle()
-    if fact.lens_cloud then fact.cloud_grid = not (fact.cloud_grid == true) return end
     if fact.lens_shore then return M.shore_toggle() end
     if card.id() == "lens" then card.close() else M.open() end
 end
@@ -2294,12 +2293,11 @@ function M.start(d)
     owner = d
     -- with LensShore the drop is not there: the capsule and its line are the launcher
     local function which()
-        d:present(not fact.lens_shore and not fact.lens_cloud)
+        d:present(not fact.lens_shore)
         shore_place()
         if card.id() == "lens" then card.close() end
     end
     on("fact:lens_shore", which)
-    on("fact:lens_cloud", which)
     shore_start()
     which()
     -- the words an amount is written in, in the user's language (lib/amount.luau)

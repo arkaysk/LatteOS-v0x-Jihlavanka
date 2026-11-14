@@ -2,7 +2,7 @@
 // goo's coffee along its bottom edge, and on it the drops or the Shore plates the choice makes. Drawn as the window
 // modes' preview on the Windows page is: shapes in the cup's colours, one slow clock (t) moves them all.
 //   DropPreview { width: 192; kind: "look-pro"; calm: false }
-// kinds: look-playful look-pro look-minimal · lens-goo lens-shore lens-cloud · bargoo dockshore none ·
+// kinds: look-playful look-pro look-minimal · lens-goo lens-shore app-cloud · bargoo dockshore none ·
 //        intro carry secure (the tour's)
 import QtQuick
 import Quickshell.Widgets
@@ -112,7 +112,7 @@ ClippingRectangle {
             x: 96 * root.u - width / 2; y: root.height - 9 * root.u - 4 * root.u - height + (1 - parent.open) * 26 * root.u; opacity: parent.open
             Repeater { model: 4; Rectangle { required property int index; x: 8 * root.u; y: (8 + index * 11) * root.u; width: parent.width - 16 * root.u; height: 8 * root.u; radius: 3 * root.u
                 color: index === 0 ? Theme.raised : "transparent"; Bar { x: 4 * root.u; anchors.verticalCenter: parent.verticalCenter; width: (60 - index * 8) * root.u } } } } }
-    Item { anchors.fill: parent; visible: root.kind === "lens-cloud"
+    Item { anchors.fill: parent; visible: root.kind === "app-cloud"
         readonly property real open: root.calm ? 1 : root.ramp(0.2, 0.4) - root.ramp(0.8, 0.95)
         Rectangle { anchors.fill: parent; color: Theme.ground; opacity: 0.6 * parent.open }
         Grid { columns: 5; spacing: 8 * root.u; x: (root.width - width) / 2; y: 14 * root.u + (1 - parent.open) * 6 * root.u; opacity: parent.open

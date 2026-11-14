@@ -81,6 +81,10 @@ No API key: the official tool of a service answers, with the account the user is
                             [{"id", "name", "hidden", "default"}]}]; `providers` leaves the hidden ones out and puts
                             the default first
   latte-ai model show|hide|default PROVIDER MODEL
+  latte-ai hands            the agent's own pointer and keyboard (pleamar-wm agent), where each may go: {"mouse": {"scope",
+                            "apps"}, "keys": {…}}; scope off · os (LatteOS's own windows, the default) · apps (the ones named) · all
+  latte-ai hands set mouse|keys off|os|apps|all [APP…]   written as pleamar-wm's rules (gate.rules, TOOL mouse/keys);
+                            APP is a window's app id (its .desktop name); `hands apply` writes them as they are
   latte-ai listen start|stop    the microphone: start records, stop ends it and prints what was said, {"text"}
                             (whisper.cpp, in the language of the desktop; a build with Vulkan and the large-v3-turbo
                             model when there is one, else the small model on the processor)
@@ -1127,6 +1131,61 @@ def whisper():
                 if os.path.exists(cli) and os.path.exists(os.path.join(d, "whisper", m)):
                     return cli, os.path.join(d, "whisper", m)
     return None, None
+
+
+HANDS = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "agent-hands.json")
+GATE = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "pleamar-wm", "gate.rules")
+# LatteOS's own windows, as pleamar-wm's rules see them ("APP TITLE", lowercase): its apps (`//@ pragma AppId
+# latteos-…`), its scenes (pleamar: Goo, DualBrew…), the panels (the shell's surfaces) and its own programs (latte-…)
+OS_WINDOWS = ["latteos-*", "pleamar*", "panel", "latte-*"]
+GATE_BEGIN, GATE_END = "# LatteOS: the agent's hands (LensAI › Settings › Hands) — begin", "# LatteOS: the agent's hands — end"
+
+
+def hands_state():
+    s = {"mouse": {"scope": "os", "apps": []}, "keys": {"scope": "os", "apps": []}}
+    try:
+        with open(HANDS) as f:
+            for k, v in json.load(f).items():
+                if k in s and isinstance(v, dict) and v.get("scope") in ("off", "os", "apps", "all"):
+                    s[k] = {"scope": v["scope"], "apps": [str(x) for x in v.get("apps", []) if str(x).strip()]}
+    except (OSError, ValueError):
+        pass
+    return s
+
+
+def hands_rules(s):
+    """The lines for pleamar-wm: a deny fences nothing in, an allow fences the hand in to what it names."""
+    out = []
+    for tool in ("mouse", "keys"):
+        scope, apps = s[tool]["scope"], s[tool]["apps"]
+        if scope == "off":
+            out.append(f"deny * {tool} *")
+        elif scope in ("os", "apps"):
+            for w in OS_WINDOWS + ([f"{a.lower()} *" for a in apps] if scope == "apps" else []):
+                out.append(f"allow * {tool} {w}")
+    return out
+
+
+def hands_write(s):
+    os.makedirs(os.path.dirname(HANDS), exist_ok=True)
+    with open(HANDS, "w") as f:
+        json.dump(s, f, indent=1)
+    try:
+        with open(GATE) as f:
+            old = f.read().splitlines()
+    except OSError:
+        old = []
+    keep, inside = [], False                      # the user's own lines stay, ours are written again
+    for line in old:
+        if line == GATE_BEGIN:
+            inside = True
+        elif line == GATE_END:
+            inside = False
+        elif not inside:
+            keep.append(line)
+    os.makedirs(os.path.dirname(GATE), exist_ok=True)
+    with open(GATE, "w") as f:
+        f.write("\n".join(keep + [GATE_BEGIN] + hands_rules(s) + [GATE_END]) + "\n")
 
 
 def listen(what):
@@ -2191,6 +2250,18 @@ def main(a):
         os.makedirs(os.path.dirname(CHOICE), exist_ok=True)
         with open(CHOICE, "w") as f:
             json.dump(c, f, ensure_ascii=False, indent=1)
+        return 0
+    if a == ["hands"]:
+        print(json.dumps(hands_state()))
+        return 0
+    if a == ["hands", "apply"]:                  # at the session's start: the default (os) holds before anyone chose
+        hands_write(hands_state())
+        return 0
+    if len(a) >= 4 and a[:2] == ["hands", "set"] and a[2] in ("mouse", "keys") and a[3] in ("off", "os", "apps", "all"):
+        st = hands_state()
+        st[a[2]] = {"scope": a[3], "apps": a[4:] if a[3] == "apps" else st[a[2]]["apps"]}
+        hands_write(st)
+        print(json.dumps(st))
         return 0
     if len(a) == 2 and a[0] == "listen" and a[1] in ("start", "stop"):
         print(json.dumps(listen(a[1]), ensure_ascii=False))

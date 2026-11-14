@@ -3,7 +3,7 @@
 // fill_clock) tells only the texts and the numbers. It is drawn where card_custom is 1; the card's own frame, glass
 // and coffee are the card's (parts/card.plm).
 part Clock {
-    fact card_custom = 0                       // the card is a scene of its own, not rows: 1 this one, 2 CamGoo's (cam.plm)
+    // (card_custom is declared in card.plm: its glass depends on it)
     event clk_tab ->                           // the number of the tab: 0 overview · 1 timers and alarms · 2 weather in detail
     event clk_dnd ->
     event clk_layout ->

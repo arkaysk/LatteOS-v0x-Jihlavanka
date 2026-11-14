@@ -18,12 +18,13 @@ ShellRoot {
     id: shell
     readonly property var words: (Quickshell.env("LATTE_APP_ARGS") || "").split("\n").filter(w => w !== "")
     property string page: "home"               // home (the dashboard) · all (every conversation, by service) · chats (one) · web · agents (the helpers too) · local · lensai (settings)
-    property string section: "web"             // the part of the settings open: web · cli · api · instructions
+    property string section: "web"             // the part of the settings open: web · cli · api · instructions · hands
     function openSection(id) {
         page = "lensai"; section = id
         if (id === "cli") { svc.ask(["services"]); mcpq.running = true }
         if (id === "api") keyq.ask(["keys"])
-        if (id !== "instructions") { modelq.ask(["models"]); agentsq.ask(["agents"]) }
+        if (id === "hands") handsq.ask(["hands"])
+        if (id !== "instructions" && id !== "hands") { modelq.ask(["models"]); agentsq.ask(["agents"]) }
     }
     // how an AI is reached: the mark after its name
     // the graphs' green, gold and red (Theme.heat), the gold fixed: a theme made from the wallpaper may have a red one
@@ -261,6 +262,9 @@ ShellRoot {
     Ask { id: keyer; onDone: { shell.keyError = { id: "", error: "" }; keyq.ask(["keys"]); who.ask(["providers", "all"]); modelq.ask(["models"]) } }
     property var keys: []                      // the services one can bring a key to, and the user's own servers
     Ask { id: modelq; onDone: shell.models = data || [] }
+    // where the agent's own pointer and keyboard may go (Settings › Hands; `latte-ai hands`)
+    property var hands: ({ mouse: { scope: "os", apps: [] }, keys: { scope: "os", apps: [] } })
+    Ask { id: handsq; onDone: if (data && data.mouse) shell.hands = data }
     Ask { id: modeler; onDone: { modelq.ask(["models"]); who.ask(["providers", "all"]) } }
     property var models: []                    // every model of every service, with the user's word on each
     // a key goes to latte-ai on its standard input, never on its command line, where anyone could read it
@@ -1272,7 +1276,7 @@ ShellRoot {
             visible: shell.page === "lensai"
             Row { x: 22; y: 16; spacing: 8
                 Repeater { model: [{ id: "web", name: QT_TR_NOOP("Web"), icon: "world" }, { id: "cli", name: QT_TR_NOOP("CLI"), icon: "terminal-2" }, { id: "api", name: QT_TR_NOOP("API"), icon: "key" },
-                                   { id: "instructions", name: QT_TR_NOOP("Instructions"), icon: "file-text" }]
+                                   { id: "instructions", name: QT_TR_NOOP("Instructions"), icon: "file-text" }, { id: "hands", name: QT_TR_NOOP("Hands"), icon: "hand-finger" }]
                     Pill { required property var modelData; implicitHeight: 34; icon: modelData.icon; text: I18n.tr(modelData.name) + (shell.kinds[modelData.id] !== undefined ? "     " : ""); strong: shell.section === modelData.id
                            onPressed: shell.openSection(modelData.id)
                            Kind { kind: parent.modelData.id; anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; border.width: 1; border.color: Qt.rgba(0, 0, 0, 0.25) } } } }
@@ -1451,6 +1455,50 @@ ShellRoot {
                     Field { id: srvUrl; width: Math.min(380, apiSet.room - 380); icon: "world-www"; hint: "http://192.168.1.10:8080/v1" }
                     Pill { icon: "plus"; strong: true; text: I18n.tr("Add")
                            onPressed: if (/^https?:\/\/\S+$/.test(srvUrl.text.trim()) && srvName.text.trim() !== "") { keyer.ask(["server", "add", srvName.text.trim(), srvUrl.text.trim()]); srvName.text = ""; srvUrl.text = "" } } }
+            }
+
+            // ── the agent's hands: a pointer and a keyboard of its own (pleamar-wm agent), apart from the user's; each goes
+            // only where this lets it: nowhere, LatteOS's own windows (the default), the apps chosen, or everywhere ──
+            Scroll {
+                id: handsPage
+                visible: shell.section === "hands"
+                anchors.topMargin: 62
+                readonly property var entries: DesktopEntries.applications.values.filter(e => !e.noDisplay).sort((a, b) => a.name.localeCompare(b.name))
+                function set(tool, scope, apps) { handsq.ask(["hands", "set", tool, scope].concat(scope === "apps" ? apps : [])) }
+                Label { width: handsPage.room; wrapMode: Text.WordWrap; color: Theme.dim
+                        text: I18n.tr("An agent that does something for you on this computer has a mouse and a keyboard of its own, apart from yours: you keep working while it works, and you see its cursor, in the colour and with the logo of its AI. Choose where each of them may go.") }
+                Repeater {
+                    model: [{ id: "mouse", name: QT_TR_NOOP("Agent's mouse"), icon: "pointer" }, { id: "keys", name: QT_TR_NOOP("Agent's keyboard"), icon: "keyboard" }]
+                    Rectangle { id: hc
+                        required property var modelData
+                        readonly property var mine: shell.hands[modelData.id] || { scope: "os", apps: [] }
+                        width: handsPage.room; height: hcCol.implicitHeight + 32; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
+                        Column { id: hcCol; x: 18; y: 16; width: parent.width - 36; spacing: 10
+                            Row { spacing: 10
+                                Glyph { name: hc.modelData.icon; font.pixelSize: 20; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
+                                Label { text: I18n.tr(hc.modelData.name); font.pixelSize: 16; font.weight: 800; anchors.verticalCenter: parent.verticalCenter } }
+                            Flow { width: parent.width; spacing: 8
+                                Repeater { model: [{ id: "off", name: QT_TR_NOOP("Off"), icon: "ban" }, { id: "os", name: QT_TR_NOOP("Operating system"), icon: "coffee" },
+                                                   { id: "apps", name: QT_TR_NOOP("Selected apps"), icon: "apps" }, { id: "all", name: QT_TR_NOOP("Everywhere"), icon: "world" }]
+                                    Pill { required property var modelData; implicitHeight: 32; icon: modelData.icon; text: I18n.tr(modelData.name); strong: hc.mine.scope === modelData.id
+                                           onPressed: handsPage.set(hc.modelData.id, modelData.id, hc.mine.apps) } } }
+                            Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
+                                    text: hc.mine.scope === "off" ? I18n.tr("The agent cannot use it anywhere; it can still read windows and answer.")
+                                        : hc.mine.scope === "os" ? I18n.tr("Only in LatteOS's own windows: its apps, Goo and its panels. Recommended.")
+                                        : hc.mine.scope === "apps" ? I18n.tr("In LatteOS's own windows and in the apps switched on below.")
+                                        : I18n.tr("In every window. Windows marked private (passwords) stay closed to it, and a window you take over is yours.") }
+                            Column { visible: hc.mine.scope === "apps"; width: parent.width; spacing: 2
+                                Field { id: hcFind; width: parent.width; hint: I18n.tr("Find an app") }
+                                Repeater {
+                                    model: handsPage.entries.filter(e => hcFind.text === "" || e.name.toLowerCase().indexOf(hcFind.text.toLowerCase()) >= 0).slice(0, 40)
+                                    Item { id: ha; required property var modelData; width: hcCol.width; height: 36
+                                        readonly property bool on: hc.mine.apps.indexOf(modelData.id) >= 0
+                                        Image { source: Quickshell.iconPath(ha.modelData.icon, true); width: 22; height: 22; sourceSize: Qt.size(44, 44); anchors.verticalCenter: parent.verticalCenter }
+                                        Label { x: 32; width: parent.width - 32 - 60; elide: Text.ElideRight; text: ha.modelData.name; anchors.verticalCenter: parent.verticalCenter }
+                                        Toggle { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; scale: 0.85; on: ha.on
+                                                 onFlipped: handsPage.set(hc.modelData.id, "apps", ha.on ? hc.mine.apps.filter(a => a !== ha.modelData.id) : hc.mine.apps.concat([ha.modelData.id])) } } } } } } }
+                Label { width: handsPage.room; wrapMode: Text.WordWrap; color: Theme.faint; font.pixelSize: 12
+                        text: I18n.tr("Stop it at any time with Stop on the light at the screen's edge. What its hands did is written down: pleamar-wm agent steps.") }
             }
 
             // ── what every AI is told first: who the user is, how they want to be answered ─────────────────────

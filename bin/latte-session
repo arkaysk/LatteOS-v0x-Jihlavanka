@@ -151,6 +151,8 @@ while true; do
         kb="keyboard layout $XKB_DEFAULT_LAYOUT${XKB_DEFAULT_VARIANT:+ variant $XKB_DEFAULT_VARIANT}${opts:+ options $opts}"
     fi
     { echo "blur passes $passes"; [ -n "$kb" ] && echo "$kb"; cat "$wmconf"; screens; [ ! -e "$own/session.conf" ] || cat "$own/session.conf"; } > "$tiered" && wmconf="$tiered"
+    # the agent's hands where Settings say, LatteOS's own windows when nobody chose (LensAI › Settings › Hands)
+    latte-ai hands apply 2>/dev/null || true
     PATH="$share/pleamarwm/bin:$PATH" PLEAMAR_CONFIG="$own" PLEAMAR_WM_CONFIG="$wmconf" PLEAMAR_WM_AUTOSTART="$hconf" pleamar-wm session &
     hpid=$!
     wait $hpid

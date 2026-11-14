@@ -30,7 +30,7 @@ local busy_face = false                      -- a timer or the stopwatch has the
 local month = { y = nil, m = nil, chosen = nil, cells = {} }
 local tab = 0
 local open_notes, open_time, open_calendars
-local from_plate = false                     -- the card is asked from LensCloud's plate: no ear (6N.01)
+local from_plate = false                     -- the card is asked from AppCloud's plate: no ear (6N.01)
 local open_calendar, read_events, fill_calendar     -- the calendar, the left button (below)
 
 -- Calendars kept elsewhere (`kept.calendars`, their addresses) are read when the list changes and every half hour.
@@ -451,7 +451,7 @@ local function open_clock(d, keep)
     learn_nameday()
     learn_abbr()
     -- the card's own frame, glass and coffee; the 592 × 550 of the picture, and the coffee begins where the foot does
-    card.open({}, { owner = (not from_plate) and d or nil, id = "time", custom = "clock", width = 592, min_height = 660, split = 606, pane = 1, grow = true, keep = keep })
+    card.open({}, { owner = (not from_plate) and d or nil, plate = from_plate, id = "time", custom = "clock", width = 592, min_height = 660, split = 606, pane = 1, grow = true, keep = keep })
     fill_clock()
 end
 -- ── the timers' page and the weather in detail: the same scene, told other texts ─────────────────────────────
@@ -781,7 +781,7 @@ open_calendar = function(d, keep)
     learn_nameday()
     cal.side = keep and cal.side or 0
     -- the 760 × 520 of the design, scaled by 1.2; the coffee begins under the month, where the sentence is written
-    card.open({}, { owner = (not from_plate) and d or nil, id = "notes", custom = "calendar", width = 760, min_height = 700, split = 624, pane = 1, grow = true, keep = keep })
+    card.open({}, { owner = (not from_plate) and d or nil, plate = from_plate, id = "notes", custom = "calendar", width = 760, min_height = 700, split = 624, pane = 1, grow = true, keep = keep })
     fill_calendar()
     if os.time() - cal.asked > 60 then cal.asked = os.time() read_events(function() if card.id() == "notes" then fill_calendar() end end) end
 end

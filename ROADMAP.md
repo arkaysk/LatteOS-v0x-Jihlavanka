@@ -839,19 +839,34 @@ naživo (Nautilus, Nastavenia). V `tests/screen.sh` sa to overiť nedá: apliká
 
 **6A.10** [x] Ikry iba v plávajúcom režime aj v Glance (používateľ 27. 10.): `berries_out()` = plávajúce alebo myš na hlave.
 
-**6.42** [ ] **DockShore rastie na obe strany a vchádza do LensShore** (používateľ 14. 11.): `dock_at` je stred doku, takže
+**6.42** [x] **DockShore rastie na obe strany a vchádza do LensShore** (používateľ 14. 11.): `dock_at` je stred doku, takže
 pri pribudnutí aplikácií sa dok rozťahuje na obe strany a prekryje susednú dosku (na snímke cez LensShore aj jej mikrofón),
 pri ubudnutí vznikne medzera. Dok sa má ukotviť o koniec, ktorý je zlepený so susedom (ako `tray_at` ľavým koncom), a rásť
 iba od neho; susedovi nesmie vojsť do plochy (zastaví sa o neho ako pri ťahaní).
-**6.43** [ ] **Kvapka medzi dvoma Shore, ktoré sa spoja, zmizne** (používateľ 14. 11., PowerGoo): keď sa dve dosky pritiahnu
+**6.43** [~] **Kvapka medzi dvoma Shore, ktoré sa spoja, zmizne** (používateľ 14. 11., PowerGoo): keď sa dve dosky pritiahnu
 k sebe, kvapka medzi nimi nemá miesto a stratí sa. Má **vyskočiť** von a odskočiť k najbližšiemu voľnému úseku okraja (`E.block`).
 Spresnené 14. 11.: platí pre **každé** Goo pritlačené medzi iné Goo alebo Shore. Buď zmení polohu, alebo sa stlačí do štvorcového
 tvaru a pritisne sa medzi Shore (Shore je ťažšie než Goo, ustúpi kvapka). **Funkcia Goo musí ostať dostupná a nič sa nesmie prekrývať**
 — pri prekrytí sa nedá kliknúť, rukou nemožno cieliť na pár pixelov.
-**6.44** [ ] **Po prepnutí na Hravé ostane po LensShore štvorec** (používateľ 14. 11., snímka): LensGoo a BarGoo sa ukážu, ale doska
+- [x] 14. 11. **6.42 hotové a nasadené:** DockShore pri Shore (alebo okraji obrazovky) rastie od konca, ktorý s ním susedí: po spustení Alt-ťahania sa
+  podľa susedov (TrayShore, LensShore, AppCloud, kraje) určí `dock_pin` (0 ľavý, 1 pravý koniec) a `dock_pinx` (kde ten koniec leží; v `settings.json`),
+  inak ostáva stred. Goo (`drops.plm` `dock.c`) aj dok pleamar-wm (`session.plm` `dk.a0`, `latte.dock.pin` v `hyprctl`) kreslia od toho konca, takže
+  pri otvorení aplikácií dok nevchádza do suseda a pri zatvorení nenecháva medzeru. Overené: dok pri LensShore, otvorená aplikácia (74 → 152 px, ľavý koniec
+  ostal na 620 px), zatvorená. Počas ťahania ide dok zasa za stred. Neoverené: skutočné Alt-ťahanie myšou; pravý koniec (pri TrayShore); bočné okraje (stred).
+- [~] 14. 11. **6.43 vyskočenie:** Goo pritlačené medzi Shore sa nestratí: `apart()` v `engine.luau` hľadá najbližšie voľné miesto okraja (úseky Shore rozšírené
+  o polomer kvapky a spojené), takže kvapka medzi dvoma priblíženými doskami vyskočí k susednému voľnému miestu. Overené: QueenGoo medzi dok a TrayShore → odskočila vľavo
+  od doku. Chýba: pokles do štvorcového tvaru a vtlačenie medzi Shore, keď na okraji nie je voľné miesto vôbec (dnes ostane, kde bola); iná hrana okraja.
+**6.44** [x] **Po prepnutí na Hravé ostane po LensShore štvorec** (používateľ 14. 11., snímka): LensGoo a BarGoo sa ukážu, ale doska
 LensShore (alebo jej obrys/plocha) zostane na okraji. Skontrolovať `show:` dosiek v `plates.plm`/`shoregrab.plm` pri zmene `lens`.
-**6.45** [ ] **Rozloženia ako upraviteľné profily** (používateľ 14. 11.): „Vzhľad plochy“ hore ostáva; Hravé · Profi · Minimal sú
+- [x] 14. 11. **6.44 príčina a oprava:** štvorec nebol po LensShore, ale prázdna doska DockShore: dok pleamar-wm hlásil Goo hranu a dĺžku aj vtedy, keď ho voľba
+  Správa úloh (BarGoo, Nič) vypla (`dock.off`), takže Goo kreslilo jeho dosku bez ikon. `wm/session.plm` `dkg.edge` je pri `dock.off` −1 (dosku nekreslí, stena
+  aj úsek pre kvapky odpadnú). Overené: Hravé (BarGoo) — spodný okraj čistý. Nasadené.
+**6.45** [~] **Rozloženia ako upraviteľné profily** (používateľ 14. 11.): „Vzhľad plochy“ hore ostáva; Hravé · Profi · Minimal sú
 **profily**, ktoré sa dajú upraviť a uložiť, a pribudne „Uložiť ako nový profil“ (spúšťač, správa úloh, skryté kvapky, polohy Shore).
+- [~] 14. 11. **6.45 hotové a nasadené (v Nastaveniach › Kvapky):** Hravé · Profi · Minimal sú profily (`looks` v `settings.json` Goo; bez záznamu platí pôvodné nastavenie).
+  Aktívny vzhľad sa pozná podľa zhody voľby spúšťača, správy úloh a skrytých kvapiek; ručná zmena = „Vlastné“. Tlačidlá: **Uložiť do «vzhľadu»** (po zmene),
+  **Vrátiť do pôvodného stavu** / **Zmazať vzhľad**, **Uložiť ako nový vzhľad** (pole s menom); vlastné vzhľady sú ďalšie karty. Videné na snímke (Minimal označený);
+  uloženie, vrátenie a zmazanie som neklikal. Chýba: polohy Shore a farby v profile (dnes iba spúšťač, správa úloh, skryté kvapky), vlastné náhľady kariet.
 **6.46** [ ] **Karta Goo (napr. LensShore) je nečitateľná: cez ňu presvitajú rozmazané ikony plochy, keď je otvorená a kurzor dôjde
 k okraju** (používateľ 14. 11., „už sme to raz riešili“): na snímke vidno pod textom rozmazané ikony DualBrew, Chrome a LensAI. Sklo
 pleamaru je od 5. 11. vypnuté iba dočasným súborom `~/.config/systemd/user/latte-goo.service.d/test-bez-skla.conf`
@@ -861,6 +876,13 @@ oprava v repe a zmazanie dočasného súboru (najprv `latte-upstream -v`, pleama
 - 14. 11. **postup od používateľa: sú to duchovia kurzora** (ako 1D.48): s otvorenou kartou (napr. LensGoo) rýchle krúženie myšou
   tesne pri ktoromkoľvek okraji (skúšané vpravo, vľavo aj hore) nechá na obrazovke obrysy kurzora; ostanú, kým sa neklikne — klik kartu
   zavrie a duchovia zmiznú. Súvisí s `patches/issues/pleamar-shader-group-stale-picture.txt`.
+- [x] 14. 11. **príčina a oprava:** duchov (obrysy kvapky kurzora aj kópie sklenenej karty pri okrajoch) robilo rozmazanie kompozitora pod
+  plochou Goo, ktoré nastúpi pri `PLEAMAR_NO_LENS=1` — teda práve dočasný súbor z 5. 11. Zopakované ydotoolom (LensGoo otvorené, krúženie
+  pri hornom, ľavom a pravom okraji): s `NO_LENS` duchovia áno, s `PLEAMAR_FULL_REPAINT=1` ešte horšie, so sklom pleamaru (`lens`) žiadni.
+  Chyba z 5. 11. (zatvorená karta sa znova ukáže) sa s pleamarom 0.7.27 neopakuje: po zatvorení je obraz čistý do 2–3 snímok, trikrát.
+  Oprava: súbor `test-bez-skla.conf` zrušený (na latte-lab presunutý do scratchpadu), panel karty má vlastné matné sklo (`card.plm`
+  `frost` 100 % aj pre `card.pn`; predtým 0 %, lebo ho rozmazával kompozitor). Nasadené. Ostáva: zlaté písmo vybraných čipov na svetlom
+  skle má slabý kontrast; overiť, či 1D.48 (`breathe`, duchovia kurzora) nebolo tiež od `NO_LENS` — skúšané 13. 11. s ním zapnutým.
 **6.47b** [ ] 14. 11. (noc, nedokončené) **Príkazy AI v LensShore** (Raycast AI Commands, `~/.config/latteos/ai-commands.json`,
 `lens.luau` §AI Commands, Nastavenia › LensShore „Príkazy AI“): kód v repe, nasadený 14. 11. ráno bez overenia; zdvojené preklady
 „Run“ a „Summarize“ zmazané. Chýba: overiť vytvorenie, úpravu a spustenie príkazu, zápis v 6B.47.
@@ -878,6 +900,14 @@ zanorená do okraja, magnet a ťahanie s Alt). Kým to nie je potvrdené, dok vy
 (podstránka s opisom a nastaveniami ako ostatné).
 **6.51** [ ] **Nočná relácia skončila bez zápisu, minuli sa tokeny** (používateľ 14. 11.): pokyn bol skončiť skôr a zapísať stav. Pri
 dlhej samostatnej práci zapisovať stav do ROADMAP priebežne po každom kroku, nie až na konci (rozrobené Príkazy AI, 6.47b).
+
+**6.52** [x] **Text na podklade kariet Goo je čitateľný vždy** (používateľ 14. 11.): na svetlom skle okien (napr. LensShore) bolo písmo krémové
+na krémovom (tiež zlaté na svetlom), na jasnej tapete cez tenké sklo písmo strácalo kontrast. Oprava v `goo/parts/card.plm`: **panel karty**
+nikdy nie je redší než 90 % (`tint`), písmo sa volí podľa svetla panelu (`card.lite`: svetlý panel → tmavohnedé písmo `tc`/`td`/`tg` a svetlé
+políčka `tb1`–`tb3`, tmavý panel → krémové ako doteraz), **hodiny, kalendár a kamera** (kreslené ručne s tmavými dlaždicami) majú panel vždy tmavý
+(`card.dk`). Riadky kariet v `rows.plm` používajú tieto farby. Overené snímkami: svetlý motív okien aj tmavý (`pane` v `settings.json`),
+LensShore, hodiny, kalendár. Pri LensShore a PowerGoo (zoznamy) vyskúšané; päta LensShore je vždy na káve, nemení sa. Chýba: ikony plochy za sklom
+presvitajú (~10 %); karta AI chatu (`ai.plm`) má vlastné podklady služieb a neadaptuje sa; kontrola kontrastu pri veľmi svetlej tapete (biela) číslom.
 
 ### 6B. [~] LensGoo
 Zdroje: LATTEOS-GOO §4.3
@@ -1701,14 +1731,14 @@ tri podoby**, nie tretia implementácia. Ak je AI zapnutá, Enter na neznámy te
 a kvapky (§21.1), príboj ako 6H.06. Stav na doske bez otvorenia (6.26) — napr. bežiaca minútka namiesto času (6D.13).
 
 
-**6N.05** [ ] **Premenovať LensCloud na AppCloud; je „hlúpy“ a smie bežať popri LensShore** (používateľ 14. 11.): je to iba
+**6N.05** [x] 14. 11. (Premenované na AppCloud; samostatná voľba `appcloud` v Nastaveniach › Kvapky (Prepínač „Zobraziť AppCloud“), popri LensGoo aj LensShore; Enter nikdy nejde do LensAI; vzhľad Minimal = LensGoo + AppCloud + DockShore; starý `lens: "cloud"` sa číta ako `appcloud`. Win otvára spúšťač, AppCloud sa otvára klikom na dosku.) **Premenovať LensCloud na AppCloud; je „hlúpy“ a smie bežať popri LensShore** (používateľ 14. 11.): je to iba
 zobrazovač aplikácií ako v smartfóne — bez riadku na otázku, bez AI, bez kalkulačky; pole iba filtruje aplikácie
 (Enter nesmie ísť do LensAI). Preto nie „Lens“. Nie je jedným z troch spúšťačov, ale samostatná voľba, ktorá smie byť
 zapnutá naraz s LensShore alebo LensGoo (ako Launchpad + Spotlight v macOS, mriežka a hľadanie v GNOME). **6N.03 sa ruší**.
 Premenovať aj v kóde (`cloud` ostáva), v Nastaveniach, v sk.plm a v dokumentácii.
-**6N.06** [ ] **Mriežka AppCloud naozaj cez celú obrazovku** (používateľ 14. 11.): na latte-lab (1920 × 1080) sa otvára
+**6N.06** [x] 14. 11. (Mriežka cez celú obrazovku, stĺpce a riadky podľa rozlíšenia (1920 × 1080: 10 × 6); overené snímkou.) **Mriežka AppCloud naozaj cez celú obrazovku** (používateľ 14. 11.): na latte-lab (1920 × 1080) sa otvára
 iba ako okno ~960 × 600 v strede (overené snímkou 14. 11.); veľkosť z `W`, `H`, mriežka sa prispôsobí (stĺpce a riadky podľa rozlíšenia).
-**6N.07** [ ] **Doska AppCloud: čas a dátum vedľa seba, nie nad sebou; ikonka na doske nemá zmysel** (používateľ 14. 11.):
+**6N.07** [x] 14. 11. (Čas a dátum vedľa seba, ikonka zrušená; karty času a kalendára z dosky bez ucha (`card_plate`); overené snímkou.) **Doska AppCloud: čas a dátum vedľa seba, nie nad sebou; ikonka na doske nemá zmysel** (používateľ 14. 11.):
 ikonku zrušiť alebo dať jej jasnú funkciu (otvorí mriežku?). Karty času a dátumu z dosky **úplne bez ucha** — dnes majú malé ucho.
 
 ---
@@ -3308,6 +3338,17 @@ pleamar-wm ako pri 10B.45.
 skill `pleamar-desktop`, `pleamar-wm agent`). Kurzor agenta je viditeľný a odlišný od používateľovho, v štýle ikony poskytovateľa
 (každá veľká AI má iný). Oboje sa dá vypnúť alebo obmedziť: v celom systéme, iba vo vybraných aplikáciách, alebo všade.
 Nastavenia v LensAI.
+- [~] 14. 11. **hotové a nasadené, platí po novom prihlásení:** záplata `patches/pleamar-wm-agent-kind.patch` (pleamar-wm podľa mena agenta
+  povie scéne `agent.kind` — Claude, OpenAI, Gemini, DeepSeek, Grok, Mistral, Copilot, Marea, Qwen, lokálny; a pravidlá `gate.rules` majú
+  okrem `hands` aj `mouse` a `keys`, takže myš a klávesnica agenta sa púšťajú zvlášť; testy v `gate.rs` a `agent.rs`). Kurzor agenta
+  v `wm/session.plm` má farbu poskytovateľa a jeho logo v štítku s menom (`goo/ai/*.svg`, lobe-icons), aj svetlo okraja monitora.
+  LensAI › Nastavenia › **Ruky**: Myš agenta a Klávesnica agenta, každá Vypnuté · **Operačný systém (predvolené)** · Vybrané aplikácie
+  (zoznam z `.desktop`, prepínače) · Všade; zapisuje `latte-ai hands set` (`~/.config/latteos/agent-hands.json` → blok v
+  `~/.config/latteos/pleamar-wm/gate.rules`, riadky používateľa ostanú); `latte-session` ich pri štarte zapíše (`hands apply`).
+  Operačný systém = okná `latteos-*` (aplikácie), `pleamar*` (scény), `panel`, `latte-*`. `agent on` v `system/pleamarwm/session.conf`.
+  Overené 14. 11. v novej relácii (agent „Claude Code“): kurzor oranžový s logom Claude, myš v Nastaveniach prešla, klik a písanie vo foot
+  odmietnuté; pri klávesnici „Všade“ písanie vo foot prešlo a klik myšou ostal odmietnutý. Chýba: kliknutie myšou po stránke Ruky (skúšaná
+  `latte-ai hands`), hláška odmietnutia hovorí `hands` aj pri `mouse`/`keys`; otvorenie programu (`agent open`) tieto pravidlá nekontrolujú.
 
 ### 10C. [ ] Heidelberg
 
