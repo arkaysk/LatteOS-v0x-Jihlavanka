@@ -33,7 +33,7 @@ scene Goo {
         rate: 60, 20 while stir < 0.001 and card.p < 0.01
         // An open card is a menu: it has the keyboard until a press elsewhere, so Escape closes it at once
         // and its field is typed into without a press. So has Goo while it is walked with the arrow keys.
-        keyboard: exclusive while card_open or kb
+        keyboard: exclusive while card_open or kb or cloud_grid
     }
     permissions {
         run: "latte-sky", "latte-skill", "latte-login", "latte-stats", "hyprctl", "foot", "hostname", "id", "cat", "powerprofilesctl", "date", "notify-send", "nmcli", "xdg-open", "xdg-user-dir", "fd", "latte-say", "sh", "latte-cal", "latte-ai", "cliphist", "latte-app", "latte-apps", "latte-devices", "latte-settings", "latte-net", "latte-desktop", "latte-focus", "latte-nameday", "latte-cam", "latte-lock", "qalc", "wl-paste", "brightnessctl", "wpctl", "bluetoothctl", "pactl", "logger", "latte-nightlight", "latte-weather", "latte-files", "wl-copy", "latte-emoji", "latte-gif", "latte-clip", "gtk-launch", "latte-properties", "latte-linked"
@@ -59,6 +59,7 @@ scene Goo {
     include "parts/picks.plm"
     include "parts/body.plm"
     include "parts/shore.plm"            // after the body: the plate is the body's, what is on it is drawn over it
+    include "parts/cloud.plm"            // LensCloud: the third launcher's plate, and its apps over the whole screen
     include "parts/bubble.plm"
     shader velvet = file "shaders/velvet.wgsl"
     shader pegboard = file "shaders/pegboard.wgsl"
@@ -76,6 +77,7 @@ scene Goo {
     include "parts/desk.plm"
     include "parts/lensline.plm"           // over the card: the line stays on its capsule while the card grows out of it
     include "parts/ctx.plm"
+    include "parts/shoregrab.plm"       // over the plates and what is on them: with Alt held they are carried (6.36)
     include "parts/cursor.plm"           // last: the cursor is over everything
 
     // The scene's clock (parts/drops.plm): it runs while the world is stirred, a card is out, the keyboard walks

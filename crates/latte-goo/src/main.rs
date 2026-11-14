@@ -106,6 +106,9 @@ struct Goo {
     carried: (usize, f32),
     /// What the marker that hides the session's cursor says now, and the presses of the mouse seen so far.
     marker: Option<String>,
+    /// The mouse is on DockShore's plate, whose icons pleamar-wm draws over this layer: the session's own arrow
+    /// stands in there, above them, and the drop does not show under them.
+    over_dock: bool,
     presses: f32,
     /// Events wait their turn: a fact holds one a frame. A landing with where it was: x, y, the edge.
     landings: VecDeque<(f32, f32, f32)>,
@@ -214,7 +217,7 @@ impl Goo {
     /// the number alone, and hides the plain arrow. Another window manager never reads the file.
     fn marker(&mut self) {
         let Some(dir) = std::env::var_os("XDG_RUNTIME_DIR") else { return };
-        let draws = self.map.one.contains_key("cur.on") && self.world.cfg.cursor_body > 0.5 && self.extra["cursor"]["hide_arrow"].as_bool() != Some(false);
+        let draws = !self.over_dock && self.map.one.contains_key("cur.on") && self.world.cfg.cursor_body > 0.5 && self.extra["cursor"]["hide_arrow"].as_bool() != Some(false);
         let shapes = MOUSE.lock().unwrap().is_some_and(|m| m.more) && self.map.one.contains_key("cur.shape");
         let says = draws.then(|| std::iter::once(std::process::id().to_string()).chain(SHAPES.iter().filter(|_| shapes).map(|s| s.0.to_owned())).collect::<Vec<_>>().join(" "));
         if says != self.marker {
@@ -314,7 +317,7 @@ impl Goo {
         self.gone_n = f32::NAN;
         m.walls = (0..32).map_while(|n| at(&format!("wall.{n}.x0")).map(|x0| [Some(x0), at(&format!("wall.{n}.y0")), at(&format!("wall.{n}.x1")), at(&format!("wall.{n}.y1"))])).collect();
         for n in ["screen.width", "screen.height", "cursor.x", "cursor.y", "pointer.x", "pointer.y", "cur.down", "gale", "splash.n", "splash.x", "splash.w", "splash.p", "stir", "tier", "cur.on", "cur.big", "cur.x", "cur.y", "cur.st", "cur.rot", "cur.wob", "cur.tailx", "cur.taily", "cur.round", "cur.shape", "cur.poke", "click.n", "click.x", "click.y", "click.win", "click.drop", "covered", "ev.landed", "ev.bumped", "ev.joined", "ev.parted", "ev.flicked", "ev.lx", "ev.ly", "ev.le",
-            "card_owner", "ear.ox", "ear.oy", "gone_n", "gone.x0", "gone.y0", "gone.x1", "going.x", "going.y", "going.on", "shore_w", "lens_edge", "lens_a", "lens_b"] {
+            "card_owner", "ear.ox", "ear.oy", "gone_n", "gone.x0", "gone.y0", "gone.x1", "going.x", "going.y", "going.on", "shore_w", "lens_edge", "lens_a", "lens_b", "dock_edge", "dock_len", "dock_deep", "dock_grow", "tray_at"] {
             if let Some(k) = at(n) {
                 m.one.insert(n, k);
             }
@@ -357,6 +360,22 @@ impl Goo {
         }
         let one = |m: &Map, n: &str, facts: &[f32]| m.one.get(n).map(|k| facts[*k]);
         let get = |at: At, facts: &[f32]| at.map_or(0.0, |k| facts[k]);
+        // DockShore (goo/parts/drops.plm `dock_*`, worked out as `dock_near` there)
+        let over = {
+            let f = |n: &str| one(&self.map, n, facts).unwrap_or(0.0);
+            let (e, len, deep, grow) = (one(&self.map, "dock_edge", facts).unwrap_or(-1.0), f("dock_len"), f("dock_deep"), f("dock_grow"));
+            let (sw, sh) = (self.world.size.x, self.world.size.y);
+            // where the mouse really is, as pleamar-wm says it (the scene's own `cursor.*` are not that off its surface)
+            MOUSE.lock().unwrap().is_some_and(|mo| {
+                let (x, y) = mo.at;
+                let (across, along) = if e < 0.5 { (sh - y, x - sw / 2.0) } else if e < 1.5 { (x, y - sh / 2.0) } else { (sw - x, y - sh / 2.0) };
+                e >= 0.0 && len > 0.0 && across <= deep + 6.0 && along.abs() <= len / 2.0 + grow / 2.0 + 10.0
+            })
+        };
+        if over != self.over_dock {
+            self.over_dock = over;
+            self.marker();
+        }
         let m = &mut self.map;
         let w = &mut self.world;
 
@@ -369,7 +388,9 @@ impl Goo {
             // the plates: TrayShore in the bottom right corner, LensShore's island on its edge (parts/shore.plm)
             const PLATE: f32 = 46.0;
             if let Some(wide) = one(m, "shore_w", facts).filter(|x| *x > 0.0) {
-                walls.push(Wall { x0: sw - wide, y0: sh - PLATE, x1: sw, y1: sh });
+                // carried off the corner along the bottom (6.36: `tray_at`, its left end), or in the corner
+                let x0 = one(m, "tray_at", facts).filter(|a| *a >= 0.0).unwrap_or(sw - wide);
+                walls.push(Wall { x0, y0: sh - PLATE, x1: x0 + wide, y1: sh });
             }
             if let (Some(edge), Some(a), Some(b)) = (one(m, "lens_edge", facts), one(m, "lens_a", facts), one(m, "lens_b", facts)) {
                 if b > a && edge >= 0.0 {
@@ -582,7 +603,7 @@ impl Goo {
         }
         let c = &w.cursor;
         let g = &w.drops[ghost];
-        for (n, x) in [("going.x", g.pos.x), ("going.y", g.pos.y), ("going.on", (g.r > 0.0) as u32 as f32), ("stir", stir), ("tier", self.tier), ("cur.on", w.cfg.cursor_body), ("cur.big", c.big), ("cur.x", c.tip.x), ("cur.y", c.tip.y), ("cur.st", c.stretch), ("cur.rot", c.rot), ("cur.wob", c.wobble), ("cur.round", c.round), ("cur.tailx", c.belly.x - c.tip.x), ("cur.taily", c.belly.y - c.tip.y)] {
+        for (n, x) in [("going.x", g.pos.x), ("going.y", g.pos.y), ("going.on", (g.r > 0.0) as u32 as f32), ("stir", stir), ("tier", self.tier), ("cur.on", if self.over_dock { 0.0 } else { w.cfg.cursor_body }), ("cur.big", c.big), ("cur.x", c.tip.x), ("cur.y", c.tip.y), ("cur.st", c.stretch), ("cur.rot", c.rot), ("cur.wob", c.wobble), ("cur.round", c.round), ("cur.tailx", c.belly.x - c.tip.x), ("cur.taily", c.belly.y - c.tip.y)] {
             if let Some(k) = m.one.get(n) {
                 facts[*k] = x;
             }
@@ -627,7 +648,8 @@ impl Goo {
             }
             waiting |= !self.told[kind].is_empty();
         }
-        stir > 0.0 || waiting
+        // over DockShore the drop is off and nothing may stir: keep stepping, to see the mouse leave it
+        stir > 0.0 || waiting || self.over_dock
     }
 }
 
@@ -641,7 +663,7 @@ fn main() {
         return;
     }
     let home = std::env::var_os("XDG_CONFIG_HOME").map(std::path::PathBuf::from).or_else(|| std::env::var_os("HOME").map(|h| std::path::PathBuf::from(h).join(".config"))).unwrap_or_default();
-    let mut goo = Goo { world: World::new(1920.0, 1080.0, Config::default()), map: Map::default(), file: home.join("latteos/gooengine.json"), read_at: None, looked: Instant::now(), extra: serde_json::Value::Null, tier: 2.0, splash: 0.0, ripple_n: Vec::new(), gone_n: f32::NAN, carried: (usize::MAX, 0.0), marker: None, presses: f32::NAN, landings: VecDeque::new(), told: Default::default(), count: [0.0; 5] };
+    let mut goo = Goo { world: World::new(1920.0, 1080.0, Config::default()), map: Map::default(), file: home.join("latteos/gooengine.json"), read_at: None, looked: Instant::now(), extra: serde_json::Value::Null, tier: 2.0, splash: 0.0, ripple_n: Vec::new(), gone_n: f32::NAN, carried: (usize::MAX, 0.0), marker: None, over_dock: false, presses: f32::NAN, landings: VecDeque::new(), told: Default::default(), count: [0.0; 5] };
     goo.settings();
     watch_mouse(args.iter().position(|a| a == "--screen").and_then(|k| args.get(k + 1)).cloned());
     pleamar::provide_step(Box::new(move |dt, names, facts| goo.step(dt, names, facts)));

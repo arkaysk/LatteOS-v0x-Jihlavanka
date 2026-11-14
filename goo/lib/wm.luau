@@ -83,6 +83,10 @@ function M.tell_mode() eval("latte.mode.tell()") end
 function M.set_mode(n) eval(string.format("latte.mode.set(%q)", ({ [0] = "tape", "tiles", "floating", "glance" })[n] or "tape")) end
 function M.glass(mode) eval("latte.glass(" .. tostring(tonumber(mode) or 0) .. ")") end   -- 0 solid windows, 1 glass, 2 True Glass, where the card can
 function M.coffee(water, milk) eval(string.format("latte.coffee(%.3f, %.3f)", tonumber(water) or 0, tonumber(milk) or 0)) end   -- the dock's plate is of the same coffee
+function M.dock_at(x) eval(string.format("latte.dock.at(%.1f)", tonumber(x) or -1)) end   -- DockShore put down there (6.36), −1 the middle
+function M.dock_lift() eval("latte.dock.lift(1)") end                          -- …and lifted off while Goo carries its plate
+function M.taskbar(n) eval(string.format("latte.taskbar(%d)", tonumber(n) or 0)) end   -- 0 BarGoo, 1 DockShore, 2 none (6.41)
+function M.tell_dock() eval("latte.dock.tell()") end    -- DockShore says again where its plate lies (fact dock_* in Goo)
 function M.wallpaper(path) eval(string.format("latte.wallpaper(%q)", path)) end
 function M.show_desktop() eval("latte.desk.show()") end
 -- the band along an edge that windows leave to the drops: 0 bottom, 1 left, 2 top, 3 right

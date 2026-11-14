@@ -4,7 +4,16 @@
 // What is ON a plate (its buttons, the line's field) is drawn over it, in parts/shore.plm and parts/lensline.plm.
 part Plates {
     // TrayShore: it reaches past the screen's corner, so only its corner towards the desktop is round
-    box { from: shore.x0, H - SHORE_H; size: (shore_w + 40) * if(shore_w > 0, 1, 0), SHORE_H + 40; corner: 16; blend: 10 }
+    // (at an end of the edge it reaches past it there, so only its corners towards the desktop are round)
+    box { from: shore.x0 - 40 * (shore.x0 <= 0.5), H - SHORE_H; size: (shore_w + 40 * (shore.x0 <= 0.5) + 40 * (shore.x1 >= W - 0.5)) * if(shore_w > 0, 1, 0), SHORE_H + 40; corner: 16; blend: 10 }
     // LensShore: at rest. With its panel out the panel's own body holds the plate (parts/cardframe.plm).
-    box { from: lens_a, if(lens_edge == 2, -40, H - 46); size: (lens_b - lens_a) * if(lens_shore and lens_b > lens_a and not (card_lens and card.p > 0.02), 1, 0), 86; corner: 18; blend: 10 }
+    box { from: lens_a - 40 * (lens_a <= 0.5), if(lens_edge == 2, -40, H - 46); size: (lens_b - lens_a + 40 * (lens_a <= 0.5) + 40 * (lens_b >= W - 0.5)) * if(lens_shore and lens_b > lens_a and not (card_lens and card.p > 0.02), 1, 0), 86; corner: 18; blend: 10 }
+    // DockShore: pleamar-wm's dock draws its icons over Goo (wm/session.plm, surface `dockshore`), on this plate of the
+    // goo's own matter; it says where it lies and how long it is (parts/drops.plm `dock_*`, `dock.span`)
+    box { at: if(dock_edge == 1, dock_deep / 2 - 20, if(dock_edge == 3, W - dock_deep / 2 + 20, dock.c)), if(dock_edge == 0, H - dock_deep / 2 + 20, dock.c); size: if(dock_edge == 0, dock.span, dock_deep + 40), if(dock_edge == 0, dock_deep + 40, dock.span); corner: 16; blend: 10 }
+    // LensCloud (parts/cloud.plm): in the bottom left corner unless carried, as TrayShore is in the right one
+    box { from: cloud.x0 - 40 * (cloud.x0 <= 0.5), H - SHORE_H; size: (cloud_w + 40 * (cloud.x0 <= 0.5) + 40 * (cloud.x1 >= W - 0.5)) * if(cloud_w > 0, 1, 0), SHORE_H + 40; corner: 16; blend: 10 }
+    // pulled apart from the plate it was joined to, a thread of goo stretches between them, thins and breaks at 60 px
+    line { from: sh.jl - 10, thr.y; to: thr.a + 10, thr.y; width: 24 * (1 - clamp(thr.gl / 60, 0, 1)) * if(sh.k >= 0 and sh.jl >= 0 and thr.gl > 0.5 and thr.gl < 60, 1, 0); blend: 14 }
+    line { from: thr.a + sh.len - 10, thr.y; to: sh.jr + 10, thr.y; width: 24 * (1 - clamp(thr.gr / 60, 0, 1)) * if(sh.k >= 0 and sh.jr >= 0 and thr.gr > 0.5 and thr.gr < 60, 1, 0); blend: 14 }
 }

@@ -15,7 +15,7 @@ part Outline {
         include "plates.plm"
         include "cardframe.plm"
         // TrayShore's panel when it is out
-        box { from: card.x0, card.ay - card.ch; size: (card.w + 40) * if(card_dock and card.p > 0.02, 1, 0), card.ch + 20; corner: 18 }
+        box { from: card.x0, card.ay - card.ch; size: (card.w + 40 * (card.x0 + card.w >= W - 0.5)) * if(card_dock and card.p > 0.02, 1, 0), card.ch + 20; corner: 18 }
     }
     }
 }

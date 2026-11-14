@@ -589,7 +589,9 @@ Dok pleamar-wm (autor ho volá *shore*) kreslí `wm/session.plm` (`dk.*`). Ostá
 - vyzerá ako doska LatteOS: farba `shore.goo`, obrys a zaoblenie ako TrayShore a LensShore,
 - otvára a zatvára sa podľa §9.4,
 - ikony programov sa správajú ako ikry BarGoo: pod kurzorom sa nadvihnú a sused sa pridá (čísla z §5.3),
-- Goo dostane jeho rozsah ako ďalšiu stenu (`shore.2.a`, `shore.2.b`): hladina sa odráža, kvapky sa mu vyhnú,
+- Goo dostane jeho rozsah ako ďalšiu stenu (urobené 13. 11.: `wall.0` a `E.block("dockshore")` z faktov `dock_*`, ktoré hlási scéna WM): hladina sa odráža, kvapky sa mu vyhnú,
+- **doska je hmota Goo** (13. 11.): kreslí ju `plates.plm` ako TrayShore; dok pleamar-wm kreslí iba ikony a ponuku na plochách `level: overlay` nad Goo,
+  lebo Goo je na vrstve `top` a jeho hladina by inak prechádzala cez dosku; nad doskou je kurzor systémový (kvapka-kurzor by bola pod ikonami),
 - meno v Nastaveniach: **DockShore**. Nastavenia › Okná › Lišta okien: **BarGoo** (predvolené) · **DockShore** ·
   **vypnutá**. Naraz beží najviac jedna; vypnutá necháva okná iba na prepínanie klávesmi a prehľad.
 
@@ -880,6 +882,11 @@ preto **nemajú spoločné meno** (používateľ 12. 11.; „BarShore“ bol pre
 | **Spájanie dosiek** | Doska sa dá chytiť za okraj a posunúť pozdĺž svojho okraja obrazovky (TrayShore dnes stojí v rohu — dostane úchyt). Keď sa dve dosky priblížia pod ~24 px, medzera sa **zaleje**: konce sa pritiahnu (magnet s pružinou) a dosky sa nakreslia ako **jedna hmota s jedným obrysom** (§7), so spoločnou stenou pre hladinu a kvapky. Odtrhnutie: potiahnuť cez prah ~40 px, spoj sa natiahne ako vlákno a praskne. Poradie a spojenia sa ukladajú. | jadro: dosky ako telesá s polohou; scéna: dosky v tele hmoty |
 | **Doska a kvapky** | Kvapka sediaca vedľa dosky sa k nej pri kurzore nakloní; vlákno k doske vznikne iba z dotyku a ukáže sa pri odďaľovaní (§5.7). Kvapka pustená na dosku sa na nej neusadí — odrazí sa (vyššie). | jadro: spoje aj so stenou |
 | **Menej hravosti** | Vo vzhľade Shore sa `liveliness` nastaví na 0,5 a efekty z §18.3 a §20 ostanú podľa stupňa; dosky samy nedýchajú. Profesionál tak má pokoj, ale dopad, vlna a stekanie fungujú, keď sa niečo stane. | `gooengine.json` |
+
+**Stav 14. 11. (noc):** spájanie dosiek hotové inak než návrh vyššie — dosky sa ťahajú iba pri **držanom Alt** (6.36, `goo/parts/shoregrab.plm`),
+magnet 24 px na konce susedov a obrazovky, doska sa zastaví o suseda; zliatie robí samo telo hmoty (všetky dosky v `plates.plm` s `blend`),
+odtrhnutie je vlákno v tele, ktoré praskne pri 60 px. Jadro dosky nepozná ako telesá: steny sú obdĺžniky z faktov (`wall.N`, `tray_at`,
+`lens_a/b`, dok), ktoré scéna mení za ťahu. Prepínač vzhľadu: Hravé · Profi · Minimal (6.39) namiesto Goo · Shore. LensShore už je v scéne Goo.
 
 ### 21.2 Poradie
 

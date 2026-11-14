@@ -167,7 +167,7 @@ part Card {
     let card.x = card.bx - cap.h * card.sx * ear                 // from the drop's far side, so the card holds all of it
     let card.y = card.by - cap.v * card.sy * ear
     // docked, it stands on the shore's plate (46 px high, parts/shore.plm), flush with the screen's right edge
-    let card.x0 = if(card_lens, lens_a, 0) + if(card_lens, 0, 1) * if(card_dock, W - card.w, clamp(if(card.sx > 0, card.x, card.x - card.w), 12, W - 12 - card.w))
+    let card.x0 = if(card_lens, lens_a, 0) + if(card_lens, 0, 1) * if(card_dock, clamp(shore.x1 - card.w, 0, W - card.w), clamp(if(card.sx > 0, card.x, card.x - card.w), 12, W - 12 - card.w))
     let card.y0 = if(card_lens, if(lens_edge == 2, 46, H - 46 - card.h), 0) + if(card_lens, 0, 1) * if(card_dock, H - 46 - card.h, clamp(if(card.sy > 0, card.y, card.y - card.h), 12, H - 12 - card.h))
     let card.ax = if(card.sx > 0, card.x0, card.x0 + card.w)
     let card.ay = if(card.sy > 0, card.y0, card.y0 + card.h)
@@ -240,7 +240,7 @@ part Card {
         show: card_dock and card.p > 0.02
         box { from: card.x0, card.ay - card.ch; size: card.w + 40, card.ch; corner: 18; color: shore.goo }
         // over the shore the panel's foot is square and covers the plate's upper rim: no line between the two
-        box { from: W - card_dock_w + 17, card.ay - min(20, card.ch); size: card_dock_w + 23, min(20, card.ch) + 2; color: shore.goo }
+        box { from: shore.x0 + 17, card.ay - min(20, card.ch); size: card_dock_w + 23, min(20, card.ch) + 2; color: shore.goo }
         box { from: card.x0 + 16, card.ay - card.ch + 1; size: card.w, 1; color: cream; opacity: 7% }
     }
 }

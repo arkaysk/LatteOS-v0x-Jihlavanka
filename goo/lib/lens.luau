@@ -10,6 +10,7 @@
 local card = require("lib/card")
 local icons = require("lib/icons")
 local ctx = require("lib/ctx")
+local actions = require("lib/actions")
 local find = require("lib/find")
 local fold = require("lib/fold")
 local calc = require("lib/calc")
@@ -76,7 +77,7 @@ local function has(list, a)
 end
 
 local apps, by_id = {}, {}
-local kept = { mode = 0, recent = {}, commands = {}, engine = "duckduckgo", counts = {}, filter = "all", fav = {},
+local kept = { mode = 0, recent = {}, commands = {}, engine = "duckduckgo", counts = {}, filter = "all", fav = {}, history = {},
               layout = { most = true, fav = true, fresh = true, chips = true }, ai = {} }
 local born = {}                      -- app id → when it was installed (the birth of its .desktop file)
 local owner                          -- LensGoo
@@ -98,7 +99,8 @@ end
 -- shell still holds the keyboard does not get it when the shell lets go. The finder's field keeps the keyboard
 -- lent 300 ms after the card closes (pleamar's grace for a card that follows), so the start waits it out.
 local LET_GO = 350
-local function then_do(f) card.close() after(LET_GO, f) end
+local hist_add                           -- below, where LensShore's state is: what was searched, kept for the up arrow (6B.47)
+local function then_do(f) if hist_add then hist_add(typed) end card.close() after(LET_GO, f) end
 
 local function launch(a)
     then_do(function() open.app(a) end)
@@ -141,7 +143,7 @@ local alias_edit                             -- the app whose alias is being typ
 local function app_menu(a)
     local pinned = own.pinned(a)
     local loved = table.find(kept.fav, a.id) ~= nil
-    ctx.open({
+    local rows = {
         { label = loved and tr("Remove from favourites") or tr("Add to favourites"), glyph = "star",
           run = function()
               if loved then table.remove(kept.fav, table.find(kept.fav, a.id)) elseif a.id and #kept.fav < 12 then kept.fav[#kept.fav + 1] = a.id end
@@ -166,9 +168,20 @@ local function app_menu(a)
               drops.set("lens_hidden_apps", h)
               render(true)
           end },
-        { label = tr("Uninstall…"), glyph = "trash", line = true,
+        { label = tr("Uninstall…"), glyph = "trash", danger = true, line = true,
           run = function() then_do(function() run("latte-app", { "appmanager", "app", ((a.id or ""):gsub("%.desktop$", "")) }, nil) end) end },
-    }, { width = 280 })
+    }
+    -- Raycast's Move Up / Move Down: the order of the favourites on the empty field is the order kept
+    local at = loved and table.find(kept.fav, a.id)
+    if at then
+        local function move(d) return function()
+            kept.fav[at], kept.fav[at + d] = kept.fav[at + d], kept.fav[at]
+            save() render(true)
+        end end
+        if at < #kept.fav then table.insert(rows, 2, { label = tr("Move down"), glyph = "arrow-down", run = move(1) }) end
+        if at > 1 then table.insert(rows, 2, { label = tr("Move up"), glyph = "arrow-up", run = move(-1) }) end
+    end
+    ctx.open(rows, { width = 280 })
 end
 -- the right button on a file or folder found, and Ctrl+K on it (6B.24): what Raycast offers on one
 local function file_menu(path, parent, folder)
@@ -1005,6 +1018,7 @@ function M.open(m)
     render(false)
 end
 function M.toggle()
+    if fact.lens_cloud then fact.cloud_grid = not (fact.cloud_grid == true) return end
     if fact.lens_shore then return M.shore_toggle() end
     if card.id() == "lens" then card.close() else M.open() end
 end
@@ -1038,7 +1052,7 @@ local function shore_place()
     if not on then drops.block("lensshore", nil) fact.lens_b = fact.lens_a return end
     local w = tonumber(fact.sw) or 1920
     local x = tonumber(drops.settings().lens_x) or 0.5
-    local a = math.floor(math.max(12, math.min(w - WIDE - 12, x * w - WIDE / 2)))
+    local a = math.floor(math.max(0, math.min(w - WIDE, x * w - WIDE / 2)))      -- carried to an end, it reaches it (6.36)
     local e = shore_top() and 2 or 0
     fact.lens_edge, fact.lens_a, fact.lens_b = e, a, a + WIDE
     drops.block("lensshore", e, a, a + WIDE)
@@ -1108,14 +1122,24 @@ local function context_row()
 end
 
 -- the AI, asked from the line: the answer comes in pieces, into the card
-local function ask(q)
-    local p = provider()
+local function ask(q, quick, cmd)
+    -- Every question of LensShore goes to LensAI's own default, which latte-ai lists first (the user, 14 Nov, 6B.47);
+    -- a model picked in the panel counts for this one question. `quick` is Tab's Quick AI: the same, kept for its callers.
+    local sel = shore.qsel
+    -- an AI command may name its own model (ai-commands.json "model"), for that command only
+    if cmd and cmd.model and cmd.model ~= "" then
+        for _, pp in ipairs(ai.providers) do for _, mm in ipairs(pp.models or {}) do if mm.id == cmd.model or mm.name == cmd.model then sel = { p = pp, m = mm } end end end
+    end
+    shore.outmode = cmd and cmd.output or nil
+    local p = sel and sel.p or ai.providers[1] or provider()
+    local m = sel and sel.m or (p and p.models and p.models[1]) or nil
+    shore.qsel = nil
     if not p then return end
-    local m = model_of(p)
-    shore.talk[#shore.talk + 1] = { mine = true, text = q }
+    m = m or model_of(p)
+    shore.talk[#shore.talk + 1] = { mine = true, text = cmd and cmd.name or q }
     shore.live, shore.view, fact.lens_busy = "", "talk", true
     local final = nil
-    local said = context_text() .. q
+    local said = (cmd and "" or context_text()) .. q
     shore.use = {}
     render(card.id() == "lens")
     local due = false
@@ -1134,7 +1158,7 @@ local function ask(q)
             fact.lens_busy, shore.job = false, nil
             if final then shore.chat = final.chat shore.talk[#shore.talk + 1] = { mine = false, text = final.answer or "" }
             elseif shore.live ~= "" then shore.talk[#shore.talk + 1] = { mine = false, text = shore.live } end
-            shore.live = ""
+            shore.live, shore.rechoose = "", true      -- the arrows go to the new answer: Enter pastes it
             if card.id() == "lens" then render(true) else fact.lens_fresh = true end
         end)
     end)
@@ -1156,6 +1180,30 @@ local function ago(stamp)
     if s < 86400 then return (tr("{n} h ago"):gsub("{n}", s // 3600)) end
     if s < 172800 then return tr("yesterday") end
     return string.format("%d. %d.", tonumber(d), tonumber(mo))
+end
+
+-- Ctrl+J / the pill: this conversation goes on in LensAI
+local function continue_in_lensai()
+    if shore.chat == "new" then return end
+    card.close()
+    after(LET_GO, function() run("latte-app", { "aicenter", shore.chat }, function() end) end)
+end
+-- the models for the next question only: LensAI's default first (latte-ai lists it so), then every other
+local function pick_model()
+    local items = {}
+    for _, p in ipairs(ai.providers) do
+        for j, m in ipairs(p.models or {}) do
+            items[#items + 1] = { label = m.name or m.id, glyph = "cpu", line = j == 1 and #items > 0, hint = p.name,
+                                  run = function() shore.qsel = { p = p, m = m } render(true) end }
+        end
+    end
+    if #items > 0 then ctx.open(items, { width = 300 }) end
+end
+local function model_word()
+    local sel = shore.qsel
+    local p = sel and sel.p or ai.providers[1]
+    local m = sel and sel.m or (p and p.models[1])
+    return m and (m.name or m.id) or tr("Model")
 end
 
 -- a conversation kept by latte-ai: pressed, it comes back into the card
@@ -1403,6 +1451,353 @@ local WINDOW_ZONES = {
     { "third1", N("First third") }, { "third2", N("Center third") }, { "third3", N("Last third") }, { "two1", N("First two thirds") },
     { "two2", N("Last two thirds") }, { "reasonable", N("Reasonable size") }, { "tall", N("Maximize height") }, { "wide", N("Maximize width") },
 }
+-- ── search history (6B.47): the up arrow on an empty line walks back through what was searched ─────────────
+local hist_at, recalled                      -- which entry the line shows now, and its words
+local function compact() return drops.settings().lens_compact == true end
+local function history_on() return drops.settings().lens_history ~= false end
+-- the keys: Up goes older while the line is empty (or shows an entry) and no list is out to be walked; Down comes newer
+local function hist_flags()
+    local can = history_on() and #kept.history > 0 and fact.lens_shore == true and shore.view == "find" and not shore.arg and not alias_edit
+    fact.lens_hist_up = can and (recalled ~= nil or ((text.lens_q or "") == "" and (card.id() ~= "lens" or compact())))
+    fact.lens_hist_dn = can and recalled ~= nil
+end
+hist_add = function(t)
+    t = (t or ""):gsub("^%s+", ""):gsub("%s+$", "")
+    if t == "" or not fact.lens_shore or not history_on() or shore.arg or mode_of(shore.view) ~= "find" then return end
+    local out = { t }
+    for _, h in ipairs(kept.history) do if h ~= t and #out < 50 then out[#out + 1] = h end end
+    kept.history, hist_at, recalled = out, nil, nil
+    save()
+end
+local function hist_step(older)
+    local n = #kept.history
+    if older then hist_at = math.min((hist_at or 0) + 1, n)
+    elseif not hist_at or hist_at <= 1 then recalled, hist_at = nil, nil return hist_flags()      -- past the newest: the words stay, the list is the keys' again
+    else hist_at -= 1 end
+    recalled = kept.history[hist_at]
+    text.lens_q, fact.lens_typed = recalled or "", recalled ~= nil
+    hist_flags()
+end
+local function hist_clear()
+    kept.history, hist_at, recalled = {}, nil, nil
+    save() hist_flags()
+end
+
+-- ── Quicklinks (6B.47): ~/.config/latteos/quicklinks.json, [{ name, link, icon?, args? }] ────────────────────
+-- link: an address, a path or a command; {argument} / {query} (the first argument) and {Name of an argument} are filled in.
+-- An argument is asked in the line itself (shore.arg: a chip with the name, then the field), up to three, Tab to the next.
+local ql = { list = {}, path = nil }
+local function ql_dir()
+    local okc, conf = pcall(sys.ask, "env", "XDG_CONFIG_HOME")
+    local okh, h = pcall(sys.ask, "env", "HOME")
+    return ((okc and type(conf) == "string" and conf ~= "") and conf or ((okh and h or "") .. "/.config")) .. "/latteos"
+end
+local function ql_save()
+    if not ql.path then return end
+    run("sh", { "-c", 'mkdir -p "${1%/*}" && printf "%s" "$2" > "$1"', "sh", ql.path, json.encode(ql.list) }, nil, { output = false })
+end
+local function ql_load(done)
+    ql.path = ql.path or (ql_dir() .. "/quicklinks.json")
+    run("cat", { ql.path }, function(out, code)
+        local ok, t = pcall(json.decode, out or "")
+        if ok and type(t) == "table" then
+            local list = {}
+            for _, q in ipairs(t) do if type(q) == "table" and type(q.name) == "string" and type(q.link) == "string" then list[#list + 1] = q end end
+            ql.list = list
+        elseif code ~= nil and code ~= 0 then
+            -- the first run: three to begin with, the user's to change
+            local okl, lang = pcall(sys.ask, "env", "LANG")
+            local lc = (okl and type(lang) == "string" and lang:match("^(%a%a)")) or "en"
+            ql.list = {
+                { name = tr("Web search"), link = "https://duckduckgo.com/?q={query}", icon = "world" },
+                { name = tr("Wikipedia"), link = "https://" .. lc .. ".wikipedia.org/w/index.php?search={query}", icon = "book" },
+                { name = tr("LatteOS on GitHub"), link = "https://github.com/arkaysk/LatteOS-v0x-Jihlavanka", icon = "brand-github" },
+            }
+            ql_save()
+        end
+        if done then done() end
+    end)
+end
+-- the arguments of a quicklink: the ones it names, then the names in its link; {argument} and {query} are the "Query" one
+local function ql_names(q)
+    local names = {}
+    local function add(n) for _, x in ipairs(names) do if x:lower() == n:lower() then return end end if #names < 3 then names[#names + 1] = n end end
+    for _, a in ipairs(type(q.args) == "table" and q.args or {}) do add(tostring(type(a) == "table" and a.name or a)) end
+    for ph in q.link:gmatch("{([^{}]+)}") do
+        local l = ph:lower()
+        if l == "argument" or l == "query" then if #names == 0 then add(tr("Query")) end else add(ph) end
+    end
+    return names
+end
+local function ql_index(names, ph)
+    local l = ph:lower()
+    for i, n in ipairs(names) do if n:lower() == l then return i end end
+    return 1                                  -- {argument}, {query}
+end
+local function ql_kind(link)
+    if link:match("^file://") then return "path" end
+    if link:match("^%a[%w+.-]*://") or link:match("^mailto:") then return "url" end
+    if link:match("^[/~]") then return "path" end
+    return "cmd"
+end
+local function ql_fill(q, vals, how)
+    local names = ql_names(q)
+    return (q.link:gsub("{([^{}]+)}", function(ph)
+        local v = vals[ql_index(names, ph)] or ""
+        if how == "url" then return urlencode(v) end
+        if how == "cmd" then return "'" .. v:gsub("'", "'\\''") .. "'" end
+        return v
+    end))
+end
+local function ql_open(q, vals)
+    local kind = ql_kind(q.link)
+    local target = ql_fill(q, vals, kind)
+    if kind == "path" then target = target:gsub("^~", home):gsub("^file://", "") end
+    kept.visits = kept.visits or {}
+    find.visit(kept.visits, "ql:" .. q.name, typed)
+    save()
+    then_do(function()
+        if kind == "url" then open.url(target) elseif kind == "path" then open.path(target) else run("sh", { "-c", target }, nil, { output = false }) end
+    end)
+end
+
+-- the argument fields in the line: a form of up to three (a quicklink's arguments, or the name and the link of a new one)
+local function arg_show()
+    local a = shore.arg
+    fact.lens_arg = a ~= nil
+    if not a then text.lens_chip, text.lens_hint = "", tr("Search or ask…") return end
+    local done = {}
+    for k = 1, a.i - 1 do done[#done + 1] = #a.vals[k] > 14 and (a.vals[k]:sub(1, 13) .. "…") or a.vals[k] end
+    text.lens_chip = a.title .. (#done > 0 and ("  ·  " .. table.concat(done, "  ·  ")) or "")
+    text.lens_hint = a.fields[a.i]
+end
+local function arg_set(v) text.lens_q, fact.lens_typed, typed = v or "", (v or "") ~= "", v or "" end
+local function arg_end()
+    shore.arg = nil
+    arg_set("")
+    arg_show()
+    hist_flags()
+    if card.id() == "lens" then render(true) end
+end
+local function arg_start(a)
+    a.i, a.vals = 1, {}
+    shore.arg, shore.view = a, "find"
+    arg_set(a.defaults and a.defaults[1] or "")
+    arg_show()
+    hist_flags()
+    if card.id() == "lens" then render(true) else M.shore_open(true) end
+    focus("lens_q")
+end
+local function arg_next()
+    local a = shore.arg
+    if not a then return end
+    local v = (text.lens_q or ""):gsub("^%s+", ""):gsub("%s+$", "")
+    if v == "" and not a.empty then return end
+    a.vals[a.i] = v
+    if a.i < #a.fields then
+        a.i += 1
+        arg_set(a.defaults and a.defaults[a.i] or "")
+        arg_show()
+        if card.id() == "lens" then render(true) end
+        return focus("lens_q")
+    end
+    arg_end()
+    a.done(a.vals)
+end
+local function arg_back()
+    local a = shore.arg
+    if not a then return end
+    if a.i > 1 then
+        a.i -= 1
+        arg_set(a.vals[a.i] or "")
+        arg_show()
+        if card.id() == "lens" then render(true) end
+    else arg_end() end
+end
+-- name and link, asked in the line; `old` is a quicklink being edited
+local function ql_form(old)
+    local clip = (shore.ctx.clip or ""):match("^https?://%S+$") or ""
+    arg_start({ title = old and tr("Edit Quicklink") or tr("Create Quicklink"), fields = { tr("Name"), tr("Link: an address, a path or a command; {argument} is what you type later") },
+                defaults = { old and old.name or "", old and old.link or clip },
+                done = function(v)
+                    local entry = { name = v[1], link = v[2], icon = old and old.icon, args = old and old.args }
+                    if old then for i, x in ipairs(ql.list) do if x == old then ql.list[i] = entry end end else ql.list[#ql.list + 1] = entry end
+                    ql_save()
+                    if card.id() == "lens" then render(true) end
+                end })
+end
+-- asked for its arguments: the first may come with the words typed after the name
+local function ql_ask(q, first)
+    arg_start({ title = q.name, fields = ql_names(q), empty = true, defaults = { first or "" },
+                done = function(v) ql_open(q, v) end, ql = q })
+end
+local function ql_menu(q)
+    local names = ql_names(q)
+    ctx.open({
+        { label = tr("Open Quicklink"), glyph = "external-link", run = function() if #names > 0 then ql_ask(q) else ql_open(q, {}) end end },
+        { label = tr("Edit Quicklink"), glyph = "pencil", line = true, run = function() ql_form(q) end },
+        { label = tr("Delete Quicklink"), glyph = "trash", danger = true, sub = {
+            { label = tr("Really delete") .. ": " .. q.name, glyph = "trash", danger = true, keep = true, run = function()
+                for i, x in ipairs(ql.list) do if x == q then table.remove(ql.list, i) break end end
+                ql_save() render(true)
+            end } } },
+    }, { width = 280 })
+end
+-- the quicklinks that go with the words in the line: "wiki cats" is Wikipedia asked "cats"; "wiki" alone, any whose name holds it
+local function ql_matches(q, list)
+    local out = {}
+    local want = q:lower()
+    local head, rest = q:match("^(%S+)%s+(.*)$")
+    for _, l in ipairs(list or ql.list) do
+        local name = l.name:lower()
+        if head then
+            local h = head:lower()
+            for w in name:gmatch("%S+") do
+                if w:sub(1, #h) == h then out[#out + 1] = { q = l, rest = rest } break end
+            end
+        elseif name:find(want, 1, true) then out[#out + 1] = { q = l, rest = "" } end
+    end
+    return out
+end
+local function ql_rows(q)
+    local rows = {}
+    for i, m in ipairs(ql_matches(q)) do
+        if i > 3 then break end
+        local l, names = m.q, ql_names(m.q)
+        local g = l.icon and icons[l.icon] and l.icon or ({ url = "world", path = "folder", cmd = "terminal-2" })[ql_kind(l.link)]
+        local label = #names > 0 and m.rest ~= "" and (l.name .. ": " .. m.rest) or l.name
+        rows[#rows + 1] = { label = label, glyph = g, hint = tr("Quicklink"), right = function() ql_menu(l) end,
+                            keep = #names > 1 or (#names == 1 and m.rest == ""),
+                            run = function()
+                                if #names == 0 then ql_open(l, {})
+                                elseif #names == 1 and m.rest ~= "" then ql_open(l, { m.rest })
+                                else ql_ask(l, m.rest) end
+                            end }
+    end
+    if #rows > 0 then table.insert(rows, 1, { head = true, label = tr(N("QUICKLINKS")) }) end
+    return rows
+end
+local function ql_best(q)                    -- Tab: the quicklink with arguments whose name the words begin
+    local first = (q:match("^(%S+)") or q):lower()
+    for _, m in ipairs(ql_matches(q)) do
+        if #ql_names(m.q) > 0 and m.q.name:lower():sub(1, #first) == first then return m end
+    end
+end
+-- ── AI Commands (6B.47): ~/.config/latteos/ai-commands.json, [{ name, prompt, icon?, output = "panel" | "paste" | "copy", model? }] ──
+-- prompt: {selection} (the selected text, else the clipboard), {clipboard}, {date}, {argument} and {Name of an argument}
+-- (asked in the line like a quicklink's). It goes through ask() to LensAI's default model, unless `model` names another.
+local ac = { list = {}, path = nil }
+local function ac_save()
+    if not ac.path then return end
+    run("sh", { "-c", 'mkdir -p "${1%/*}" && printf "%s" "$2" > "$1"', "sh", ac.path, json.encode(ac.list) }, nil, { output = false })
+end
+local function ac_load()
+    ac.path = ac.path or (ql_dir() .. "/ai-commands.json")
+    run("cat", { ac.path }, function(out, code)
+        local ok, t = pcall(json.decode, out or "")
+        if ok and type(t) == "table" then
+            local list = {}
+            for _, c in ipairs(t) do if type(c) == "table" and type(c.name) == "string" and type(c.prompt) == "string" then list[#list + 1] = c end end
+            ac.list = list
+        elseif code ~= nil and code ~= 0 then
+            -- the first run: four to begin with (Raycast's Quick Fix kind), the user's to change
+            ac.list = {
+                { name = tr("Fix spelling and grammar"), icon = "pencil", output = "paste", prompt = "Fix the spelling and grammar of the text below. Keep its language, meaning and tone. Answer with the corrected text only.\n\n{selection}" },
+                { name = tr("Summarize"), icon = "list", output = "panel", prompt = "Summarize the text below in a few short sentences, in the language of the text.\n\n{selection}" },
+                { name = tr("Translate to English"), icon = "world", output = "paste", prompt = "Translate the text below to English. Answer with the translation only.\n\n{selection}" },
+                { name = tr("Explain this"), icon = "bulb", output = "panel", prompt = "Explain the text below simply, in the language of the text.\n\n{selection}" },
+            }
+            ac_save()
+        end
+    end)
+end
+local AC_FIXED = { selection = true, clipboard = true, date = true }
+local function ac_names(c)
+    local names = {}
+    for ph in c.prompt:gmatch("{([^{}]+)}") do
+        local l = ph:lower()
+        if not AC_FIXED[l] then
+            local n = (l == "argument" or l == "query") and tr("Argument") or ph
+            local dup = false
+            for _, x in ipairs(names) do if x:lower() == n:lower() then dup = true end end
+            if not dup and #names < 3 then names[#names + 1] = n end
+        end
+    end
+    return names
+end
+local function ac_fill(c, vals, sel)
+    local names = ac_names(c)
+    local picked = sel or ((shore.ctx.picked or "") ~= "" and shore.ctx.picked) or shore.ctx.clip or ""
+    return (c.prompt:gsub("{([^{}]+)}", function(ph)
+        local l = ph:lower()
+        if l == "selection" then return picked end
+        if l == "clipboard" then return shore.ctx.clip or "" end
+        if l == "date" then return os.date("%Y-%m-%d") end
+        return vals[ql_index(names, ph)] or ""
+    end))
+end
+local function ac_go(c, vals, sel)
+    shore.chat, shore.talk = "new", {}
+    if card.id() ~= "lens" then M.shore_open() end
+    ask(ac_fill(c, vals, sel), false, c)
+end
+-- `first`: words typed after the name; `sel`: a text to work on instead of the selection
+local function ac_start(c, first, sel)
+    local names = ac_names(c)
+    first = first or ""
+    if #names == 0 then return ac_go(c, {}, sel) end
+    if #names == 1 and first ~= "" then return ac_go(c, { first }, sel) end
+    arg_start({ title = c.name, fields = names, empty = true, defaults = { first }, verb = tr("Run"), done = function(v) ac_go(c, v, sel) end })
+end
+local function ac_form(old)
+    arg_start({ title = old and tr("Edit AI Command") or tr("Create AI Command"),
+                fields = { tr("Name"), tr("Prompt: what to ask; {selection} is the selected text, also {clipboard}, {date}, {argument}") },
+                defaults = { old and old.name or "", old and old.prompt or "" },
+                done = function(v)
+                    local entry = { name = v[1], prompt = v[2], icon = old and old.icon, output = old and old.output or "panel", model = old and old.model }
+                    if old then for i, x in ipairs(ac.list) do if x == old then ac.list[i] = entry end end else ac.list[#ac.list + 1] = entry end
+                    ac_save()
+                    if card.id() == "lens" then render(true) end
+                end })
+end
+local function ac_menu(c)
+    ctx.open({
+        { label = tr("Run AI Command"), glyph = "sparkles", run = function() ac_start(c) end },
+        { label = tr("Edit AI Command"), glyph = "pencil", line = true, run = function() ac_form(c) end },
+        { label = tr("Delete AI Command"), glyph = "trash", danger = true, sub = {
+            { label = tr("Really delete") .. ": " .. c.name, glyph = "trash", danger = true, keep = true, run = function()
+                for i, x in ipairs(ac.list) do if x == c then table.remove(ac.list, i) break end end
+                ac_save() render(true)
+            end } } },
+    }, { width = 280 })
+end
+local function ac_rows(q)
+    local rows = {}
+    if not MODES[4] then return rows end
+    for i, m in ipairs(ql_matches(q, ac.list)) do
+        if i > 4 then break end
+        local c = m.q
+        local g = c.icon and icons[c.icon] and c.icon or "sparkles"
+        rows[#rows + 1] = { label = c.name, glyph = g, hint = tr("AI Command"), right = function() ac_menu(c) end, keep = true,
+                            run = function() ac_start(c, m.rest) end }
+    end
+    if #rows > 0 then table.insert(rows, 1, { head = true, label = tr(N("AI COMMANDS")) }) end
+    return rows
+end
+
+local function arg_rows()
+    local a = shore.arg
+    local last = a.i >= #a.fields
+    local line2
+    if a.ql then
+        local vals = table.clone(a.vals)
+        vals[a.i] = typed
+        line2 = ql_fill(a.ql, vals, ""):sub(1, 80)
+    end
+    return { { label = a.ql and (tr("Open") .. " " .. a.title) or (last and (a.verb or tr("Save")) or tr("Next")), line2 = line2,
+               glyph = a.ql and "external-link" or a.verb and "sparkles" or "device-floppy", hint = last and "" or "Tab", first = true, keep = not last, run = arg_next } }
+end
+
 local function shore_commands(q)
     local list = {
         { id = "mode:clips", name = tr(N("Clipboard history")), keywords = { "clipboard", "win v" }, glyph = "clipboard", run = function() go_mode("clips") end, keep = true },
@@ -1415,6 +1810,9 @@ local function shore_commands(q)
         { id = "sys:poweroff", name = tr(N("Shut down")), keywords = { "power off", "shut down" }, glyph = "power", danger = true, run = function() then_do(function() wm.machine("poweroff") end) end },
         { id = "sys:logout", name = tr(N("Sign out")), keywords = { "log out", "sign out" }, glyph = "logout", danger = true, run = function() then_do(wm.logout) end },
         { id = "sys:trash", name = tr(N("Empty the Trash")), keywords = { "trash", "bin" }, glyph = "trash", danger = true, run = function() run("sh", { "-c", "gio trash --empty" }, nil, { output = false }) end },
+        { id = "aic:new", name = tr(N("Create AI Command")), keywords = { "ai command", "prompt", "new command" }, glyph = "sparkles", keep = true, run = function() ac_form() end },
+        { id = "ql:new", name = tr(N("Create Quicklink")), keywords = { "quicklink", "bookmark", "new link" }, glyph = "link", keep = true, run = function() ql_form() end },
+        { id = "hist:clear", name = tr(N("Clear search history")), keywords = { "history", "forget", "searches" }, glyph = "history", danger = true, run = function() hist_clear() render(true) end },
         { id = "sys:settings", name = tr(N("LensShore's settings")), keywords = { "settings", "preferences" }, glyph = "settings", run = function() then_do(function() open.settings("lensshore") end) end },
     }
     local front
@@ -1471,6 +1869,11 @@ local function shore_rows()
                 local items = {}
                 if picked ~= "" then items[1] = { label = tr("Copy"), glyph = "copy", keys = "Ctrl+C", run = function() pcall(sys.call, "clipboard.set", picked) end } end
                 items[#items + 1] = { label = tr(N("Copy the whole message")), glyph = "copy", run = function() pcall(sys.call, "clipboard.set", m.text) end }
+                if not m.mine and #ac.list > 0 then
+                    local sub = {}
+                    for _, c in ipairs(ac.list) do sub[#sub + 1] = { label = c.name, glyph = c.icon and icons[c.icon] and c.icon or "sparkles", run = function() ac_start(c, "", picked ~= "" and picked or m.text) end } end
+                    items[#items + 1] = { label = tr("AI Commands"), glyph = "sparkles", sub = sub }
+                end
                 items[#items + 1] = { label = tr("Continue in LensAI"), glyph = "external-link", line = true,
                                       run = function() then_do(function() run("latte-app", { "aicenter", shore.chat }, function() end) end) end }
                 items[#items + 1] = { label = tr("New conversation"), glyph = "plus",
@@ -1479,7 +1882,15 @@ local function shore_rows()
             end
             if m.mine then rows[#rows + 1] = { label = m.text, glyph = "user", quiet = true, line = #rows > 0, hover_copy = m.text, right = menu }
             else
-                rows[#rows + 1] = { para = true, label = (m.text:gsub("```latte%s*\n.-```", ""):gsub("%s+$", "")), hover_copy = m.text, right = menu }
+                local shown_text = (m.text:gsub("```latte%s*\n.-```", ""):gsub("%s+$", ""))
+                rows[#rows + 1] = { para = true, label = shown_text, hover_copy = m.text, right = menu }
+                -- Enter on the last answer puts it into the app that was in front, as Raycast's Quick AI does (a paragraph is
+                -- not pressed, so the act is the row under it)
+                if i == #shore.talk and not fact.lens_busy then
+                    local copy = shore.outmode == "copy"
+                    rows[#rows + 1] = { label = copy and tr("Copy") or paste_into(), glyph = copy and "copy" or "clipboard", first = true, keys = "↵",
+                                        run = function() then_do(function() if copy then put_text(shown_text)(function() end) else paste(put_text(shown_text)) end end) end }
+                end
                 for j, s in ipairs(suggested(m.text)) do
                     local key = i .. ":" .. j
                     if s.skill then
@@ -1496,8 +1907,11 @@ local function shore_rows()
         section({ { at_top = true, pills = {
             { label = tr("New conversation"), glyph = "plus", keep = true, run = function() shore.chat, shore.talk, shore.view = "new", {}, "find" render(true) focus("lens_q") end },
             { label = tr("Conversations"), glyph = "history", keep = true, run = function() M.shore_chats() end },
-            { label = tr("Open in LensAI"), glyph = "external-link", off = shore.chat == "new", run = function() then_do(function() run("latte-app", { "aicenter", shore.chat }, function() end) end) end },
-        }, per = 3 } })
+            { label = tr("Open in LensAI"), glyph = "external-link", off = shore.chat == "new", run = continue_in_lensai },
+            { label = model_word(), glyph = "cpu", keep = true, skip = true, run = pick_model },
+        }, per = 4 } })
+    elseif shore.arg then
+        section(arg_rows())
     elseif alias_edit then
         section({ { label = (tr("An alias for {app}: type it and press Enter"):gsub("{app}", function() return alias_edit.local_name or alias_edit.name or "" end)),
                     icon = alias_edit.icon or "", glyph = "cursor-text", quiet = true } })
@@ -1522,10 +1936,16 @@ local function shore_rows()
         section({ { gap = 64, peg = true, right = function()
             ctx.open({ { label = tr(N("Add a widget…")), glyph = "plus", run = function() then_do(function() run("latte-app", { "widgets" }, nil, { output = false }) end) end } }, { width = 240 })
         end } })
-        local fav, most = picks(6, true)
-        local function tiles_of(list) local t = {} for i, a in ipairs(list) do t[i] = tile(a) end return { tiles = t, per = 6 } end
-        if #most > 0 then section({ { head = true, label = tr(N("MOST LAUNCHED")) }, tiles_of(most) }) end
-        if #fav > 0 then section({ { head = true, label = tr(N("FAVOURITES")) }, tiles_of(fav) }) end
+        local fav, most = picks(12, true)
+        while #most > 6 do most[#most] = nil end
+        local function tiles_of(list, from) local t = {} for i = from, math.min(from + 5, #list) do t[#t + 1] = tile(list[i]) end return { tiles = t, per = 6 } end
+        -- Raycast's Favorites: first on the empty line, in the order the user kept them (Move up / Move down in the Actions panel)
+        if #fav > 0 then
+            local rows = { { head = true, label = tr(N("FAVOURITES")) }, tiles_of(fav, 1) }
+            if #fav > 6 then rows[#rows + 1] = tiles_of(fav, 7) end
+            section(rows)
+        end
+        if #most > 0 then section({ { head = true, label = tr(N("MOST LAUNCHED")) }, tiles_of(most, 1) }) end
         if MODES[4] and #shore.chats > 0 then
             local rows = { { head = true, label = tr(N("CONVERSATIONS")) } }
             for i, c in ipairs(shore.chats) do if i <= 3 then rows[#rows + 1] = chat_row(c) end end
@@ -1535,7 +1955,7 @@ local function shore_rows()
         local q = typed
         -- first, chosen: the AI (Enter); with it off, the best of what was found is first instead
         if MODES[4] then
-            local p = provider()
+            local p = ai.providers[1] or provider()      -- LensAI's default answers (ask)
             local first = { { label = tr("Ask the AI") .. ": " .. q, glyph = "sparkles", hint = p and p.name or "", first = true, run = function() ask(q) text.lens_q, fact.lens_typed, typed = "", false, "" end } }
             local c = context_row()
             if c then first[#first + 1] = c end
@@ -1548,6 +1968,8 @@ local function shore_rows()
             section({ { label = tr(N("Open in the browser")) .. ": " .. q, glyph = "world", hint = tr("Web"), run = function() then_do(function() open.url(url) end) end } })
         end
         section(quick_rows(q))
+        section(ql_rows(q))
+        section(ac_rows(q))
         local result = calc(q)
         local shown_amount = result and number(result) or (worked and worked_for == q and worked)
         if shown_amount then section({ { label = shown_amount, glyph = "calculator", hint = tr("Calculator"), copy = shown_amount, run = function() pcall(sys.call, "clipboard.set", shown_amount) end } }) end
@@ -1604,8 +2026,9 @@ local function shore_rows()
         for j, r in ipairs(s) do if j == 1 and #out > 0 then r.line = true end out[#out + 1] = r end
     end
     -- by the line the strip of modes, and between it and the line the coffee stands (a wave row: glass above it, coffee below)
-    if top then table.insert(out, 1, strip()) table.insert(out, 1, { wave = true }) table.insert(out, 1, { gap = 8 })
-    else out[#out + 1] = strip() out[#out + 1] = { wave = true } out[#out + 1] = { gap = 8 } end
+    -- the footer (parts/rows.plm) has its room at the panel's foot: what Enter does, and the Actions panel (Ctrl+K)
+    if top then table.insert(out, 1, strip()) table.insert(out, 1, { wave = true }) table.insert(out, 1, { gap = 8 }) out[#out + 1] = { gap = actions.FOOT }
+    else out[#out + 1] = strip() out[#out + 1] = { wave = true } out[#out + 1] = { gap = 8 } out[#out + 1] = { gap = actions.FOOT } end
     return out
 end
 shore_render = function(keep, dir)
@@ -1616,11 +2039,13 @@ shore_render = function(keep, dir)
     text.lens_prev = list[at - 1] and tr(list[at - 1].label) or ""
     text.lens_next = list[at + 1] and tr(list[at + 1].label) or ""
     fact.lens_has_prev, fact.lens_has_next = list[at - 1] ~= nil, list[at + 1] ~= nil
+    text.lens_cur, text.g_lens_cur = list[at] and tr(list[at].label) or "", list[at] and icons[list[at].glyph] or ""
     card.open(shown, { lens = shore_top() and "top" or "bottom", id = "lens", width = WIDE / 1.2, keep = keep, first = shore_top() and true or "last",
-                       again = shore.view ~= "talk" and shore.view ~= "chats", fit = true, pane = 1, step = step_mode, dir = dir, height = SHORE_H,
+                       again = (shore.view ~= "talk" and shore.view ~= "chats") or shore.rechoose == true, fit = true, pane = 1, step = step_mode, dir = dir, height = SHORE_H,
                        combo = (shore.view == "emoji" and function(n, it) emoji.combo(n, it, emoji_env()) end)
                                or (shore.view == "clips" and function(n, it) if n == 10 and typed ~= "" then return end clipboard.combo(n, it, emoji_env()) end)
                                or (shore.view == "windows" and function(n) if n == 7 or n == 8 then shore.win_page = (shore.win_page or 1) + (n == 7 and 1 or -1) render(true) end end) or nil })
+    shore.rechoose = false
 end
 -- to a mode: the rows come in from its side; the windows and the clipboard are read anew each time
 go_mode = function(id)
@@ -1647,8 +2072,13 @@ go_mode = function(id)
     shore_render(false, to > from and 1 or -1)
     focus("lens_q")
 end
-function M.shore_open()
+function M.shore_open(force)
     if not fact.lens_shore then return end
+    -- compact mode: only the line; the panel comes out with the first letter (the arrow beside it brings it out whole)
+    if compact() and not force and typed == "" and shore.view == "find" and card.id() ~= "lens" then
+        after(60, function() focus("lens_q") end)
+        return
+    end
     if card.id() ~= "lens" then
         load_lists()
         read_context()
@@ -1660,6 +2090,7 @@ function M.shore_open()
         fact.lens_fresh = false
         shore_render(false)
     end
+    hist_flags()
     after(60, function() focus("lens_q") end)
 end
 function M.shore_toggle()
@@ -1686,14 +2117,20 @@ local function shore_start()
     local pause
     on("text:lens_q", function()
         fact.lens_typed = (text.lens_q or "") ~= ""
+        if recalled and text.lens_q ~= recalled then recalled, hist_at = nil, nil end      -- typed over: no longer walking the history
+        hist_flags()
         if pause then cancel(pause) end
         pause = after(140, function()
             pause = nil
             local t = (text.lens_q or ""):gsub("^%s+", ""):gsub("%s+$", "")
             if t == typed then return end
             typed, confirm, found = t, nil, nil
-            if t ~= "" and shore.view == "find" then look_for_files() look_for_settings() look_for_amount() end
-            if card.id() == "lens" then render(true) elseif t ~= "" then M.shore_open() end
+            if t ~= "" and shore.view == "find" and not shore.arg then look_for_files() look_for_settings() look_for_amount() end
+            if card.id() == "lens" then
+                -- compact mode: the panel goes back into the line when the line is empty again
+                if t == "" and compact() and shore.view == "find" and not shore.arg then card.close() hist_flags() after(80, function() focus("lens_q") end)
+                else render(true) end
+            elseif t ~= "" then M.shore_open() end
         end)
     end)
     -- the wheel over the panel turns the tape: a mouse's notch turns it once; a touchpad's fingers come in small pieces,
@@ -1753,8 +2190,14 @@ local function shore_start()
         if card.id() ~= "lens" and shore.view ~= "find" and shore.view ~= "talk" and shore.view ~= "chats" then shore.view = "find" end
         M.shore_open()
     end)
+    on("fact:card_open", hist_flags)
+    on("lens_hist", function(d) hist_step(d == 1) end)         -- 1 older (Up), 0 newer (Down)
+    on("lens_history_clear", hist_clear)                       -- `latte-say "emit lens_history_clear"` (Settings › LensShore)
+    on("lens_arg_back", arg_back)                               -- BackSpace in an empty argument field: the one before
+    on("lens_arg_cancel", function() if shore.arg then arg_end() end end)
     -- Enter in the AI's mode asks it; elsewhere it does the chosen row
     on("lens_enter", function()
+        if shore.arg then return arg_next() end
         if card.id() ~= "lens" then return end
         if alias_edit then
             local a, t = alias_edit, (text.lens_q or ""):gsub("^%s+", ""):gsub("%s+$", "")
@@ -1775,9 +2218,26 @@ local function shore_start()
         card.enter()
     end)
     on("lens_home", function()
-        if card.id() == "lens" then card.close() else shore.view = "find" M.shore_open() end
+        if card.id() == "lens" then card.close() else shore.view = "find" M.shore_open(true) end
     end)
+    -- Tab with words in the line: a question for the AI (Quick AI); from Search it begins a conversation of its own
+    on("lens_quick", function()
+        if shore.arg then return arg_next() end
+        local q = (text.lens_q or ""):gsub("^%s+", ""):gsub("%s+$", "")
+        if q == "" then return end
+        -- the name of a quicklink with an argument: Tab asks its argument in the line (Raycast)
+        local m = shore.view == "find" and ql_best(q)
+        if m then return ql_ask(m.q, m.rest) end
+        if not MODES[4] then return end
+        if mode_of(shore.view) ~= "ai" and shore.view ~= "find" then return emit("card_next", 1) end
+        if shore.view == "find" then shore.chat, shore.talk = "new", {} end
+        text.lens_q, fact.lens_typed, typed = "", false, ""
+        if card.id() ~= "lens" then M.shore_open() end
+        ask(q, true)
+    end)
+    on("lens_continue", continue_in_lensai)
     on("lens_send", function()
+        if shore.arg then return arg_next() end
         local q = (text.lens_q or ""):gsub("^%s+", ""):gsub("%s+$", "")
         if q == "" or not MODES[4] then return end
         text.lens_q, fact.lens_typed, typed = "", false, ""
@@ -1809,8 +2269,12 @@ local function shore_start()
         local on = not fact.lens_listening
         fact.lens_listening = on
         run("latte-ai", { "listen", on and "start" or "stop" }, function(out)
-            if on then return end
             local ok, r = pcall(json.decode, out or "")
+            if on then
+                -- the light shows only what really records
+                if not (ok and type(r) == "table" and r.ok) then fact.lens_listening = false end
+                return
+            end
             if ok and type(r) == "table" and (r.text or "") ~= "" then
                 text.lens_q = ((text.lens_q or "") ~= "" and (text.lens_q .. " ") or "") .. r.text
                 fact.lens_typed = true
@@ -1830,11 +2294,12 @@ function M.start(d)
     owner = d
     -- with LensShore the drop is not there: the capsule and its line are the launcher
     local function which()
-        d:present(not fact.lens_shore)
+        d:present(not fact.lens_shore and not fact.lens_cloud)
         shore_place()
         if card.id() == "lens" then card.close() end
     end
     on("fact:lens_shore", which)
+    on("fact:lens_cloud", which)
     shore_start()
     which()
     -- the words an amount is written in, in the user's language (lib/amount.luau)
@@ -1861,6 +2326,7 @@ function M.start(d)
         if type(saved.layout) == "table" then for k in pairs(kept.layout) do if saved.layout[k] ~= nil then kept.layout[k] = saved.layout[k] == true end end end
         kept.filter = type(saved.filter) == "string" and saved.filter or "all"
         kept.emoji = type(saved.emoji) == "table" and saved.emoji or {}
+        kept.history = type(saved.history) == "table" and saved.history or {}
         -- the openings that still count (lib/find.luau): one whose weight has worn down to nothing is forgotten
         kept.visits = {}
         for id, v in pairs(type(saved.visits) == "table" and saved.visits or {}) do
@@ -1873,6 +2339,10 @@ function M.start(d)
     load_chat()
     local got, h = pcall(sys.ask, "env", "HOME")
     home = got and type(h) == "string" and h or ""
+    ql_load()
+    ac_load()
+    hist_flags()
+    on("fact:lens_shore", hist_flags)
     for i, f in ipairs(FOLDERS) do
         run("xdg-user-dir", { f.key }, function(out)
             local path = (out or ""):gsub("%s+$", "")

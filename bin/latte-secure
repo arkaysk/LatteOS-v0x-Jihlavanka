@@ -1,0 +1,7 @@
+#!/bin/sh
+# latte-secure: Ctrl+Alt+Del. Opens the secure attention screen (goo/secure.plm, a scene of its own: it works when the
+# Goo scene has crashed and in the SAFE session); pressed again, it closes it.
+share="${LATTE_SHARE:-/usr/share/latteos}"
+scene="$share/goo/secure.plm"
+pkill -u "$(id -u)" -f -- "--scene $scene" && exit 0
+exec pleamar --scene "$scene" --no-hud

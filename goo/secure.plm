@@ -1,0 +1,116 @@
+// The secure attention screen (ROADMAP 6.37): Ctrl+Alt+Del. Its own scene in its own process (bin/latte-secure), not a
+// drop of Goo, so it works when the Goo scene has crashed and in the SAFE session. The screen darkens; on the left a
+// list (Lock · Switch user · Sign out · Change password · Task manager) and Cancel, bottom right network ·
+// accessibility · power. Colours are the windows' cup (lib/cup.luau). Arrows + Enter + Esc work, the mouse first.
+language 0.4
+import "lang/sk.plm"
+
+scene Secure {
+    surface {
+        size: full, full
+        anchor: top
+        margin: 0
+        level: overlay
+        reserve: -1
+        rate: 60
+        keyboard: exclusive
+        captures: hidden
+    }
+    permissions {
+        run: "cat", "sh", "setsid", "whoami"
+        services: "env"
+    }
+
+    let W = screen.width
+    let H = screen.height
+    repeat k in 0..10 { fact c.$k.r = 0.5 }
+    repeat k in 0..10 { fact c.$k.g = 0.5 }
+    repeat k in 0..10 { fact c.$k.b = 0.5 }
+    let ground = rgb(c.0.r, c.0.g, c.0.b)
+    let rowc = rgb(c.2.r, c.2.g, c.2.b)
+    let raised = rgb(c.3.r, c.3.g, c.3.b)
+    let cream = rgb(c.5.r, c.5.g, c.5.b)
+    let dim = rgb(c.6.r, c.6.g, c.6.b)
+    let faint = rgb(c.7.r, c.7.g, c.7.b)
+    let gold = rgb(c.8.r, c.8.g, c.8.b)
+    let coffee = rgb(c.9.r, c.9.g, c.9.b)
+    fact light = false
+
+    fact sel = 0                               // the row the arrows are on: 0..4, 5 is Cancel
+    fact armed = -1                            // what was asked once and waits for a second press: 2 sign out, 15 restart, 16 shut down
+    fact power = false                         // the power menu is open
+    event act ->                            // n: 0 lock, 1 switch user, 2 sign out, 3 password, 4 task manager, 5 cancel,
+                                               //    10 network, 11 accessibility, 12 restart, 13 shut down,
+    event done ->
+
+    prop fade = 0 ~300ms
+    follow fade = 1
+
+    on key Escape { quit }
+    on key Down { sel = if(sel >= 5, 0, if(sel == 0, 2, sel + 1)); armed = -1 }   // row 1 (Switch user) is disabled: skipped
+    on key Up { sel = if(sel <= 0, 5, if(sel == 2, 0, sel - 1)); armed = -1 }
+    on key Return { emit act(sel) }
+    on done { quit }
+
+    box { from: 0, 0; size: W, H; color: #000000; opacity: 62% * fade }
+    zone box guard { from: 0, 0; size: W, H; agent: hidden }
+    on press guard { power = false }
+
+    text "Security options" { at: W * 0.14, H / 2 - 190; anchor: left center; size: 30; weight: 700; color: #f3ebdd; opacity: fade }
+    text "{who}" { at: W * 0.14, H / 2 - 156; anchor: left center; size: 14; color: #b8a491; opacity: fade }
+    text who = ""
+    text lbl_out = "Sign out"                  // the logic says "Press again to sign out" while it waits
+    text lbl_sleep = "Sleep"
+    text lbl_restart = "Restart"
+    text lbl_off = "Shut down"
+
+    // ── the list ─────────────────────────────────────────────────────────────────────────────────────────────
+    repeat i in 0..5 {
+        let y = H / 2 - 100 + i * 62
+        box { at: W * 0.14 + 200, y; size: 400, 52; corner: 12; color: if(sel == i and i != 1, raised, rowc); opacity: 0.92 * fade }
+        box { at: W * 0.14 + 4, y; size: 4, 28; corner: 2; color: gold; show: sel == i and i != 1 }
+        zone box row$i { at: W * 0.14 + 200, y; size: 400, 52; cursor: pointer; role: button; active: i != 1; label: pick(i, "Lock", "Switch user", "Sign out", "Change password", "Task manager") }
+        on enter row$i { sel = i }
+        on press row$i { emit act(i) }
+    }
+    text "Lock" { at: W * 0.14 + 24, H / 2 - 100; anchor: left center; size: 17; color: cream; opacity: fade }
+    text "Switch user" { at: W * 0.14 + 24, H / 2 - 47; anchor: left center; size: 17; color: faint; opacity: fade }
+    text "Not available here: sign out to choose another user" { at: W * 0.14 + 24, H / 2 - 29; anchor: left center; size: 11; color: faint; opacity: fade }
+    text "{lbl_out}" { at: W * 0.14 + 24, H / 2 + 24; anchor: left center; size: 17; color: if(armed == 2, gold, cream); opacity: fade }
+    text "Change password" { at: W * 0.14 + 24, H / 2 + 86; anchor: left center; size: 17; color: cream; opacity: fade }
+    text "Task manager" { at: W * 0.14 + 24, H / 2 + 148; anchor: left center; size: 17; color: cream; opacity: fade }
+
+    box { at: W * 0.14 + 200, H / 2 + 230; size: 400, 48; corner: 12; color: if(sel == 5, gold, coffee); opacity: fade }
+    zone box cancel { at: W * 0.14 + 200, H / 2 + 230; size: 400, 48; cursor: pointer; role: button; label: "Cancel" }
+    on enter cancel { sel = 5 }
+    on press cancel { quit }
+    text "Cancel" { at: W * 0.14 + 200, H / 2 + 230; anchor: center; size: 16; weight: 600; color: if(light, #fffaf1, #17110d); opacity: fade }
+
+    // ── bottom right: network · accessibility · power ───────────────────────────────────────────────────────
+    box { at: W - 396, H - 56; size: 132, 44; corner: 22; color: rowc; opacity: 0.92 * fade }
+    box { at: W - 246, H - 56; size: 132, 44; corner: 22; color: rowc; opacity: 0.92 * fade }
+    box { at: W - 96, H - 56; size: 132, 44; corner: 22; color: if(power, gold, rowc); opacity: 0.92 * fade }
+    zone box tool0 { at: W - 396, H - 56; size: 132, 44; cursor: pointer; role: button; label: "Network" }
+    zone box tool1 { at: W - 246, H - 56; size: 132, 44; cursor: pointer; role: button; label: "Accessibility" }
+    zone box tool2 { at: W - 96, H - 56; size: 132, 44; cursor: pointer; role: button; label: "Power" }
+    on press tool0 { emit act(10) }
+    on press tool1 { emit act(11) }
+    on press tool2 { power = not power }
+    text "Network" { at: W - 396, H - 56; anchor: center; size: 14; color: cream; opacity: fade }
+    text "Accessibility" { at: W - 246, H - 56; anchor: center; size: 14; color: cream; opacity: fade }
+    text "Power" { at: W - 96, H - 56; anchor: center; size: 14; color: if(power, if(light, #fffaf1, #17110d), cream); opacity: fade }
+
+    // the power menu opens upwards from its button; the zones come after the guard so they win
+    group {
+        show: power
+        box { at: W - 130, H - 168; size: 200, 138; corner: 16; color: rowc }
+        repeat j in 0..3 {
+            box { at: W - 130, H - 214 + j * 44; size: 184, 38; corner: 10; color: raised; opacity: 0.6 }
+            zone box pw$j { at: W - 130, H - 214 + j * 44; size: 184, 38; cursor: pointer; role: button; active: power; label: pick(j, "Sleep", "Restart", "Shut down") }
+            on press pw$j { emit act(14 + j) }
+        }
+        text "{lbl_sleep}" { at: W - 218, H - 214; anchor: left center; size: 14; color: cream }
+        text "{lbl_restart}" { at: W - 218, H - 170; anchor: left center; size: 14; color: if(armed == 15, gold, cream) }
+        text "{lbl_off}" { at: W - 218, H - 126; anchor: left center; size: 14; color: if(armed == 16, gold, cream) }
+    }
+}

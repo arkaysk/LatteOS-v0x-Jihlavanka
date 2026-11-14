@@ -84,6 +84,15 @@ FloatingWindow {
         onFileChanged: reload()
         onLoaded: win.readMode()
     }
+    // what shows the windows (Settings › Drops › Window management, ROADMAP 6.41): with "none" there is nowhere to minimise to
+    property bool canMinimize: true
+    FileView {
+        id: gooSettings
+        path: (Quickshell.env("XDG_DATA_HOME") || (Quickshell.env("HOME") + "/.local/share")) + "/pleamar/goo/settings.json"
+        printErrors: false; watchChanges: true
+        onFileChanged: reload()
+        onLoaded: { try { const t = JSON.parse(gooSettings.text()); win.canMinimize = !((t.hidden || []).indexOf("bargoo") >= 0 && t.taskbar === "none") } catch (e) { win.canMinimize = true } }
+    }
     onScreenChanged: readMode()
     function readMode() {
         const lines = modeFile.text().split("\n"), own = lines.slice(1).map(l => l.trim().split(/\s+/)).find(w => w.length === 2 && win.screen && w[0] === win.screen.name)
@@ -179,7 +188,7 @@ FloatingWindow {
                 Row { spacing: 0; anchors.verticalCenter: parent.verticalCenter
                     HeadButton { icon: win.net === "off" ? "world-off" : "world"; visible: win.net !== ""; lit: Theme.raised; opacity: win.net === "off" ? 1 : 0.7
                                  onPressed: { net.command = ["latte-net", "toggle", String(Quickshell.processId)]; net.running = true } }
-                    HeadButton { icon: "minus"; visible: win.mode === "floating"; onPressed: win.ask("minimize_active") }
+                    HeadButton { icon: "minus"; visible: win.mode === "floating" && win.canMinimize; onPressed: win.ask("minimize_active") }
                     HeadButton { icon: win.maxed ? "copy" : "rectangle"; visible: win.mode === "floating"; onPressed: win.ask("maximize_active") }
                     HeadButton { icon: "x"; lit: Theme.red; onPressed: Qt.quit() } } }
             // the line under the header: coffee, running out towards the end

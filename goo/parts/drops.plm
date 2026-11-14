@@ -33,7 +33,10 @@ part Drops {
     // TrayShore's plate (parts/shore.plm), known here because the outline goes round it: how long it is, 0 none
     fact shore_w = 0
     let SHORE_H = 46
-    let shore.x0 = W - shore_w
+    // where it lies along the bottom edge, its left end, px: −1 in the corner as it was (6.36: carried with Alt)
+    fact tray_at = -1
+    let shore.x0 = if(tray_at < 0, W - shore_w, tray_at)
+    let shore.x1 = shore.x0 + shore_w
     fact look.outline = 1.25                   // the outline's width, px (gooengine.json › look)
     let LEVEL = 6                              // the surface lies this far inside each edge of the screen (goo-phys: `level`)
 
@@ -184,6 +187,52 @@ part Drops {
     fact lens_a = 0                            // …and from where to where along it, px; the drops keep off
     fact lens_b = 0
     fact lens_shore = false                    // the launcher is LensShore, a line on the shore, instead of the drop LensGoo (6B.12)
+    // DockShore, pleamar-wm's dock (wm/session.plm draws it, under this layer), tells where its plate lies: its edge (0 bottom,
+    // 1 left, 3 right, −1 none), its length, centred on the edge, and how far in it reaches. lib/engine.luau makes it a wall.
+    fact dock_edge = -1
+    fact dock_len = 0
+    fact dock_deep = 0
+    event dock_moved ->
+    fact dock_at = -1                          // …its middle along the edge, px; −1 the middle (6.36: Goo carries it, tells pleamar-wm)
+    let dock.c = if(dock_at < 0, if(dock_edge == 0, W / 2, H / 2), dock_at)
+    fact alt_held = 0                          // Alt is held (pleamar-wm says, keys.alt): the Shore plates can be carried
+    fact dock_grow = 0                         // …how much longer it grows with the mouse on it (its icons magnified)
+    prop dock_l = 0 ~spring(320, 12)           // its length as the dock's own spring carries it (wm/session.plm `pop`)
+    follow dock_l = if(dock_edge >= 0, dock_len, 0)
+    // the mouse on it, worked out here as the dock does (`dk.on`, `dk.near`), so nothing is told on every move
+    let dock.across = if(dock_edge == 0, H - cursor.y, if(dock_edge == 1, cursor.x, W - cursor.x))
+    let dock.along = if(dock_edge == 0, cursor.x, cursor.y) - dock.c
+    prop dock_near = 0 ~180ms
+    follow dock_near = if(dock_edge >= 0 and dock.across <= dock_deep + 6 and abs(dock.along) <= dock_l / 2 + dock_grow / 2 + 10, 1, 0)
+    let dock.span = dock_l + dock_grow * dock_near
+    // LensCloud (parts/cloud.plm): the third launcher, a plate in the bottom left corner, there only when it is the one chosen
+    fact lens_cloud = false
+    fact cloud_at = -1                         // its left end carried along the edge (6.36); −1 in the corner
+    let cloud_w = if(lens_cloud, 168, 0)
+    let cloud.x0 = if(cloud_at < 0, 0, cloud_at)
+    let cloud.x1 = cloud.x0 + cloud_w
+    fact wall.1.x0 = 0                         // its wall for goo-phys (lib/cloud.luau sets it)
+    fact wall.1.y0 = 0
+    fact wall.1.x1 = 0
+    fact wall.1.y1 = 0
+    // a Shore plate carried along the edge (parts/shoregrab.plm, where it is told how)
+    fact sh.k = -1                             // the plate carried: 0 TrayShore, 1 LensShore, 2 DockShore, −1 none
+    fact sh.a0 = 0                             // its left end when it was taken
+    fact sh.len = 0                            // its length
+    fact sh.raw = 0                            // its left end where the hand has it, before the snap
+    fact sh.jl = -1                            // where the plate it was joined to on its left ended, when taken (−1 none)
+    fact sh.jr = -1                            // …and where the one on its right began: pulled apart, a thread of goo (parts/plates.plm)
+    // a Shore plate carried away from one it was joined to (parts/shoregrab.plm): how far apart, for the thread between them
+    let thr.a = if(sh.k == 0, shore.x0, if(sh.k == 1, lens_a, if(sh.k == 3, cloud.x0, dock.c - dock_l / 2)))
+    let thr.gl = thr.a - sh.jl
+    let thr.gr = sh.jr - thr.a - sh.len
+    let thr.y = if(sh.k == 1 and lens_edge == 2, 23, H - 23)
+    // the walls goo-phys reads by name (crates/latte-goo): the level stands still under them, waves come back off
+    // them, drops bounce; 0 is DockShore's plate
+    fact wall.0.x0 = 0
+    fact wall.0.y0 = 0
+    fact wall.0.x1 = 0
+    fact wall.0.y1 = 0
     fact idle = 0                              // 0 awake, 1 after a minute, 2 after three, 3 after six
     fact day = 1                               // 0 night … 1 the sun is up
     fact golden = 0                            // 0…1 the sun is low: dawn and dusk

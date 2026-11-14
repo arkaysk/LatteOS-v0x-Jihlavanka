@@ -594,7 +594,7 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
   otvorí priečinok), **Web** (adresa alebo vyhľadávač, vlastný sa volí klikom) a **Príkaz** (terminál ostane otvorený,
   nebezpečný príkaz chce druhý Enter); pravý klik rýchly zoznam. Chýba režim AI, prevody jednotiek, stránky
   Nastavení a akcie aplikácie na pravý klik.
-- **PowerGoo:** karta — účet, Odhlásiť, batéria, profil napájania, Uspať · Reštartovať · Vypnúť (s otvorenými oknami
+- **PowerGoo** (od 14. 11. sa dá skryť ako každá kvapka — cesty von sú aj za Ctrl+Alt+Del, 6.37; vždy ostáva jeden spúšťač, 6.38)**:** karta — účet, Odhlásiť, batéria, profil napájania, Uspať · Reštartovať · Vypnúť (s otvorenými oknami
   sa najprv spýta); guľky batérie; **pás výkonu** (pravý klik): CPU · RAM · GPU · VRAM z `latte-stats`, farba podľa
   záťaže a teploty, podrobnosti v bubline, susedné goo odtlačí a po vtiahnutí vráti, zapnutý ostane aj po prihlásení.
   Oproti v0.3 v bubline nie je takt, najnáročnejší proces a swap, a klik na bunku nič neotvára (Monitor ešte nie je).

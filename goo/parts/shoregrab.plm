@@ -1,0 +1,80 @@
+// Carrying the Shore plates along the bottom edge (ROADMAP 6.36): TrayShore, LensShore and DockShore, with Alt held
+// (pleamar-wm says so: `alt_held`); without Alt a press on a plate does what it always did. A plate's end that comes
+// within 24 px of another plate's end, or of the screen's end, snaps to it: they touch, and being one body
+// (parts/plates.plm, each with `blend`) the gap fills and one outline goes round both. Let go, the logic keeps where
+// it lies (lib/engine.luau `shore_placed`); DockShore's icons are pleamar-wm's, lifted off while it is carried.
+// ponytail: along the edge each one is on (LensShore on the top edge, DockShore on a side too); from one edge to another, not yet.
+part ShoreGrab {
+    event shore_placed ->                      // let go: which one
+    event shore_lift ->                        // DockShore taken: pleamar-wm lifts its icons off
+
+    // where the others lie (absent: far away, nothing snaps to them); LensShore on the top edge has none there
+    let gs.top = (sh.k == 1 and lens_edge == 2) or (sh.k == 2 and dock_edge != 0)   // alone on its edge: the top, or a side
+    let gs.L = if(sh.k == 2 and dock_edge != 0, H, W)                            // how long that edge is
+    let gs.far = 100000
+    let gs.ta = if(shore_w > 0 and sh.k != 0 and not gs.top, shore.x0, gs.far)
+    let gs.tb = if(shore_w > 0 and sh.k != 0 and not gs.top, shore.x1, 0 - gs.far)
+    let gs.la = if(lens_shore and lens_edge == 0 and lens_b > lens_a and sh.k != 1, lens_a, gs.far)
+    let gs.lb = if(lens_shore and lens_edge == 0 and lens_b > lens_a and sh.k != 1, lens_b, 0 - gs.far)
+    let gs.da = if(dock_edge == 0 and dock_l > 0 and sh.k != 2 and not gs.top, dock.c - dock_l / 2, gs.far)
+    let gs.ca = if(cloud_w > 0 and sh.k != 3 and not gs.top, cloud.x0, gs.far)
+    let gs.cb = if(cloud_w > 0 and sh.k != 3 and not gs.top, cloud.x1, 0 - gs.far)
+    let gs.db = if(dock_edge == 0 and dock_l > 0 and sh.k != 2 and not gs.top, dock.c + dock_l / 2, 0 - gs.far)
+    // how far its left end would move to snap: to the screen's ends, or end to end against another plate
+    let gs.d0 = 0 - sh.raw
+    let gs.d1 = gs.L - sh.raw - sh.len
+    let gs.d2 = gs.tb - sh.raw
+    let gs.d3 = gs.ta - sh.raw - sh.len
+    let gs.d4 = gs.lb - sh.raw
+    let gs.d5 = gs.la - sh.raw - sh.len
+    let gs.d6 = gs.db - sh.raw
+    let gs.d7 = gs.da - sh.raw - sh.len
+    let gs.d8 = gs.cb - sh.raw
+    let gs.d9 = gs.ca - sh.raw - sh.len
+    // the nearest within reach
+    let gs.b0 = if(abs(gs.d0) < 24, gs.d0, gs.far)
+    let gs.b1 = if(abs(gs.d1) < min(24, abs(gs.b0)), gs.d1, gs.b0)
+    let gs.b2 = if(abs(gs.d2) < min(24, abs(gs.b1)), gs.d2, gs.b1)
+    let gs.b3 = if(abs(gs.d3) < min(24, abs(gs.b2)), gs.d3, gs.b2)
+    let gs.b4 = if(abs(gs.d4) < min(24, abs(gs.b3)), gs.d4, gs.b3)
+    let gs.b5 = if(abs(gs.d5) < min(24, abs(gs.b4)), gs.d5, gs.b4)
+    let gs.b6 = if(abs(gs.d6) < min(24, abs(gs.b5)), gs.d6, gs.b5)
+    let gs.b7 = if(abs(gs.d7) < min(24, abs(gs.b6)), gs.d7, gs.b6)
+    let gs.b8 = if(abs(gs.d8) < min(24, abs(gs.b7)), gs.d8, gs.b7)
+    let gs.b9 = if(abs(gs.d9) < min(24, abs(gs.b8)), gs.d9, gs.b8)
+    // and it does not go through another: it stops against the neighbours it had on each side when taken
+    let gs.lo = max(max(max(0, if(gs.tb <= sh.a0 + 1, gs.tb, 0)), max(if(gs.lb <= sh.a0 + 1, gs.lb, 0), if(gs.db <= sh.a0 + 1, gs.db, 0))), if(gs.cb <= sh.a0 + 1, gs.cb, 0))
+    let gs.hi = min(min(min(gs.L, if(gs.ta >= sh.a0 + sh.len - 1, gs.ta, W)), min(if(gs.la >= sh.a0 + sh.len - 1, gs.la, W), if(gs.da >= sh.a0 + sh.len - 1, gs.da, W))), if(gs.ca >= sh.a0 + sh.len - 1, gs.ca, W)) - sh.len
+    let gs.snap = clamp(sh.raw + if(abs(gs.b9) < 24, gs.b9, 0), gs.lo, max(gs.lo, gs.hi))
+
+    // over the plates (declared after them: the press is theirs only while Alt is held)
+    zone box grab_tray { from: shore.x0, H - SHORE_H; size: shore_w, SHORE_H; cursor: if(sh.k == 0, grabbing, grab); active: alt_held > 0.5 and shore_w > 0 and (sh.k < 0 or sh.k == 0); label: "Move TrayShore" }
+    zone box grab_lens { from: lens_a, if(lens_edge == 2, 0, H - 46); size: lens_b - lens_a, 46; cursor: if(sh.k == 1, grabbing, grab); active: alt_held > 0.5 and lens_shore and lens_edge >= 0 and lens_b > lens_a and not (card_lens and card.p > 0.02) and (sh.k < 0 or sh.k == 1); label: "Move LensShore" }
+    zone box grab_dock { at: dock.c, H - dock_deep / 2; size: dock_l, dock_deep; cursor: if(sh.k == 2, grabbing, grab); active: alt_held > 0.5 and dock_edge == 0 and dock_l > 0 and (sh.k < 0 or sh.k == 2); label: "Move DockShore" }
+
+    zone box grab_dock_side { at: if(dock_edge == 1, dock_deep / 2, W - dock_deep / 2), dock.c; size: dock_deep, dock_l; cursor: if(sh.k == 2, grabbing, grab); active: alt_held > 0.5 and (dock_edge == 1 or dock_edge == 3) and dock_l > 0 and (sh.k < 0 or sh.k == 2); label: "Move DockShore" }
+    zone box grab_cloud { from: cloud.x0, H - SHORE_H; size: cloud_w, SHORE_H; cursor: if(sh.k == 3, grabbing, grab); active: alt_held > 0.5 and cloud_w > 0 and not cloud_grid and (sh.k < 0 or sh.k == 3); label: "Move LensCloud" }
+
+    on press grab_tray { sh.jl = if(abs(gs.tb - (shore.x0)) < 1, gs.tb, if(abs(gs.lb - (shore.x0)) < 1, gs.lb, if(abs(gs.db - (shore.x0)) < 1, gs.db, -1))); sh.jr = if(abs(gs.ta - (shore.x0 + shore_w)) < 1, gs.ta, if(abs(gs.la - (shore.x0 + shore_w)) < 1, gs.la, if(abs(gs.da - (shore.x0 + shore_w)) < 1, gs.da, -1))); sh.k = 0; sh.a0 = shore.x0; sh.len = shore_w; sh.raw = shore.x0 }
+    on press grab_lens { sh.jl = if(abs(gs.tb - (lens_a)) < 1, gs.tb, if(abs(gs.lb - (lens_a)) < 1, gs.lb, if(abs(gs.db - (lens_a)) < 1, gs.db, -1))); sh.jr = if(abs(gs.ta - (lens_a + lens_b - lens_a)) < 1, gs.ta, if(abs(gs.la - (lens_a + lens_b - lens_a)) < 1, gs.la, if(abs(gs.da - (lens_a + lens_b - lens_a)) < 1, gs.da, -1))); sh.k = 1; sh.a0 = lens_a; sh.len = lens_b - lens_a; sh.raw = lens_a }
+    on press grab_dock { sh.jl = if(abs(gs.tb - (dock.c - dock_l / 2)) < 1, gs.tb, if(abs(gs.lb - (dock.c - dock_l / 2)) < 1, gs.lb, if(abs(gs.db - (dock.c - dock_l / 2)) < 1, gs.db, -1))); sh.jr = if(abs(gs.ta - (dock.c - dock_l / 2 + dock_l)) < 1, gs.ta, if(abs(gs.la - (dock.c - dock_l / 2 + dock_l)) < 1, gs.la, if(abs(gs.da - (dock.c - dock_l / 2 + dock_l)) < 1, gs.da, -1))); sh.k = 2; sh.a0 = dock.c - dock_l / 2; sh.len = dock_l; sh.raw = dock.c - dock_l / 2; emit shore_lift }
+    on press grab_cloud { sh.jl = if(abs(gs.tb - (cloud.x0)) < 1, gs.tb, if(abs(gs.lb - (cloud.x0)) < 1, gs.lb, if(abs(gs.db - (cloud.x0)) < 1, gs.db, -1))); sh.jr = if(abs(gs.ta - (cloud.x0 + cloud_w)) < 1, gs.ta, if(abs(gs.la - (cloud.x0 + cloud_w)) < 1, gs.la, if(abs(gs.da - (cloud.x0 + cloud_w)) < 1, gs.da, -1))); sh.k = 3; sh.a0 = cloud.x0; sh.len = cloud_w; sh.raw = cloud.x0 }
+    on drag grab_cloud { sh.raw = clamp(sh.a0 + drag.dx, 0, W - sh.len) }
+    on press grab_dock_side { sh.jl = -1; sh.jr = -1; sh.k = 2; sh.a0 = dock.c - dock_l / 2; sh.len = dock_l; sh.raw = dock.c - dock_l / 2; emit shore_lift }
+    on drag grab_dock_side { sh.raw = clamp(sh.a0 + drag.dy, 0, H - sh.len) }
+    on release grab_dock_side { sh.k = -1; emit shore_placed(2) }
+    on drag grab_tray { sh.raw = clamp(sh.a0 + drag.dx, 0, W - sh.len) }
+    on drag grab_lens { sh.raw = clamp(sh.a0 + drag.dx, 0, W - sh.len) }
+    on drag grab_dock { sh.raw = clamp(sh.a0 + drag.dx, 0, W - sh.len) }
+    // the plate follows the hand, snapped: what is on it, its wall and its outline go with it
+    on change gs.snap while sh.k == 0 { tray_at = gs.snap }
+    on change gs.snap while sh.k == 1 { lens_a = gs.snap; lens_b = gs.snap + sh.len }
+    on change gs.snap while sh.k == 2 { dock_at = gs.snap + sh.len / 2 }
+    on change gs.snap while sh.k == 3 { cloud_at = gs.snap }
+    on release grab_tray { sh.k = -1; emit shore_placed(0) }
+    on release grab_lens { sh.k = -1; emit shore_placed(1) }
+    on release grab_dock { sh.k = -1; emit shore_placed(2) }
+    on release grab_cloud { sh.k = -1; emit shore_placed(3) }
+    // Alt let go while carrying: it is put down where it is
+    on change alt_held while alt_held < 0.5 and sh.k >= 0 { emit shore_placed(sh.k); sh.k = -1 }
+}

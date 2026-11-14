@@ -26,6 +26,12 @@ LatteOS:2.x xxx
 
 # Poradie práce
 
+> **Stav po nočnej relácii 14. 11. (Claude, pokračovať odtiaľto):** hotové a nasadené, **necommitnuté** (commit iba na pokyn):
+> 6.36 posúvanie a spájanie Shore s Alt (Alt platí až po **novom prihlásení** — nová binárka pleamar-wm so záplatou `alt-held`),
+> 6.37 Ctrl+Alt+Del menu (skratka po prihlásení; pozri poznámku o `~/.config/pleamar/keys.conf`), 6.38, 6.39 (Hravé · Profi · Minimal),
+> 6.41 stránka Kvapky (+ voľba Správa úloh platí), 6H.09, 6N LensCloud (tretí spúšťač, **overiť meno s používateľom**), 6B.47 krok 1
+> (päta + panel akcií). Pri každej úlohe nižšie je riadok „14. 11. (noc)“ s tým, čo chýba. DockShore je hmota Goo (1D.25).
+
 **Vetva `v0.5-pleamarwm-jihlavanka` (od 31. 10. 2026, predvolená od 2. 11.):** prechod z Hyprlandu na pleamar-wm (1D) je na latte-lab hotový — Hyprland odinštalovaný, „LatteOS GOO“ beží na pleamar-wm (2. 11.). Z 1D ostáva 1D.41 (nezopakovalo sa) a overenie na hlavnom PC s dvoma monitormi (1D.01, 1D.07); 1D.14 a 1D.42 hotové, ikony na ploche v Goo (7B.05) hotové 4. 11. Potom LensAI (10B, súpis `docs/lensai/POZIADAVKY.md`) a YOL (7C) podľa používateľa, až potom sa pokračuje v poradí nižšie.
 
 Určené 22. 10. 2026 (nahrádza bývalé „Teraz“ z 12. 10.). Ide sa zhora, neskáče sa; nový nápad na koniec svojej kategórie, nie sem.
@@ -208,7 +214,8 @@ kto komu dal úlohu (`term pair`, `by.N` z 1D.17). Pohľad pre Canvas (8A.12), A
 **1D.23** [ ] **Zrkadlenie obrazoviek v pleamar-wm** (neskôr): Nastavenia › Obrazovky › Duplikovať (ako Win+P) a virtuálny monitor vedľa skutočného ukazuje jeho obraz — na Hyprlande `mirror` v `system/hypr/hyprland.lua`; pleamar-wm to zatiaľ nevie (overiť v novej verzii, inak návrh autorovi).
 **1D.24** [ ] **Pôvodné možnosti pleamar, pleamar-wm a Marey v Nastaveniach** (neskôr, používateľ 2. 11.): čo ponúka ich ovládacie centrum a Marea (rozloženia, dok, sklo, efekty, voda…), ponúknuť aj v Nastaveniach LatteOS, oblečené do nášho štýlu (farby z témy, preklady, myš prvá). — Návrh prijatý (2. 11.): jedno miesto, Nastavenia LatteOS — rozloženia v Okná, dok ako „Panel úloh“ pod Okná, rozmazanie v Prostredie › Sklo, dážď/sneh/voda v Prostredie › Efekty (s 9A.12), skratky v Klávesnici, agent a vzdialený prístup v Súkromí/AI; Nastavenia zapisujú priamo do `session.conf` a `keys.conf` pleamar-wm, ovládacie centrum (Super+I, `pleamar-wm control`) ostáva ako pôvodné. **11. 11.:** odkaz naň je v Nastavenia › Systém („Ovládacie centrum pleamar-wm“; riadok s poľom `run` v `apps/settings/pages.json`, nasadené).
 **1D.25** [~] **Shore pleamar-wm ako variant BarGoo** (neskôr): dok pleamar-wm (*shore*) prerobiť na kvapku enginu Goo a ponúknuť ako druhý vzhľad BarGoo. Pozor na meno: nie LensShore ani trayShore. Používateľ 3. 11. pochválil na shore: náhľad okien po prejdení
-- [~] 13. 11. **DockShore, rozhodnutie používateľa:** zostáva dok pleamar-wm (`wm/session.plm`, `dk.*`) tak, ako je (funkcie, ikony, náhľady, ponuka, poloha dole/vľavo/vpravo, na stred okraja); **bez ikier** a **doska sa nezasúva ani nevysúva** (§9.4 sa na ňu nevzťahuje); mení sa iba vzhľad: bližšie k okraju, zanorená do neho ako ostatné Shore, hmota kávy a tenký obrys ako TrayShore. Hotové 13. 11.: doska z kávy (Goo ju hlási cez `latte.coffee(voda, mlieko)` → `fact dkc.*`), obrys, zaoblenie 16, 40 px za okrajom, bez krku a tieňa. Ostáva: ponuka a náhľady v tom istom vzhľade, voľba BarGoo · DockShore · vypnutá v Nastaveniach (2.), stena pre Goo.
+- [~] 13. 11. **DockShore, rozhodnutie používateľa:** zostáva dok pleamar-wm (`wm/session.plm`, `dk.*`) tak, ako je (funkcie, ikony, náhľady, ponuka, poloha dole/vľavo/vpravo, na stred okraja); **bez ikier** a **doska sa nezasúva ani nevysúva** (§9.4 sa na ňu nevzťahuje); mení sa iba vzhľad: bližšie k okraju, zanorená do neho ako ostatné Shore, hmota kávy a tenký obrys ako TrayShore. Hotové 13. 11.: doska z kávy (Goo ju hlási cez `latte.coffee(voda, mlieko)` → `fact dkc.*`), obrys, zaoblenie 16, 40 px za okrajom, bez krku a tieňa. Ostáva: ponuka a náhľady v tom istom vzhľade, voľba BarGoo · DockShore · vypnutá v Nastaveniach (2.).
+- [~] 13. 11. večer **DockShore v enginu Goo** (používateľ: „nie je prepojený s hladinou, kvapka je pokojne pred ním“): doska je hmota Goo ako TrayShore (`goo/parts/plates.plm`: výplň, svetlo, jeden obrys s hladinou), pre jadro stena `wall.0` (hladina pod ňou stojí, vlny sa odrážajú, kvapky odskočia) a úsek okraja, ktorému sa kvapky vyhnú (`E.block("dockshore")`). Dok kreslí ikony a ponuku nad Goo na vlastných plochách `dockshore.N`, `dockmenu.N` (`level: overlay`), doska vo WM iba na ďalších monitoroch. Scéna WM hlási okraj, dĺžku (rastie s ikonami, programami a minimalizovanými oknami), hrúbku a zväčšenie pod myšou (`latte-say` → `dock_*`, `dock_moved`; po štarte Goo `latte.dock.tell()`). Hrúbka 46 px ako LensShore. Nad doskou kreslí kurzor pleamar-wm (systémová šípka), nie kvapka Goo (`latte-goo` `over_dock`). Chýba: Goo vie iba o doku na prvom monitore; dĺžka dosky dobieha ikony o jedno `latte-say`; presúvanie a spájanie Shore je 6.36.
 myšou, prepínanie medzi nimi a ponuku pravého kliku — prebrať aj do BarGoo. (Oprava v ten deň: všetky aplikácie
 LatteOS mali `app_id` `org.quickshell`, shore ich zlúčil pod ikonu LensAI; teraz `//@ pragma AppId latteos-NAME`.)
 **1D.26** [ ] **Kvapka Marey ako zapínateľná kvapka Goo** (neskôr; ďalší vývoj je v 6M): Mareu z marea-plm upraviť, aby sedela s enginom Goo (tvar, voda, farby z témy), a ponúknuť ju ako kvapku, ktorá sa zapína v Nastaveniach › Kvapky. — Pridať medzi kvapky Goo v Nastaveniach › Kvapky (2. 11.). — Stav 3. 11.: Marea **nie je nainštalovaná** — je to samostatný program (repozitár `marea-plm`, príkaz `marea start` z autostartu pleamar-wm), v LatteOS chýba (preto v logu `marea.sock: No such file`); scéna `wm/session.plm` s ňou počíta (ostrov, kam idú odložené okná, dážď z jej ponuky). Najprv stiahnuť `marea-plm`, potom ju zaradiť medzi kvapky. — Hotové 4. 11. (iba prvá časť): `marea-plm` d0cad02 pripnutý v `patches/build-pleamar.sh`, celý strom v `/usr/share/latteos/marea-plm/` (FILES, bez zmien, BSD-3 v `TRETIE-STRANY.md`); Nastavenia › Kvapky › Marea má prepínač „Ukázať na ploche“ (`bin/latte-marea on|off`, voľba v `~/.config/latteos/marea`, relácia ju pri štarte vráti). Nasadené a spustené na latte-lab. Ostáva: Marea nie je kvapka enginu Goo (tvar, voda, farby z témy), je to samostatný program hore; chat a Deriva sa z `/usr` nepostavia (npm/cargo v priečinku, ktorý nie je zapisovateľný); jej oznámenia/hľadanie sa môžu biť s Goo.
@@ -700,6 +707,19 @@ LensShore, MultiShore (6N) — sa dá **posúvať po okraji obrazovky rovnako ak
 obrazovky** (roh a koniec okraja priťahujú ako magnet). Poloha, okraj a spojenia sa ukladajú. Overiť: Alt+ťahanie
 nesmie kolidovať s ťahaním okna v pleamar-wm (dnes v `system/pleamarwm/keys.conf` nie je); kurzor pri držanom Alt nad
 doskou ukáže otvorenú ruku (6.32). Predpoklad: LensShore kreslená v scéne Goo, nie iba okno QML (§21.2 [overiť]).
+- [~] 14. 11. (noc) **hotové a nasadené, dolný okraj:** TrayShore, LensShore a DockShore sa ťahajú pri držanom Alt (`goo/parts/shoregrab.plm`,
+  zóny nad doskami aktívne iba pri `alt_held`; kurzor ruka `grab`/`grabbing`). Magnet 24 px ku koncom ostatných dosiek a ku koncom obrazovky;
+  zlepené dosky sú jedna hmota s jedným obrysom (všetky v tele Goo, `plates.plm`, `blend`); doska neprejde cez suseda (zastaví sa o neho).
+  Na konci okraja doska siaha za okraj (rovné rohy), inde má oba rohy oblé. Uloženie v `settings.json` Goo: `tray_at` (ľavý koniec, −1 roh),
+  `lens_x`, `dock_at` (stred, −1 stred); po pustení `shore_placed` (engine.luau). Stena jadra a vyhradený úsek pre kvapky idú s doskou
+  (`tray_at` v `latte-goo`, `E.block("trayshore")`); panel TrayShore stojí na doske, kde je. DockShore: Goo nesie jeho dosku, pleamar-wm počas
+  ťahania zdvihne ikony (`latte.dock.lift(1)`) a položí ich na `latte.dock.at(x)` (`dk.a0`). Alt hlási pleamar-wm záplatou
+  `patches/pleamar-wm-alt-held.patch` (`keys.alt` → `latte-say fact alt_held`); **binárka pleamar-wm nainštalovaná, platí až po novom prihlásení**
+  (do odhlásenia overené simulovaným `pleamar-wm --say wm "fact keys.alt 1"` a skutočnou myšou: posun, magnet na koniec doku, zrážka s LensShore,
+  dok a jeho ikony). Doplnené v noci: LensShore aj na hornom okraji; odtiahnutím zlepenej dosky sa medzi koncami natiahne vlákno hmoty
+  (`plates.plm`, `sh.jl`/`sh.jr`), stenčuje sa a pri 60 px praskne (overené myšou); tooltipy TrayShore pri Alt nevyskakujú; DockShore na ľavom
+  či pravom okraji sa ťahá pozdĺž výšky (`grab_dock_side`, overená iba doska a fakty, nie ťah myšou); LensCloud sa ťahá a lepí tiež. Chýba:
+  prenos dosky na iný okraj; MultiShore/LensCloud (6N); skúška skutočného Alt po novom prihlásení.
 
 **6.37** [ ] **Ctrl+Alt+Del vyvolá menu** (používateľ 13. 11., predloha: snímka obrazovky Windowsu po Ctrl+Alt+Del): celá
 obrazovka stmavne/rozmaže sa a v strede vľavo je zoznam **Zamknúť · Prepnúť používateľa · Odhlásiť sa · Zmeniť heslo ·
@@ -709,12 +729,22 @@ Správca úloh (LatteMonitor)** a tlačidlo **Zrušiť** (aj Esc); vpravo dole i
 `latte-app monitor` → zmeniť na toto menu. Musí fungovať aj v SAFE latteOS (5) a keď scéna Goo spadla (samostatný
 proces, nie kvapka). Pozn.: vo VM Ctrl+Alt+Del zachytí hostiteľ (VMware: Ctrl+Alt+Insert) — testovať tak, alebo cez
 `pleamar --say`.
+- [~] 14. 11. (noc, pomocník) **hotové a nasadené:** samostatná scéna `goo/secure.plm` + `goo/secure.luau` (vlastný proces, nezávislý od Goo;
+  prekrytie cez celú obrazovku, stmavenie 62 %, `keyboard: exclusive`, `captures: hidden`), farby šálky (`lib/cup.luau`); vľavo Zamknúť ·
+  Prepnúť používateľa · Odhlásiť sa · Zmeniť heslo · Správca úloh · Zrušiť, vpravo dole Sieť · Prístupnosť · Napájanie (Uspať/Reštartovať/Vypnúť);
+  šípky, Enter, Esc, myš; odhlásiť/reštart/vypnúť chcú druhý klik (4 s). Prepínač `bin/latte-secure`; `keys.conf`: `bind Ctrl+Alt+Delete launch latte-secure`.
+  Overené: Zrušiť, Správca úloh, prepínanie, druhý klik (iba Reštartovať, nespustené). **Prepnúť používateľa je zošednuté** — greetd nevie rýchle
+  prepínanie, iba cez odhlásenie. Chýba: rozmazanie pozadia (stmavenie namiesto neho); **na latte-lab je `~/.config/pleamar/keys.conf` iba
+  `defaults`, nie odkaz na `/usr/share/latteos/pleamarwm/keys.conf`** (latte-session ho vytvorí len keď chýba) — overiť po prihlásení, či skratka platí;
+  stránky Sieť a Prístupnosť sú v Nastaveniach „planned“; skúška v SAFE a pri spadnutom Goo.
 
 **6.38** [ ] **Každé Goo sa dá skryť, okrem jedného spúšťača** (používateľ 13. 11.): vďaka 6.37 sa dá skryť **každá**
 kvapka vrátane **PowerGoo** (Nastavenia › Kvapky, zoznam `hidden` v `settings.json` Goo). Jediné pravidlo: **aspoň jeden
 spúšťač (runner) musí bežať** — **LensGoo, LensShore alebo MultiShore** (6N). Nastavenia nedovolia vypnúť posledný
 (prepínač zošedne s vysvetlením „Aspoň jeden spúšťač musí ostať“). Doplniť do pravidiel v LATTEOS-GOO.md a
 `docs/goo/ROZHODNUTIA.md`.
+- [x] 14. 11. (noc): PowerGoo už nie je `core` → v Nastaveniach › Kvapky › Kvapky na ploche sa dá skryť; poznámka tam to vysvetľuje.
+  Spúšťač je voľba „jedna z“ hore na stránke (6.41), vypnúť všetky sa nedá. Zapísané v LATTEOS-GOO a ROZHODNUTIA. Chýba: LensCloud (6N).
 
 **6.39** [ ] **Tri vzhľady plochy: Hravé · Profi · Minimal** (používateľ 13. 11.; rozširuje 6A.05 a
 `docs/goo/GOOENGINE-2.md` §21 „Goo · Shore“): Nastavenia › Kvapky › Vzhľad plochy —
@@ -723,6 +753,9 @@ MultiShore**; **Minimal** = iba **DockShore + MultiShore**. Predvoľba iba nasta
 `lens`, `hidden`), človek si ju potom môže ďalej upraviť (ukáže sa „Vlastné“). Platí 6.38 (spúšťač) a „nič
 neduplikovať na obrazovke“ — keď beží MultiShore s hodinami, ClockGoo sa predvolene skryje. V Minimal ostáva
 prepínanie okien cez DockShore, Alt+Tab a Glance (podmienka zo 6A.05).
+- [~] 14. 11. (noc): Nastavenia › Kvapky má navrchu „Vzhľad plochy“: **Hravé** (LensGoo, BarGoo, nič skryté) · **Profi** (LensShore, DockShore,
+  všetky kvapky skryté) · **Minimal** (LensCloud, DockShore, skryté kvapky aj TrayShore; doplnené v tú istú noc). Ručná zmena = „Vlastné“ (`apps/settings.qml`
+  `lookPart`). Chýba: Minimal (6N), skrytie ClockGoo pri hodinách na MultiShore, `liveliness` 0,5 vo Profi (GOOENGINE-2 §21.1), náhľady 6.40.
 
 **6.40** [ ] **Nastavenia › Kvapky s vizuálnym náhľadom a tutoriálom** (používateľ 13. 11.): výber vzhľadu plochy
 (Hravé · Profi · Minimal, 6.39) a jednotlivých Goo/Shore ukazuje **živý náhľad** rovnako ako výber režimu plochy/okien —
@@ -730,6 +763,32 @@ malá scéna pleamaru (`goo/preview.plm`, metóda z 9A: skutočné kreslenie z t
 každej voľbe **tutoriál**: krátka interaktívna prehliadka (čo je ktorá kvapka/doska, Alt+ťahanie a spájanie Shore 6.36,
 Ctrl+Alt+Del 6.37, kde je spúšťač 6.38), spustí sa pri prvej zmene vzhľadu a dá sa pustiť znova z Nastavení; preskočiť
 jedným klikom. Súvisí s prvým spustením (2A).
+- [~] 14. 11. (noc, pomocník) **hotové a nasadené:** každá karta volieb na stránke Kvapky (Vzhľad plochy, Spúšťač, Správa úloh) má **živý
+  náhľad** kreslený v QML ako náhľad režimu okien (`apps/settings/DropPreview.qml`: kvapky a hladina, dosky Shore, LensCloud s mriežkou,
+  okná s □ ✕ pri „Nič“; farby z `Theme`, pri `lively` = false stoja). **Tutoriál** 4 krokov (kvapky a dosky, Alt-ťahanie a spájanie,
+  Ctrl+Alt+Del, spúšťač ostáva) sa ukáže pri prvej zmene vzhľadu (`~/.config/latteos/drops-tour`), „Ukázať prehliadku“ ho pustí znova,
+  Preskočiť jedným klikom. Chýba: náhľady sú na svetlej sklenenej téme bledé; náhľad nie je scéna pleamaru z tých istých faktov
+  (`goo/preview.plm`), ale kreslený QML; prehliadka nemá krok podľa zvoleného vzhľadu.
+
+**6.41** [ ] **Nastavenia › Prostredie › Kvapky (Goo): hlavná stránka s voľbami, podstránky po častiach** (používateľ 14. 11.):
+hlavná stránka Kvapiek drží všeobecné nastavenia a navrchu dve voľby **jedna z** (buď/alebo), každá s **náhľadmi ako pri
+režime obrazovky** (karty s obrázkom, vybraná zvýraznená):
+1. **Spúšťač:** **LensGoo · LensShore · LensCloud** — tieto tri sú na hlavnej stránke prvé pod sebou. Všetky tri majú
+   **identický textový riadok** (jedno pole, 6B.44). *LensCloud* = nové meno tretieho spúšťača; **[overiť]** či je to MultiShore (6N)
+   s prekrytím a mriežkou, potom 6N premenovať.
+2. **Správa úloh (lišta okien):** **BarGoo · DockShore · nič** — pri „nič“ okná **nemajú tlačidlo Minimalizovať** (nie je kam).
+Pod nimi zoznam ostatných: **PowerGoo, QueenGoo** a ďalšie. **Každá záložka/podstránka** má **obrázok daného Goo**, jeho
+**technický opis** a **rozbor funkcií**; priamo v podmenu, kde sa nastavujú jeho parametre, je aj **infotainment** (čo to robí,
+tipy, krátka ukážka). Súvisí so 6.38 (aspoň jeden spúšťač), 6.39 (vzhľady), 6.40 (živý náhľad, tutoriál), 1D.25 (voľba lišty).
+- [~] 14. 11. (noc, pomocník Sonnet) **hotové a nasadené v `apps/settings.qml`:** hore voľba Spúšťač (LensGoo · LensShore · LensCloud — LensCloud
+  zošednutý „čoskoro“; zapisuje `lens` ako doterajšia stránka) a Správa úloh (BarGoo · DockShore · Nič; `settings.json` Goo kľúč `taskbar`
+  `bargoo|dockshore|none` + `hidden` s `bargoo`); pod nimi doterajšie časti. Podstránky kvapiek majú blok „O kvapke“ (opis, čo robí, dobré
+  vedieť) z LATTEOS-GOO §4. Obrázky kvapiek (14. 11., pomocník): výrezy zo živej plochy v `apps/settings/drops/<stránka>.png` pre LensShore, PowerGoo, QueenGoo,
+  MediaGoo, ClockGoo; BarGoo, QuickGoo, CamGoo neboli na ploche — ostáva zástupné miesto (doplniť výrez, keď budú); obrázky závisia od tapety;
+  Voľba platí (14. 11., Claude): Goo povie pleamar-wm `latte.taskbar(0|1|2)` → `dock.off`, `win.nomin`; BarGoo vypne dok, Nič vypne dok aj
+  Minimalizovať v titulku okien pleamar-wm a v hlavičke aplikácií LatteOS (`AppWindow.qml` číta `settings.json` Goo); chýbajúci `taskbar` pri skrytom
+  BarGoo = DockShore (doterajší stav). Dok sa ďalej ukazuje iba pri voľných oknách (pleamar-wm), klávesová skratka minimalizovania ostáva;
+  stará časť „Spúšťač“ na stránke LensGoo je teraz duplicitná; živé náhľady (6.40) namiesto kariet.
 
 ### 6A. [~] BarGoo
 Zdroje: `goo/lib/bar.luau`, `goo/side.plm`; LATTEOS-GOO §4.1
@@ -779,6 +838,46 @@ a jej požiadavku pošle udalosťou `latte.window_menu`; vlastné okná LatteOS 
 naživo (Nautilus, Nastavenia). V `tests/screen.sh` sa to overiť nedá: aplikácie tam nedostanú polohu falošnej myši.
 
 **6A.10** [x] Ikry iba v plávajúcom režime aj v Glance (používateľ 27. 10.): `berries_out()` = plávajúce alebo myš na hlave.
+
+**6.42** [ ] **DockShore rastie na obe strany a vchádza do LensShore** (používateľ 14. 11.): `dock_at` je stred doku, takže
+pri pribudnutí aplikácií sa dok rozťahuje na obe strany a prekryje susednú dosku (na snímke cez LensShore aj jej mikrofón),
+pri ubudnutí vznikne medzera. Dok sa má ukotviť o koniec, ktorý je zlepený so susedom (ako `tray_at` ľavým koncom), a rásť
+iba od neho; susedovi nesmie vojsť do plochy (zastaví sa o neho ako pri ťahaní).
+**6.43** [ ] **Kvapka medzi dvoma Shore, ktoré sa spoja, zmizne** (používateľ 14. 11., PowerGoo): keď sa dve dosky pritiahnu
+k sebe, kvapka medzi nimi nemá miesto a stratí sa. Má **vyskočiť** von a odskočiť k najbližšiemu voľnému úseku okraja (`E.block`).
+Spresnené 14. 11.: platí pre **každé** Goo pritlačené medzi iné Goo alebo Shore. Buď zmení polohu, alebo sa stlačí do štvorcového
+tvaru a pritisne sa medzi Shore (Shore je ťažšie než Goo, ustúpi kvapka). **Funkcia Goo musí ostať dostupná a nič sa nesmie prekrývať**
+— pri prekrytí sa nedá kliknúť, rukou nemožno cieliť na pár pixelov.
+**6.44** [ ] **Po prepnutí na Hravé ostane po LensShore štvorec** (používateľ 14. 11., snímka): LensGoo a BarGoo sa ukážu, ale doska
+LensShore (alebo jej obrys/plocha) zostane na okraji. Skontrolovať `show:` dosiek v `plates.plm`/`shoregrab.plm` pri zmene `lens`.
+**6.45** [ ] **Rozloženia ako upraviteľné profily** (používateľ 14. 11.): „Vzhľad plochy“ hore ostáva; Hravé · Profi · Minimal sú
+**profily**, ktoré sa dajú upraviť a uložiť, a pribudne „Uložiť ako nový profil“ (spúšťač, správa úloh, skryté kvapky, polohy Shore).
+**6.46** [ ] **Karta Goo (napr. LensShore) je nečitateľná: cez ňu presvitajú rozmazané ikony plochy, keď je otvorená a kurzor dôjde
+k okraju** (používateľ 14. 11., „už sme to raz riešili“): na snímke vidno pod textom rozmazané ikony DualBrew, Chrome a LensAI. Sklo
+pleamaru je od 5. 11. vypnuté iba dočasným súborom `~/.config/systemd/user/latte-goo.service.d/test-bez-skla.conf`
+(`PLEAMAR_NO_LENS=1`, nie je v repe ani vo `FILES`), takže **5. 11. nebolo opravené, len obídené**. Skúška 14. 11. (ydotool, kurzor
+v strede a pri štyroch okrajoch, LensShore otvorená): nezopakovalo sa, karta bola čistá. Chýba: presný postup od používateľa, skutočná
+oprava v repe a zmazanie dočasného súboru (najprv `latte-upstream -v`, pleamar 0.7.10 → 0.7.27).
+- 14. 11. **postup od používateľa: sú to duchovia kurzora** (ako 1D.48): s otvorenou kartou (napr. LensGoo) rýchle krúženie myšou
+  tesne pri ktoromkoľvek okraji (skúšané vpravo, vľavo aj hore) nechá na obrazovke obrysy kurzora; ostanú, kým sa neklikne — klik kartu
+  zavrie a duchovia zmiznú. Súvisí s `patches/issues/pleamar-shader-group-stale-picture.txt`.
+**6.47b** [ ] 14. 11. (noc, nedokončené) **Príkazy AI v LensShore** (Raycast AI Commands, `~/.config/latteos/ai-commands.json`,
+`lens.luau` §AI Commands, Nastavenia › LensShore „Príkazy AI“): kód v repe, nasadený 14. 11. ráno bez overenia; zdvojené preklady
+„Run“ a „Summarize“ zmazané. Chýba: overiť vytvorenie, úpravu a spustenie príkazu, zápis v 6B.47.
+**6.47** [ ] **Obrázok MediaGoo v Nastaveniach ukazuje Mareu** (používateľ 14. 11.): výrez `apps/settings/drops/` zachytil dashboard
+Marea od k4ditano, nie MediaGoo. Nahradiť výrezom skutočnej kvapky.
+**6.48** [~] 14. 11. **Mikrofón LensShore svieti červeno, hoci nič nenahráva** (snímka používateľa): `lens_listening` sa zapol bez
+bežiaceho `pw-record`. Opravené: `latte-ai listen start` overí, že nahrávanie beží, a ak nie, Goo svetlo zhasne. Chýba: nasadiť
+a overiť; keď `pw-record` skončí neskôr sám, svetlo ostane.
+
+**6.49** [ ] **Dock pleamar-wm: integrácia do vzhľadu LatteOS je voľba, prvá v jeho nastaveniach** (používateľ 14. 11.): dok je
+program pleamar-wm. V Nastaveniach je pri ňom ako prvá možnosť „Integrovať dok do vzhľadu LatteOS“ (DockShore: doska z hmoty Goo,
+zanorená do okraja, magnet a ťahanie s Alt). Kým to nie je potvrdené, dok vyzerá a správa sa ako pôvodný dok pleamar-wm.
+
+**6.50** [ ] **TrayShore chýba v ponuke Goo** (používateľ 14. 11.): v Nastaveniach › Kvapky nie je TrayShore medzi časťami Goo
+(podstránka s opisom a nastaveniami ako ostatné).
+**6.51** [ ] **Nočná relácia skončila bez zápisu, minuli sa tokeny** (používateľ 14. 11.): pokyn bol skončiť skôr a zapísať stav. Pri
+dlhej samostatnej práci zapisovať stav do ROADMAP priebežne po každom kroku, nie až na konci (rozrobené Príkazy AI, 6.47b).
 
 ### 6B. [~] LensGoo
 Zdroje: LATTEOS-GOO §4.3
@@ -1304,7 +1403,39 @@ s výberom modelov a vlastné AI príkazy, neobmedzená história schránky, syn
 s placeholdermi, správa okien, obchod rozšírení. Výstup na schválenie, potom úlohy do 6B.29/6B.30.
 - [x] 13. 11. tabuľka hotová: `docs/lensshore/RAYCAST-PRO.md` (Free, Pro/Pro+/Max ↔ LatteOS, návrh poradia 1–7). [ ] Čaká na schválenie poradia.
 
-**6B.46** [ ] **LensShore sa nedá posunúť samostatne** (súvisí so 6.36) (používateľ 13. 11.): v Nastaveniach je dole/vľavo/vpravo, ale posunúť sa dá len spolu s ostatnými; treba posunúť iba LensShore (poloha pozdĺž okraja).
+**6B.46** [x] **LensShore sa nedá posunúť samostatne** (súvisí so 6.36) (používateľ 13. 11.): v Nastaveniach je dole/vľavo/vpravo, ale posunúť sa dá len spolu s ostatnými; treba posunúť iba LensShore (poloha pozdĺž okraja).
+- [x] 14. 11.: vyriešené 6.36 — LensShore sa ťahá sama pozdĺž okraja s Alt (`shoregrab.plm`), poloha `lens_x`.
+
+**6B.47** [ ] **Raycast v LensShore: AI z LensAI, vzhľad a funkcie najnovšej verzie, nastavenia v LensShore** (používateľ 14. 11.):
+Raycast funkcie používajú **predvolenú AI z LensAI** (žiadny vlastný poskytovateľ). Cieľ je **imitovať čo najviac vzhľad
+aj funkcie najnovšej verzie Raycastu** (overiť aktuálnu verziu a changelog v deň práce; tabuľka `docs/lensshore/RAYCAST-PRO.md`, 6B.45).
+**Nastavenia Raycastu** patria do Nastavenia › … › **LensShore** ako jej položky (nie samostatná stránka).
+- [x] 14. 11. (noc, pomocník) prieskum: `docs/lensshore/RAYCAST-NAJNOVSI.md` — Raycast 2.12 (13. 11. 2026, Windows; macOS overiť), vzhľad, funkcie
+  v2.5–2.12, tabuľka Raycast ↔ LensShore (má/čiast./chýba, ako postaviť), AI iba cez `latte-ai` predvolený model, návrh častí
+  Nastavenia › LensShore (Všeobecné, Hľadanie, Klávesy, AI, Úryvky, Rýchle odkazy, Okná, Poznámky, Diktovanie, Rozšírenia, Pokročilé, O LensShore)
+  a poradie 12 krokov (najprv päta s hlavnou akciou a panel akcií Ctrl+K, potom celé Quick AI). Rozmery vzhľadu overiť na snímke.
+- [~] 14. 11. (noc, pomocník) krok 1 hotový a nasadený: päta LensShore ako Raycast (vľavo režim, vpravo hlavná akcia ↵ a „Akcie Ctrl+K“),
+  **panel akcií** (Ctrl+K a klik na „Akcie“): plávajúci zoznam s poľom „Hľadať akcie…“, šípky, Enter, Esc zatvorí iba panel, nebezpečné akcie
+  červené (`danger`), podponuky so Späť; `goo/lib/actions.luau` (obaľuje `ctx.open`), `lensline.plm`, `rows.plm` (`ap_open`). Overené klávesmi
+  cez `pleamar --say`. Chýba: nadpisy sekcií v paneli (riadky akcií nemajú `section`), panel pri LensShore hore, Enter/klik na riadok panela neoverené.
+- [~] 14. 11. (noc, pomocník + Claude) krok 2 **Quick AI** hotový a nasadený: Tab so slovami v riadku pošle otázku, odpoveď tečie v paneli,
+  Enter na odpovedi ju vloží do predošlej aplikácie („Vložiť do …“, inak Kopírovať), ďalšia otázka pokračuje v rozhovore, Ctrl+J ho otvorí
+  v LensAI, v päte výber modelu len pre jednu otázku. **Každá otázka LensShore (aj Enter a riadok „Opýtať sa AI“) ide na predvolený model
+  LensAI** (`latte-ai` prvý v zozname; overené „ok“ od Opus). Chýba: Ctrl+R znova, Shift+Ctrl+R iným modelom, Ctrl+N, diktovanie, tlačidlá
+  Kopírovať pri kóde, „Ukázať viac“, kontext `@`; menu modelov bez mena poskytovateľa; skutočné vloženie do okna overené iba schránkou.
+- [~] 14. 11. (noc, pomocníci) kroky 3–4 hotové a nasadené: **kompaktný režim** (`lens_compact`: iba pole, panel sa otvorí prvým písmenom
+  a zavrie pri prázdnom poli), **Obľúbené** ako prvá časť na prázdnom poli s Posunúť hore/dole, **história hľadania** (↑/↓ na prázdnom poli,
+  `lens_history`, 50 položiek v `lens.json`, príkaz a udalosť `lens_history_clear`), **Quicklinks** (`~/.config/latteos/quicklinks.json`,
+  `{argument}`/`{query}`/`{Meno}`, až 3 argumenty ako čip v riadku, Tab/Enter ďalší, Backspace späť, náhľad odkazu; Vytvoriť/Upraviť/Zmazať;
+  pri prvom spustení tri vzorové po slovensky). **Nastavenia › LensShore**: Kompaktné okno, Pamätať hľadania + Vymazať históriu, AI (info:
+  predvolený model LensAI, Otvoriť LensAI), Quicklinks (otvoriť súbor), Klávesy (prehľad). Neoverené myšou: Posunúť obľúbenú, Vytvoriť/
+  Upraviť/Zmazať Quicklink, Enter v argumentoch, spustenie Quicklinku. Riziko: Tab so slovom, ktoré začína meno Quicklinku, nespustí Quick AI
+  („web“). (Skúšobné rozhovory z noci zmazané.)
+- [ ] Krok 5 **úryvky — rozhodnuté 14. 11.: pleamar-wm** (záplata v kompozitore, `snippets.json`). Pôvodne: espanso (GPL-3, samostatný program — licenciu LatteOS nemení) nie je v repozitároch
+  Fedory; pre Wayland sa kompiluje zo zdrojov s `--features wayland` a potrebuje prístup k `/dev/uinput` (setcap). Druhá cesta: rozbaľovanie
+  úryvkov priamo v pleamar-wm (kompozitor vidí všetky klávesy — záplata ako `alt-held`, nahradí spúšť textom cez virtuálnu klávesnicu),
+  bez cudzieho programu. Návrh Clauda: pleamar-wm (jeden proces, nič navyše), úryvky v `snippets.json` s placeholdermi ako Quicklinks.
+- [ ] Ďalej: krok 7 poznámky a kalendár pod poľom (`RAYCAST-NAJNOVSI.md` §5).
 
 ### 6C. [~] PowerGoo
 Zdroje: LATTEOS-GOO §4.2, `crates/latte-stats`
@@ -1464,7 +1595,9 @@ Ak sa osvedčí: jeden vzhľad hladiny pre prihlásenie, plochu aj okná.
 **6H.08** [x] (11. 11.: popis skratky Win+A, preklad a LATTEOS-GOO; v kóde ostávajú vnútorné mená `shore` — súbory a udalosti, používateľ ich nevidí; „shore“ na stránke Dok je dok pleamar-wm, nie TrayShore) Premenovať Pobrežie → TrayShore v kóde, prekladoch, Nastaveniach a dokumentoch (LATTEOS-GOO §4.8, §8).
 
 
-**6H.09** [ ] **TrayShore: okno sa otvára naplocho, nie na výšku; je nalepené na pravý okraj** (používateľ 13. 11.): panel TrayShore sa vždy otvorí široký a nízky, chce sa aj na výšku (portrét); a TrayShore sedí pri pravom okraji bez možnosti posunu.
+**6H.09** [x] **TrayShore: okno sa otvára naplocho, nie na výšku; je nalepené na pravý okraj** (používateľ 13. 11.): panel TrayShore sa vždy otvorí široký a nízky, chce sa aj na výšku (portrét); a TrayShore sedí pri pravom okraji bez možnosti posunu.
+- [x] 14. 11.: druhá časť vyriešená 6.36 — TrayShore sa ťahá s Alt, panel stojí na doske, kde je.
+- [x] 14. 11. (noc): panel na výšku — jeden stĺpec 360 px (pod ovládačmi Práve hrá a Schránka), `shore.luau` `open_main`; nasadené.
 
 ### 6I. ChatGoo
 Doplnok pre Beeper (voliteľná kvapka).
@@ -1536,6 +1669,18 @@ Shore (nie Goo) na spodnom okraji, **protikus TrayShore** (TrayShore na jednej s
 **tretí spúšťač** popri LensGoo a LensShore (6.38). Patrí do vzhľadov Profi aj Minimal (6.39); posúva a spája sa ako
 ostatné Shore (6.36). Používateľ 13. 11.; predloha zoznamu aplikácií: snímka zásuvky aplikácií v telefóne (záložky
 kategórií hore, mriežka ikon s názvami, vyhľadávanie dole).
+- [~] 14. 11. (noc) **LensCloud = MultiShore** (meno z 6.41; **[overiť s používateľom]**, že LensCloud je tento tretí spúšťač). Hotové a nasadené:
+  `goo/parts/cloud.plm`, `goo/lib/cloud.luau`; voľba `lens` = `"cloud"` v Nastaveniach › Kvapky (Spúšťač, aj vzhľad **Minimal** = LensCloud +
+  DockShore + všetko skryté). Doska v ľavom dolnom rohu (hmota Goo, stena `wall.1`, úsek pre kvapky, ťahá sa s Alt a lepí ako ostatné Shore);
+  na nej čas 24 h a dátum, pravý klik na čas = karta času ClockGoo, na dátum = upozornenia a kalendár ClockGoo (`clock_time`/`clock_notes`).
+  Klik alebo kláves Win (`lens_toggle` → `cloud_grid`) = aplikácie cez celú obrazovku: záložky Všetko + druhy z `.desktop` (Internet, Kancelária,
+  Médiá, Grafika, Hry, Vývoj, Systém), mriežka 8×4, koliesko listuje strany, pole dole filtruje hneď, Enter spustí prvú, inak pošle otázku do LensAI
+  (`latte-app lensai`), Esc/klik mimo zavrie. Overené bez myši (facts, `lens_toggle`, snímky). Chýba: 6N.03 celé hľadanie LensShore v poli
+  (jeden mozog — dnes iba aplikácie), bublina z 6.06 pri spustení; karty času a kalendára rastú z dosky bez ucha (`cloud_time`/`cloud_calendar`
+  v `clockgoo.luau`, `from_plate`; overené, aj so skrytým ClockGoo funguje, lebo vlastník sa nedvíha),
+  6N.04 stav na doske (napr. minútka). Doplnené: šípky hore/dole po riadkoch (aj na ďalšiu stranu), Enter spustí vybranú (zlatý rám),
+  príboj hladiny pri otvorení a zatvorení (`E.ripple` pri konci dosky); vľavo/vpravo si berie pole, kým má kurzor (pleamar dáva klávesy poľu). TrayShore sa dá skryť (`trayshore` v `hidden`, `shore.luau`), vzhľad **Minimal**
+  ho skryje (LensCloud + DockShore + nič iné); overené.
 
 **6N.01** [ ] **Hodiny na doske**: MultiShore ukazuje čas a dátum. **Pravý klik na čas** → tá istá ponuka času ako karta
 ClockGoo (6D.03: Prehľad · Časovače a budíky · Počasie) — **iba bez ucha** (karta rastie z dosky, nie z kvapky).
@@ -1554,6 +1699,17 @@ tri podoby**, nie tretia implementácia. Ak je AI zapnutá, Enter na neznámy te
 
 **6N.04** [ ] **Vzhľad a hladina**: farba Goo ako ostatné Shore (6B.12 rozhodnutie 27. 10.), doska je stena pre hladinu
 a kvapky (§21.1), príboj ako 6H.06. Stav na doske bez otvorenia (6.26) — napr. bežiaca minútka namiesto času (6D.13).
+
+
+**6N.05** [ ] **Premenovať LensCloud na AppCloud; je „hlúpy“ a smie bežať popri LensShore** (používateľ 14. 11.): je to iba
+zobrazovač aplikácií ako v smartfóne — bez riadku na otázku, bez AI, bez kalkulačky; pole iba filtruje aplikácie
+(Enter nesmie ísť do LensAI). Preto nie „Lens“. Nie je jedným z troch spúšťačov, ale samostatná voľba, ktorá smie byť
+zapnutá naraz s LensShore alebo LensGoo (ako Launchpad + Spotlight v macOS, mriežka a hľadanie v GNOME). **6N.03 sa ruší**.
+Premenovať aj v kóde (`cloud` ostáva), v Nastaveniach, v sk.plm a v dokumentácii.
+**6N.06** [ ] **Mriežka AppCloud naozaj cez celú obrazovku** (používateľ 14. 11.): na latte-lab (1920 × 1080) sa otvára
+iba ako okno ~960 × 600 v strede (overené snímkou 14. 11.); veľkosť z `W`, `H`, mriežka sa prispôsobí (stĺpce a riadky podľa rozlíšenia).
+**6N.07** [ ] **Doska AppCloud: čas a dátum vedľa seba, nie nad sebou; ikonka na doske nemá zmysel** (používateľ 14. 11.):
+ikonku zrušiť alebo dať jej jasnú funkciu (otvorí mriežku?). Karty času a dátumu z dosky **úplne bez ucha** — dnes majú malé ucho.
 
 ---
 
@@ -2268,6 +2424,10 @@ a obchod s písmami z 9.18) — oboje určuje, ako vyzerá text a symboly. Čak�
 rozmazané — v pleamar-wm 0.6.9 je za panelom ostré (1D.42). Upraviť text, kým rozmazanie pod oknami nebude.
 
 **9.26** [~] **Sporič obrazovky** (používateľ 13. 11.): nová položka v Nastaveniach (Konto › vedľa Uzamknutia a nečinnosti, ako vo Windows 11 Prispôsobenie › Uzamknutá obrazovka › Šetrič obrazovky); zatiaľ iba ponuka bez funkcie (`apps/settings/pages.json`, `status: planned`). Čo bude robiť, rozhodne používateľ; počasie pleamar-wm (1D.47) je jeden z kandidátov. 13. 11.: položka pridaná.
+
+**9.27** [ ] **Klávesové skratky: upraviteľné rozloženie a predvoľby Linux · macOS · Windows** (používateľ 14. 11.): vo v0.3
+bola pri Klávesnici upraviteľná sada skratiek — skratky sa dali meniť alebo načítať celú sadu podľa zvyku z Linuxu, macOS či Windowsu.
+Vo v0.5 je iba zoznam (1D.34, `system/pleamarwm/keys.conf`). Preniesť z v0.3 (vetva v0.3 v gite) na `keys.conf` pleamar-wm.
 
 ### 9A. [~] Vzhľad a témy
 Téma (šálka, farby z tapety), Keramika/Hliník/Onyx/Steam, ikony, vizuálne podoby podľa `inspo/`.
@@ -3143,6 +3303,11 @@ pleamar-wm ako pri 10B.45.
 **10B.56** [~] **Nastavenia podľa druhu prístupu: Web · CLI · API · Pokyny** (používateľ 10. 11.): značka za menom — zelená web, zlatá CLI, červená API. Stránky Služby, Modely a Pokyny sú časti Nastavení, Porovnať zrušené. Web: meno, ikona (zo stránky alebo Prehľadávať…), poznámka o účte, poradie, odstránenie, tá istá služba viackrát (druhý účet = vlastný profil), výber, čie limity ukazuje prsteň. Ikona stránky sa ukladá (`~/.cache/latteos/lensai-icons`). Pod každou službou CLI a kľúčom API jej modely s prepínačom „V čete LensGoo“. API: koniec uloženého kľúča, Nahradiť, Získať kľúč. Chýba: skúška myšou (úprava mena, výber ikony, ponuka limitov), účet čítaný zo stránky sa nerobí (LensAI zo stránok nečíta) — rozhodnúť, či stačí poznámka; limity druhého účtu Claude (druhý profil CLI cez `CLAUDE_CONFIG_DIR`).
 
 **10B.57** [~] **Lokálne LLM ako LM Studio** (používateľ 10. 11.; premenované z „Tento počítač“): Moje modely — schopnosti modelu (obrázky, nástroje, uvažovanie z hlavičky GGUF), prepínač „V čete LensGoo“, nastavenie načítania (kontext, vrstvy na grafike, vlákna, dávky, súbežné odpovede, mlock, mmap; `latte-ai local set`), odhad pamäte oproti hardvéru — počíta ho `llama-fit-params` z llama.cpp bez načítania modelu (`latte-ai local estimate`), bez neho vzorec z Ollamy. Sťahovanie je riadok v Mojich modeloch: %, koľko z koľkých, ostáva, rýchlosť, Pozastaviť/Pokračovať, Zrušiť (`latte-ai local downloads | cancel`). Chýba: skúška skutočného stiahnutia s pozastavením, panel nastavení videný celý a ovládaný myšou, odhad pre modely ešte nestiahnuté (dnes hrubý podľa veľkosti), nastavenia odpovede (teplota, systémový prompt), viac sťahovaní naraz.
+
+**10B.58** [ ] **Predvolený agent má vlastnú myš a klávesnicu** (používateľ 14. 11.): pleamar-wm to už vie (agentov kurzor a klávesnica,
+skill `pleamar-desktop`, `pleamar-wm agent`). Kurzor agenta je viditeľný a odlišný od používateľovho, v štýle ikony poskytovateľa
+(každá veľká AI má iný). Oboje sa dá vypnúť alebo obmedziť: v celom systéme, iba vo vybraných aplikáciách, alebo všade.
+Nastavenia v LensAI.
 
 ### 10C. [ ] Heidelberg
 

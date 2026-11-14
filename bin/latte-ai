@@ -1135,6 +1135,11 @@ def listen(what):
     if what == "start":
         p = subprocess.Popen(["pw-record", "--rate", "16000", "--channels", "1", "--format", "s16", wav],
                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+        try:
+            p.wait(0.3)                                      # no microphone or no PipeWire: it ends at once
+            return {"ok": False, "error": "the microphone did not start"}
+        except subprocess.TimeoutExpired:
+            pass
         open(pid, "w").write(str(p.pid))
         return {"ok": True}
     import signal, time

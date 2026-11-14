@@ -90,7 +90,7 @@ scene Session {
     fact dkc.water = 0
     fact dkc.milk = 0
     let dkc.coffee = mix(mix(#1c0f09, #4a2410, dkc.water), #c9a47a, pow(dkc.milk, 2))
-    let dkc.plate = mix(mix(dkc.coffee, #2a1a12, smooth(0.45, 0.8, dkc.milk) * 0.85), #c9a47a, 0.08)   // + the light Goo's body has: the plates are as bright as TrayShore's
+    let dkc.plate = dkc.coffee          // measured 13 Nov: the level, TrayShore and LensShore are this coffee itself on the screen
     let dkc.rim = mix(dkc.coffee, #f3ebdd, 0.4)
     let cup.button = #e4b283
     let cup.close = #c75b4a
@@ -1280,16 +1280,31 @@ scene Session {
     fact dock.into = 0
     fact dock.size = 44
     fact dock.side = 0                   // 0 bottom · 1 left · 2 right
+    // LatteOS: Goo asks where DockShore's plate lies when it starts (system/pleamarwm/bin/hyprctl `latte.dock.tell()`)
+    event dock_tell
+    // LatteOS 6.36: DockShore is carried along the edge with Alt held, by Goo (its plate is Goo's): while it is carried the
+    // icons are lifted off (`dock.lift`), and it is put down where Goo says (`dock.at`, its middle along the edge; −1 the middle)
+    fact keys.alt = 0
+    fact dock.at = -1
+    fact dock.lift = 0
+    // LatteOS 6.41: what shows the windows (Settings › Drops › Window management): DockShore only when it is chosen
+    // (`dock.off` 1 with BarGoo or None); with None nothing does, and the windows have no Minimize button (`win.nomin`)
+    fact dock.off = 0
+    fact win.nomin = 0
+    on change keys.alt { launch "latte-say 'fact alt_held {keys.alt}'" }
+    fact dktold = 0
+    on dock_tell { dktold = dktold + 1 }
     // An icon, the room it has along the shore, the shore across, the room
     // of a window put away; and how much the one under the mouse swells.
     let dkic = clamp(dock.size, 32, 72)
     let dkf = dkic / 44
     let dkcell = dkic + 16
-    let dkpl = dkic + 20
+    let dkpl = max(46, dkic + 10)          // LatteOS: as thick as LensShore's and TrayShore's plates (46), thicker only for big icons
     let dkmc = dkic + 32
     let dkvert = dock.side > 0.5
     let dklift = if(dock.mag > 0.5, 0.75, 0)
     let dkreach = dkcell * 2.6
+    let dkg.grow = dklift * dkic * dkreach / dkcell * 2 / 3      // LatteOS: how much longer the plate is with the mouse on it (dk.grow at full), for Goo
 
     // Each monitor's shore.
     // What the rest of the scene reads of it: where it is, across and along.
@@ -1304,6 +1319,19 @@ scene Session {
     let dks.c[4][2]
     let dks.d[4][2]
     let dks.a[4][2]
+    let dk.grow[4]
+    let dk.hk[4]
+    let dk.m[4]
+    let dk.mq[4]
+    let dk.n[4]
+    let dk.on[4]
+    let dk.p[4]
+    let mn.base[4]
+    let mn.h[4]
+    let mn.ia[4]
+    let mn.pin[4]
+    let mn.run[4]
+    let mn.wn[4]
     let dk.a0[4]
     let dk.cr[4]
     let dk.cs[4]
@@ -1323,9 +1351,9 @@ scene Session {
         // mouse pushes against its edge, or its menu, previews or a carried icon
         // are out. What it keeps clear for the windows, only when it does not hide.
         prop shore.$s = 0 ~rise
-        follow shore.$s = if(free.$s > 0.5 and (dock.hide < 0.5 or dk.open.$s or dmenu.$s >= 0 or pv.$s >= 0 or dkdrag.$s >= 0), 1, 0)
+        follow shore.$s = if(free.$s > 0.5 and dock.off < 0.5 and (dock.hide < 0.5 or dk.open.$s or dmenu.$s >= 0 or pv.$s >= 0 or dkdrag.$s >= 0), 1, 0)
         prop room.$s = 0 ~rise
-        follow room.$s = if(free.$s > 0.5 and dock.hide < 0.5, 1, 0)
+        follow room.$s = if(free.$s > 0.5 and dock.off < 0.5 and dock.hide < 0.5, 1, 0)
         fact dk.open.$s = false
         // The item being carried out of it, the one whose windows rise from the
         // water, the one whose menu is open (and the one it was for).
@@ -1340,9 +1368,9 @@ scene Session {
         follow pvup.$s = if(pv.$s >= 0, 1, 0)
         prop mnup.$s = 0 ~pop
         follow mnup.$s = if(dmenu.$s >= 0, 1, 0)
-        let dk.n.$s = win.docks.$s
-        let dk.m.$s = if(dock.into > 0.5, 0, win.mins.$s)
-        let dk.p.$s = max(win.pools.$s, win.used.$s + 1)
+        dk.n[s] = win.docks.$s
+        dk.m[s] = if(dock.into > 0.5, 0, win.mins.$s)
+        dk.p[s] = max(win.pools.$s, win.used.$s + 1)
         let dk.tw.$s = 28 + dk.n.$s * dkcell + if(dk.m.$s > 0, 20 + dk.m.$s * dkmc, 0) + 20 + dk.p.$s * 26
         prop dkw.$s = 200 ~pop
         follow dkw.$s = dk.tw.$s
@@ -1350,25 +1378,30 @@ scene Session {
         // a side and in y at the bottom. Along: from dk.a0, centred.
         dk.cr[s] = if(dock.side == 1, 0, if(dock.side == 2, screen.$s.width, screen.$s.height))
         dk.cs[s] = if(dock.side == 1, 1, -1)
-        dk.a0[s] = if(dkvert, screen.$s.height, screen.$s.width) / 2 - dkw.$s / 2
+        dk.a0[s] = if(dock.at < 0, if(dkvert, screen.$s.height, screen.$s.width) / 2, dock.at) - dkw.$s / 2      // LatteOS: where Goo put it along the edge (6.36)
         dk.q[s] = 0 - (dkpl / 2 + 10) + (dkpl + 10) * shore.$s      // LatteOS: the plate stands on the edge, not 14 px off it
         // Where the mouse is along it and how far from its edge.
         dk.ma[s] = if(dkvert, mouse.y, mouse.x)
-        let dk.mq.$s = if(dock.side == 1, mouse.x, if(dock.side == 2, screen.$s.width - mouse.x, screen.$s.height - mouse.y))
+        dk.mq[s] = if(dock.side == 1, mouse.x, if(dock.side == 2, screen.$s.width - mouse.x, screen.$s.height - mouse.y))
         // Magnified, how much the icons before a point have moved aside, and
         // how much longer the whole shore is.
         prop dk.near.$s = 0 ~180ms
         dk.K[s] = dk.near.$s * dklift * dkic * dkreach / dkcell
-        let dk.grow.$s = dk.K.$s * 2 / 3
-        let dk.on.$s = mon == s and shore.$s > 0.6 and dk.mq.$s <= dk.q.$s + dkpl / 2 + 6 and dk.ma.$s >= dk.a0.$s - dk.grow.$s / 2 - 10 and dk.ma.$s <= dk.a0.$s + dkw.$s + dk.grow.$s / 2 + 10
+        dk.grow[s] = dk.K.$s * 2 / 3
+        dk.on[s] = mon == s and shore.$s > 0.6 and dk.mq.$s <= dk.q.$s + dkpl / 2 + 6 and dk.ma.$s >= dk.a0.$s - dk.grow.$s / 2 - 10 and dk.ma.$s <= dk.a0.$s + dkw.$s + dk.grow.$s / 2 + 10
         follow dk.near.$s = if(dk.on.$s and dkdrag.$s < 0, 1, 0)
         let dk.t.$s = (dk.ma.$s - dk.a0.$s - 14) / dkcell - 0.5
-        let dk.hk.$s = clamp(floor(dk.t.$s + 0.5), 0, 11)
+        dk.hk[s] = clamp(floor(dk.t.$s + 0.5), 0, 11)
         // Hidden, it comes out while the mouse is pushed against its edge, and
         // goes once the mouse has left it (not while one of its menus is out).
         on change mouse.x + mouse.y * 8192 while dock.hide > 0.5 and not dk.open.$s and free.$s > 0.5 and mon == s and dk.mq.$s <= 2 and dragging < 0 { dk.open.$s = true }
         on change mouse.x + mouse.y * 8192 while dk.open.$s and (mon != s or dk.mq.$s > dk.q.$s + dkpl / 2 + 60) and dmenu.$s < 0 and pv.$s < 0 and dkdrag.$s < 0 { dk.open.$s = false }
         on change dock.hide while dock.hide < 0.5 { dk.open.$s = false }
+        // LatteOS DockShore: Goo takes the plate as a wall for its level and drops and puts it in its outline
+        // (goo/lib/engine.luau `dock_moved`). Told when where it lies changes, not on every frame of its springs;
+        // and again when Goo starts (`dock_tell`). Edges as Goo counts them: 0 bottom, 1 left, 3 right, −1 none.
+        let dkg.edge.$s = if(free.$s > 0.5 and (dock.hide < 0.5 or dk.open.$s or dmenu.$s >= 0 or pv.$s >= 0 or dkdrag.$s >= 0), if(dock.side == 2, 3, dock.side), -1)
+        on change dkg.edge.$s * 100000 + dk.tw.$s + dkpl * 7 + dkg.grow * 13 + dktold while s == 0 { launch "latte-say 'fact dock_edge {dkg.edge.$s}' 'fact dock_len {dk.tw.$s}' 'fact dock_deep {dkpl}' 'fact dock_grow {dkg.grow}' 'emit dock_moved'" }
         repeat j in 0..12 {
             image dockicon.$s.$j = from win.dock.$s.$j.icon, 96, 96
             prop buoy.$s.$j = 0 ~pop
@@ -1396,12 +1429,60 @@ scene Session {
             dkp.d[s][j] = (dkp.c[s][j] - dk.ma.$s) / dkreach
             dkp.a[s][j] = dkp.c[s][j] + dk.K.$s * (if(dkp.d[s][j] < -1, 0, if(dkp.d[s][j] < 0, pow(1 + dkp.d[s][j], 3) / 3, if(dkp.d[s][j] < 1, (2 - pow(1 - dkp.d[s][j], 3)) / 3, 2 / 3))) - 1 / 3)
         }
+        pv.n[s] = (win.dock.$s[max(pv.$s, 0)].windows)
+        let pv.ia.$s = dki.a[s][clamp(pv.$s, 0, 11)]
+        pv.bx[s] = if(dkvert, dk.cr.$s + dk.cs.$s * (dk.q.$s + dkpl / 2 + 127), clamp(pv.ia.$s, pv.n.$s * 116 + 20, screen.$s.width - pv.n.$s * 116 - 20) - (pv.n.$s - 1) * 116)
+        pv.sx[s] = if(dkvert, dk.cs.$s * 232, 232)
+        pv.by[s] = if(dkvert, clamp(pv.ia.$s, 110, screen.$s.height - 110) - 10, screen.$s.height - dk.q.$s - 140)
+        pv.ox[s] = if(dkvert, 0 - dk.cs.$s * 30, 0)
+        pv.oy[s] = if(dkvert, 0, 30)
+        let pv.ext.$s = dk.q.$s + dkpl / 2 + 16 + pv.n.$s * 232 + 24
+        let pv.x1.$s = if(dkvert, if(dock.side == 1, 0, screen.$s.width - pv.ext.$s), pv.bx.$s - 135)
+        let pv.x2.$s = if(dkvert, if(dock.side == 1, pv.ext.$s, screen.$s.width), pv.bx.$s + (pv.n.$s - 1) * 232 + 135)
+        let pv.y1.$s = pv.by.$s - 99
+        let pv.y2.$s = if(dkvert, pv.by.$s + 119, screen.$s.height)
+        // Its menu: the item's windows (window.plm's rows), then New window and
+        // Hide while it has some, keep it on the shore or take it off, and close
+        // them —or Open, with none—. Over its icon at the bottom, beside it on a side.
+        mn.wn[s] = min((win.dock.$s[max(dmenu.$s, 0)].windows), 6)
+        mn.run[s] = (win.dock.$s[max(dmk.$s, 0)].windows) > 0
+        mn.pin[s] = (win.dock.$s[max(dmk.$s, 0)].pinned) > 0.5
+        mn.base[s] = 6 + mn.wn.$s * 28 + if(mn.wn.$s > 0, 10, 0)
+        mn.h[s] = mn.base.$s + if(mn.run.$s, 4, 2) * 28 + 6
+        mn.ia[s] = dki.a[s][clamp(dmk.$s, 0, 11)]
+        mn.x[s] = if(dkvert, if(dock.side == 1, dk.q.$s + dkpl / 2 + 14, screen.$s.width - dk.q.$s - dkpl / 2 - 14 - 220), clamp(mn.ia.$s - 110, 8, screen.$s.width - 228))
+        mn.y[s] = if(dkvert, clamp(mn.ia.$s - mn.h.$s / 2, 8, screen.$s.height - mn.h.$s - 8), screen.$s.height - dk.q.$s - dkpl / 2 - 14 - mn.h.$s)
+        // Away from the shore, its previews and its menu, they sink.
+        let pv.near.$s = mon == s and (dk.on.$s or (pv.$s >= 0 and mouse.x >= pv.x1.$s and mouse.x <= pv.x2.$s and mouse.y >= pv.y1.$s and mouse.y <= pv.y2.$s) or (dmenu.$s >= 0 and mouse.x >= mn.x.$s - 24 and mouse.x <= mn.x.$s + 244 and mouse.y >= mn.y.$s - 24 and mouse.y <= mn.y.$s + mn.h.$s + 24))
+        on change pv.near.$s while not pv.near.$s {
+            pv.$s = -1
+            dmenu.$s = -1
+        }
+        on key Escape while dmenu.$s >= 0 or pv.$s >= 0 {
+            dmenu.$s = -1
+            pv.$s = -1
+        }
+    }
+    // LatteOS DockShore: the dock is drawn over Goo (whose layer is `top`), so the plate under it can be the goo's own
+    // matter (goo/parts/plates.plm) and the dock is only what stands on it and its menu. Not re-indented: pleamar-wm's
+    // own lines; what they read of the shore above is in arrays (dk.on[4]…), as a repeat keeps its `let`s to itself.
+    surface dockshore {
+        size: full, full
+        anchor: top_left
+        level: overlay
+        screens: each max 4
+        open: shore.0 + shore.1 + shore.2 + shore.3 > 0.01 and dock.lift < 0.5
+    repeat s in 0..4 {
+        repeat j in 0..12 { image dkimg.$s.$j = from win.dock.$s.$j.icon, 96, 96 }   // LatteOS: a surface has its own pictures
         group {
             z: 99982
             show: shore.$s > 0.01 and screen.index == s
             // LatteOS DockShore: one plate of the goo's coffee with its thin outline, sunk into the edge (it reaches 40 px past
             // it) and rounded where it faces the desktop, as TrayShore is (goo/parts/plates.plm); no neck, no shadow.
+            // On Goo's monitor the plate is Goo's own matter (goo/parts/plates.plm), in its level, with its light and outline:
+            // here only where Goo is not (ponytail: Goo's main monitor taken as the first; the right one once Goo tells its index).
             body {
+                show: s != 0
                 color: dkc.plate
                 border: 1.25, dkc.rim
                 box { at: if(dkvert, dk.cr.$s + dk.cs.$s * (dk.q.$s - 20), dk.a0.$s + dkw.$s / 2), if(dkvert, dk.a0.$s + dkw.$s / 2, dk.cr.$s + dk.cs.$s * (dk.q.$s - 20)); size: if(dkvert, dkpl + 40, (dkw.$s + dk.grow.$s) * (0.55 + 0.45 * shore.$s)), if(dkvert, (dkw.$s + dk.grow.$s) * (0.55 + 0.45 * shore.$s), dkpl + 40); corner: 16 }
@@ -1411,13 +1492,13 @@ scene Session {
                     show: here.$s.$j > 0.01
                     opacity: here.$s.$j
                     ellipse { at: if(dkvert, dk.cr.$s + dk.cs.$s * (dk.q.$s - 22 * dkf), dki.a[s][j]), if(dkvert, dki.a[s][j], dk.cr.$s + dk.cs.$s * (dk.q.$s - 22 * dkf)); radius: 18 + 30 * ring.$s.$j; scale: if(dkvert, 0.32, 1), if(dkvert, 1, 0.32); stroke: 1.4 * (1 - ring.$s.$j) + 0.3; color: ink; opacity: 45% * (1 - ring.$s.$j); show: ring.$s.$j < 0.99 }
-                    image dockicon.$s.$j { at: if(dkvert, dk.cr.$s + dk.cs.$s * (dki.q[s][j]), dki.a[s][j]) - dki.sz[s][j] / 2 * here.$s.$j, if(dkvert, dki.a[s][j], dk.cr.$s + dk.cs.$s * (dki.q[s][j])) - dki.sz[s][j] / 2 * here.$s.$j; size: dki.sz[s][j] * here.$s.$j, dki.sz[s][j] * here.$s.$j }
+                    image dkimg.$s.$j { at: if(dkvert, dk.cr.$s + dk.cs.$s * (dki.q[s][j]), dki.a[s][j]) - dki.sz[s][j] / 2 * here.$s.$j, if(dkvert, dki.a[s][j], dk.cr.$s + dk.cs.$s * (dki.q[s][j])) - dki.sz[s][j] / 2 * here.$s.$j; size: dki.sz[s][j] * here.$s.$j, dki.sz[s][j] * here.$s.$j }
                     ellipse { at: if(dkvert, dk.cr.$s + dk.cs.$s * (dk.q.$s - 25 * dkf), dki.a[s][j]), if(dkvert, dki.a[s][j], dk.cr.$s + dk.cs.$s * (dk.q.$s - 25 * dkf)); radius: if(win.dock.$s.$j.focused, 2.4, 2); color: if(win.dock.$s.$j.focused, mint, ink); opacity: if(win.dock.$s.$j.focused, 95%, 55%); show: dock.dots > 0.5 and (win.dock.$s.$j.windows == 1 or win.dock.$s.$j.windows >= 3) }
                     ellipse { at: if(dkvert, dk.cr.$s + dk.cs.$s * (dk.q.$s - 25 * dkf), dki.a[s][j] - 3.5), if(dkvert, dki.a[s][j] - 3.5, dk.cr.$s + dk.cs.$s * (dk.q.$s - 25 * dkf)); radius: if(win.dock.$s.$j.focused, 2.4, 2); color: if(win.dock.$s.$j.focused, mint, ink); opacity: if(win.dock.$s.$j.focused, 95%, 55%); show: dock.dots > 0.5 and win.dock.$s.$j.windows == 2 }
                     ellipse { at: if(dkvert, dk.cr.$s + dk.cs.$s * (dk.q.$s - 25 * dkf), dki.a[s][j] + 3.5), if(dkvert, dki.a[s][j] + 3.5, dk.cr.$s + dk.cs.$s * (dk.q.$s - 25 * dkf)); radius: if(win.dock.$s.$j.focused, 2.4, 2); color: if(win.dock.$s.$j.focused, mint, ink); opacity: if(win.dock.$s.$j.focused, 95%, 55%); show: dock.dots > 0.5 and win.dock.$s.$j.windows == 2 }
                     ellipse { at: if(dkvert, dk.cr.$s + dk.cs.$s * (dk.q.$s - 25 * dkf), dki.a[s][j] - 6), if(dkvert, dki.a[s][j] - 6, dk.cr.$s + dk.cs.$s * (dk.q.$s - 25 * dkf)); radius: if(win.dock.$s.$j.focused, 2.4, 2); color: if(win.dock.$s.$j.focused, mint, ink); opacity: if(win.dock.$s.$j.focused, 95%, 55%); show: dock.dots > 0.5 and win.dock.$s.$j.windows >= 3 }
                     ellipse { at: if(dkvert, dk.cr.$s + dk.cs.$s * (dk.q.$s - 25 * dkf), dki.a[s][j] + 6), if(dkvert, dki.a[s][j] + 6, dk.cr.$s + dk.cs.$s * (dk.q.$s - 25 * dkf)); radius: if(win.dock.$s.$j.focused, 2.4, 2); color: if(win.dock.$s.$j.focused, mint, ink); opacity: if(win.dock.$s.$j.focused, 95%, 55%); show: dock.dots > 0.5 and win.dock.$s.$j.windows >= 3 }
-                    zone box dockz.$j.$s { at: if(dkvert, dk.cr.$s + dk.cs.$s * (dk.q.$s), dki.a[s][j]), if(dkvert, dki.a[s][j], dk.cr.$s + dk.cs.$s * (dk.q.$s)); size: if(dkvert, dkpl, dkcell), if(dkvert, dkcell, dkpl); cursor: pointer; active: shore.$s > 0.6 and j < dk.n.$s and not overview; label: "{win.dock.$s.$j.name}" }
+                    zone box dockz.$j.$s { at: if(dkvert, dk.cr.$s + dk.cs.$s * (dk.q.$s), dki.a[s][j]), if(dkvert, dki.a[s][j], dk.cr.$s + dk.cs.$s * (dk.q.$s)); size: if(dkvert, dkpl, dkcell), if(dkvert, dkcell, dkpl); cursor: pointer; active: (shore.$s > 0.6 and j < dk.n.$s and not overview) and keys.alt < 0.5; label: "{win.dock.$s.$j.name}" }
                 }
             }
             // Between the programs and what is put away, and before the pools: a line of water.
@@ -1427,7 +1508,7 @@ scene Session {
                 ellipse { at: if(dkvert, dk.cr.$s + dk.cs.$s * (dk.q.$s), dkp.a[s][j]), if(dkvert, dkp.a[s][j], dk.cr.$s + dk.cs.$s * (dk.q.$s)); radius: 8; stroke: 1.3; color: ink; opacity: if((j + 1) == dk.p.$s and win.used.$s < (j + 1), 22%, 45%); show: j < dk.p.$s and win.shown.$s != (j + 1) }
                 ellipse { at: if(dkvert, dk.cr.$s + dk.cs.$s * (dk.q.$s), dkp.a[s][j]), if(dkvert, dkp.a[s][j], dk.cr.$s + dk.cs.$s * (dk.q.$s)); radius: 8; color: mint; opacity: 90%; show: j < dk.p.$s and win.shown.$s == (j + 1) }
                 text "{j + 1}" { at: if(dkvert, dk.cr.$s + dk.cs.$s * (dk.q.$s), dkp.a[s][j]), if(dkvert, dkp.a[s][j], dk.cr.$s + dk.cs.$s * (dk.q.$s)); anchor: center; size: 9; weight: 700; color: #0c0e10; show: j < dk.p.$s and win.shown.$s == (j + 1) }
-                zone ellipse dkpool.$j.$s { at: if(dkvert, dk.cr.$s + dk.cs.$s * (dk.q.$s), dkp.a[s][j]), if(dkvert, dkp.a[s][j], dk.cr.$s + dk.cs.$s * (dk.q.$s)); radius: 12; cursor: pointer; active: shore.$s > 0.6 and j < dk.p.$s and not overview; label: "Workspace {j + 1}" }
+                zone ellipse dkpool.$j.$s { at: if(dkvert, dk.cr.$s + dk.cs.$s * (dk.q.$s), dkp.a[s][j]), if(dkvert, dkp.a[s][j], dk.cr.$s + dk.cs.$s * (dk.q.$s)); radius: 12; cursor: pointer; active: (shore.$s > 0.6 and j < dk.p.$s and not overview) and keys.alt < 0.5; label: "Workspace {j + 1}" }
             }
         }
         // Dragged, its icon goes out of the shore (far enough, unpinned, it
@@ -1480,39 +1561,6 @@ scene Session {
         }
         // Its previews, as many as it has windows: over its icon at the bottom,
         // beside it on a side (window.plm's per window: pv.bx + pv.sx · turn).
-        pv.n[s] = (win.dock.$s[max(pv.$s, 0)].windows)
-        let pv.ia.$s = dki.a[s][clamp(pv.$s, 0, 11)]
-        pv.bx[s] = if(dkvert, dk.cr.$s + dk.cs.$s * (dk.q.$s + dkpl / 2 + 127), clamp(pv.ia.$s, pv.n.$s * 116 + 20, screen.$s.width - pv.n.$s * 116 - 20) - (pv.n.$s - 1) * 116)
-        pv.sx[s] = if(dkvert, dk.cs.$s * 232, 232)
-        pv.by[s] = if(dkvert, clamp(pv.ia.$s, 110, screen.$s.height - 110) - 10, screen.$s.height - dk.q.$s - 140)
-        pv.ox[s] = if(dkvert, 0 - dk.cs.$s * 30, 0)
-        pv.oy[s] = if(dkvert, 0, 30)
-        let pv.ext.$s = dk.q.$s + dkpl / 2 + 16 + pv.n.$s * 232 + 24
-        let pv.x1.$s = if(dkvert, if(dock.side == 1, 0, screen.$s.width - pv.ext.$s), pv.bx.$s - 135)
-        let pv.x2.$s = if(dkvert, if(dock.side == 1, pv.ext.$s, screen.$s.width), pv.bx.$s + (pv.n.$s - 1) * 232 + 135)
-        let pv.y1.$s = pv.by.$s - 99
-        let pv.y2.$s = if(dkvert, pv.by.$s + 119, screen.$s.height)
-        // Its menu: the item's windows (window.plm's rows), then New window and
-        // Hide while it has some, keep it on the shore or take it off, and close
-        // them —or Open, with none—. Over its icon at the bottom, beside it on a side.
-        let mn.wn.$s = min((win.dock.$s[max(dmenu.$s, 0)].windows), 6)
-        let mn.run.$s = (win.dock.$s[max(dmk.$s, 0)].windows) > 0
-        let mn.pin.$s = (win.dock.$s[max(dmk.$s, 0)].pinned) > 0.5
-        let mn.base.$s = 6 + mn.wn.$s * 28 + if(mn.wn.$s > 0, 10, 0)
-        let mn.h.$s = mn.base.$s + if(mn.run.$s, 4, 2) * 28 + 6
-        let mn.ia.$s = dki.a[s][clamp(dmk.$s, 0, 11)]
-        mn.x[s] = if(dkvert, if(dock.side == 1, dk.q.$s + dkpl / 2 + 14, screen.$s.width - dk.q.$s - dkpl / 2 - 14 - 220), clamp(mn.ia.$s - 110, 8, screen.$s.width - 228))
-        mn.y[s] = if(dkvert, clamp(mn.ia.$s - mn.h.$s / 2, 8, screen.$s.height - mn.h.$s - 8), screen.$s.height - dk.q.$s - dkpl / 2 - 14 - mn.h.$s)
-        // Away from the shore, its previews and its menu, they sink.
-        let pv.near.$s = mon == s and (dk.on.$s or (pv.$s >= 0 and mouse.x >= pv.x1.$s and mouse.x <= pv.x2.$s and mouse.y >= pv.y1.$s and mouse.y <= pv.y2.$s) or (dmenu.$s >= 0 and mouse.x >= mn.x.$s - 24 and mouse.x <= mn.x.$s + 244 and mouse.y >= mn.y.$s - 24 and mouse.y <= mn.y.$s + mn.h.$s + 24))
-        on change pv.near.$s while not pv.near.$s {
-            pv.$s = -1
-            dmenu.$s = -1
-        }
-        on key Escape while dmenu.$s >= 0 or pv.$s >= 0 {
-            dmenu.$s = -1
-            pv.$s = -1
-        }
         group {
             z: 99984
             show: shore.$s > 0.01 and screen.index == s
@@ -1521,8 +1569,9 @@ scene Session {
                 group {
                     show: dk.on.$s and dk.hk.$s == j and j < dk.n.$s and pv.$s < 0 and dmenu.$s < 0 and dkdrag.$s < 0
                     body {
-                        color: pop.color
-                        glass: pop.glass
+                        color: dkc.plate          // LatteOS DockShore: solid coffee and its outline, as Goo's menus are (card.glass is 0 for a menu)
+                        border: 1.25, dkc.rim
+                        glass: 0%
                         ripple: 100% * glass.ripple
                         frost: auto
                         smoke: pop.smoke
@@ -1551,7 +1600,7 @@ scene Session {
                 show: dkdrag.$s >= 0 and mon == s
                 opacity: if(dk.mq.$s > dk.q.$s + dkpl / 2 + 78, 55%, 90%)
                 repeat j in 0..12 {
-                    image dockicon.$s.$j { at: mouse.x - 24, mouse.y - 24; size: 48, 48; show: dkdrag.$s == j }
+                    image dkimg.$s.$j { at: mouse.x - 24, mouse.y - 24; size: 48, 48; show: dkdrag.$s == j }
                 }
             }
             // Unpinned, it bursts into drops where it was let go.
@@ -1570,8 +1619,9 @@ scene Session {
                 pivot: if(dkvert, dk.cr.$s + dk.cs.$s * (dk.q.$s), mn.ia.$s), if(dkvert, mn.ia.$s, dk.cr.$s + dk.cs.$s * (dk.q.$s))
                 scale: 0.9 + 0.1 * mnup.$s
                 body {
-                    color: pop.color
-                    glass: pop.glass
+                    color: dkc.plate          // LatteOS DockShore: solid coffee and its outline, as Goo's menus are (card.glass is 0 for a menu)
+                    border: 1.25, dkc.rim
+                    glass: 0%
                     ripple: 100% * glass.ripple
                     frost: auto
                     smoke: pop.smoke
@@ -1611,6 +1661,45 @@ scene Session {
         on press dmr1.$s { dmenu.$s = -1 }
         on press dmr2.$s { dmenu.$s = -1 }
         on press dmr3.$s { dmenu.$s = -1 }
+    }
+    // LatteOS DockShore: a window put away floats on the plate, so over Goo too: its place worked out as in the windows' loop
+    repeat i in 0..16 {
+        image dkapp.$i = from win.$i.icon, 64, 64
+        let sc = win.$i.screen
+        let off = mx[sc] - mx[screen.index]
+        let dq = dk.q[sc]
+        let dcr = dk.cr[sc]
+        let dcs = dk.cs[sc]
+        let da0 = dk.a0[sc]
+        let mc0 = if(dock.into > 0.5, da0 + 14 + max(win.$i.dockat, 0) * dkcell + dkcell / 2, da0 + 14 + win.docks[sc] * dkcell + 20 + max(win.$i.minat, 0) * dkmc + dkmc / 2)
+        let md = (mc0 - dk.ma[sc]) / dkreach
+        let ma = mc0 + dk.K[sc] * (if(md < -1, 0, if(md < 0, pow(1 + md, 3) / 3, if(md < 1, (2 - pow(1 - md, 3)) / 3, 2 / 3))) - 1 / 3)
+        let tx = off + if(dkvert, dcr + dcs * dq, ma)
+        let ty = if(dkvert, ma, dcr + dcs * dq)
+        // Put away, it floats on its shore as it is, small, with its
+        // program's icon; pressed, it comes back.
+        let dm.h = 40 * dkf
+        let dm.w = clamp(dm.h * win.$i.width / max(win.$i.height, 1), 30 * dkf, if(dkvert, 60, 68) * dkf)
+        group {
+            z: 99983
+            show: dock.into < 0.5 and win.$i.minimized and win.$i.open and win.$i.minat >= 0 and mini.$i > 0.7 and sc == screen.index and shore[sc] > 0.3
+            opacity: smooth(0.7, 0.95, mini.$i)
+            body {
+                color: #0c0e10
+                rim: 14%
+                shadow: 0, 3, 10, 40%
+                // (Lifted a little, out from the edge, under the mouse.)
+                box { at: tx + if(dkvert, dcs * 2 * dockmin.$i.hover, 0), ty + if(dkvert, 0, dcs * 2 * dockmin.$i.hover); size: dm.w + 4, dm.h + 4; corner: 6 }
+            }
+            group {
+                clip box { at: tx + if(dkvert, dcs * 2 * dockmin.$i.hover, 0), ty + if(dkvert, 0, dcs * 2 * dockmin.$i.hover); size: dm.w, dm.h; corner: 4 }
+                window win.$i { at: tx + if(dkvert, dcs * 2 * dockmin.$i.hover, 0) - dm.w / 2, ty + if(dkvert, 0, dcs * 2 * dockmin.$i.hover) - dm.h / 2; size: dm.w, dm.h; ask: win.$i.width, win.$i.height }
+            }
+            image dkapp.$i { at: tx + dm.w / 2 - 12 * dkf, ty + dm.h / 2 - 12 * dkf; size: 18 * dkf, 18 * dkf }
+            zone box dockmin.$i { at: tx, ty; size: dm.w + 10, dm.h + 10; corner: 8; cursor: pointer; active: (not overview and dock.into < 0.5) and keys.alt < 0.5; label: "{win.$i.title}" }
+        }
+        on press dockmin.$i { restore win.$i }
+    }
     }
 
     // ── the pools at a glance (Super+Tab): beside the windows of the pool
@@ -2213,7 +2302,7 @@ scene Session {
             // in the same frame carried the window instead.
             zone ellipse port.$i { at: x + 18, y + tb / 2; radius: 12; cursor: grab; active: here and not overview and wired.ok and not win.$i.dialog; label: "Wire {win.$i.title} to another window"; role: button }
             zone ellipse lead_zone.$i { at: x + w - 45, y + tb / 2; radius: 10; cursor: pointer; active: here and not overview and not win.$i.dialog and ours; label: "Enlarge {win.$i.title}" }
-            zone ellipse mini_zone.$i { at: x + w - 70, y + tb / 2; radius: 10; cursor: pointer; active: here and not overview and not win.$i.dialog and ours; label: "Minimize {win.$i.title}" }
+            zone ellipse mini_zone.$i { at: x + w - 70, y + tb / 2; radius: 10; cursor: pointer; active: win.nomin < 0.5 and here and not overview and not win.$i.dialog and ours; label: "Minimize {win.$i.title}" }
             zone ellipse close_zone.$i { at: x + w - 20, y + tb / 2; radius: 10; cursor: pointer; active: here and not overview and not win.$i.dialog and ours; label: "Close {win.$i.title}" }
             // At a glance, the whole window is a button: pressing it chooses it.
             zone box choose.$i { from: x, y; size: w, h; cursor: pointer; active: here and overview and not win.$i.dialog; label: "{win.$i.title}"; role: item }
@@ -2325,13 +2414,13 @@ scene Session {
             group {
                 show: hb.$i > 0.01
                 opacity: (70% + 30% * max(lit.$i, b.any)) * hb.$i * smooth(0.75, 1, water)
-                ellipse { at: x + w - 70, by; radius: 9 + 3 * mini_zone.$i.hover; stroke: 1.2; color: cup.button; opacity: 55% * mini_zone.$i.hover }
+                ellipse { at: x + w - 70, by; radius: 9 + 3 * mini_zone.$i.hover; stroke: 1.2; color: cup.button; opacity: 55% * mini_zone.$i.hover; show: win.nomin < 0.5 }
                 ellipse { at: x + w - 45, by; radius: 9 + 3 * lead_zone.$i.hover; stroke: 1.2; color: cup.button; opacity: 55% * lead_zone.$i.hover }
                 ellipse { at: x + w - 20, by; radius: 9 + 3 * close_zone.$i.hover; stroke: 1.2; color: cup.close; opacity: 55% * close_zone.$i.hover }
-                ellipse { at: x + w - 70, by; radius: 8.5 + 1 * mini_zone.$i.hover; color: cup.button }
+                ellipse { at: x + w - 70, by; radius: 8.5 + 1 * mini_zone.$i.hover; color: cup.button; show: win.nomin < 0.5 }
                 ellipse { at: x + w - 45, by; radius: 8.5 + 1 * lead_zone.$i.hover; color: cup.button }
                 ellipse { at: x + w - 20, by; radius: 8.5 + 1 * close_zone.$i.hover; color: cup.close }
-                box { at: x + w - 70, by + 0.5; size: 7, 1.6; corner: 0.8; color: cup.mark }
+                box { at: x + w - 70, by + 0.5; size: 7, 1.6; corner: 0.8; color: cup.mark; show: win.nomin < 0.5 }
                 box { at: x + w - 45, by; size: 7, 7; corner: 1.2; stroke: 1.4; color: cup.mark; opacity: 1 - maxed.$i }
                 box { at: x + w - 46.2, by + 1.2; size: 5.5, 5.5; corner: 1.2; stroke: 1.3; color: cup.mark; opacity: maxed.$i }
                 box { at: x + w - 43.8, by - 1.2; size: 5.5, 5.5; corner: 1.2; stroke: 1.3; color: cup.mark; opacity: maxed.$i * 0.6 }
@@ -3540,29 +3629,6 @@ scene Session {
             }
             ellipse { at: cx - 3.5, cy - 4.5; radius: 2.4; scale: 1.3, 0.8; color: ink; opacity: 35% }
         }
-        // Put away, it floats on its shore as it is, small, with its
-        // program's icon; pressed, it comes back.
-        let dm.h = 40 * dkf
-        let dm.w = clamp(dm.h * win.$i.width / max(win.$i.height, 1), 30 * dkf, if(dkvert, 60, 68) * dkf)
-        group {
-            z: 99983
-            show: dock.into < 0.5 and win.$i.minimized and win.$i.open and win.$i.minat >= 0 and mini.$i > 0.7 and sc == screen.index and shore[sc] > 0.3
-            opacity: smooth(0.7, 0.95, mini.$i)
-            body {
-                color: #0c0e10
-                rim: 14%
-                shadow: 0, 3, 10, 40%
-                // (Lifted a little, out from the edge, under the mouse.)
-                box { at: tx + if(dkvert, dcs * 2 * dockmin.$i.hover, 0), ty + if(dkvert, 0, dcs * 2 * dockmin.$i.hover); size: dm.w + 4, dm.h + 4; corner: 6 }
-            }
-            group {
-                clip box { at: tx + if(dkvert, dcs * 2 * dockmin.$i.hover, 0), ty + if(dkvert, 0, dcs * 2 * dockmin.$i.hover); size: dm.w, dm.h; corner: 4 }
-                window win.$i { at: tx + if(dkvert, dcs * 2 * dockmin.$i.hover, 0) - dm.w / 2, ty + if(dkvert, 0, dcs * 2 * dockmin.$i.hover) - dm.h / 2; size: dm.w, dm.h; ask: win.$i.width, win.$i.height }
-            }
-            image appicon.$i { at: tx + dm.w / 2 - 12 * dkf, ty + dm.h / 2 - 12 * dkf; size: 18 * dkf, 18 * dkf }
-            zone box dockmin.$i { at: tx, ty; size: dm.w + 10, dm.h + 10; corner: 8; cursor: pointer; active: not overview and dock.into < 0.5; label: "{win.$i.title}" }
-        }
-        on press dockmin.$i { restore win.$i }
         // Its preview, rising from the shore's water when its program's icon is
         // hovered a moment: the window as it is, live, and its title; pressed,
         // it is the one (brought back, if put away). A picture only: it asks
@@ -3584,8 +3650,9 @@ scene Session {
                 pivot: pvx, pvy + 70
                 scale: 0.92 + 0.08 * pvup + 0.03 * dockpv.$i.hover
                 body {
-                    color: pop.color
-                    glass: pop.glass
+                    color: dkc.plate          // LatteOS DockShore: solid coffee and its outline, as Goo's menus are (card.glass is 0 for a menu)
+                    border: 1.25, dkc.rim
+                    glass: 0%
                     ripple: 100% * glass.ripple
                     frost: auto
                     smoke: pop.smoke

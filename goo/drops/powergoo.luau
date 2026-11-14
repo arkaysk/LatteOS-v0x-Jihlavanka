@@ -179,7 +179,7 @@ open_card = function(d, keep)
 end
 
 return {
-    id = "powergoo", name = "PowerGoo", core = true, glyph = "power", nature = "calm", size = 19, seat = 3, lift = 1.8, swell = 0.21,
+    id = "powergoo", name = "PowerGoo", glyph = "power", nature = "calm", size = 19, seat = 3, lift = 1.8, swell = 0.21,
     beside = "lensgoo", gap = -62,
     about = function()
         local what = tr(strip.on and N("left: account and power · right: hide the strip") or N("left: account and power · right: performance strip"))

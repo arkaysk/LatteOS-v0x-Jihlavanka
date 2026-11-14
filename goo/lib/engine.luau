@@ -80,7 +80,8 @@ local function docked(d) return d.rise < radius(d) * 1.6 end
 local shore = { w = 0, h = 0 }
 local function limit(d)                                      -- how far along its edge a drop's centre may be
     local l = len(d)
-    local taken = (d.edge == 0 and shore.w) or (d.edge == 3 and shore.h) or 0
+    local corner = num(fact.tray_at, -1) < 0                -- carried off the corner (6.36), it is a stretch like LensShore's
+    local taken = (corner and d.edge == 0 and shore.w) or (corner and d.edge == 3 and shore.h) or 0
     return math.min(0.98 * l, taken > 0 and l - taken - radius(d) - 8 or l)
 end
 -- Stretches of an edge no drop may sit on, as LensShore's island (apps/lensshore.qml) holds one: id → { edge, a, b }
@@ -232,9 +233,15 @@ function E.block(id, edge, a, b)
     else blocks[id] = { edge = edge, a = a, b = b } end
     E.apart() E.publish()
 end
+-- TrayShore carried off its corner along the bottom (6.36): there its stretch is kept clear as LensShore's is
+local function tray_sync()
+    local at = num(fact.tray_at, -1)
+    if at >= 0 and shore.w > 0 then E.block("trayshore", 0, at, at + shore.w) else E.block("trayshore", nil) end
+end
 function E.shore(w, h)
     if shore.w == w and shore.h == h then return end
     shore.w, shore.h = w, h
+    tray_sync()
     E.apart() E.publish()
 end
 -- The plate stands in the water: its panel coming out or going in pushes the level at its end, and the wave runs off.
@@ -909,6 +916,7 @@ function E.tell(...) run("latte-say", { ... }) end
 local hidden, zooms = {}, {}
 local glass_told = nil                       -- what the compositor was last told about glass windows
 local software = false                       -- drawn by the processor: the goo stays plain coffee
+local bar_told                               -- what pleamar-wm was last told shows the windows
 local chosen_settings = {}                   -- the file as it was last read
 function E.apply_hidden()
     local changed = false
@@ -950,8 +958,11 @@ local function settings()
     E.tell("fact win_glass " .. tostring(windows), "fact lively " .. tostring(fact.lively), "fact glassy " .. tostring(fact.glassy), "fact bends " .. tostring(fact.bends),
            "fact ai_glass " .. tostring(ai_glass), "fact ai_soft " .. tostring(software), "fact true_glass " .. tostring(clear),
            "fact bar_off " .. tostring(hidden.bargoo == true), "fact bar_fixed " .. tostring(t.bar_fixed == true),
-           "fact lens_shore " .. tostring(t.lens == "shore"))
+           "fact lens_shore " .. tostring(t.lens == "shore"), "fact lens_cloud " .. tostring(t.lens == "cloud"))
     if glass_told ~= windows then glass_told = windows wm.glass(windows) end
+    -- what shows the windows (6.41): BarGoo unless it is hidden, then DockShore unless None was chosen
+    local bar = hidden.bargoo ~= true and 0 or (t.taskbar == "none" and 2 or 1)
+    if bar_told ~= bar and not E.side then bar_told = bar wm.taskbar(bar) end
 end
 
 -- what is set now, and setting one thing: it is written down and taken up at once
@@ -982,6 +993,55 @@ local function coffee()
 end
 on("coffee_changed", coffee)
 on("reset_places", function() E.reset_places() end)
+
+-- DockShore, pleamar-wm's dock, is a plate on the edge as TrayShore and LensShore are: the drops keep off its stretch,
+-- the level stands still under it and its waves come back off it (wall 0, goo-phys). wm/session.plm tells where it lies.
+local function dock_moved()
+    local e, len, deep = num(fact.dock_edge, -1), num(fact.dock_len, 0), num(fact.dock_deep, 0)
+    local w, h = num(fact.sw, 0), num(fact.sh, 0)
+    if E.side or e < 0 or len <= 0 or w <= 0 or h <= 0 then
+        E.block("dockshore", nil)
+        fact["wall.0.x0"], fact["wall.0.x1"] = 0, 0
+        return
+    end
+    local mid = num(fact.dock_at, -1) >= 0 and fact.dock_at or (e == 0 and w or h) / 2
+    local a, b = mid - len / 2, mid + len / 2
+    local reach = num(fact.dock_grow, 0) / 2 + 12        -- drops keep off where it grows under the mouse, and a little more
+    E.block("dockshore", e, a - reach, b + reach)
+    local x0, y0, x1, y1
+    if e == 0 then x0, y0, x1, y1 = a, h - deep, b, h
+    elseif e == 1 then x0, y0, x1, y1 = 0, a, deep, b
+    else x0, y0, x1, y1 = w - deep, a, w, b end
+    fact["wall.0.x0"], fact["wall.0.y0"], fact["wall.0.x1"], fact["wall.0.y1"] = x0, y0, x1, y1
+end
+on("dock_moved", dock_moved)
+-- A Shore plate carried along the edge with Alt and let go (parts/shoregrab.plm): where it lies is kept
+on("shore_lift", function() wm.dock_lift() end)
+on("shore_placed", function(k)
+    local w = num(fact.sw, 0)
+    if k == 0 then
+        local at = num(fact.tray_at, -1)
+        if w > 0 and at + shore.w >= w - 0.5 then at = -1 end         -- back in the corner: as it always was
+        fact.tray_at = at
+        E.set("tray_at", at)
+        tray_sync()
+        E.apart() E.publish()
+    elseif k == 1 and w > 0 then
+        E.set("lens_x", (num(fact.lens_a, 0) + num(fact.lens_b, 0)) / 2 / w)       -- lib/lens.luau places it from that
+    elseif k == 3 then
+        local at = num(fact.cloud_at, -1)
+        if at <= 0.5 then at = -1 end                                 -- back in its corner
+        fact.cloud_at = at
+        E.set("cloud_at", at)
+        require("lib/cloud").place()
+        E.apart() E.publish()
+    elseif k == 2 then
+        E.set("dock_at", num(fact.dock_at, -1))
+        wm.dock_at(num(fact.dock_at, -1))
+        dock_moved()
+        E.apart() E.publish()
+    end
+end)
 
 -- ── the start ────────────────────────────────────────────────────────────────────────────────────────────────
 -- opts.drops: the names of the modules in drops/, in the order they are defined (one beside another after it)
@@ -1018,9 +1078,17 @@ function E.start(opts)
     after(1500, sky)
     every(600000, sky)
     -- The screen's size arrives after the start and changes with the monitor: lay the drops out again.
-    on("fact:sw", function() E.apart() publish() end)
-    on("fact:sh", function() E.apart() publish() end)
+    on("fact:sw", function() dock_moved() E.apart() publish() end)
+    on("fact:sh", function() dock_moved() E.apart() publish() end)
     publish()
+    if not opts.side then
+        -- where the plates were carried (6.36), and the dock told where it lies; then it says how long it is
+        fact.tray_at = num(chosen_settings.tray_at, -1)
+        fact.dock_at = num(chosen_settings.dock_at, -1)
+        tray_sync()
+        wm.dock_at(fact.dock_at)
+        wm.tell_dock()
+    end
 end
 
 return E

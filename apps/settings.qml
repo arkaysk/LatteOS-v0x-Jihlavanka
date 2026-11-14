@@ -37,6 +37,32 @@ ShellRoot {
         quickgoo: QT_TR_NOOP("The apps you keep at hand, up to eight, on a strip that slides out of it. You add them in LensGoo with the right button."),
         queengoo: QT_TR_NOOP("The App Manager on the left button, the Device Manager on the right."),
         mediagoo: QT_TR_NOOP("On the desktop only while something plays: the cover, play and pause, the next one, the volume on the wheel.") })
+    // what each drop is, for the top of its page: how it works and what it does, from LATTEOS-GOO.md §4 (tech, funcs, tips: lists of texts)
+    readonly property var dropInfo: ({
+        launcher: { tech: QT_TR_NOOP("The launcher and the magnifier: a drop in the place of Start. LensShore and LensCloud share its text field."),
+            funcs: [QT_TR_NOOP("Left button or the Windows key: the launcher card."), QT_TR_NOOP("Right button: a quick list of apps."), QT_TR_NOOP("Modes: Apps, Files, Web, Terminal and AI."), QT_TR_NOOP("Wheel: the size.")],
+            tips: [QT_TR_NOOP("The whole card works without a mouse: Tab and Shift+Tab change the mode, arrows pick a line, Enter opens, Esc closes."), QT_TR_NOOP("The AI is always inside: it answers through your own signed-in tools, never in a browser."), QT_TR_NOOP("Every result has a tag of where it came from: App, Settings, File, Folder or Web.")] },
+        bargoo: { tech: QT_TR_NOOP("The window bar as a drop: its head, the biggest drop, shows how the windows are arranged (tape, tiles or floating) and the windows hang from it as berries."),
+            funcs: [QT_TR_NOOP("Left button on the head: the next arrangement."), QT_TR_NOOP("Right button on the head: show the desktop; a second press brings the windows back."), QT_TR_NOOP("Wheel: the next window."), QT_TR_NOOP("A berry: a press switches to the window or puts it away, the right button opens its menu.")],
+            tips: [QT_TR_NOOP("The berries are out only when windows float; in tape and tiles hold the mouse over the head to slide them out."), QT_TR_NOOP("Every further monitor has its own BarGoo with the windows of that monitor.")] },
+        powergoo: { tech: QT_TR_NOOP("The account and the power: always there, only its size can change."),
+            funcs: [QT_TR_NOOP("Left button: the card with your profile, Lock and Sign out, the battery and the power profile, Settings, Monitor, and Sleep, Restart and Shut down."), QT_TR_NOOP("Right button: the performance band with CPU, RAM, GPU and VRAM."), QT_TR_NOOP("Wheel: the size.")],
+            tips: [QT_TR_NOOP("A value in the band turns amber above 80 % and red above 95 %, or when the chip runs hot."), QT_TR_NOOP("A band you switched on is there again after the next login.")] },
+        quickgoo: { tech: QT_TR_NOOP("The apps you keep at hand, up to eight, on a strip that slides out of the drop."),
+            funcs: [QT_TR_NOOP("A press stretches it into a strip of icons; a press on an icon starts the app and the strip draws back."), QT_TR_NOOP("Right button on an app, in LensGoo or on the strip: puts it on the strip or takes it off."), QT_TR_NOOP("Wheel: the size.")],
+            tips: [QT_TR_NOOP("A file or a folder can be kept here too, with the right button in LensShore."), QT_TR_NOOP("Until you choose any, the apps you started most lately stand in.")] },
+        queengoo: { tech: QT_TR_NOOP("The App Manager and the Device Manager in one drop, with a crown on its outer side."),
+            funcs: [QT_TR_NOOP("Left button: the App Manager (straight to the updates when there are any)."), QT_TR_NOOP("Right button: the Device Manager (to Networks when the network is down)."), QT_TR_NOOP("Balls: red for a device that needs attention, green for a network outage, blue for updates waiting.")],
+            tips: [QT_TR_NOOP("The window is born from a bubble the queen spits out, and swells beside her.")] },
+        mediagoo: { tech: QT_TR_NOOP("What is playing: it is on the desktop only while some player is there, and it beats while it plays."),
+            funcs: [QT_TR_NOOP("A press opens its card: the cover, the title, back, play and next, the volume, and with several players which one."), QT_TR_NOOP("Right button: play and pause."), QT_TR_NOOP("Wheel: the volume.")],
+            tips: [QT_TR_NOOP("With several players open, the card lets you pick the one it controls.")] },
+        clockgoo: { tech: QT_TR_NOOP("Time, notifications, the calendar and well-being in one drop; it can be hidden."),
+            funcs: [QT_TR_NOOP("Left button: notifications on the left, the month and the day's events on the right."), QT_TR_NOOP("Right button: the time card with Overview, Stopwatch, Timer, Alarms and Weather."), QT_TR_NOOP("Wheel: the size.")],
+            tips: [QT_TR_NOOP("The timer and the alarms ring even when the card is closed."), QT_TR_NOOP("A new notification sends a ripple over the surface."), QT_TR_NOOP("In the new-entry field, a time and a name (10:30 Meeting) make an event; start with ! for a task.")] },
+        camgoo: { tech: QT_TR_NOOP("Webcams: the picture of a camera as it is now, fetched by the system."),
+            funcs: [QT_TR_NOOP("A press opens the card with the picture, which camera it is and when it was taken."), QT_TR_NOOP("The sides of the picture go to the camera before and the next; the row under it to any of them."), QT_TR_NOOP("Right button: the next camera.")],
+            tips: [QT_TR_NOOP("While the card is open the picture is fetched again every minute."), QT_TR_NOOP("Your own camera needs a fixed address of a .jpg or .png picture.")] } })
     function setExpert(on) { modeWord.choose(on ? "expert" : "basic"); if (!on && here && here.expert) { page = ""; asked = "" } }
     readonly property var areas: areasAll.map(a => Object.assign({}, a, { pages: a.pages.filter(p => expert || !p.expert) })).filter(a => a.pages.length > 0)
     property string page: ""                   // "" is the front page
@@ -93,6 +119,15 @@ ShellRoot {
     Word { id: glassRipple; name: "glass-ripple" }    // a press on glass sends a ring of light through it: "0" off
     Word { id: glassSide; name: "glass-side" }        // and the side panel of LatteOS's apps (Theme.sideGlass)
     Word { id: wallpaper; name: "wallpaper" }
+    Word { id: tourWord; name: "drops-tour" }         // "seen" once the tour of the drops has been through or skipped (6.40)
+    property bool tourOn: Quickshell.env("LATTE_TOUR") === "1"
+    property int tourStep: 0
+    readonly property var tourSteps: [
+        { kind: "intro", title: QT_TR_NOOP("Drops and plates"), text: QT_TR_NOOP("Goo is drops of coffee that melt into the edge of the screen; Shore is the same made of flat plates. A look picks one, the other, or a mix of them.") },
+        { kind: "carry", title: QT_TR_NOOP("Carry a plate"), text: QT_TR_NOOP("Hold Alt and drag a Shore plate along the edge. Plates stick to each other and to the corners, and join into one.") },
+        { kind: "secure", title: QT_TR_NOOP("Ctrl+Alt+Del"), text: QT_TR_NOOP("This opens a menu: Lock, Switch user, Sign out, Change password, Task manager, and power at the bottom right. It works even when the drops are hidden.") },
+        { kind: "lens-shore", title: QT_TR_NOOP("The launcher stays"), text: QT_TR_NOOP("Any drop can be hidden, PowerGoo too, but one launcher always stays: LensGoo, LensShore or LensCloud. Choose it below.") } ]
+    function tourEnd() { tourOn = false; tourStep = 0; tourWord.choose("seen") }
     Word { id: icons; name: "desktop-icons" }
     Word { id: screensWord; name: "screens" }
     Word { id: nightWord; name: "nightlight" }
@@ -581,9 +616,10 @@ ShellRoot {
         property string text
         property string hint
         property bool on: false
+        property bool off: false               // there, but not to be chosen yet
         default property alias picture: face.data
         signal pressed()
-        width: 150; height: 150; radius: 20; color: Theme.card
+        width: 150; height: 150; radius: 20; color: Theme.card; opacity: off ? 0.5 : 1
         border.width: 2; border.color: on ? Theme.gold : (hit.containsMouse ? Theme.line : "transparent")
         scale: hit.pressed ? 0.97 : 1
         Behavior on scale { NumberAnimation { duration: 90 } }
@@ -591,7 +627,7 @@ ShellRoot {
         Label { x: 14; y: parent.height - 46; width: parent.width - 28; text: choice.text; font.weight: 700 }
         Label { x: 14; y: parent.height - 26; width: parent.width - 28; text: choice.hint; color: Theme.dim; font.pixelSize: 11 }
         Rectangle { visible: choice.on; width: 22; height: 22; radius: 11; color: Theme.gold; x: parent.width - 30; y: 8; Glyph { anchors.centerIn: parent; name: "check"; font.pixelSize: 13; color: Theme.inkOnGold } }
-        MouseArea { id: hit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: choice.pressed() }
+        MouseArea { id: hit; anchors.fill: parent; enabled: !choice.off; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: choice.pressed() }
     }
     component Switch: Rectangle {              // yes or no, with what it is about beside it
         id: sw
@@ -999,17 +1035,99 @@ ShellRoot {
                             Image { anchors.fill: parent; source: "file://" + shell.share + "/wallpapers/latteos-2.jpg"; fillMode: Image.PreserveAspectCrop; sourceSize.width: 240 }
                             Rectangle { anchors.fill: parent; color: Theme.glasses[pane.modelData.id] } } } } }
 
+            // the tour of the drops (ROADMAP 6.40): the first time the look is changed, and again from the button below
+            Part { visible: shell.page === "drops" && shell.tourOn; width: view.room; title: I18n.tr("Tour") + "  ·  " + (shell.tourStep + 1) + " / " + shell.tourSteps.length
+                Rectangle { width: view.room; height: tourRow.height + 32; radius: 20; color: Theme.card; border.width: 2; border.color: Theme.gold
+                    readonly property var step: shell.tourSteps[shell.tourStep]
+                    Row { id: tourRow; x: 16; y: 16; spacing: 22
+                        DropPreview { width: Math.min(300, (view.room - 70) * 0.5); kind: tourRow.parent.step.kind; calm: goo.kept.lively === false }
+                        Column { width: view.room - 70 - Math.min(300, (view.room - 70) * 0.5); spacing: 10
+                            Label { width: parent.width; text: I18n.tr(tourRow.parent.step.title); font.pixelSize: 18; font.weight: 700 }
+                            Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; text: I18n.tr(tourRow.parent.step.text) }
+                            Row { spacing: 6
+                                Repeater { model: shell.tourSteps.length; Rectangle { required property int index; width: index === shell.tourStep ? 18 : 7; height: 7; radius: 3.5; color: index === shell.tourStep ? Theme.gold : Theme.line
+                                    Behavior on width { NumberAnimation { duration: 140 } } } } }
+                            Row { spacing: 8
+                                Pill { text: shell.tourStep < shell.tourSteps.length - 1 ? I18n.tr("Next") : I18n.tr("Done"); strong: true
+                                       onPressed: shell.tourStep < shell.tourSteps.length - 1 ? shell.tourStep++ : shell.tourEnd() }
+                                Pill { visible: shell.tourStep < shell.tourSteps.length - 1; text: I18n.tr("Skip"); onPressed: shell.tourEnd() } } } } } }
+            // the desktop's look (ROADMAP 6.39): a preset that only sets the choices below; changed by hand, it is "Custom"
+            Part { id: lookPart; visible: shell.page === "drops"; width: view.room; title: I18n.tr("Desktop look")
+                   readonly property var drops: dropList.list.map(d => d.id)
+                   readonly property var hiddenNow: goo.kept.hidden || []
+                   readonly property string now: (goo.kept.lens !== "shore" && goo.kept.lens !== "cloud" && hiddenNow.length === 0) ? "playful"
+                       : (drops.length > 0 && drops.every(id => hiddenNow.indexOf(id) >= 0) && goo.kept.taskbar !== "none") ? (goo.kept.lens === "shore" && hiddenNow.indexOf("trayshore") < 0 ? "pro" : goo.kept.lens === "cloud" && hiddenNow.indexOf("trayshore") >= 0 ? "minimal" : "custom") : "custom"
+                   note: now === "custom" ? I18n.tr("Custom: changed by hand below. A look puts everything back as it has it.")
+                                          : I18n.tr("A look only sets the choices below; each of them can still be changed.")
+                   function choose(id) {
+                       if (tourWord.value !== "seen") shell.tourOn = true
+                       if (id === "playful") { goo.set("lens", "goo"); goo.set("taskbar", "bargoo"); goo.set("hidden", []) }
+                       else if (id === "pro" || id === "minimal") { goo.set("lens", id === "pro" ? "shore" : "cloud"); goo.set("taskbar", "dockshore"); goo.set("hidden", id === "minimal" ? drops.concat(["trayshore"]) : drops.slice()) } }
+                Repeater { model: [{ id: "playful", name: QT_TR_NOOP("Playful"), hint: QT_TR_NOOP("the drops: BarGoo, LensGoo, ClockGoo and the others"), icon: "droplet" },
+                                   { id: "pro", name: QT_TR_NOOP("Pro"), hint: QT_TR_NOOP("only the Shore plates: LensShore, DockShore, TrayShore"), icon: "layout-distribute-vertical" },
+                                   { id: "minimal", name: QT_TR_NOOP("Minimal"), hint: QT_TR_NOOP("only DockShore and LensCloud"), icon: "minus" }]
+                    Choice { required property var modelData; width: 220; height: 180; text: I18n.tr(modelData.name); hint: I18n.tr(modelData.hint); 
+                             on: lookPart.now === modelData.id; onPressed: lookPart.choose(modelData.id)
+                             DropPreview { width: parent.width; kind: "look-" + parent.parent.modelData.id; calm: goo.kept.lively === false } } }
+                Item { width: view.room; height: 0 }
+                Pill { icon: "player-play"; text: I18n.tr("Show the tour"); onPressed: { shell.tourStep = 0; shell.tourOn = true } } }
+
+            // the main page: two choices of exactly one (ROADMAP 6.41): the launcher, and what manages the windows
+            Part { visible: shell.page === "drops"; width: view.room; title: I18n.tr("Launcher")
+                   note: I18n.tr("One of them is there at a time; the Windows key opens whichever it is. They share the same text field.")
+                Repeater { model: [{ id: "goo", name: "LensGoo", hint: QT_TR_NOOP("a drop: a press opens it"), icon: "search" },
+                                   { id: "shore", name: "LensShore", hint: QT_TR_NOOP("a line of goo, built around the AI"), icon: "sparkles" },
+                                   { id: "cloud", name: "LensCloud", hint: QT_TR_NOOP("a plate in the corner: the time, and all apps over the screen"), icon: "cloud" }]
+                    Choice { required property var modelData; width: 220; height: 180; text: modelData.name; hint: I18n.tr(modelData.hint); 
+                             on: (goo.kept.lens === "shore" || goo.kept.lens === "cloud" ? goo.kept.lens : "goo") === modelData.id; onPressed: goo.set("lens", modelData.id)
+                             DropPreview { width: parent.width; kind: "lens-" + parent.parent.modelData.id; calm: goo.kept.lively === false } } } }
+            // BarGoo is switched off as every drop is (its id in "hidden", which Goo turns into the fact bar_off); `taskbar` says what stands in its place
+            Part { id: taskPart; visible: shell.page === "drops"; width: view.room; title: I18n.tr("Window management")
+                   note: I18n.tr("What shows the open windows: one of them is there at a time. DockShore is the dock of pleamar-wm. With None the windows have no Minimize button.")
+                   readonly property bool barHidden: (goo.kept.hidden || []).indexOf("bargoo") >= 0
+                   readonly property string now: !barHidden ? "bargoo" : (goo.kept.taskbar === "none" ? "none" : "dockshore")
+                   function choose(id) {
+                       const h = (goo.kept.hidden || []).filter(x => x !== "bargoo"); if (id !== "bargoo") h.push("bargoo")
+                       goo.set("taskbar", id); goo.set("hidden", h) }
+                Repeater { model: [{ id: "bargoo", name: "BarGoo", hint: QT_TR_NOOP("the bar of drops: windows as berries"), icon: "layout-columns" },
+                                   { id: "dockshore", name: "DockShore", hint: QT_TR_NOOP("the dock on the edge of a free monitor"), icon: "app-window" },
+                                   { id: "none", name: QT_TR_NOOP("None"), hint: QT_TR_NOOP("no Minimize button on windows"), icon: "x" }]
+                    Choice { required property var modelData; width: 220; height: 180; text: I18n.tr(modelData.name); hint: I18n.tr(modelData.hint); on: taskPart.now === modelData.id
+                             onPressed: taskPart.choose(modelData.id)
+                             DropPreview { width: parent.width; kind: parent.parent.modelData.id; calm: goo.kept.lively === false } } }
+                Pill { visible: taskPart.now === "dockshore"; icon: "settings"; text: I18n.tr("Dock settings"); onPressed: shell.go("dock") } }
+
             // the drops
             Part { visible: shell.page === "drops"; width: view.room; title: I18n.tr("How the drops behave")
                 Switch { text: I18n.tr("Lively"); hint: I18n.tr("Left alone they fall asleep, the weather outside shows on the surface, playful ones play."); on: goo.kept.lively !== false; onPressed: goo.set("lively", !on) }
                 Switch { text: I18n.tr("The surface bends"); hint: I18n.tr("Ripples lift the drops and the edge gives under them."); on: goo.kept.bends !== false; onPressed: goo.set("bends", !on) } }
             Part { visible: shell.page === "drops" && dropList.list.length > 0; width: view.room; title: I18n.tr("Drops on the desktop")
+                   note: I18n.tr("Any drop can be hidden, PowerGoo too: what it offers is also behind Ctrl+Alt+Del. The launcher is chosen above and always stays.")
                 Repeater { model: dropList.list
                     Switch { required property var modelData; text: modelData.name; on: (goo.kept.hidden || []).indexOf(modelData.id) < 0
                              onPressed: { const h = (goo.kept.hidden || []).filter(id => id !== modelData.id); if (on) h.push(modelData.id); goo.set("hidden", h) } } } }
             Part { visible: shell.page === "drops"; width: view.room; title: I18n.tr("Places")
                    note: I18n.tr("PowerGoo and LensGoo are always there. The coffee the drops are made of is under Coffee and cup.")
                 Pill { icon: "arrow-back-up"; text: I18n.tr("Put every drop back in its place"); onPressed: Quickshell.execDetached(["latte-say", "emit reset_places"]) } }
+
+            // what a drop is: a picture of it (a place is kept until there is one), how it works, what it does and a few tips
+            Part { id: aboutPart; readonly property var info: shell.dropInfo[shell.page === "launcher" ? "launcher" : shell.page] || null
+                   visible: info !== null; width: view.room; title: I18n.tr("About this drop")
+                Row { width: view.room; spacing: 20
+                    Rectangle { width: 200; height: 140; radius: 20; color: Theme.card; border.width: 1; border.color: Theme.line   // the picture is a crop of the live desktop (apps/settings/drops/<page>.png); the placeholder stays where there is none
+                        Image { id: dropPic; anchors.fill: parent; anchors.margins: 6; fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
+                                source: shell.page ? "file://" + shell.share + "/apps/settings/drops/" + (shell.page === "launcher" ? "launcher" : shell.page) + ".png" : "" }
+                        Column { anchors.centerIn: parent; spacing: 8; visible: dropPic.status !== Image.Ready
+                            Glyph { anchors.horizontalCenter: parent.horizontalCenter; name: shell.here ? shell.here.icon : "droplet"; font.pixelSize: 44; color: Theme.dim }
+                            Label { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.tr("Picture to come"); color: Theme.faint; font.pixelSize: 11 } } }
+                    Column { width: view.room - 220; spacing: 8
+                        Label { width: parent.width; text: aboutPart.info ? I18n.tr(aboutPart.info.tech) : ""; wrapMode: Text.WordWrap; font.weight: 600 }
+                        Label { text: I18n.tr("What it does"); color: Theme.dim; font.pixelSize: 12; font.weight: 700 }
+                        Repeater { model: aboutPart.info ? aboutPart.info.funcs : []
+                            Label { required property string modelData; width: parent.width; text: "•  " + I18n.tr(modelData); wrapMode: Text.WordWrap; font.pixelSize: 13 } }
+                        Label { text: I18n.tr("Good to know"); color: Theme.gold; font.pixelSize: 12; font.weight: 700 }
+                        Repeater { model: aboutPart.info ? aboutPart.info.tips : []
+                            Label { required property string modelData; width: parent.width; text: "•  " + I18n.tr(modelData); wrapMode: Text.WordWrap; font.pixelSize: 13; color: Theme.dim } } } } }
 
             // the launcher: the drop LensGoo or LensShore's line on the shore, one at a time (ROADMAP 6B.12)
             Part { visible: shell.page === "launcher"; width: view.room; title: I18n.tr("The launcher")
@@ -1026,7 +1144,9 @@ ShellRoot {
             Part { visible: shell.page === "lensshore"; width: view.room; title: I18n.tr("Where it lies")
                    note: goo.kept.lens === "shore" ? "" : I18n.tr("LensShore is not on: it is chosen under Launcher (LensGoo).")
                 Switch { text: I18n.tr("At the top of the screen"); hint: I18n.tr("As a dock at the top: the panel opens downwards.")
-                         on: goo.kept.lens_top === true; onPressed: goo.set("lens_top", !on) } }
+                         on: goo.kept.lens_top === true; onPressed: goo.set("lens_top", !on) }
+                Switch { text: I18n.tr("Compact window"); hint: I18n.tr("A smaller panel: the search line and a few results, without the preview.")
+                         on: goo.kept.lens_compact === true; onPressed: goo.set("lens_compact", !on) } }
             Part { visible: shell.page === "lensshore"; width: view.room; title: I18n.tr("Emoji")
                    note: I18n.tr("How many columns the grid has, what Enter does, and the skin tone of the emoji that take one.")
                 Label { text: I18n.tr("Columns"); width: view.room; color: Theme.dim; font.pixelSize: 13 }
@@ -1045,6 +1165,9 @@ ShellRoot {
                    note: I18n.tr("Aliases are given and apps hidden with the right button on them in LensShore; here they are taken back.")
                    readonly property var aliases: goo.kept.lens_aliases || ({})
                    readonly property var hidden: goo.kept.lens_hidden_apps || []
+                Switch { text: I18n.tr("Remember what was searched for"); hint: I18n.tr("The Up key in the line brings back the earlier searches.")
+                         on: goo.kept.lens_history !== false; onPressed: goo.set("lens_history", !on) }
+                Pill { implicitHeight: 32; icon: "trash"; text: I18n.tr("Clear search history"); onPressed: Quickshell.execDetached(["latte-say", "emit lens_history_clear"]) }
                 Label { text: I18n.tr("Aliases"); width: view.room; color: Theme.dim; font.pixelSize: 13 }
                 Label { visible: Object.keys(findPart.aliases).length === 0; text: I18n.tr("None yet"); width: view.room; font.pixelSize: 13 }
                 Repeater { model: Object.keys(findPart.aliases)
@@ -1089,6 +1212,26 @@ ShellRoot {
                 Pill { text: I18n.tr("Save the key"); icon: "check"; strong: true; onPressed: goo.set("lens_gif_key_" + gifPart.source, gifKey.text.trim()) }
                 Pill { text: I18n.tr("Where to get a key"); icon: "external-link"
                        onPressed: Qt.openUrlExternally(gifPart.sources.find(x => x.id === gifPart.source).url) } }
+
+            Part { visible: shell.page === "lensshore"; width: view.room; title: I18n.tr("AI")
+                   note: I18n.tr("Quick AI and LensShore's questions use LensAI's default model.")
+                Pill { text: I18n.tr("Open LensAI"); icon: "external-link"; onPressed: Quickshell.execDetached(["latte-app", "lensai"]) } }
+            Part { visible: shell.page === "lensshore"; width: view.room; title: I18n.tr("Quicklinks")
+                   note: I18n.tr("Your links are kept in one file; edit it to add, change or remove them.")
+                Pill { text: I18n.tr("Open quicklinks file"); icon: "external-link"
+                       onPressed: Quickshell.execDetached(["sh", "-c", "f=\"$1/quicklinks.json\"; mkdir -p \"$1\"; [ -e \"$f\" ] || echo '[]' > \"$f\"; xdg-open \"$f\"", "sh", shell.config]) } }
+            Part { visible: shell.page === "lensshore"; width: view.room; title: I18n.tr("AI Commands")
+                   note: I18n.tr("Your own prompts for the AI are kept in one file; edit it to add, change or remove them.")
+                Pill { text: I18n.tr("Open AI commands file"); icon: "external-link"
+                       onPressed: Quickshell.execDetached(["sh", "-c", "f=\"$1/ai-commands.json\"; mkdir -p \"$1\"; [ -e \"$f\" ] || echo '[]' > \"$f\"; xdg-open \"$f\"", "sh", shell.config]) } }
+            Part { visible: shell.page === "lensshore"; width: view.room; title: I18n.tr("Keyboard")
+                   note: I18n.tr("The keys LensShore knows; they are not changed here yet.")
+                Repeater { model: [{ k: "Win", t: QT_TR_NOOP("Opens and closes the launcher") }, { k: "Ctrl+K", t: QT_TR_NOOP("The actions of the chosen row") },
+                                   { k: "Tab", t: QT_TR_NOOP("Sends the words in the line to Quick AI") }, { k: "Ctrl+J", t: QT_TR_NOOP("Continues the conversation in LensAI") },
+                                   { k: "Up", t: QT_TR_NOOP("Earlier searches") }]
+                    Row { required property var modelData; spacing: 12
+                        Label { text: parent.modelData.k; width: 90; color: Theme.gold; font.pixelSize: 13; font.weight: Font.DemiBold }
+                        Label { text: I18n.tr(parent.modelData.t); font.pixelSize: 13 } } } }
 
             // every drop's own page begins with whether it is on the desktop; what it is, for those that have nothing more to set
             Part { id: dropPart; readonly property string drop: shell.dropOf[shell.page] || ""

@@ -4,6 +4,7 @@
 require("lib/engine").start({ drops = { "bargoo", "lensgoo", "powergoo", "quickgoo", "queengoo", "clockgoo", "mediagoo", "camgoo" } })
 require("lib/own").start()
 require("lib/shore").start()
+require("lib/cloud").start()
 require("lib/desk").start(true)
 require("lib/lock").start()
 -- last: the logic is up (GuardCorgi asks for it; a scene whose logic was cut off while starting stays without drops)

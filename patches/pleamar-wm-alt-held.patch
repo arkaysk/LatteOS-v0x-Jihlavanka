@@ -1,0 +1,14 @@
+diff --git a/src/route.rs b/src/route.rs
+--- a/src/route.rs
++++ b/src/route.rs
+@@ -260,6 +260,10 @@ impl Route {
+     /// `base`: the key's own name, without what Shift makes of it (`1` where
+     /// it types `!`): a binding says `Super+Shift+1`, whatever the layout.
+     pub fn key(&mut self, screens: &[Screen], name: &str, base: Option<&str>, typed: Option<String>, mods: Mods, evdev: u32, down: bool) {
++        // LatteOS: Alt held too (`keys.alt`), so the shell can carry with Alt what it carries (patches/README.md)
++        if name.starts_with("Alt_") || name == "ISO_Level3_Shift" {
++            let _ = self.to_render.send(ToRender::Fact("keys.alt", if down { 1.0 } else { 0.0 }));
++        }
+         if name.starts_with("Super_") && self.super_held != down {
+             self.super_held = down;
+             let _ = self.to_render.send(ToRender::Fact("keys.super", if down { 1.0 } else { 0.0 }));

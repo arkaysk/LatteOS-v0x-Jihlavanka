@@ -20,6 +20,25 @@ part LensLine {
     event lens_send ->                         // the send button: to the AI
     event lens_home ->                         // the same button with nothing typed: the home out, or back in (6B.27)
     event lens_right ->                        // the right button on the line
+    text lens_cur = ""                         // the mode shown, and its glyph: the footer's left side (parts/rows.plm)
+    text g_lens_cur = ""
+    event lens_quick ->                        // Tab with words in the line: they go to the AI as a question (Raycast's Quick AI)
+    event lens_continue ->                     // Ctrl+J: this conversation goes on in LensAI
+    on key Tab while card_open and card_lens and tab_asks and not ctx_open and not ap_open { emit lens_quick }
+    on key Ctrl+j while card_open and card_lens and not ctx_open and not ap_open { emit lens_continue }
+    on change lens_typed { tab_asks = lens_typed or lens_arg }
+    on change lens_arg { tab_asks = lens_typed or lens_arg }
+    fact lens_arg = false                      // an argument is asked in the line (a quicklink's, or the name and link of a new one): a chip before the field
+    text lens_chip = ""
+    measure lens_chip_m
+    event lens_hist ->                         // 1 older, 0 newer
+    event lens_history_clear ->                // from Settings: `latte-say "emit lens_history_clear"`
+    event lens_arg_back ->
+    event lens_arg_cancel ->
+    on key Up while lens_hist_up and not ctx_open and not ap_open { emit lens_hist(1) }
+    on key Down while lens_hist_dn and not ctx_open and not ap_open { emit lens_hist(0) }
+    on key BackSpace while lens_arg and not lens_typed { emit lens_arg_back }
+    on key Escape while lens_arg { emit lens_arg_cancel }
     event lens_talk ->                         // the conversations
     event lens_who ->                          // who answers
     event lens_mic ->                          // the microphone, on or off
@@ -33,15 +52,7 @@ part LensLine {
     let ln.cy = if(lens_edge == 2, 23, H - 23)
     let ln.fx = ln.left + 46                   // the field, between the conversations and the three on the right
     let ln.fw = ln.right - ln.left - 46 - 118
-    // On the right of the field, as Raycast's bar: what Enter does (the row chosen in the panel) and, when that row has
-    // more, Ctrl+K for its actions (6B.24). The field gives way to them.
-    measure ln_act_m
-    measure ln_main_m
-    let ln.keys = card_lens and card_open and lens_typed and card_main_on
-    let ln.kx = ln.fx + ln.fw - 12
-    let ln.mx = if(card_more, ln.kx - ln_act_m.width - 62, ln.kx)
-    let ln.kw = if(ln.keys, ln.kx - ln.mx + ln_main_m.width + 22, 0)
-
+    let ln.ix = ln.fx + 32 + if(lens_arg, min(lens_chip_m.width, 260) + 22, 0)     // where the typing begins: after the chip
     // The tape's edges: at each side of the panel, where there is a mode beside, an arrow and its name turned along the
     // side; a press turns the tape there. Over the list, clear of the strip and the coffee by the line.
     let ln.ey = if(lens_edge == 2, card.y0 + 96, card.y0 + 8)
@@ -89,20 +100,14 @@ part LensLine {
         // the field
         box { from: ln.fx, ln.cy - 16; size: ln.fw, 32; corner: 16; color: ink; opacity: 7% + 5% * lens_field.hover }
         text g_search { at: ln.fx + 16, ln.cy; anchor: center; size: 15; color: ink; opacity: 60%; family: "tabler-icons" }
-        text lens_hint { at: ln.fx + 32, ln.cy; anchor: left center; width: ln.fw - 44; lines: 1; size: 15; color: ink; opacity: 55%; show: not lens_typed; family: "Inter" }
-        input lens_q { at: ln.fx + 32, ln.cy - 10; width: ln.fw - 44 - ln.kw; size: 15; color: ink; selection: #5a463a; family: "Inter"; label: "{lens_hint}" }
-        zone box lens_field { from: ln.fx, ln.cy - 16; size: ln.fw, 32; cursor: text; label: "LensShore" }
         group {
-            show: ln.keys
-            text card_main { at: ln.mx, ln.cy; anchor: right center; width: 150; lines: 1; size: 12; color: ink; opacity: 60%; measure: ln_main_m; family: "Inter" }
-            text "↵" { at: ln.mx - ln_main_m.width - 6, ln.cy; anchor: right center; size: 13; color: ink; opacity: 60%; family: "Inter" }
-            group {
-                show: card_more
-                text "Actions" { at: ln.kx, ln.cy; anchor: right center; size: 12; color: ink; opacity: 60%; measure: ln_act_m; family: "Inter" }
-                box { from: ln.kx - ln_act_m.width - 50, ln.cy - 9; size: 44, 18; corner: 5; stroke: 1; color: ink; opacity: 35% }
-                text "Ctrl+K" { at: ln.kx - ln_act_m.width - 28, ln.cy; anchor: center; size: 10; color: ink; opacity: 70%; family: "Inter" }
-            }
+            show: lens_arg
+            box { from: ln.fx + 28, ln.cy - 11; size: min(lens_chip_m.width, 260) + 16, 22; corner: 8; color: gold; opacity: 24% }
+            text lens_chip { at: ln.fx + 36, ln.cy; anchor: left center; lines: 1; size: 12.5; weight: 600; color: ink; measure: lens_chip_m; family: "Inter" }
         }
+        text lens_hint { at: ln.ix, ln.cy; anchor: left center; width: ln.fw - 44 - (ln.ix - ln.fx - 32); lines: 1; size: 15; color: ink; opacity: 55%; show: not lens_typed; family: "Inter" }
+        input lens_q { at: ln.ix, ln.cy - 10; width: ln.fw - 44 - (ln.ix - ln.fx - 32); size: 15; color: ink; selection: #5a463a; family: "Inter"; label: "{lens_hint}" }
+        zone box lens_field { from: ln.fx, ln.cy - 16; size: ln.fw, 32; cursor: text; label: "LensShore" }
         on press lens_field { focus lens_q; emit lens_press }
         on press right lens_field { tap.x = cursor.x; tap.y = cursor.y; emit lens_right }
         on submit lens_q { emit lens_enter }
@@ -129,5 +134,91 @@ part LensLine {
         zone box ln_go { at: ln.right - 24, ln.cy; size: 32, 46; cursor: pointer; label: pick(if(lens_typed, 1, 0), "More", "Send"); role: button }
         on press ln_go while lens_typed { emit lens_send }
         on press ln_go while not lens_typed { emit lens_home }
+    }
+
+    // ── the footer of the open panel, as Raycast's: the mode on the left; on the right what Enter does and the Actions panel ──
+    fact ap_typed = false
+    fact ap_h = 0
+    fact ap_sel = 0
+    text ap_q = ""
+    text ap_none = ""
+    event ap_pick ->
+    event ap_close ->
+    model ap max 8 { label: text; glyph: text; danger: bool; line: bool; keys: text; more: bool }
+    measure ft_act_m
+    measure ft_main_m
+    let ft.on = lens_shore and card_lens and card_open and card.p > 0.9
+    let ft.cy = card.y0 + card.h - 18
+    let ft.r = card.x0 + card.w - 18
+    let ft.mx = if(card_more, ft.r - ft_act_m.width - 66, ft.r)
+    let ap.w = 330
+    let ap.x = card.x0 + card.w - ap.w - 12
+    let ap.y = card.y0 + card.h - 40 - ap_h
+    group {
+        show: ft.on
+        box { from: card.x0 + 2, card.y0 + card.h - 36; size: card.w - 4, 34; corner: 14; color: coffee; show: lens_edge == 2 }
+        text g_lens_cur { at: card.x0 + 28, ft.cy; anchor: center; size: 15; color: cream; opacity: 70%; family: "tabler-icons" }
+        text lens_cur { at: card.x0 + 44, ft.cy; anchor: left center; width: 200; lines: 1; size: 12.5; weight: 600; color: cream; opacity: 75%; family: "Inter" }
+        group {
+            show: card_main_on
+            text card_main { at: ft.mx, ft.cy; anchor: right center; width: 190; lines: 1; size: 12.5; weight: 600; color: cream; opacity: 85%; measure: ft_main_m; family: "Inter" }
+            box { from: ft.mx - ft_main_m.width - 36, ft.cy - 10; size: 24, 20; corner: 6; color: cream; opacity: 14% }
+            text "↵" { at: ft.mx - ft_main_m.width - 24, ft.cy; anchor: center; size: 13; color: cream; opacity: 85%; family: "Inter" }
+        }
+        group {
+            show: card_more
+            zone box ft_actions { from: ft.r - ft_act_m.width - 56, ft.cy - 14; size: ft_act_m.width + 60, 28; cursor: pointer; label: "Actions"; role: button }
+            on press ft_actions { tap.x = card.x0 + card.w - ctx_w - 8; tap.y = card.y0 + card.h - 8; emit card_actions }
+            box { from: ft.r - ft_act_m.width - 56, ft.cy - 13; size: ft_act_m.width + 56, 26; corner: 8; color: cream; opacity: 14% * ft_actions.hover }
+            text "Actions" { at: ft.r - 50, ft.cy; anchor: right center; size: 12.5; weight: 600; color: cream; opacity: 85%; measure: ft_act_m; family: "Inter" }
+            box { from: ft.r - 44, ft.cy - 10; size: 44, 20; corner: 6; color: cream; opacity: 14% }
+            text "Ctrl+K" { at: ft.r - 22, ft.cy; anchor: center; size: 10.5; weight: 600; color: cream; opacity: 85%; family: "Inter" }
+        }
+    }
+
+    // ── the Actions panel (lib/actions.luau): over the panel's foot, on the right ──
+    zone box ap_away { at: W / 2, H / 2; size: W, H; active: ap_open; label: "Close"; role: button }
+    on press ap_away { emit ap_close }
+    on press right ap_away { emit ap_close }
+    on key Escape while ap_open { emit ap_close }
+    on key Ctrl+k while ap_open { emit ap_close }
+    on key Down while ap_open { ap_sel = min(ap_sel + 1, ap.count - 1) }
+    on key Up while ap_open { ap_sel = max(ap_sel - 1, 0) }
+    on submit ap_q { emit ap_pick(ap_sel) }
+    spring apsnap = 900, 60
+    prop ap.p = 0 ~apsnap
+    follow ap.p = if(ap_open, 1, 0)
+    group {
+        show: ap.p > 0.01
+        opacity: clamp(ap.p, 0, 1)
+        move: 0, (1 - clamp(ap.p, 0, 1)) * 6
+        body {
+            color: #2c2019
+            rim: 20%
+            shadow: 0, 8, 22, 40%
+            box { from: ap.x, ap.y; size: ap.w, ap_h; corner: 12 }
+        }
+        text g_search { at: ap.x + 24, ap.y + 26; anchor: center; size: 15; color: cream; opacity: 60%; family: "tabler-icons" }
+        input ap_q { at: ap.x + 44, ap.y + 16; width: ap.w - 60; size: 14; color: cream; selection: #5a463a; family: "Inter"; label: "Search for actions" }
+        text "Search for actions…" { at: ap.x + 44, ap.y + 26; anchor: left center; size: 14; color: cream; opacity: 45%; show: not ap_typed; family: "Inter" }
+        box { from: ap.x + 10, ap.y + 46; size: ap.w - 20, 1; color: #5a463a }
+        text ap_none { at: ap.x + ap.w / 2, ap.y + 76; anchor: center; size: 13; color: cream; opacity: 55%; family: "Inter" }
+        column ap_col {
+            at: ap.x, ap.y + 52
+            padding: 6
+            for r in ap { ApRow(r) }
+        }
+    }
+
+    component ApRow(r: record) {
+        size: ap.w - 12, if(r.line, 43, 34)
+        box { from: 6, if(r.line, 4, 0); size: ap.w - 24, 1; color: #5a463a; show: r.line }
+        box { from: 0, if(r.line, 9, 0); size: ap.w - 12, 34; corner: 8; color: if(r.danger, #e5484d, #4a372b); opacity: max(hit.hover, if(ap_sel == r.index, 1, 0)) * if(r.danger, 22%, 100%) }
+        text r.glyph { at: 20, if(r.line, 26, 17); anchor: center; size: 16; color: if(r.danger, #e5484d, cream); opacity: 90%; family: "tabler-icons" }
+        text r.label { at: 40, if(r.line, 26, 17); anchor: left center; width: ap.w - 110; lines: 1; size: 13.5; weight: 500; color: if(r.danger, #e5484d, cream); family: "Inter" }
+        text r.keys { at: ap.w - 24, if(r.line, 26, 17); anchor: right center; size: 12; color: #b8a491; family: "Inter" }
+        text g_more { at: ap.w - 28, if(r.line, 26, 17); anchor: center; size: 14; color: #b8a491; show: r.more; family: "tabler-icons" }
+        zone box hit { from: 0, if(r.line, 9, 0); size: ap.w - 12, 34; cursor: pointer; active: ap_open; label: "{r.label}" }
+        on press hit { emit ap_pick(r.index) }
     }
 }

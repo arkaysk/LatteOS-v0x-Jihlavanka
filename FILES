@@ -42,6 +42,7 @@
 /usr/bin/latte-clip                                     <- bin/latte-clip
 /usr/bin/latte-cam                                      <- bin/latte-cam
 /usr/bin/latte-lock                                     <- bin/latte-lock
+/usr/bin/latte-secure                                   <- bin/latte-secure
 /usr/bin/latte-monitor                                  <- bin/latte-monitor
 /usr/bin/latte-net                                      <- bin/latte-net
 /usr/bin/latte-network                                  <- bin/latte-network
@@ -119,6 +120,8 @@
 /usr/share/latteos/goo/goo.luau                         <- goo/goo.luau
 /usr/share/latteos/goo/polkit.plm                      <- goo/polkit.plm
 /usr/share/latteos/goo/polkit.luau                     <- goo/polkit.luau
+/usr/share/latteos/goo/secure.plm                       <- goo/secure.plm
+/usr/share/latteos/goo/secure.luau                      <- goo/secure.luau
 /usr/share/latteos/goo/side.plm                         <- goo/side.plm
 /usr/share/latteos/goo/side.luau                        <- goo/side.luau
 /usr/share/latteos/apps/aicenter.qml                    <- apps/aicenter.qml
@@ -599,6 +602,12 @@
 /usr/share/latteos/apps/chapolera.qml                   <- apps/chapolera.qml
 /usr/share/latteos/apps/settings/pages.json             <- apps/settings/pages.json
 /usr/share/latteos/apps/settings/Wallpapers.qml         <- apps/settings/Wallpapers.qml
+/usr/share/latteos/apps/settings/DropPreview.qml        <- apps/settings/DropPreview.qml
+/usr/share/latteos/apps/settings/drops/launcher.png     <- apps/settings/drops/launcher.png
+/usr/share/latteos/apps/settings/drops/powergoo.png     <- apps/settings/drops/powergoo.png
+/usr/share/latteos/apps/settings/drops/queengoo.png     <- apps/settings/drops/queengoo.png
+/usr/share/latteos/apps/settings/drops/mediagoo.png     <- apps/settings/drops/mediagoo.png
+/usr/share/latteos/apps/settings/drops/clockgoo.png     <- apps/settings/drops/clockgoo.png
 /usr/share/latteos/weather-services.txt                 <- system/weather-services.txt
 /usr/share/latteos/apps/common/Theme.qml                <- apps/common/Theme.qml
 /usr/share/latteos/apps/common/I18n.qml                 <- apps/common/I18n.qml
@@ -648,6 +657,7 @@
 /usr/share/latteos/goo/parts/body.plm                   <- goo/parts/body.plm
 /usr/share/latteos/goo/parts/cardframe.plm              <- goo/parts/cardframe.plm
 /usr/share/latteos/goo/parts/outline.plm                <- goo/parts/outline.plm
+/usr/share/latteos/goo/parts/shoregrab.plm               <- goo/parts/shoregrab.plm
 /usr/share/latteos/goo/parts/curdrop.plm                <- goo/parts/curdrop.plm
 /usr/share/latteos/goo/parts/cursor.plm                 <- goo/parts/cursor.plm
 /usr/share/latteos/goo/parts/plates.plm                 <- goo/parts/plates.plm
@@ -661,6 +671,7 @@
 /usr/share/latteos/goo/parts/lensline.plm               <- goo/parts/lensline.plm
 /usr/share/latteos/goo/parts/launch.plm                 <- goo/parts/launch.plm
 /usr/share/latteos/goo/parts/shore.plm                  <- goo/parts/shore.plm
+/usr/share/latteos/goo/parts/cloud.plm                  <- goo/parts/cloud.plm
 /usr/share/latteos/goo/parts/keys.plm                   <- goo/parts/keys.plm
 /usr/share/latteos/goo/parts/rows.plm                   <- goo/parts/rows.plm
 /usr/share/latteos/goo/parts/calendar.plm               <- goo/parts/calendar.plm
@@ -675,6 +686,7 @@
 /usr/share/latteos/goo/lib/bar.luau                     <- goo/lib/bar.luau
 /usr/share/latteos/goo/lib/lens.luau                    <- goo/lib/lens.luau
 /usr/share/latteos/goo/lib/skills.luau                  <- goo/lib/skills.luau
+/usr/share/latteos/goo/lib/actions.luau                 <- goo/lib/actions.luau
 /usr/share/latteos/goo/lib/lock.luau                    <- goo/lib/lock.luau
 /usr/share/latteos/goo/lib/polkit.luau                  <- goo/lib/polkit.luau
 /usr/share/latteos/goo/lib/timers.luau                  <- goo/lib/timers.luau
@@ -682,6 +694,7 @@
 /usr/share/latteos/goo/lib/open.luau                    <- goo/lib/open.luau
 /usr/share/latteos/goo/lib/own.luau                     <- goo/lib/own.luau
 /usr/share/latteos/goo/lib/shore.luau                   <- goo/lib/shore.luau
+/usr/share/latteos/goo/lib/cloud.luau                   <- goo/lib/cloud.luau
 /usr/share/latteos/goo/lib/desk.luau                    <- goo/lib/desk.luau
 /usr/share/latteos/goo/lib/ctx.luau                     <- goo/lib/ctx.luau
 /usr/share/latteos/goo/lib/find.luau                    <- goo/lib/find.luau

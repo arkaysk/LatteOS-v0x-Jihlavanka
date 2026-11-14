@@ -68,7 +68,10 @@ local function lay_out()
     model.bg = list
     local signs = has_battery and 3 or 2
     fact.shore_signs = signs
-    fact.shore_w = 65 + 30 * #list + 34 * signs
+    -- hidden as a drop is (Settings › Drops, the look Minimal: "trayshore" in `hidden`, ROADMAP 6.39): no plate at all
+    local gone = false
+    for _, id in ipairs(E.settings().hidden or {}) do if id == "trayshore" then gone = true end end
+    fact.shore_w = gone and 0 or (65 + 30 * #list + 34 * signs)
     E.shore(fact.shore_w, HEIGHT)
     show_signs()
 end
@@ -76,7 +79,8 @@ end
 local function panel(rows, opts)
     opts = opts or {}
     local w, h = tonumber(fact.sw) or 1920, tonumber(fact.sh) or 1080
-    fact["tap.x"], fact["tap.y"] = w - 6, h - HEIGHT - 4
+    local at = tonumber(fact.tray_at) or -1                    -- carried off the corner (6.36): the panel stands on it there
+    fact["tap.x"], fact["tap.y"] = (at >= 0 and at + (tonumber(fact.shore_w) or 0) or w) - 6, h - HEIGHT - 4
     opts.id, opts.owner, opts.dock = "shore", nil, tonumber(fact.shore_w) or 0
     opts.width = opts.width or 320
     card.open(rows, opts)
@@ -237,7 +241,7 @@ open_main = function(keep)
     if audio.volume ~= nil then
         rows[#rows + 1] = { label = tr("Sound"), glyph = "device-speaker", keep = true, more = true, line2 = output_name(), run = function() open_sound() end }
     end
-    -- the right half: what is going on
+    -- under it: what is going on
     local right = {}
     if (media.title or "") ~= "" or (media.player or "") ~= "" then
         right[#right + 1] = { head = true, label = tr("NOW PLAYING") }
@@ -260,8 +264,9 @@ open_main = function(keep)
         right[#right + 1] = { label = tr("Forget what was copied"), glyph = "trash", danger = true, keep = true,
                               run = function() clipboard.wipe(function() clips = {} open_main(true) end) end }
     end
-    for _, r in ipairs(right) do r.col = 2 rows[#rows + 1] = r end
-    panel(rows, { width = 340, width2 = 340, keep = keep, tiles = true })
+    -- one column, standing up from the plate (the user, 13 Nov: it opened wide and low; ROADMAP 6H.09)
+    for _, r in ipairs(right) do rows[#rows + 1] = r end
+    panel(rows, { width = 360, keep = keep, tiles = true })
 end
 
 -- what the pointer rests on: 0 the arrow, 1 the network, 2 the volume, 3 the battery, 10… the programs
@@ -327,6 +332,7 @@ function M.start()
     -- the arrow turns back when the panel goes, whoever closed it
     card.watch(function(id) if fact.shore_open and id ~= "shore" then fact.shore_open = false show_signs() E.shore_moved() end end)
     lay_out()
+    pcall(sys.watch, "files:settings.json", function() after(100, lay_out) end)   -- shown again, or hidden, at once (after lib/engine.luau read it)
 end
 
 return M

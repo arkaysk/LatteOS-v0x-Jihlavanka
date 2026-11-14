@@ -1,6 +1,10 @@
 // What is in the card (its state and frame: parts/card.plm), and the tooltip.
 // The card is a column: the tabs, the field, then the rows, which scroll when they are more than fit.
 part Rows {
+    fact tab_asks = false                      // Tab asks the AI instead of turning the modes (LensShore, words in the line: parts/lensline.plm)
+    fact lens_hist_up = false                  // LensShore: Up walks back through what was searched (the line is empty, or shows an entry), Down forward: the arrows are not the list's
+    fact lens_hist_dn = false
+    fact ap_open = false                       // LensShore's Actions panel is open (parts/lensline.plm): the keys are its
     // ── the zones under the rows, in the order they have to be declared: the last one takes the press ───────
     // A press anywhere else closes the card; one on the card's own ground does nothing.
     zone box card_away { at: W / 2, H / 2; size: W, H; active: card_open; label: "Close"; role: button }
@@ -12,27 +16,27 @@ part Rows {
     on scroll card_ground while card_lens { emit lens_swipe(round(-wheel * 1000)) }
 
     // while a menu is open over the card (parts/ctx.plm) the keys are the menu's
-    on key Escape while card_open and not ctx_open { card_open = false; emit card_closed }
-    on key Tab while card_open and not ctx_open { emit card_next(1) }
-    on key Shift+Tab while card_open and not ctx_open { emit card_next(0) }
-    on key Ctrl+Tab while card_open and not ctx_open { emit card_next(1) }
-    on key Ctrl+Shift+Tab while card_open and not ctx_open { emit card_next(0) }
-    on key Down while card_open and not ctx_open { emit card_key(1) }
-    on key Up while card_open and not ctx_open { emit card_key(0) }
-    on key Return while card_open and not card_field and not ctx_open { emit card_enter }
+    on key Escape while card_open and not ctx_open and not ap_open { card_open = false; emit card_closed }
+    on key Tab while card_open and not ctx_open and not ap_open and not (tab_asks and card_lens) { emit card_next(1) }
+    on key Shift+Tab while card_open and not ctx_open and not ap_open { emit card_next(0) }
+    on key Ctrl+Tab while card_open and not ctx_open and not ap_open { emit card_next(1) }
+    on key Ctrl+Shift+Tab while card_open and not ctx_open and not ap_open { emit card_next(0) }
+    on key Down while card_open and not ctx_open and not ap_open and not lens_hist_dn { emit card_key(1) }
+    on key Up while card_open and not ctx_open and not ap_open and not lens_hist_up { emit card_key(0) }
+    on key Return while card_open and not card_field and not ctx_open and not ap_open { emit card_enter }
     // Ctrl+K: the chosen row's actions (6B.24), at the card's foot on the right, as Raycast's Action Panel
-    on key Ctrl+Return while card_open and not ctx_open { emit card_combo(1) }
-    on key Ctrl+period while card_open and not ctx_open { emit card_combo(2) }
-    on key Ctrl+e while card_open and not ctx_open { emit card_combo(3) }
-    on key Ctrl+plus while card_open and not ctx_open { emit card_combo(4) }
-    on key Ctrl+equal while card_open and not ctx_open { emit card_combo(4) }
-    on key Ctrl+minus while card_open and not ctx_open { emit card_combo(5) }
-    on key Next while card_open and not ctx_open { emit card_combo(7) }          // Page Down: the keyboard calls it Next
-    on key Prior while card_open and not ctx_open { emit card_combo(8) }
-    on key Ctrl+p while card_open and not ctx_open { emit card_combo(9) }
-    on key Ctrl+x while card_open and not ctx_open { emit card_combo(10) }
-    on key Ctrl+Shift+x while card_open and not ctx_open { emit card_combo(11) }
-    on key Ctrl+k while card_open and card_more and not ctx_open { tap.x = card.x0 + card.w - ctx_w - 8; tap.y = card.y0 + card.h - 8; emit card_actions }
+    on key Ctrl+Return while card_open and not ctx_open and not ap_open { emit card_combo(1) }
+    on key Ctrl+period while card_open and not ctx_open and not ap_open { emit card_combo(2) }
+    on key Ctrl+e while card_open and not ctx_open and not ap_open { emit card_combo(3) }
+    on key Ctrl+plus while card_open and not ctx_open and not ap_open { emit card_combo(4) }
+    on key Ctrl+equal while card_open and not ctx_open and not ap_open { emit card_combo(4) }
+    on key Ctrl+minus while card_open and not ctx_open and not ap_open { emit card_combo(5) }
+    on key Next while card_open and not ctx_open and not ap_open { emit card_combo(7) }          // Page Down: the keyboard calls it Next
+    on key Prior while card_open and not ctx_open and not ap_open { emit card_combo(8) }
+    on key Ctrl+p while card_open and not ctx_open and not ap_open { emit card_combo(9) }
+    on key Ctrl+x while card_open and not ctx_open and not ap_open { emit card_combo(10) }
+    on key Ctrl+Shift+x while card_open and not ctx_open and not ap_open { emit card_combo(11) }
+    on key Ctrl+k while card_open and card_more and not ctx_open and not ap_open { tap.x = card.x0 + card.w - ctx_w - 8; tap.y = card.y0 + card.h - 8; emit card_actions }
     on submit card_q { emit card_enter }
     on submit card_pw { emit card_enter }
     on submit card_stem { emit card_enter }

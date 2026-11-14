@@ -139,6 +139,19 @@ def emits(expr):
     m = re.match(r"latte\.coffee\(([0-9.]+),\s*([0-9.]+)\)", expr)
     if m:
         return ["fact dkc.water " + m.group(1), "fact dkc.milk " + m.group(2)]
+    # DockShore carried along the edge by Goo (ROADMAP 6.36): lifted while it is carried, put down at its middle
+    m = re.match(r"latte\.dock\.lift\(([01])\)", expr)
+    if m:
+        return ["fact dock.lift " + m.group(1)]
+    m = re.match(r"latte\.dock\.at\((-?[0-9.]+)\)", expr)
+    if m:
+        return ["fact dock.at " + m.group(1), "fact dock.lift 0"]
+    # what shows the windows (Settings › Drops, ROADMAP 6.41): 0 BarGoo, 1 DockShore, 2 none (no Minimize button then)
+    m = re.match(r"latte\.taskbar\(([012])\)", expr)
+    if m:
+        return ["fact dock.off %d" % (m.group(1) != "1"), "fact win.nomin %d" % (m.group(1) == "2")]
+    if expr == "latte.dock.tell()":                  # Goo started again: DockShore tells it where its plate lies
+        return ["emit dock_tell"]
     # the buttons in the header of LatteOS's apps (apps/common/AppWindow.qml): the window with the keyboard
     m = re.match(r"latte\.win\.(minimize|maximize)_active\(\)", expr)
     if m:
