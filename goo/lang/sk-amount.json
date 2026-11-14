@@ -2,11 +2,12 @@
  "about": "The words LensGoo reads an amount in units or money by (goo/lib/amount.luau): Slovak. Another language is another file, <code>-amount.json.",
  "connect": ["na", "v", "vo", "do", "ako"],
  "of": ["z"],
+ "route": ["^z .+ do .+", "^zo .+ do .+", "^od .+ do .+", "^spoj ", "^spojenie ", "^vlak ", "^autobus "],
  "smart": ["poc", "po\u010d", "roz", "pra", "cas", "\u010das"],
  "calc": {
   "about": "What bin/latte-calc reads in this language, folded (no capitals, no diacritics): the first word of a line by what it means, the small words, the words dropped, the words for a year",
   "weather": ["pocasie", "predpoved"], "time": ["cas"], "diff": ["rozdiel"], "today": ["dnes"], "tomorrow": ["zajtra"],
-  "workhours": ["pracovne hodiny", "pracovne hodin"], "small": ["v", "vo", "na", "pre", "pri"], "skip": ["casu", "cas", "medzi", "od"], "year": ["roku", "rok"]
+  "workhours": ["pracovne hodiny", "pracovne hodin"], "route": ["spoj", "spojenie", "vlak", "autobus"], "from": ["z", "zo", "od"], "to": ["do"], "at": ["o", "okolo"], "small": ["v", "vo", "na", "pre", "pri"], "skip": ["casu", "cas", "medzi", "od"], "year": ["roku", "rok"]
  },
  "discount": ["zľava z", "zlava z", "zľavu z", "zlavu z", "zľava", "zlava"],
  "tip": ["sprepitné z", "sprepitne z", "sprepitné k", "sprepitne k", "sprepitné", "sprepitne"],

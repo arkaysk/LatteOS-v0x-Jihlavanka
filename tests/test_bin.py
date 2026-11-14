@@ -772,7 +772,7 @@ with tempfile.TemporaryDirectory() as d:
 if shutil.which("lua"):
     words = json.load(open(os.path.join(ROOT, "goo", "lang", "sk-amount.json"), encoding="utf-8"))
     lua = lambda v: ("{" + ", ".join(lua(x) for x in v) + "}") if isinstance(v, list) else json.dumps(v, ensure_ascii=False)
-    table = "{" + ", ".join("%s = %s" % (k, lua(words[k])) for k in ("connect", "of", "asking", "names", "smart", "discount", "tip", "root", "cuberoot", "split", "iswhat", "asof", "fraction")) + "}"
+    table = "{" + ", ".join("%s = %s" % (k, lua(words[k])) for k in ("connect", "of", "asking", "names", "smart", "route", "discount", "tip", "root", "cuberoot", "split", "iswhat", "asof", "fraction")) + "}"
     script = os.path.join(tempfile.gettempdir(), "latte-amount-probe.lua")
     open(script, "w", encoding="utf-8").write('package.path = arg[1] .. "/goo/lib/?.luau;" .. package.path\n'
                                               'print(require("amount")(arg[2], %s) or "-")\n' % table)
@@ -806,6 +806,23 @@ if shutil.which("lua"):
     assert put("zajtra + 3 dni") == "tomorrow + 3 days", put("zajtra + 3 dni")
     assert put("USD1K to eur") == "1k USD to eur" or put("USD1K to eur").startswith("(1 * 1000) USD"), put("USD1K to eur")
     os.remove(script)
+
+
+def test_calc_routes():
+    """latte-calc: the two places and the time of a connection, in English and Slovak (the words come from goo/lang/sk-amount.json)."""
+    sys.dont_write_bytecode = True
+    calc = load("latte-calc")
+    calc.FROM.update(["z", "zo"]); calc.TO.update(["do"]); calc.AT.update(["o"])
+    t = calc.parse_time("8:00")
+    assert calc.route("from zvolen to kosice".split()) == ("zvolen", "kosice", None)
+    assert calc.route("from new york to jersey city at 8:00".split()) == ("new york", "jersey city", t)
+    assert calc.route("route zvolen kosice".split()) == ("zvolen", "kosice", None)
+    assert calc.route("z zvolena do kosic o 8:00".split()) == ("zvolena", "kosic", t)
+    assert calc.route("from zvolen to kosice in 8:00".split()) == ("zvolen", "kosice", t)         # words_of turns `at` into `in`
+    assert calc.route("route zvolen".split()) is None
+
+
+test_calc_routes()
 
 
 def test_weather():

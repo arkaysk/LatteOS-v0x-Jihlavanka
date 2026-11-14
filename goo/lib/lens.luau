@@ -86,7 +86,7 @@ local home, folders = "", {}
 local typed, confirm = "", nil       -- what is in the field; the dangerous command asked about
 local found, asked = nil, 0          -- the files found for what is typed; which question the answer is to
 local pages, pages_for = {}, ""      -- the pages of the Settings that match what is typed; what that was
-local worked_label, worked_more = nil, nil    -- the weather: the place for the left of the panel, and the days ahead under it
+local worked_label, worked_rows = nil, nil    -- the weather and the connections: what stands on the left of the panel, and the lines under it ({ text, glyph })
 local worked_kind = ""                 -- what the answer is: Percentage, Currency, Conversion, Date, Unit
 local worked, worked_for = nil, ""   -- an amount in units or money worked out by qalc for what is typed; what that was
 local render, set_mode
@@ -335,7 +335,7 @@ end
 local amount_words = {}
 -- Lines that Qalculate does not read (weather, the time in a city, work hours, the share of the day gone…) are worked out by
 -- bin/latte-calc (ROADMAP 6B.48); what it does not understand goes on to Qalculate.
-local SMART = { weather = N("Weather"), time = N("Time"), diff = N("Time difference"), date = N("Date"), hours = N("Work hours"),
+local SMART = { transit = N("Journey"), weather = N("Weather"), time = N("Time"), diff = N("Time difference"), date = N("Date"), hours = N("Work hours"),
                 elapsed = N("Elapsed"), span = N("Duration") }
 local function sky_of(code)
     code = tonumber(code) or 3
@@ -354,6 +354,8 @@ local function smart_like(s)
         if FIRST[first:sub(1, 3)] then return true end
         for _, p in ipairs(type(amount_words.smart) == "table" and amount_words.smart or {}) do if first:sub(1, #p) == p then return true end end
     end
+    if s:find("^from .+ to .+") then return true end
+    for _, pattern in ipairs(type(amount_words.route) == "table" and amount_words.route or {}) do if s:find(pattern) then return true end end
     return s:find("^weather ") or s:find("^forecast ") or s:find("^time ") or s:find("^diff ") or s:find("workhours") or s:find("workdays?$")
         or s:find("percentage$") or s:find("^%a+ ?%%$") or s:find("from now") or s:find("^%a+ %d+ ?%+ ?%d")
         or (s:find("%d ?[ap]m") and (s:find("%+") or s:find(" to ")))
@@ -373,9 +375,21 @@ local function look_for_amount()
                 for i, d in ipairs(r.days or {}) do
                     days[#days + 1] = (i == 1 and tr("Today") or tr(names[(tonumber(d.weekday) or 0) + 1])) .. " " .. (d.max or 0) .. "°/" .. (d.min or 0) .. "°"
                 end
-                worked_more = table.concat(days, "   ·   ")
+                worked_rows = { { text = table.concat(days, "   ·   "), glyph = "cloud" } }
+            elseif r.kind == "transit" then
+                -- the next connections: the first on the panel, all of them under it, and where the data is from (Transitous asks to be named)
+                local first = r.items and r.items[1]
+                if not first then look_for_qalc(text) return end
+                worked, worked_label = first.dep .. " → " .. first.arr, r.from .. " → " .. r.to
+                worked_rows = {}
+                for _, it in ipairs(r.items) do
+                    local h, m = it.minutes // 60, it.minutes % 60
+                    worked_rows[#worked_rows + 1] = { text = string.format("%s → %s  ·  %s  ·  %s %d", it.dep, it.arr, h > 0 and string.format("%d h %02d min", h, m) or string.format("%d min", m), tr("Transfers:"), it.transfers),
+                                                      glyph = (it.mode == "COACH" or it.mode == "BUS") and "bus" or "train", line2 = it.via .. (it.live and "  ·  " .. tr("live") or "") }
+                end
+                worked_rows[#worked_rows + 1] = { text = tr("Data: Transitous · transitous.org/sources"), glyph = "info-circle", small = true }
             else
-                worked, worked_label, worked_more = r.answer, nil, nil
+                worked, worked_label, worked_rows = r.answer, nil, nil
             end
             worked_for, worked_kind = text, SMART[r.kind] or N("Result")
             if card.id() == "lens" and (kept.mode == 0 or fact.lens_shore) then render(true) end
@@ -386,7 +400,7 @@ local function look_for_amount()
 end
 look_for_qalc = function(text)
     local asked_for = amount(text, amount_words)
-    worked_label, worked_more = nil, nil
+    worked_label, worked_rows = nil, nil
     if not asked_for or calc(text) then worked, worked_for = nil, text return end
     local to = asked_for:match(" to (.+)$") or ""
     local money = to:find("^%u%u%u$") or to == "€" or to == "$" or to == "£" or to == "K\u{10D}"      -- money to the cent
@@ -2051,10 +2065,12 @@ local function shore_rows()
         local result, shown_amount = calc_result, calc_shown
         if shown_amount then
             -- Raycast's calculator: what was asked | → | the answer, and Enter copies the answer
-            local weather = (worked_kind == N("Weather") and worked_for == q and not result)
+            local weather = ((worked_kind == N("Weather") or worked_kind == N("Journey")) and worked_for == q and not result)
+            local under = {}
+            for _, r in ipairs(weather and worked_rows or {}) do under[#under + 1] = { label = r.text, line2 = r.line2, glyph = r.glyph, quiet = true } end
             section({ { calc = true, label = weather and worked_label or q, hint = shown_amount, line2 = tr(result and N("Math") or worked_kind), glyph = "arrow-right", copy = shown_amount,
                         main = tr("Copy Answer"), first = true, run = function() pcall(sys.call, "clipboard.set", shown_amount) end },
-                        weather and worked_more and { label = worked_more, glyph = "cloud", quiet = true } or nil })
+                        table.unpack(under) })
         end
         local hits, rows = ranked(q, 5), {}
         for i, a in ipairs(hits) do
