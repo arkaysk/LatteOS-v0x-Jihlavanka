@@ -222,65 +222,9 @@
     "words": "goo drops lively weather play bend material"
    },
    {
-    "id": "bargoo",
-    "under": "drops",
-    "name": "Window bar (BarGoo)",
-    "icon": "layout-columns",
-    "status": "ready",
-    "words": "bargoo taskbar bar windows berries arrangement fixed"
-   },
-   {
-    "id": "powergoo",
-    "under": "drops",
-    "name": "Account and power (PowerGoo)",
-    "icon": "power",
-    "status": "ready",
-    "words": "powergoo account power sleep restart shut down battery performance band"
-   },
-   {
-    "id": "quickgoo",
-    "under": "drops",
-    "name": "Quick launch (QuickGoo)",
-    "icon": "rocket",
-    "status": "ready",
-    "words": "quickgoo quick launch apps at hand favourites strip"
-   },
-   {
-    "id": "queengoo",
-    "under": "drops",
-    "name": "Apps and devices (QueenGoo)",
-    "icon": "package",
-    "status": "ready",
-    "words": "queengoo app manager device manager"
-   },
-   {
-    "id": "mediagoo",
-    "under": "drops",
-    "name": "Music and video (MediaGoo)",
-    "icon": "music",
-    "status": "ready",
-    "words": "mediagoo music video player play pause volume"
-   },
-   {
-    "id": "clockgoo",
-    "under": "drops",
-    "name": "Clock and weather (ClockGoo)",
-    "icon": "clock",
-    "status": "ready",
-    "words": "clock weather place city town world clocks time zones screen time wellbeing bedtime goal clockgoo"
-   },
-   {
-    "id": "camgoo",
-    "under": "drops",
-    "name": "Webcams (CamGoo)",
-    "icon": "camera",
-    "status": "ready",
-    "words": "webcam camera cam live picture view camgoo"
-   },
-   {
     "id": "launcher",
     "under": "drops",
-    "name": "Launcher (LensGoo)",
+    "name": "LensGoo",
     "icon": "search",
     "status": "ready",
     "words": "launcher lensgoo lists filters categories apps work media develop fun favourites search"
@@ -294,20 +238,92 @@
     "words": "lensshore launcher line ai modes tape emoji symbols kaomoji gif giphy tenor klipy key skin tone columns top bottom"
    },
    {
+    "id": "appcloud",
+    "under": "drops",
+    "name": "AppCloud",
+    "icon": "apps",
+    "status": "ready",
+    "words": "appcloud apps grid drawer phone all applications plate time date full screen"
+   },
+   {
+    "id": "bargoo",
+    "under": "drops",
+    "name": "BarGoo",
+    "icon": "layout-columns",
+    "status": "ready",
+    "words": "bargoo taskbar bar windows berries arrangement fixed"
+   },
+   {
+    "id": "dock",
+    "under": "drops",
+    "name": "DockShore",
+    "icon": "layout-columns",
+    "status": "ready",
+    "words": "dock shore pinned icons hide magnify dots size side bottom left right pleamar-wm"
+   },
+   {
+    "id": "powergoo",
+    "under": "drops",
+    "name": "PowerGoo",
+    "icon": "power",
+    "status": "ready",
+    "words": "powergoo account power sleep restart shut down battery performance band"
+   },
+   {
+    "id": "trayshore",
+    "under": "drops",
+    "name": "TrayShore",
+    "icon": "layout-distribute-vertical",
+    "status": "ready",
+    "words": "trayshore tray plate system icons network sound battery right corner"
+   },
+   {
+    "id": "clockgoo",
+    "under": "drops",
+    "name": "ClockGoo",
+    "icon": "clock",
+    "status": "ready",
+    "words": "clock weather place city town world clocks time zones screen time wellbeing bedtime goal clockgoo"
+   },
+   {
+    "id": "queengoo",
+    "under": "drops",
+    "name": "QueenGoo",
+    "icon": "package",
+    "status": "ready",
+    "words": "queengoo app manager device manager"
+   },
+   {
+    "id": "mediagoo",
+    "under": "drops",
+    "name": "MediaGoo",
+    "icon": "music",
+    "status": "ready",
+    "words": "mediagoo music video player play pause volume"
+   },
+   {
     "id": "marea",
     "under": "drops",
-    "name": "Marea",
+    "name": "MareaGoo",
     "icon": "droplet",
     "status": "ready",
     "words": "marea ball companion k4ditano shell notifications finder chat top"
    },
    {
-    "id": "dock",
+    "id": "camgoo",
     "under": "drops",
-    "name": "Dock",
-    "icon": "layout-columns",
+    "name": "CamGoo",
+    "icon": "camera",
     "status": "ready",
-    "words": "dock shore pinned icons hide magnify dots size side bottom left right pleamar-wm"
+    "words": "webcam camera cam live picture view camgoo"
+   },
+   {
+    "id": "quickgoo",
+    "under": "drops",
+    "name": "QuickGoo",
+    "icon": "rocket",
+    "status": "ready",
+    "words": "quickgoo quick launch apps at hand favourites strip"
    },
    {
     "id": "notifications",

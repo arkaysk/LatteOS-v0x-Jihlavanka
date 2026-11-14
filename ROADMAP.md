@@ -1727,7 +1727,7 @@ z `.desktop` alebo AppManagera 10H), klávesa Super otvorí to isté.
 tri podoby**, nie tretia implementácia. Ak je AI zapnutá, Enter na neznámy text pošle otázku ako LensShore (pravidlá
 6B.22 domček/oblak).
 
-**6N.04** [ ] **Vzhľad a hladina**: farba Goo ako ostatné Shore (6B.12 rozhodnutie 27. 10.), doska je stena pre hladinu
+**6N.04** [~] 14. 11. (stav na doske hotový: bežiaca minútka alebo stopky nahradia dátum na doske AppCloud, ako na ClockGoo; overené snímkou 00:58, po zrušení sa dátum vráti; chýba: príboj hladiny pri konci minútky, ďalšie stavy)  **Vzhľad a hladina**: farba Goo ako ostatné Shore (6B.12 rozhodnutie 27. 10.), doska je stena pre hladinu
 a kvapky (§21.1), príboj ako 6H.06. Stav na doske bez otvorenia (6.26) — napr. bežiaca minútka namiesto času (6D.13).
 
 
@@ -1739,6 +1739,9 @@ Premenovať aj v kóde (`cloud` ostáva), v Nastaveniach, v sk.plm a v dokument�
 **6N.06** [x] 14. 11. (Mriežka cez celú obrazovku, stĺpce a riadky podľa rozlíšenia (1920 × 1080: 10 × 6); overené snímkou.) **Mriežka AppCloud naozaj cez celú obrazovku** (používateľ 14. 11.): na latte-lab (1920 × 1080) sa otvára
 iba ako okno ~960 × 600 v strede (overené snímkou 14. 11.); veľkosť z `W`, `H`, mriežka sa prispôsobí (stĺpce a riadky podľa rozlíšenia).
 **6N.07** [x] 14. 11. (Čas a dátum vedľa seba, ikonka zrušená; karty času a kalendára z dosky bez ucha (`card_plate`); overené snímkou.) **Doska AppCloud: čas a dátum vedľa seba, nie nad sebou; ikonka na doske nemá zmysel** (používateľ 14. 11.):
+**6N.08** [x] 14. 11. **AppCloud: plynulé rolovanie** (používateľ 14. 11.): koliesko posúva zoznam po pixeloch (pružina `cl.off`), nie po stranách; virtuálny zoznam — v modeli sú iba viditeľné riadky + 1 (`cloud_first`), takže 300 aplikácií váži ako 30; kľúčové šípky držia výber vo výreze; tenký posuvník vpravo; okraje sa strácajú alfou. Hore a dole pruh zo skla bočného panela okien (`pane_*`, ako karty), kávový stred sa doň plynule rozplýva; písmo v pruhoch tmavé na svetlom paneli. Spustenie aplikácie čaká 350 ms po zatvorení (ako LensGoo) — klik overený skutočnou myšou.
+**6N.09** [x] 14. 11. **AppCloud: pruhy hore a dole štvrtinové** (2 % pri okraji, kávový stred sa rozplýva do 5 %), matné sklo bez farby bočného panela — béžová farba prebarvovala hladinu aj Shore, preto sa nepoužíva; overené snímkou aj po zatvorení.
+**6.47** [~] 14. 11. **Nastavenia › Kvapky: nové poradie** (používateľ 14. 11.): hlavná stránka zhora — vzhľady (Hravé Goo · Profi Shore · Minimalistic) · Spúšťač (LensGoo, LensShore, AppCloud) · Správa okien (BarGoo, DockShore, nič) · všeobecné voľby Goo + **Widgety a nové Goo** · Prehliadka úplne dole, **bez Preskočiť**. Podstránky v bočnom menu v poradí LensGoo, LensShore, AppCloud, BarGoo, DockShore, PowerGoo, TrayShore, ClockGoo, QueenGoo, MediaGoo, MareaGoo, CamGoo, QuickGoo (nové stránky AppCloud a TrayShore). Hotové a nasadené. **Chýba:** samostatné okno „Spravovať widgety / Pridať nové Goo“ (zatiaľ nečinné tlačidlo): import Goo od iného výrobcu, vlastné Goo, správa gadgetov od AI z pleamar režimu Builder (Win+B); obrázky `apps/settings/drops/{appcloud,trayshore,…}.png`.
 ikonku zrušiť alebo dať jej jasnú funkciu (otvorí mriežku?). Karty času a dátumu z dosky **úplne bez ucha** — dnes majú malé ucho.
 
 ---

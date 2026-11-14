@@ -42,6 +42,12 @@ ShellRoot {
         launcher: { tech: QT_TR_NOOP("The launcher and the magnifier: a drop in the place of Start. LensShore shares its text field."),
             funcs: [QT_TR_NOOP("Left button or the Windows key: the launcher card."), QT_TR_NOOP("Right button: a quick list of apps."), QT_TR_NOOP("Modes: Apps, Files, Web, Terminal and AI."), QT_TR_NOOP("Wheel: the size.")],
             tips: [QT_TR_NOOP("The whole card works without a mouse: Tab and Shift+Tab change the mode, arrows pick a line, Enter opens, Esc closes."), QT_TR_NOOP("The AI is always inside: it answers through your own signed-in tools, never in a browser."), QT_TR_NOOP("Every result has a tag of where it came from: App, Settings, File, Folder or Web.")] },
+        appcloud: { tech: QT_TR_NOOP("All your apps in a grid over the whole screen, as the drawer of a phone: a plate in the corner with the time opens it."),
+            funcs: [QT_TR_NOOP("A press on the plate: the apps over the screen; the wheel scrolls them smoothly, whatever their number."), QT_TR_NOOP("Kinds on top (Internet, Office, Media…), the field at the bottom filters at once; Enter starts the chosen one."), QT_TR_NOOP("Right button on the time or the date: ClockGoo's time card or calendar, with no ear.")],
+            tips: [QT_TR_NOOP("It only lists apps: no questions, no AI, so it may stay beside LensGoo or LensShore."), QT_TR_NOOP("Alt carries the plate along the edge, as the other shores.")] },
+        trayshore: { tech: QT_TR_NOOP("The plate in the right corner: the tray, the network, the sound and the battery in one place."),
+            funcs: [QT_TR_NOOP("A press on an icon opens its panel; the panels grow out of the plate."), QT_TR_NOOP("Alt carries the plate along the edge.")],
+            tips: [QT_TR_NOOP("It can be hidden; the Minimal look hides it.")] },
         bargoo: { tech: QT_TR_NOOP("The window bar as a drop: its head, the biggest drop, shows how the windows are arranged (tape, tiles or floating) and the windows hang from it as berries."),
             funcs: [QT_TR_NOOP("Left button on the head: the next arrangement."), QT_TR_NOOP("Right button on the head: show the desktop; a second press brings the windows back."), QT_TR_NOOP("Wheel: the next window."), QT_TR_NOOP("A berry: a press switches to the window or puts it away, the right button opens its menu.")],
             tips: [QT_TR_NOOP("The berries are out only when windows float; in tape and tiles hold the mouse over the head to slide them out."), QT_TR_NOOP("Every further monitor has its own BarGoo with the windows of that monitor.")] },
@@ -1036,22 +1042,6 @@ ShellRoot {
                             Image { anchors.fill: parent; source: "file://" + shell.share + "/wallpapers/latteos-2.jpg"; fillMode: Image.PreserveAspectCrop; sourceSize.width: 240 }
                             Rectangle { anchors.fill: parent; color: Theme.glasses[pane.modelData.id] } } } } }
 
-            // the tour of the drops (ROADMAP 6.40): the first time the look is changed, and again from the button below
-            Part { visible: shell.page === "drops" && shell.tourOn; width: view.room; title: I18n.tr("Tour") + "  ·  " + (shell.tourStep + 1) + " / " + shell.tourSteps.length
-                Rectangle { width: view.room; height: tourRow.height + 32; radius: 20; color: Theme.card; border.width: 2; border.color: Theme.gold
-                    readonly property var step: shell.tourSteps[shell.tourStep]
-                    Row { id: tourRow; x: 16; y: 16; spacing: 22
-                        DropPreview { width: Math.min(300, (view.room - 70) * 0.5); kind: tourRow.parent.step.kind; calm: goo.kept.lively === false }
-                        Column { width: view.room - 70 - Math.min(300, (view.room - 70) * 0.5); spacing: 10
-                            Label { width: parent.width; text: I18n.tr(tourRow.parent.step.title); font.pixelSize: 18; font.weight: 700 }
-                            Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; text: I18n.tr(tourRow.parent.step.text) }
-                            Row { spacing: 6
-                                Repeater { model: shell.tourSteps.length; Rectangle { required property int index; width: index === shell.tourStep ? 18 : 7; height: 7; radius: 3.5; color: index === shell.tourStep ? Theme.gold : Theme.line
-                                    Behavior on width { NumberAnimation { duration: 140 } } } } }
-                            Row { spacing: 8
-                                Pill { text: shell.tourStep < shell.tourSteps.length - 1 ? I18n.tr("Next") : I18n.tr("Done"); strong: true
-                                       onPressed: shell.tourStep < shell.tourSteps.length - 1 ? shell.tourStep++ : shell.tourEnd() }
-                                Pill { visible: shell.tourStep < shell.tourSteps.length - 1; text: I18n.tr("Skip"); onPressed: shell.tourEnd() } } } } } }
             // the desktop's look (ROADMAP 6.39): a preset that only sets the choices below; changed by hand, it is "Custom"
             Part { id: lookPart; visible: shell.page === "drops"; width: view.room; title: I18n.tr("Desktop look")
                    readonly property var drops: dropList.list.map(d => d.id)
@@ -1061,7 +1051,7 @@ ShellRoot {
                                                      pro: { lens: "shore", taskbar: "dockshore", hidden: drops.slice() },
                                                      minimal: { lens: "goo", appcloud: true, taskbar: "dockshore", hidden: drops.concat(["trayshore"]) } })
                    readonly property var kept: goo.kept.looks || ({})
-                   readonly property var names: ({ playful: I18n.tr("Playful"), pro: I18n.tr("Pro"), minimal: I18n.tr("Minimal") })
+                   readonly property var names: ({ playful: I18n.tr("Playful Goo"), pro: I18n.tr("Pro Shore"), minimal: I18n.tr("Minimalistic") })
                    readonly property var mine: Object.keys(kept).filter(id => !builtin[id])
                    function profile(id) { return kept[id] || builtin[id] }
                    function same(a, b) { return !!a && !!b && a.lens === b.lens && !!a.appcloud === !!b.appcloud && a.taskbar === b.taskbar && JSON.stringify((a.hidden || []).slice().sort()) === JSON.stringify((b.hidden || []).slice().sort()) }
@@ -1093,23 +1083,18 @@ ShellRoot {
                     Pill { visible: lookPart.last !== "" && (lookPart.kept[lookPart.last] !== undefined); icon: "arrow-back-up"; text: lookPart.builtin[lookPart.last] ? I18n.tr("Put «{name}» back as it was", { name: lookPart.names[lookPart.last] }) : I18n.tr("Delete the look"); onPressed: lookPart.forget(lookPart.last) } }
                 Row { spacing: 8
                     Field { id: lookName; width: Math.min(300, view.room - 200); icon: "tag"; hint: I18n.tr("Name a new look…") }
-                    Pill { icon: "plus"; text: I18n.tr("Keep as a new look"); onPressed: { const n = lookName.text.trim(); if (n !== "" && !lookPart.builtin[n]) { lookPart.keep(n); lookName.text = "" } } } }
-                Pill { icon: "player-play"; text: I18n.tr("Show the tour"); onPressed: { shell.tourStep = 0; shell.tourOn = true } } }
+                    Pill { icon: "plus"; text: I18n.tr("Keep as a new look"); onPressed: { const n = lookName.text.trim(); if (n !== "" && !lookPart.builtin[n]) { lookPart.keep(n); lookName.text = "" } } } } }
 
             // the main page: two choices of exactly one (ROADMAP 6.41): the launcher, and what manages the windows
             Part { visible: shell.page === "drops"; width: view.room; title: I18n.tr("Launcher")
-                   note: I18n.tr("One of them is there at a time; the Windows key opens whichever it is. They share the same text field.")
+                   note: I18n.tr("LensGoo or LensShore: one of them at a time, the Windows key opens it. AppCloud, only the apps, may stay beside either.")
                 Repeater { model: [{ id: "goo", name: "LensGoo", hint: QT_TR_NOOP("a drop: a press opens it"), icon: "search" },
-                                   { id: "shore", name: "LensShore", hint: QT_TR_NOOP("a line of goo, built around the AI"), icon: "sparkles" }]
+                                   { id: "shore", name: "LensShore", hint: QT_TR_NOOP("a line of goo, built around the AI"), icon: "sparkles" },
+                                   { id: "cloud", name: "AppCloud", hint: QT_TR_NOOP("a plate in the corner: the time, and all apps over the screen"), icon: "apps" }]
                     Choice { required property var modelData; width: 220; height: 180; text: modelData.name; hint: I18n.tr(modelData.hint); 
-                             on: (goo.kept.lens === "shore" ? "shore" : "goo") === modelData.id; onPressed: goo.set("lens", modelData.id)
-                             DropPreview { width: parent.width; kind: "lens-" + parent.parent.modelData.id; calm: goo.kept.lively === false } } } }
-            // AppCloud (ROADMAP 6N.05): only the apps, as a phone's drawer; it may be there beside either launcher
-            Part { visible: shell.page === "drops"; width: view.room; title: "AppCloud"
-                   note: I18n.tr("A plate in the corner with the time; a press on it shows all apps over the screen. It only lists apps: no questions, no AI. It may stay beside LensGoo or LensShore.")
-                Switch { text: I18n.tr("Show AppCloud"); on: goo.kept.appcloud === true || goo.kept.lens === "cloud"
-                         onPressed: { if (goo.kept.lens === "cloud") goo.set("lens", "goo"); goo.set("appcloud", !on) } }
-                DropPreview { width: 220; kind: "app-cloud"; calm: goo.kept.lively === false } }
+                             on: modelData.id === "cloud" ? (goo.kept.appcloud === true || goo.kept.lens === "cloud") : (goo.kept.lens === "shore" ? "shore" : "goo") === modelData.id
+                             onPressed: { if (modelData.id !== "cloud") goo.set("lens", modelData.id); else { if (goo.kept.lens === "cloud") goo.set("lens", "goo"); goo.set("appcloud", !on) } }
+                             DropPreview { width: parent.width; kind: parent.parent.modelData.id === "cloud" ? "app-cloud" : "lens-" + parent.parent.modelData.id; calm: goo.kept.lively === false } } } }
             // BarGoo is switched off as every drop is (its id in "hidden", which Goo turns into the fact bar_off); `taskbar` says what stands in its place
             Part { id: taskPart; visible: shell.page === "drops"; width: view.room; title: I18n.tr("Window management")
                    note: I18n.tr("What shows the open windows: one of them is there at a time. DockShore is the dock of pleamar-wm. With None the windows have no Minimize button.")
@@ -1130,14 +1115,32 @@ ShellRoot {
             Part { visible: shell.page === "drops"; width: view.room; title: I18n.tr("How the drops behave")
                 Switch { text: I18n.tr("Lively"); hint: I18n.tr("Left alone they fall asleep, the weather outside shows on the surface, playful ones play."); on: goo.kept.lively !== false; onPressed: goo.set("lively", !on) }
                 Switch { text: I18n.tr("The surface bends"); hint: I18n.tr("Ripples lift the drops and the edge gives under them."); on: goo.kept.bends !== false; onPressed: goo.set("bends", !on) } }
-            Part { visible: shell.page === "drops" && dropList.list.length > 0; width: view.room; title: I18n.tr("Drops on the desktop")
-                   note: I18n.tr("Any drop can be hidden, PowerGoo too: what it offers is also behind Ctrl+Alt+Del. The launcher is chosen above and always stays.")
-                Repeater { model: dropList.list
-                    Switch { required property var modelData; text: modelData.name; on: (goo.kept.hidden || []).indexOf(modelData.id) < 0
-                             onPressed: { const h = (goo.kept.hidden || []).filter(id => id !== modelData.id); if (on) h.push(modelData.id); goo.set("hidden", h) } } } }
             Part { visible: shell.page === "drops"; width: view.room; title: I18n.tr("Places")
                    note: I18n.tr("PowerGoo and LensGoo are always there. The coffee the drops are made of is under Coffee and cup.")
                 Pill { icon: "arrow-back-up"; text: I18n.tr("Put every drop back in its place"); onPressed: Quickshell.execDetached(["latte-say", "emit reset_places"]) } }
+
+            // widgets and new Goo: a window of its own, not made yet (ROADMAP 6.47): other makers' Goo, one's own, the gadgets the AI builds in pleamar's Builder
+            Part { visible: shell.page === "drops"; width: view.room; title: I18n.tr("Widgets and new Goo")
+                   note: I18n.tr("A window of its own, to come: import Goo from another maker, make your own, and manage the gadgets the AI builds in pleamar's Builder (Win+B).")
+                Pill { icon: "puzzle"; text: I18n.tr("Manage widgets / Add new Goo"); enabled: false; opacity: 0.55 } }
+            // the tour, at the very bottom of the page: no Skip, it is left with Next and Done
+            Part { visible: shell.page === "drops" && !shell.tourOn; width: view.room; title: I18n.tr("Tour")
+                Pill { icon: "player-play"; text: I18n.tr("Show the tour"); onPressed: { shell.tourStep = 0; shell.tourOn = true } } }
+            // the tour of the drops (ROADMAP 6.40): the first time the look is changed, and again from the button below
+            Part { visible: shell.page === "drops" && shell.tourOn; width: view.room; title: I18n.tr("Tour") + "  ·  " + (shell.tourStep + 1) + " / " + shell.tourSteps.length
+                Rectangle { width: view.room; height: tourRow.height + 32; radius: 20; color: Theme.card; border.width: 2; border.color: Theme.gold
+                    readonly property var step: shell.tourSteps[shell.tourStep]
+                    Row { id: tourRow; x: 16; y: 16; spacing: 22
+                        DropPreview { width: Math.min(300, (view.room - 70) * 0.5); kind: tourRow.parent.step.kind; calm: goo.kept.lively === false }
+                        Column { width: view.room - 70 - Math.min(300, (view.room - 70) * 0.5); spacing: 10
+                            Label { width: parent.width; text: I18n.tr(tourRow.parent.step.title); font.pixelSize: 18; font.weight: 700 }
+                            Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; text: I18n.tr(tourRow.parent.step.text) }
+                            Row { spacing: 6
+                                Repeater { model: shell.tourSteps.length; Rectangle { required property int index; width: index === shell.tourStep ? 18 : 7; height: 7; radius: 3.5; color: index === shell.tourStep ? Theme.gold : Theme.line
+                                    Behavior on width { NumberAnimation { duration: 140 } } } } }
+                            Row { spacing: 8
+                                Pill { text: shell.tourStep < shell.tourSteps.length - 1 ? I18n.tr("Next") : I18n.tr("Done"); strong: true
+                                       onPressed: shell.tourStep < shell.tourSteps.length - 1 ? shell.tourStep++ : shell.tourEnd() } } } } } }
 
             // what a drop is: a picture of it (a place is kept until there is one), how it works, what it does and a few tips
             Part { id: aboutPart; readonly property var info: shell.dropInfo[shell.page === "launcher" ? "launcher" : shell.page] || null
@@ -1158,6 +1161,14 @@ ShellRoot {
                         Repeater { model: aboutPart.info ? aboutPart.info.tips : []
                             Label { required property string modelData; width: parent.width; text: "•  " + I18n.tr(modelData); wrapMode: Text.WordWrap; font.pixelSize: 13; color: Theme.dim } } } } }
 
+            // AppCloud's and TrayShore's own pages: whether they are on the desktop
+            Part { visible: shell.page === "appcloud"; width: view.room; title: I18n.tr("On the desktop")
+                Switch { text: I18n.tr("Show AppCloud"); on: goo.kept.appcloud === true || goo.kept.lens === "cloud"
+                         onPressed: { if (goo.kept.lens === "cloud") goo.set("lens", "goo"); goo.set("appcloud", !on) } }
+                DropPreview { width: 220; kind: "app-cloud"; calm: goo.kept.lively === false } }
+            Part { visible: shell.page === "trayshore"; width: view.room; title: I18n.tr("On the desktop")
+                Switch { text: I18n.tr("Show it on the desktop"); on: (goo.kept.hidden || []).indexOf("trayshore") < 0
+                         onPressed: { const h = (goo.kept.hidden || []).filter(x => x !== "trayshore"); if (on) h.push("trayshore"); goo.set("hidden", h) } } }
             // the launcher: the drop LensGoo or LensShore's line on the shore, one at a time (ROADMAP 6B.12)
             Part { visible: shell.page === "launcher"; width: view.room; title: I18n.tr("The launcher")
                    note: I18n.tr("One of them is there at a time. The Windows key opens whichever it is.")

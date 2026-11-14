@@ -13,19 +13,21 @@ part Cloud {
     fact cloud_grid = false                    // the apps are out
     fact cloud_tab = 0                         // the kind chosen: 0 all
     fact cloud_cols = 8                        // columns and rows of the grid, from the size of the screen
-    fact cloud_rows = 4
+    fact cloud_ch = 138                        // the height of a row of apps
+    fact cloud_first = 0                       // the first row of the model: only the rows seen (and one more) are in it, so 300 apps weigh no more than 30
+    fact cloud_target = 0                      // where the list is going, in px; cl.off travels there with a spring
+    fact cloud_max = 0                         // how far it can go
     fact cloud_n = 0                           // how many apps are shown on this page
-    fact cloud_more = false                    // there is a page after this one, or before it
     fact cloud_sel = 0                         // the cell chosen with the keys: Enter starts it
     fact cloud_typed = false                   // something is typed: Left and Right then move in the field
     event cloud_key ->                         // 0 left, 1 right, 2 up, 3 down
     model ctab max 8 { name: text }
-    model capp max 60 { name: text; icon: image 96, 96; has_icon: bool }
+    model capp max 120 { name: text; icon: image 96, 96; has_icon: bool }
     event cloud_open ->
     event cloud_close ->
     event cloud_launch ->                      // the app in that cell
     event cloud_pick ->                        // the kind in that tab
-    event cloud_wheel ->                       // 1 down a page, 0 up
+    event cloud_scrolled ->                    // the first row seen has changed (the logic fills the model from it)
     event cloud_enter ->
     event cloud_time ->
     event cloud_calendar ->
@@ -52,18 +54,39 @@ part Cloud {
     prop cl.p = 0 ~spring(420, 30)
     follow cl.p = if(cloud_grid, 1, 0)
     let cl.cw = (W - 160) / max(cloud_cols, 1)
-    let cl.ch = (H - 250) / max(cloud_rows, 1)
+    let cl.ch = cloud_ch
+    let cl.B = H - SHORE_H                     // the overlay ends above the shores: the plates (this one with the time, TrayShore, DockShore) stay seen and pressed
+    let cl.pc = mix(coffee, cream, 0.1)                                // the band: a little lighter than the coffee
+    let cl.glass = if(true_glass, 1, material)
     let cl.gx = 80
-    let cl.gy = 96 + 20 * (1 - cl.p)
+    let cl.gy = 90 + 20 * (1 - cl.p)
+    // the list moves smoothly, a notch of the wheel is a little under a row; it stops at its ends
+    prop cl.off = 0 ~spring(240, 30)
+    follow cl.off = cloud_target
+    let cl.first = max(0, floor(cl.off / cl.ch))
+    on change cl.first { emit cloud_scrolled(cl.first) }
     group {
         show: cl.p > 0.01
         opacity: cl.p
-        // the whole screen is the coffee's; a press on an empty place closes it
+        // the whole screen: coffee in the middle, and at the top and the bottom a narrow band of frosted glass (a quarter of what it
+        // was), the coffee melting into it. The windows' side-panel colour is not laid over it: it took the whole level and the shores
+        // with it. A press on an empty place closes it
+        body {
+            gradient: 0, 0 to 0, cl.B, cl.pc, cl.pc 2%, coffee 5%, coffee 95%, cl.pc 98%, cl.pc
+            glass: cl.glass * 100%
+            lens: material > 0.02
+            frost: 100%
+            smoke: cl.glass * 62%
+            tint: 22%
+            box { from: 0, 0; size: W, cl.B; corner: 22 }
+        }
+        // the frame: a thin outline on all four sides, as a window has
         body {
             color: coffee
-            box { from: 0, 0; size: W, H }
+            border: -look.outline, mix(coffee, cream, 0.45)
+            box { from: 3, 3; size: W - 6, cl.B - 6; corner: 20 }
         }
-        zone box cloud_out { from: 0, 0; size: W, H; active: cloud_grid; label: "Close" }
+        zone box cloud_out { from: 0, 0; size: W, cl.B; active: cloud_grid; label: "Close" }
         // the kinds, in the middle on top
         repeat t in 0..8 {
             let tx.$t = W / 2 - ctab.count * 59 + t * 118 + 4
@@ -72,30 +95,37 @@ part Cloud {
             zone box ctab_hit.$t { from: tx.$t, 36; size: 110, 34; cursor: pointer; role: tab; label: "{ctab.$t.name}"; active: cloud_grid and t < ctab.count }
             on press ctab_hit.$t { emit cloud_pick(t) }
         }
-        // the grid
-        repeat k in 0..60 {
-            let gx.$k = cl.gx + mod(k, max(cloud_cols, 1)) * cl.cw
-            let gy.$k = cl.gy + floor(k / max(cloud_cols, 1)) * cl.ch
-            box { from: gx.$k + 4, gy.$k + 2; size: cl.cw - 8, cl.ch - 4; corner: 16; color: cream; opacity: max(9% * capp_hit.$k.hover, if(cloud_sel == k, 13%, 0)); show: k < cloud_n }
-            box { from: gx.$k + 4, gy.$k + 2; size: cl.cw - 8, cl.ch - 4; corner: 16; stroke: 1.5; color: gold; opacity: if(cloud_sel == k, 70%, 0); show: k < cloud_n }
-            image capp.$k.icon { at: gx.$k + cl.cw / 2 - 32, gy.$k + cl.ch / 2 - 50; size: 64, 64; show: k < cloud_n and capp.$k.has_icon }
-            text cloud_ic_apps { at: gx.$k + cl.cw / 2, gy.$k + cl.ch / 2 - 18; anchor: center; size: 42; color: cream; opacity: 70%; show: k < cloud_n and not capp.$k.has_icon; family: "tabler-icons" }
-            text capp.$k.name { at: gx.$k + cl.cw / 2, gy.$k + cl.ch / 2 + 40; anchor: center; size: 13; width: cl.cw - 16; lines: 1; color: cream; show: k < cloud_n; family: "Inter" }
-            zone box capp_hit.$k { from: gx.$k + 4, gy.$k + 2; size: cl.cw - 8, cl.ch - 4; cursor: pointer; role: button; label: "{capp.$k.name}"; active: cloud_grid and k < cloud_n }
-            on press capp_hit.$k { emit cloud_launch(k) }
+        // the apps, in a window of the screen: what leaves it fades out, and a press cannot land on what is faded
+        zone box cloud_wheel_zone { from: 0, 90; size: W, cl.B - 190; active: cloud_grid; label: "Apps" }
+        group {
+            clip box { from: 0, 90; size: W, cl.B - 190 }
+            repeat k in 0..120 {
+                let gx.$k = cl.gx + mod(k, max(cloud_cols, 1)) * cl.cw
+                let gy.$k = cl.gy + (floor(k / max(cloud_cols, 1)) + cloud_first) * cl.ch - cl.off
+                let fd.$k = clamp(min((gy.$k + cl.ch / 2 - 90) / 28, (cl.B - 100 - gy.$k - cl.ch / 2) / 28) + 0.5, 0, 1)
+                let sl.$k = if(cloud_sel - cloud_first * cloud_cols == k, 1, 0)
+                box { from: gx.$k + 4, gy.$k + 2; size: cl.cw - 8, cl.ch - 4; corner: 16; color: cream; opacity: fd.$k * max(9% * capp_hit.$k.hover, 13% * sl.$k); show: k < cloud_n }
+                box { from: gx.$k + 4, gy.$k + 2; size: cl.cw - 8, cl.ch - 4; corner: 16; stroke: 1.5; color: gold; opacity: fd.$k * 70% * sl.$k; show: k < cloud_n }
+                image capp.$k.icon { at: gx.$k + cl.cw / 2 - 32, gy.$k + cl.ch / 2 - 50; size: 64, 64; opacity: fd.$k; show: k < cloud_n and capp.$k.has_icon }
+                text cloud_ic_apps { at: gx.$k + cl.cw / 2, gy.$k + cl.ch / 2 - 18; anchor: center; size: 42; color: cream; opacity: fd.$k * 70%; show: k < cloud_n and not capp.$k.has_icon; family: "tabler-icons" }
+                text capp.$k.name { at: gx.$k + cl.cw / 2, gy.$k + cl.ch / 2 + 40; anchor: center; size: 13; width: cl.cw - 16; lines: 1; color: cream; opacity: fd.$k; show: k < cloud_n; family: "Inter" }
+                zone box capp_hit.$k { from: gx.$k + 4, gy.$k + 2; size: cl.cw - 8, cl.ch - 4; cursor: pointer; role: button; label: "{capp.$k.name}"; active: cloud_grid and k < cloud_n and fd.$k > 0.5 }
+                on press capp_hit.$k { emit cloud_launch(k) }
+            }
         }
-        text cloud_none { at: W / 2, H / 2 - 20; anchor: center; size: 15; color: cream; opacity: 60%; show: cloud_n == 0; family: "Inter" }
+        // a thin bar at the right shows where it is, when there is more than the screen holds
+        box { from: W - 14, 96 + (cl.B - 202) * cl.off / max(cloud_max + cl.B - 190, 1); size: 4, (cl.B - 202) * (cl.B - 190) / max(cloud_max + cl.B - 190, 1); corner: 2; color: cream; opacity: 30% * if(cloud_max > 0, 1, 0) }
+        text cloud_none { at: W / 2, cl.B / 2 - 20; anchor: center; size: 15; color: cream; opacity: 60%; show: cloud_n == 0; family: "Inter" }
         // the field at the bottom: it only filters the apps
-        box { from: W / 2 - 280, H - 84; size: 560, 42; corner: 21; color: cream; opacity: 9% + 5% * cloud_field.hover }
-        text cloud_ic_search { at: W / 2 - 256, H - 63; anchor: center; size: 17; color: cream; opacity: 70%; family: "tabler-icons" }
-        input cloud_q { at: W / 2 - 236, H - 73; width: 500; size: 15; color: cream; selection: #5a463a; family: "Inter"; label: "Search apps" }
-        zone box cloud_field { from: W / 2 - 280, H - 84; size: 560, 42; cursor: text; label: "Search"; active: cloud_grid }
-        zone box cloud_wheel_zone { from: 0, 80; size: W, H - 180; active: cloud_grid and cloud_more; label: "Apps" }
+        box { from: W / 2 - 280, cl.B - 84; size: 560, 42; corner: 21; color: cream; opacity: 9% + 5% * cloud_field.hover }
+        text cloud_ic_search { at: W / 2 - 256, cl.B - 63; anchor: center; size: 17; color: cream; opacity: 70%; family: "tabler-icons" }
+        input cloud_q { at: W / 2 - 236, cl.B - 73; width: 500; size: 15; color: cream; selection: #5a463a; family: "Inter"; label: "Search apps" }
+        zone box cloud_field { from: W / 2 - 280, cl.B - 84; size: 560, 42; cursor: text; label: "Search"; active: cloud_grid }
     }
     on press cloud_out { emit cloud_close }
     on press cloud_field { focus cloud_q }
     on submit cloud_q { emit cloud_enter }
-    on scroll cloud_wheel_zone { emit cloud_wheel(if(wheel > 0, 0, 1)) }
+    on scroll cloud_wheel_zone { cloud_target = clamp(cloud_target - wheel * cl.ch * 0.8, 0, cloud_max) }
     on key Escape while cloud_grid { emit cloud_close }
     on key Left while cloud_grid and not cloud_typed { emit cloud_key(0) }
     on key Right while cloud_grid and not cloud_typed { emit cloud_key(1) }

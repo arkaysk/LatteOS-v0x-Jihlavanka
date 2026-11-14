@@ -5,17 +5,18 @@ local E = require("lib/engine")
 local wm = require("lib/wm")
 local icons = require("lib/icons")
 local open = require("lib/open")
+local timers = require("lib/timers")
 
 local M = {}
 local function N(s) return s end
 local SHORT = { N("Su"), N("Mo"), N("Tu"), N("We"), N("Th"), N("Fr"), N("Sa") }
-local PAGE = 32                              -- apps on a page: columns × rows, set by size() from the screen
-local cols = 8
+local CH = 138                               -- a row of apps, px (the same in parts/cloud.plm: cloud_ch)
+local cols, win, first = 8, 80, 0            -- columns; apps in the model: the rows seen and one more; the first row in it
 -- the kinds of the freedesktop menu, in the order a phone's drawer has them
 local KINDS = { { "Network", N("Internet") }, { "Office", N("Office") }, { "AudioVideo", N("Media") }, { "Graphics", N("Graphics") },
                 { "Game", N("Games") }, { "Development", N("Development") }, { "System", N("System") } }
 
-local all, shown, page, tabs = {}, {}, 0, {}
+local all, shown, tabs = {}, {}, 0, {}
 local function num(v, d) return type(v) == "number" and v or d end
 local function kinds_of(a) return type(a.categories) == "table" and table.concat(a.categories, ";") or tostring(a.categories or "") end
 
@@ -23,7 +24,11 @@ local function kinds_of(a) return type(a.categories) == "table" and table.concat
 local function tick()
     local t = os.date("*t")
     text.cloud_hm = string.format("%02d:%02d", t.hour, t.min)
-    text.cloud_date = tr(SHORT[t.wday]) .. " " .. t.day .. ". " .. t.month .. "."
+    -- a timer or the stopwatch running takes the date's place, as on ClockGoo (6D.13)
+    local running, started, left = timers.timer()
+    if started then text.cloud_date = timers.clock(left + (running and 999 or 0))
+    elseif timers.all().watch.running then text.cloud_date = timers.clock(timers.elapsed())
+    else text.cloud_date = tr(SHORT[t.wday]) .. " " .. t.day .. ". " .. t.month .. "." end
 end
 
 -- the kinds present, as tabs: All first
@@ -38,16 +43,17 @@ local function make_tabs()
     model.ctab = tabs
 end
 
--- columns and rows from the screen: cells 150 × 130 at the least, room kept for the kinds on top and the field at the bottom
+-- columns from the screen, and how many apps the model holds: the rows that are seen, and one more
 local function size()
     local w, h = num(fact.sw, 0), num(fact.sh, 0)
     if w <= 0 or h <= 0 then return end
-    cols = math.max(4, math.min(10, math.floor((w - 160) / 150)))
-    local rows = math.max(2, math.min(6, math.floor((h - 250) / 130)))
-    PAGE = cols * rows
-    fact.cloud_cols, fact.cloud_rows = cols, rows
+    cols = math.max(4, math.min(12, math.floor((w - 160) / 150)))
+    win = cols * (math.ceil((h - 236) / CH) + 1)
+    fact.cloud_cols, fact.cloud_ch = cols, CH
 end
+local function view() return math.max(0, num(fact.sh, 0) - 236) end
 
+-- the model is a window of the list: only the rows seen are in it (virtual list), however many apps there are
 local function fill()
     size()
     local q = string.lower(text.cloud_q or "")
@@ -59,19 +65,29 @@ local function fill()
         local in_kind = not (kind and kind.kind) or string.find(";" .. kinds_of(a) .. ";", ";" .. kind.kind .. ";", 1, true) ~= nil
         if in_kind and (q == "" or string.find(words, q, 1, true)) then shown[#shown + 1] = a end
     end
-    local pages = math.max(1, math.ceil(#shown / PAGE))
-    page = math.max(0, math.min(page, pages - 1))
+    local total = math.ceil(#shown / cols)
+    fact.cloud_max = math.max(0, total * CH - view())
+    fact.cloud_target = math.max(0, math.min(num(fact.cloud_target, 0), fact.cloud_max))
+    first = math.max(0, math.min(first, total - 1))
     local cells = {}
-    for i = 1, PAGE do
-        local a = shown[page * PAGE + i]
+    for i = 1, win do
+        local a = shown[first * cols + i]
         if not a then break end
         cells[i] = { name = a.local_name or a.name or a.id or "", icon = a.icon or "", has_icon = (a.icon or "") ~= "" }
     end
     model.capp = cells
+    fact.cloud_first = first
     fact.cloud_n = #cells
-    fact.cloud_sel = math.max(0, math.min(num(fact.cloud_sel, 0), #cells - 1))
+    fact.cloud_sel = math.max(0, math.min(num(fact.cloud_sel, 0), #shown - 1))
     fact.cloud_typed = (text.cloud_q or "") ~= ""
-    fact.cloud_more = pages > 1
+end
+
+-- the chosen cell stays in view: the list goes just far enough
+local function show_sel()
+    local top = math.floor(num(fact.cloud_sel, 0) / cols) * CH
+    local t = num(fact.cloud_target, 0)
+    if top < t then t = top elseif top + CH > t + view() then t = top + CH - view() end
+    fact.cloud_target = math.max(0, math.min(t, num(fact.cloud_max, 0)))
 end
 
 -- the plate stands in the water: the apps coming out of it or going back push the level at its end (as TrayShore's panel)
@@ -83,7 +99,7 @@ local function close() if fact.cloud_grid then surge() end fact.cloud_grid = fal
 local function start_app(a)
     if not a then return end
     close()
-    open.app(a)
+    after(350, function() open.app(a) end)         -- as LensGoo waits (lib/lens.luau LET_GO): the keyboard lent to the overlay is let go first, or the app opens without it
 end
 
 -- where its plate lies: a wall for the level and the drops, and a stretch they keep off (as TrayShore's)
@@ -107,7 +123,7 @@ function M.start()
     text.cloud_ic_search = icons["search"] or ""
     text.cloud_none = tr("Nothing found")
     tick()
-    every(5000, tick)
+    every(1000, tick)
     pcall(sys.watch, "apps", function(list)
         all = type(list) == "table" and list or {}
         table.sort(all, function(x, y) return string.lower(x.local_name or x.name or "") < string.lower(y.local_name or y.name or "") end)
@@ -119,24 +135,20 @@ function M.start()
     on("fact:sw", function() place() fill() end)
     on("fact:sh", place)
     on("cloud_open", function() if fact.cloud_grid then close() else fact.cloud_grid = true end end)
-    -- the keys: across a row, and a row up or down (a page further at the end)
+    -- the keys: across a row, and a row up or down; the list follows the choice
     on("cloud_key", function(k)
-        k = tonumber(k) or 0
-        local sel, n = num(fact.cloud_sel, 0), num(fact.cloud_n, 0)
-        local step = ({ [0] = -1, 1, -cols, cols })[k] or 0
-        local to = sel + step
-        if to >= n and (k == 1 or k == 3) and (page + 1) * PAGE < #shown then page = page + 1 fact.cloud_sel = 0 fill() return end
-        if to < 0 and (k == 0 or k == 2) and page > 0 then page = page - 1 fill() fact.cloud_sel = num(fact.cloud_n, 1) - 1 return end
-        fact.cloud_sel = math.max(0, math.min(to, n - 1))
+        local step = ({ [0] = -1, 1, -cols, cols })[tonumber(k) or 0] or 0
+        fact.cloud_sel = math.max(0, math.min(num(fact.cloud_sel, 0) + step, #shown - 1))
+        show_sel()
     end)
-    on("cloud_opened", function() text.cloud_q, page, fact.cloud_tab, fact.cloud_sel = "", 0, 0, 0 fill() surge() end)
+    on("cloud_opened", function() text.cloud_q, first, fact.cloud_tab, fact.cloud_sel, fact.cloud_target = "", 0, 0, 0, 0 fill() surge() end)
     on("cloud_close", close)
-    on("cloud_pick", function(t) fact.cloud_tab = tonumber(t) or 0 page = 0 fill() end)
-    on("cloud_wheel", function(down) page = page + ((tonumber(down) or 0) == 1 and 1 or -1) fill() end)
-    on("text:cloud_q", function() page, fact.cloud_sel = 0, 0 fill() end)
-    on("cloud_launch", function(k) start_app(shown[page * PAGE + (tonumber(k) or 0) + 1]) end)
+    on("cloud_pick", function(t) fact.cloud_tab = tonumber(t) or 0 first, fact.cloud_target, fact.cloud_sel = 0, 0, 0 fill() end)
+    on("cloud_scrolled", function(f) first = tonumber(f) or 0 fill() end)
+    on("text:cloud_q", function() first, fact.cloud_target, fact.cloud_sel = 0, 0, 0 fill() end)
+    on("cloud_launch", function(k) start_app(shown[first * cols + (tonumber(k) or 0) + 1]) end)
     on("cloud_enter", function()
-        local a = shown[page * PAGE + num(fact.cloud_sel, 0) + 1] or shown[1]
+        local a = shown[num(fact.cloud_sel, 0) + 1] or shown[1]
         if a then start_app(a) end
         -- nothing found: nothing happens (AppCloud has no questions, 6N.05)
     end)
