@@ -50,6 +50,7 @@
 /usr/bin/latte-desktop                                  <- bin/latte-desktop
 /usr/bin/latte-properties                               <- bin/latte-properties
 /usr/bin/latte-linked                                   <- bin/latte-linked
+/usr/bin/latte-goowidgets                               <- bin/latte-goowidgets
 /usr/bin/latte-calsettings                              <- bin/latte-calsettings
 /usr/bin/latte-chapolera-settings                       <- bin/latte-chapolera-settings
 /usr/bin/latte-wall                                     <- bin/latte-wall
@@ -109,6 +110,8 @@
 /usr/share/latteos/goo/props.luau                       <- goo/props.luau
 /usr/share/latteos/goo/linked.plm                      <- goo/linked.plm
 /usr/share/latteos/goo/linked.luau                     <- goo/linked.luau
+/usr/share/latteos/goo/widgets.plm                    <- goo/widgets.plm
+/usr/share/latteos/goo/widgets.luau                   <- goo/widgets.luau
 /usr/share/latteos/goo/calsettings.plm                 <- goo/calsettings.plm
 /usr/share/latteos/goo/calsettings.luau                <- goo/calsettings.luau
 /usr/share/latteos/goo/chapolera-settings.plm          <- goo/chapolera-settings.plm

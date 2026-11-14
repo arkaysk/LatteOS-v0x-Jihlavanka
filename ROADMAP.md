@@ -1712,17 +1712,17 @@ kategórií hore, mriežka ikon s názvami, vyhľadávanie dole).
   príboj hladiny pri otvorení a zatvorení (`E.ripple` pri konci dosky); vľavo/vpravo si berie pole, kým má kurzor (pleamar dáva klávesy poľu). TrayShore sa dá skryť (`trayshore` v `hidden`, `shore.luau`), vzhľad **Minimal**
   ho skryje (LensCloud + DockShore + nič iné); overené.
 
-**6N.01** [ ] **Hodiny na doske**: MultiShore ukazuje čas a dátum. **Pravý klik na čas** → tá istá ponuka času ako karta
+**6N.01** [x] 14. 11. (hotové v AppCloud (doska: čas a dátum, pravý klik = karty ClockGoo bez ucha)) **Hodiny na doske**: MultiShore ukazuje čas a dátum. **Pravý klik na čas** → tá istá ponuka času ako karta
 ClockGoo (6D.03: Prehľad · Časovače a budíky · Počasie) — **iba bez ucha** (karta rastie z dosky, nie z kvapky).
 **Pravý klik na dátum** → kalendárová časť karty ClockGoo, tiež bez ucha. Jeden obsah s ClockGoo, nie kópia
 (`goo/parts/calendar.plm`, `bin/latte-cal`).
 
-**6N.02** [ ] **Ľavý klik kdekoľvek na MultiShore → zoznam aplikácií na celú obrazovku** (prekrytie nad plochou): ikony a
+**6N.02** [x] 14. 11. (hotové (mriežka cez celú obrazovku, Esc/klik mimo zatvorí; Win otvára spúšťač, nie AppCloud)) **Ľavý klik kdekoľvek na MultiShore → zoznam aplikácií na celú obrazovku** (prekrytie nad plochou): ikony a
 názvy programov v mriežke, **rolovanie hore a dole**, zatvorenie Esc, klikom mimo alebo znova na MultiShore. Spustenie
 aplikácie klikom (bublina z 6.06). Návrh na rozhodnutie: záložky/kategórie hore ako v predlohe (Všetko · kategórie
 z `.desktop` alebo AppManagera 10H), klávesa Super otvorí to isté.
 
-**6N.03** [ ] **Textové pole ako Raycast/LensShore** v prekrytí: písanie hneď filtruje mriežku a hľadá ako LensShore
+**6N.03** [-] 14. 11. (zrušené 14. 11., AppCloud je „hlúpy“ (6N.05)) **Textové pole ako Raycast/LensShore** v prekrytí: písanie hneď filtruje mriežku a hľadá ako LensShore
 (aplikácie, nastavenia, súbory, príkazy 6B.19). Rovnaký vyhľadávací backend ako LensGoo/LensShore — **jeden mozog,
 tri podoby**, nie tretia implementácia. Ak je AI zapnutá, Enter na neznámy text pošle otázku ako LensShore (pravidlá
 6B.22 domček/oblak).
@@ -1741,7 +1741,7 @@ iba ako okno ~960 × 600 v strede (overené snímkou 14. 11.); veľkosť z `W`, 
 **6N.07** [x] 14. 11. (Čas a dátum vedľa seba, ikonka zrušená; karty času a kalendára z dosky bez ucha (`card_plate`); overené snímkou.) **Doska AppCloud: čas a dátum vedľa seba, nie nad sebou; ikonka na doske nemá zmysel** (používateľ 14. 11.):
 **6N.08** [x] 14. 11. **AppCloud: plynulé rolovanie** (používateľ 14. 11.): koliesko posúva zoznam po pixeloch (pružina `cl.off`), nie po stranách; virtuálny zoznam — v modeli sú iba viditeľné riadky + 1 (`cloud_first`), takže 300 aplikácií váži ako 30; kľúčové šípky držia výber vo výreze; tenký posuvník vpravo; okraje sa strácajú alfou. Hore a dole pruh zo skla bočného panela okien (`pane_*`, ako karty), kávový stred sa doň plynule rozplýva; písmo v pruhoch tmavé na svetlom paneli. Spustenie aplikácie čaká 350 ms po zatvorení (ako LensGoo) — klik overený skutočnou myšou.
 **6N.09** [x] 14. 11. **AppCloud: pruhy hore a dole štvrtinové** (2 % pri okraji, kávový stred sa rozplýva do 5 %), matné sklo bez farby bočného panela — béžová farba prebarvovala hladinu aj Shore, preto sa nepoužíva; overené snímkou aj po zatvorení.
-**6.47** [~] 14. 11. **Nastavenia › Kvapky: nové poradie** (používateľ 14. 11.): hlavná stránka zhora — vzhľady (Hravé Goo · Profi Shore · Minimalistic) · Spúšťač (LensGoo, LensShore, AppCloud) · Správa okien (BarGoo, DockShore, nič) · všeobecné voľby Goo + **Widgety a nové Goo** · Prehliadka úplne dole, **bez Preskočiť**. Podstránky v bočnom menu v poradí LensGoo, LensShore, AppCloud, BarGoo, DockShore, PowerGoo, TrayShore, ClockGoo, QueenGoo, MediaGoo, MareaGoo, CamGoo, QuickGoo (nové stránky AppCloud a TrayShore). Hotové a nasadené. **Chýba:** samostatné okno „Spravovať widgety / Pridať nové Goo“ (zatiaľ nečinné tlačidlo): import Goo od iného výrobcu, vlastné Goo, správa gadgetov od AI z pleamar režimu Builder (Win+B); obrázky `apps/settings/drops/{appcloud,trayshore,…}.png`.
+**6.47** [~] 14. 11. **Nastavenia › Kvapky: nové poradie** (používateľ 14. 11.): hlavná stránka zhora — vzhľady (Hravé Goo · Profi Shore · Minimalistic) · Spúšťač (LensGoo, LensShore, AppCloud) · Správa okien (BarGoo, DockShore, nič) · všeobecné voľby Goo + **Widgety a nové Goo** · Prehliadka úplne dole, **bez Preskočiť**. Podstránky v bočnom menu v poradí LensGoo, LensShore, AppCloud, BarGoo, DockShore, PowerGoo, TrayShore, ClockGoo, QueenGoo, MediaGoo, MareaGoo, CamGoo, QuickGoo (nové stránky AppCloud a TrayShore). Hotové a nasadené. **Okno „Widgety a nové Goo“ hotové (14. 11., v1):** `bin/latte-goowidgets` + `goo/widgets.plm/.luau`, tlačidlo v Kvapkách ho otvorí; ukazuje tvorby Buildu pleamar-wm (`~/.local/share/pleamar/marea/creations/index.json`, ako to píše pleamar — používateľ 14. 11.: Build je súčasť pleamar-wm, jeho widgety už platia), stav „spúšťa sa s reláciou“ z `creations.autostart`, tlačidlá Postaviť niečo (`pleamar-wm build on`), Otvoriť priečinok, Obnoviť. Overené s falošnou tvorbou, na latte-lab zatiaľ žiadna nie je; pravidlo `float frame=own` v `session.conf` platí až po novom prihlásení. **Chýba:** import cudzieho Goo (odložené na neskôr, používateľ 14. 11.), vlastné Goo, vypínanie a mazanie tvorieb (ostáva v „Mis creaciones“ Buildu), obrázky `apps/settings/drops/{appcloud,trayshore,…}.png`.
 ikonku zrušiť alebo dať jej jasnú funkciu (otvorí mriežku?). Karty času a dátumu z dosky **úplne bez ucha** — dnes majú malé ucho.
 
 ---

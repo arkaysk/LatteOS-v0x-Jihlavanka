@@ -1121,8 +1121,8 @@ ShellRoot {
 
             // widgets and new Goo: a window of its own, not made yet (ROADMAP 6.47): other makers' Goo, one's own, the gadgets the AI builds in pleamar's Builder
             Part { visible: shell.page === "drops"; width: view.room; title: I18n.tr("Widgets and new Goo")
-                   note: I18n.tr("A window of its own, to come: import Goo from another maker, make your own, and manage the gadgets the AI builds in pleamar's Builder (Win+B).")
-                Pill { icon: "puzzle"; text: I18n.tr("Manage widgets / Add new Goo"); enabled: false; opacity: 0.55 } }
+                   note: I18n.tr("The gadgets the AI builds in pleamar's Build mode (Win+B) in a window of their own. Importing Goo from another maker and making your own come later.")
+                Pill { icon: "puzzle"; text: I18n.tr("Manage widgets / Add new Goo"); onPressed: Quickshell.execDetached(["latte-goowidgets"]) } }
             // the tour, at the very bottom of the page: no Skip, it is left with Next and Done
             Part { visible: shell.page === "drops" && !shell.tourOn; width: view.room; title: I18n.tr("Tour")
                 Pill { icon: "player-play"; text: I18n.tr("Show the tour"); onPressed: { shell.tourStep = 0; shell.tourOn = true } } }

@@ -1,0 +1,104 @@
+// Widgets and new Goo (ROADMAP 6.47): the gadgets the AI builds in pleamar-wm's Build mode (Win+B), seen from LatteOS; foreign Goo comes later.
+// A secondary LatteOS window, made with pleamar (docs/okna/SABLONY.md). The model is Properties
+
+language 0.9
+import "lang/sk.plm"
+import "pleamar:ui"
+
+scene Widgets {
+    surface { size: 640, 520; kind: window; title: "Widgets"; app_id: "org.latteos.goowidgets"; keyboard: on_demand }
+    permissions {
+        run: "latte-goowidgets", "cat"
+        services: "env"
+    }
+
+    let W = screen.width
+    let H = screen.height
+    // the colours of the windows' cup, from the logic (goo/lib/cup.luau)
+    repeat k in 0..10 { fact c.$k.r = 0.5 }
+    repeat k in 0..10 { fact c.$k.g = 0.5 }
+    repeat k in 0..10 { fact c.$k.b = 0.5 }
+    let ground = rgb(c.0.r, c.0.g, c.0.b)
+    let surfc = rgb(c.1.r, c.1.g, c.1.b)
+    let rowc = rgb(c.2.r, c.2.g, c.2.b)
+    let raised = rgb(c.3.r, c.3.g, c.3.b)
+    let line = rgb(c.4.r, c.4.g, c.4.b)
+    let cream = rgb(c.5.r, c.5.g, c.5.b)
+    let dim = rgb(c.6.r, c.6.g, c.6.b)
+    let faint = rgb(c.7.r, c.7.g, c.7.b)
+    let gold = rgb(c.8.r, c.8.g, c.8.b)
+    let coffee = rgb(c.9.r, c.9.g, c.9.b)
+    fact light = false
+    let ink_gold = if(light, #fffaf1, #17110d)
+
+    text o_title = ""
+    text o_note = ""
+    text o_none = ""
+    text o_build = ""
+    text o_folder = ""
+    text o_refresh = ""
+    text o_close = ""
+    fact o_n = 0                               // how many creations
+    model crea max 60 { name: text; kind: text; state: text; kept: bool }
+    event build ->
+    event folder ->
+    event refresh ->
+    event cancel ->
+    on cancel { quit }
+    on key Escape { emit cancel }
+
+    body { color: ground; box { from: 0, 0; size: W, H } }
+
+    // ── the header ──
+    let hd = 56
+    zone box header { from: 0, 0; size: W, hd; label: "Move the window"; role: region }
+    on press header { carry }
+    text o_title { at: 20, hd / 2; anchor: left center; width: W - 90; lines: 1; size: 15; weight: 700; color: cream; family: "Inter" }
+    zone box close_hit { from: W - 46, 11; size: 34, 34; corner: 10; cursor: pointer; label: "Close"; role: button }
+    box { from: W - 46, 11; size: 34, 34; corner: 10; color: #e5484d; opacity: close_hit.hover }
+    text "" { at: W - 29, 28; anchor: center; size: 17; color: cream; family: "tabler-icons" }
+    on press close_hit { emit cancel }
+    body {
+        gradient: 0, hd - 1 to W, hd - 1, coffee, coffee, coffee, ground
+        box { from: 0, hd - 2; size: W, 2 }
+    }
+
+    // ── what it is, and the list ──
+    let rw = W - 40
+    text o_note { at: 20, hd + 16; width: rw; size: 13; color: dim; family: "Inter" }
+    let by = hd + 70
+    column list { at: 20, by; view: rw, H - by - 72; gap: 8
+        for r in crea { Creation(r) }
+    }
+    text o_none { at: W / 2, H / 2; anchor: center; width: rw - 40; size: 14; color: faint; show: o_n == 0; family: "Inter" }
+
+    // ── the foot ──
+    box { from: 0, H - 64; size: W, 1; color: line }
+    Button(o_build, 20, H - 46, build, width: 190, gold_on: true)
+    Button(o_folder, 222, H - 46, folder, width: 150)
+    Button(o_refresh, 384, H - 46, refresh, width: 110)
+    Button(o_close, W - 116, H - 46, cancel)
+
+    component Creation(r: record) {
+        size: rw, 52
+        group {
+            size: rw, 52
+            box { from: 0, 0; size: rw, 52; corner: 12; color: rowc }
+            text r.name { at: 16, 18; anchor: left center; width: rw - 220; lines: 1; size: 14; weight: 600; color: cream; family: "Inter" }
+            text r.kind { at: 16, 36; anchor: left center; width: rw - 220; lines: 1; size: 11.5; color: faint; family: "Inter" }
+            box { from: rw - 190, 13; size: 176, 26; corner: 13; color: if(r.kept, gold, raised); opacity: if(r.kept, 22%, 100%) }
+            text r.state { at: rw - 102, 26; anchor: center; width: 168; lines: 1; size: 12; color: if(r.kept, gold, dim); family: "Inter" }
+        }
+    }
+
+    component Button(caption: text, x: number, y: number, press: event, width: number = 96, gold_on: bool = false, enabled: bool = true, shown: bool = true) {
+        group {
+            show: shown
+            zone box hit { from: x, y; size: width, 30; corner: 8; cursor: pointer; active: enabled; label: "{caption}"; role: button }
+            box { from: x, y; size: width, 30; corner: 8; color: if(gold_on, gold, raised); opacity: if(enabled, 100%, 45%) }
+            box { from: x, y; size: width, 30; corner: 8; color: if(hit.hover > 0.5, gold, line); stroke: 1; opacity: if(enabled, 100%, 45%) }
+            text caption { at: x + width / 2, y + 15; anchor: center; size: 13; weight: if(gold_on, 600, 500); color: if(gold_on, ink_gold, cream); family: "Inter"; opacity: if(enabled, 100%, 45%) }
+            on press hit { emit press }
+        }
+    }
+}
