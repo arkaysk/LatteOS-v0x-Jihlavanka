@@ -31,30 +31,60 @@ DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
 
 
-# The words of the lines, English and Slovak (with and without diacritics, folded), each to its English one. The first word of a line
-# may be misspelt: the nearest of these wins (wether → weather, pocasi → pocasie), and the small words are the languages' own.
-VOCAB = {"weather": "weather", "forecast": "weather", "pocasie": "weather", "predpoved": "weather", "time": "time", "cas": "time",
-         "diff": "diff", "rozdiel": "diff", "workhours": "workhours", "pracovne": "workhours", "dnes": "today", "zajtra": "tomorrow",
-         "tomorrow": "tomorrow", "today": "today"}
-SMALL = {"v": "in", "vo": "in", "na": "in", "pre": "in", "pri": "in", "in": "in", "for": "in", "at": "in"}
+# The words of the lines: English here, other languages in goo/lang/<code>-amount.json (`calc`, folded), each to its English one. The
+# first word of a line may be misspelt: the nearest of these wins (wether → weather), and the small words are the languages' own.
+VOCAB = {"weather": "weather", "forecast": "weather", "time": "time", "diff": "diff", "workhours": "workhours", "today": "today",
+         "tomorrow": "tomorrow"}
+SMALL = {"in": "in", "for": "in", "at": "in"}
+SKIP = {"time", "to"}
+YEAR = {"year"}
+PHRASES = {}                                  # two words said as one: "pracovne hodiny" → workhours
+
+
+def load_words():
+    share = os.environ.get("LATTE_SHARE") or "/usr/share/latteos"
+    here = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "goo", "lang")
+    for folder in (os.path.join(share, "goo", "lang"), here):
+        try:
+            names = [n for n in os.listdir(folder) if n.endswith("-amount.json")]
+        except OSError:
+            continue
+        for name in names:
+            try:
+                calc_words = json.load(open(os.path.join(folder, name), encoding="utf-8")).get("calc") or {}
+            except (OSError, ValueError):
+                continue
+            for key in ("weather", "time", "diff", "today", "tomorrow"):
+                for w in calc_words.get(key, []):
+                    VOCAB[w] = key
+            for w in calc_words.get("workhours", []):
+                PHRASES[w] = "workhours"
+            SMALL.update({w: "in" for w in calc_words.get("small", [])})
+            SKIP.update(calc_words.get("skip", []))
+            YEAR.update(calc_words.get("year", []))
+        return
 
 
 def words_of(line):
-    """The line, folded, with its first word and the little words put as English ones: 'Počasie v Bratislave' → 'weather in bratislave'."""
+    """The line, folded, its first word and the little words put as English ones: 'weather v Bratislave' → 'weather in bratislave'."""
+    load_words()
     t = fold(line).split()
     if not t:
         return ""
     t = t[:1] + [SMALL.get(w, w) for w in t[1:]]
-    if t[0] == "pracovne" and len(t) > 1 and t[1].startswith("hodin"):      # pracovné hodiny v roku 2023
-        t = ["workhours"] + [w for w in t[2:] if w not in ("roku", "year", "rok")]
-    elif t[0] in VOCAB:
+    for phrase, word in PHRASES.items():                                    # a two-word name of one thing
+        n = len(phrase.split())
+        if " ".join(t[:n]) == phrase or (n == 2 and len(t) > 1 and t[0] == phrase.split()[0] and t[1][:5] == phrase.split()[1][:5]):
+            t = [word] + [w for w in t[n:] if w not in YEAR]
+            break
+    if t[0] in VOCAB:
         t[0] = VOCAB[t[0]]
     elif len(t[0]) >= 4:
         close = difflib.get_close_matches(t[0], list(VOCAB), n=1, cutoff=0.78)
         if close and len(t) > 1:                                              # a misspelt first word only counts with something after it
             t[0] = VOCAB[close[0]]
     if t[0] == "diff":
-        t = [w for w in t if w not in ("casu", "cas", "time", "medzi", "od", "to")]       # rozdiel času Paris
+        t = [w for w in t if w not in SKIP]
     return " ".join(t)
 
 

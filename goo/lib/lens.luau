@@ -335,13 +335,16 @@ local function sky_of(code)
     elseif code >= 95 then return N("Storm") end
     return N("Rain")
 end
-local FIRST = { wea = 1, wet = 1, wht = 1, wea = 1, ["for"] = 1, tim = 1, tie = 1, dif = 1, wor = 1, poc = 1, pre = 1, roz = 1, pra = 1, cas = 1 }
+local FIRST = { wea = 1, wet = 1, wht = 1, ["for"] = 1, tim = 1, tie = 1, dif = 1, wor = 1 }    -- how a line for latte-calc may begin; the user's language adds its own (`smart`)
 local function smart_like(s)
     s = s:lower()
-    -- two words at least, the first one starting like weather · time · diff · workhours (or the Slovak počasie · čas · rozdiel · pracovné),
-    -- even misspelt: bin/latte-calc decides (it finds the nearest word) and answers nothing when it is not for it
+    -- two words at least, the first one starting like one of those, even misspelt: bin/latte-calc decides (it finds the nearest word)
+    -- and answers nothing when the line is not for it
     local first = s:match("^(%S+)%s+%S")
-    if first and (FIRST[first:sub(1, 3)] or first:find("^\u{10D}") or first:find("^po\u{10D}")) then return true end
+    if first then
+        if FIRST[first:sub(1, 3)] then return true end
+        for _, p in ipairs(type(amount_words.smart) == "table" and amount_words.smart or {}) do if first:sub(1, #p) == p then return true end end
+    end
     return s:find("^weather ") or s:find("^forecast ") or s:find("^time ") or s:find("^diff ") or s:find("workhours") or s:find("workdays?$")
         or s:find("percentage$") or s:find("^%a+ ?%%$") or s:find("from now") or s:find("^%a+ %d+ ?%+ ?%d")
         or (s:find("%d ?[ap]m") and (s:find("%+") or s:find(" to ")))
