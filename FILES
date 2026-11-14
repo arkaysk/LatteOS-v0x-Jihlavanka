@@ -701,6 +701,7 @@
 /usr/share/latteos/goo/lib/own.luau                     <- goo/lib/own.luau
 /usr/share/latteos/goo/lib/shore.luau                   <- goo/lib/shore.luau
 /usr/share/latteos/goo/lib/cloud.luau                   <- goo/lib/cloud.luau
+/usr/share/latteos/goo/lib/filesview.luau              <- goo/lib/filesview.luau
 /usr/share/latteos/goo/lib/desk.luau                    <- goo/lib/desk.luau
 /usr/share/latteos/goo/lib/ctx.luau                     <- goo/lib/ctx.luau
 /usr/share/latteos/goo/lib/find.luau                    <- goo/lib/find.luau

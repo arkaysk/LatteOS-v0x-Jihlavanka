@@ -14,6 +14,7 @@ local actions = require("lib/actions")
 local find = require("lib/find")
 local fold = require("lib/fold")
 local calc = require("lib/calc")
+local filesview = require("lib/filesview")
 local amount = require("lib/amount")
 local dangerous = require("lib/dangerous")
 local open = require("lib/open")
@@ -1294,6 +1295,7 @@ local function shore_modes()
     local out = {}
     if MODES[4] then out[#out + 1] = { id = "ai", label = N("AI chat"), glyph = "sparkles" } end
     out[#out + 1] = { id = "find", label = N("Search"), glyph = "search" }
+    out[#out + 1] = { id = "files", label = N("Files"), glyph = "folder" }
     out[#out + 1] = { id = "windows", label = N("Windows"), glyph = "app-window" }
     out[#out + 1] = { id = "clips", label = N("Clipboard"), glyph = "clipboard" }
     out[#out + 1] = { id = "agents", label = N("Agents"), glyph = "robot" }
@@ -1311,7 +1313,9 @@ end
 local function strip()
     local chips, now = {}, mode_of(shore.view)
     for _, m in ipairs(shore_modes()) do
-        chips[#chips + 1] = { label = tr(m.label), glyph = m.glyph, on = m.id == now, keep = true, skip = true, run = function() go_mode(m.id) end }
+        -- in the Files view the panel has two columns and the strip only the first: the names of the modes give way to their icons (the footer names the one shown)
+        local word = shore.view ~= "files" and tr(m.label) or ""
+        chips[#chips + 1] = { label = word, glyph = m.glyph, on = m.id == now, keep = true, skip = true, run = function() go_mode(m.id) end }
     end
     return { pills = chips, per = #chips, line = true }
 end
@@ -1985,6 +1989,11 @@ local function shore_rows()
         local cafe = { { at_top = true, pills = { { label = tr(N("Enter the cafeteria")), glyph = "door-enter", off = true, keep = true, skip = true } }, per = 1 } }
         if shore.cafe then cafe[2] = { at_top = true, cells = { { label = tr(N("Cafeteria")), icon = CAFE } }, per = 1, big = true } end
         section(cafe)
+    elseif shore.view == "files" then
+        local env = { then_do = then_do, open_path = function(p) open.path(p) end, menu = file_menu, short = short }
+        local rows, filters = filesview.rows(typed, env, function() if card.id() == "lens" and shore.view == "files" then render(true) end end)
+        section(near_line(rows))
+        section({ filters })
     elseif shore.view == "emoji" then
         for _, s in ipairs(emoji.sections(typed, emoji_env())) do section(s) end
     elseif typed == "" then
@@ -2063,6 +2072,8 @@ local function shore_rows()
                                 run = function() then_do(function() open.path(clean) end) end, right = function() file_menu(clean, parent, folder) end }
         end
         if found == nil then rows[#rows + 1] = { label = tr("Searching…"), glyph = "search", quiet = true } end
+        -- Raycast's Search Files: the same words in the Files view, with the preview
+        if #rows > 1 then rows[#rows + 1] = { label = tr("Search files with a preview"), glyph = "folder", hint = tr("Files"), keep = true, run = function() go_mode("files") end } end
         if #rows > 1 or found == nil then section(rows) end
         if pages_for == q and #pages > 0 then
             rows = { { head = true, label = tr(N("SETTINGS")) } }
@@ -2089,6 +2100,8 @@ local function shore_rows()
         local s = sections[top and i or (#sections + 1 - i)]
         for j, r in ipairs(s) do if j == 1 and #out > 0 then r.line = true end out[#out + 1] = r end
     end
+    -- the preview of a file chosen stands in the second column, top down
+    if shore.view == "files" then for _, r in ipairs(filesview.right()) do out[#out + 1] = r end end
     -- by the line the strip of modes, and between it and the line the coffee stands (a wave row: glass above it, coffee below)
     -- the footer (parts/rows.plm) has its room at the panel's foot: what Enter does, and the Actions panel (Ctrl+K)
     if top then table.insert(out, 1, strip()) table.insert(out, 1, { wave = true }) table.insert(out, 1, { gap = 8 }) out[#out + 1] = { gap = actions.FOOT }
@@ -2104,8 +2117,13 @@ shore_render = function(keep, dir)
     text.lens_next = list[at + 1] and tr(list[at + 1].label) or ""
     fact.lens_has_prev, fact.lens_has_next = list[at - 1] ~= nil, list[at + 1] ~= nil
     text.lens_cur, text.g_lens_cur = list[at] and tr(list[at].label) or "", list[at] and icons[list[at].glyph] or ""
-    card.open(shown, { lens = shore_top() and "top" or "bottom", id = "lens", width = WIDE / 1.2, keep = keep, first = shore_top() and true or "last",
-                       again = (shore.view ~= "talk" and shore.view ~= "chats") or shore.rechoose == true, fit = true, pane = 1, step = step_mode, dir = dir, height = SHORE_H,
+    card.open(shown, { lens = shore_top() and "top" or "bottom", id = "lens", width = (shore.view == "files" and WIDE * 0.56 or WIDE) / 1.2, keep = keep, first = shore_top() and true or "last",
+                       again = shore.view == "files" and shore.rechoose == true or (shore.view ~= "files" and ((shore.view ~= "talk" and shore.view ~= "chats") or shore.rechoose == true)),
+                       tail = not shore_top() and 4 or 0,
+                       width2 = shore.view == "files" and WIDE * 0.44 / 1.2 or nil,         -- the panel is never wider than LensShore: the two columns share its width
+                       on_choose = shore.view == "files" and function(row)
+                           filesview.choose(row, function() if card.id() == "lens" and shore.view == "files" then render(true) end end)
+                       end or nil, fit = true, pane = 1, step = step_mode, dir = dir, height = SHORE_H,
                        combo = (shore.view == "emoji" and function(n, it) emoji.combo(n, it, emoji_env()) end)
                                or (shore.view == "clips" and function(n, it) if n == 10 and typed ~= "" then return end clipboard.combo(n, it, emoji_env()) end)
                                or (shore.view == "windows" and function(n) if n == 7 or n == 8 then shore.win_page = (shore.win_page or 1) + (n == 7 and 1 or -1) render(true) end end) or nil })
@@ -2127,6 +2145,7 @@ go_mode = function(id)
         shore.view = id
         if id == "agents" then shore.agents = nil read_agents(again) end
         if id == "emoji" then emoji.load(again) end
+        if id == "files" then filesview.reset() filesview.load(again, home) filesview.search(typed, again) end
         if id == "windows" or id == "clips" or id == "emoji" then
             shore.wins = nil
             wm.windows(function(list) shore.wins = list or {} again() end)
@@ -2190,6 +2209,7 @@ local function shore_start()
             if t == typed then return end
             typed, confirm, found = t, nil, nil
             if t ~= "" and shore.view == "find" and not shore.arg then look_for_files() look_for_settings() look_for_amount() end
+            if shore.view == "files" then shore.rechoose = true filesview.search(t, function() if card.id() == "lens" and shore.view == "files" then shore.rechoose = true render(true) end end) end
             if card.id() == "lens" then
                 -- compact mode: the panel goes back into the line when the line is empty again
                 if t == "" and compact() and shore.view == "find" and not shore.arg then card.close() hist_flags() after(80, function() focus("lens_q") end)

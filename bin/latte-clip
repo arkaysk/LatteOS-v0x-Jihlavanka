@@ -14,7 +14,7 @@
   latte-clip replace ID       the entry's text replaced by what is on stdin (Edit): it comes back as the newest
 
 The Settings are Goo's (~/.local/share/pleamar/goo/settings.json): lens_clip_keep (day, week, month, 3months, forever;
-month unless chosen), lens_clip_skip (window classes left out), lens_clip_ocr (true: read the text of pictures).
+forever unless chosen: "never forget", Raycast's unlimited history), lens_clip_skip (window classes left out), lens_clip_ocr (true: read the text of pictures).
 """
 import json, os, re, subprocess, sys, time
 
@@ -127,7 +127,7 @@ def swatch(color):
 
 def forget_old():
     """What is older than the Settings keep goes; an entry never seen being copied is dated now, and kept."""
-    keep = KEEP.get(settings().get("lens_clip_keep") or "month", KEEP["month"])
+    keep = KEEP.get(settings().get("lens_clip_keep") or "forever", KEEP["forever"])
     t, now, changed, old = times(), time.time(), False, []
     present = entries()
     for ident, _ in present:
@@ -180,7 +180,7 @@ def store():
         pass
     if app and app.lower() in [x.lower() for x in s.get("lens_clip_skip") or []]:
         return 0
-    cliphist("store", data=data)
+    cliphist("-max-items", "1000000", "store", data=data)       # cliphist forgets all but 750 by itself: the history is the Settings', and by default it is not forgotten at all
     newest = entries()[:1]
     if not newest:
         return 0

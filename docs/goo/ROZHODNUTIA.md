@@ -519,3 +519,5 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 - **Vzhľad plochy ostáva, ale ako profily** (14. 11.): Hravé · Profi · Minimal sú upraviteľné profily, dá sa uložiť vlastný (6.45).
 - **Úryvky cez pleamar-wm** (14. 11.): záplata kompozitora, nie espanso (6B.47 krok 5).
 - **Agent s vlastnou myšou a klávesnicou** (14. 11.): kurzor v štýle ikony poskytovateľa, vypínateľné pre systém, vybrané aplikácie alebo všade (10B.58).
+- **História schránky bez obmedzenia** (14. 11., používateľ: „Never forget“): predvolené Ponechať = Navždy a `cliphist -max-items 1000000`; kratšie lehoty ostávajú ako voľba.
+- **Vysunuté okno LensShore** (14. 11., používateľ): nikdy nie širšie než LensShore a nikdy nad vrch obrazovky; zvyšok sa rolu­je, pruh režimov a päta stoja.

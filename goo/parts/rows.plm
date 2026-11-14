@@ -13,7 +13,8 @@ part Rows {
     zone box card_ground { from: card.x0, card.y0; size: card.w, card.h; active: card_open; agent: hidden }
     // the wheel over LensShore's panel turns its modes as a tape (the user, 29. 10.: "the scroll is to the right and
     // left"), down or to the right the next one; two fingers and a tilted wheel too (lib/lens.luau gathers the turns)
-    on scroll card_ground while card_lens { emit lens_swipe(round(-wheel * 1000)) }
+    // …unless the list is longer than the panel (the files found, a long history): then the wheel scrolls it, the modes turn with the tape's other ways
+    on scroll card_ground while card_lens and list.content <= list.height + 2 { emit lens_swipe(round(-wheel * 1000)) }
 
     // while a menu is open over the card (parts/ctx.plm) the keys are the menu's
     on key Escape while card_open and not ctx_open and not ap_open { card_open = false; emit card_closed }
@@ -56,7 +57,7 @@ part Rows {
         show: card.p > 0.01
         // what is written is not drawn past the frame, which is still narrow while it grows from the ear
         // (LensShore's panel goes on into its plate: so does what is drawn in it, with no round corner there)
-        clip box { at: card.ax + card.sx * card.cw / 2, card.ay + card.sy * (card.ch - if(card_lens, 40, 0)) / 2; size: card.cw, card.ch + if(card_lens, 40, 0); corner: if(card_menu, 12, min(if(ear > 14, 26, 18) + (card.round - 18), min(card.cw, card.ch) / 2)) }
+        clip box { at: card.ax + card.sx * card.cw / 2, card.ay + card.sy * (card.ch - if(card_lens and card_w2 <= 0, 40, 0)) / 2; size: card.cw, card.ch + if(card_lens and card_w2 <= 0, 40, 0); corner: if(card_menu, 12, min(if(ear > 14, 26, 18) + (card.round - 18), min(card.cw, card.ch) / 2)) }
         // Below a wave row the card is coffee to its very edge (above it, when the card hangs from the top edge: LensShore
         // up there): three velvet layers lit with gold (shaders/velvet.wgsl), each lapping its own way. It is drawn here,
         // over the whole card, because the rows have padding and cannot reach the edge; a hair is left at the edge for
@@ -120,10 +121,17 @@ part Rows {
             }
 
             row {
-                column list {
-                    view: card.iw, min(list.content, H - 40 - if(tab.count > 0, 44, 0) - if(card_field, 46, 0))
-                    step: 44
-                    for r in card { CardRow(r, 0, card.iw) }
+                column {
+                    // the rows that scroll, and under them those that stay: LensShore's strip of modes, the coffee and the foot (the model card_foot)
+                    column list {
+                        view: card.iw, min(list.content, H - 40 - if(card_lens or card_dock, 46, 0) - if(tab.count > 0, 44, 0) - if(card_field, 46, 0) - tail.height)
+                        step: 44
+                        stick: end
+                        for r in card { CardRow(r, 0, card.iw) }
+                    }
+                    column tail {
+                        for r in card_foot { CardRow(r, 60, card.iw) }
+                    }
                 }
                 space if(card_w2 > 0, 8, 0)
                 column {
@@ -192,14 +200,15 @@ part Rows {
     }
 
     // ── one row of the card. A `let` only lives in a component, hence one for the row and one for its items.
-    component CardRow(r: record, base: number, w: number) {
-        size: w, parts.height
+    component CardRow(r: record, base: number, w: number, vis: bool = true) {
+        size: if(vis, w, 0), if(vis, parts.height, 0)
         // the rows come in one after another, each a little later, sliding in from the ear's side
         let come = clamp(reveal * 3.2 - 0.1 * r.index, 0, 1)
         let shown = come * come * (3 - 2 * come)
-        let h = if(r.prev, 78, if(r.kind == calc, 118, if(r.kind == gap, max(r.bar, 0), pick(r.kind, if(r.tall, 54, 44), 30, 64, 0, 0, 0, 84, 44, 26))))
+        let h = if(r.prev, 78, if(r.kind == pic, 120, if(r.kind == calc, 118, if(r.kind == gap, max(r.bar, 0), pick(r.kind, if(r.tall, 54, 44), 30, 64, 0, 0, 0, 84, 44, 26)))))
 
         column parts {
+            show: vis
             // a rule above the row
             group {
                 size: w, 14
@@ -275,8 +284,13 @@ part Rows {
                 on press hit while r.kind == slide { emit card_slide((r.index + base) * 1024 + round(clamp((local.x - 56) / (w - 130), 0, 1) * 1000)) }
                 on drag hit while r.kind == slide { emit card_slide((r.index + base) * 1024 + round(clamp((local.x - 56) / (w - 130), 0, 1) * 1000)) }
                 on press hit while r.kind != slide { emit card_pick((r.index + base) * 16) }
+                on enter hit while card_hoverpick { emit card_soft((r.index + base) * 16) }
                 on press right hit { tap.x = cursor.x; tap.y = cursor.y; emit card_right((r.index + base) * 16) }
                 on scroll hit { emit card_wheel((r.index + base) * 2 + if(wheel > 0, 1, 0)) }
+
+                // a picture of a file: its preview, whole, in a rounded frame
+                box { from: 4, 2; size: w - 8, h - 4; corner: 14; color: tb2; show: r.kind == pic }
+                for c in card_pic { image c.pic { at: 8, 6; size: w - 16, h - 12; fit: contain; show: r.kind == pic } }
 
                 // the calculator (LensShore): a bordered pane, what was asked on the left, an arrow, the answer on the right,
                 // under each a pill with what it is; as Raycast's, in the card's own colours

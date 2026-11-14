@@ -157,22 +157,22 @@ part LensLine {
     group {
         show: ft.on
         box { from: card.x0 + 2, card.y0 + card.h - 36; size: card.w - 4, 34; corner: 14; color: coffee; show: lens_edge == 2 }
-        text g_lens_cur { at: card.x0 + 28, ft.cy; anchor: center; size: 15; color: cream; opacity: 70%; family: "tabler-icons" }
-        text lens_cur { at: card.x0 + 44, ft.cy; anchor: left center; width: 200; lines: 1; size: 12.5; weight: 600; color: cream; opacity: 75%; family: "Inter" }
+        text g_lens_cur { at: card.x0 + 28, ft.cy; anchor: center; size: 15; color: cream; opacity: 100%; outline: 1, #170c07; shadow: 0, 1, 2, 75%; family: "tabler-icons" }
+        text lens_cur { at: card.x0 + 44, ft.cy; anchor: left center; width: 200; lines: 1; size: 12.5; weight: 600; color: cream; opacity: 100%; outline: 1, #170c07; shadow: 0, 1, 2, 75%; family: "Inter" }
         group {
             show: card_main_on
-            text card_main { at: ft.mx, ft.cy; anchor: right center; width: 190; lines: 1; size: 12.5; weight: 600; color: cream; opacity: 85%; measure: ft_main_m; family: "Inter" }
+            text card_main { at: ft.mx, ft.cy; anchor: right center; width: 190; lines: 1; size: 12.5; weight: 600; color: cream; opacity: 100%; outline: 1, #170c07; shadow: 0, 1, 2, 75%; measure: ft_main_m; family: "Inter" }
             box { from: ft.mx - ft_main_m.width - 36, ft.cy - 10; size: 24, 20; corner: 6; color: cream; opacity: 14% }
-            text "↵" { at: ft.mx - ft_main_m.width - 24, ft.cy; anchor: center; size: 13; color: cream; opacity: 85%; family: "Inter" }
+            text "↵" { at: ft.mx - ft_main_m.width - 24, ft.cy; anchor: center; size: 13; color: cream; opacity: 100%; outline: 1, #170c07; shadow: 0, 1, 2, 75%; family: "Inter" }
         }
         group {
             show: card_more
             zone box ft_actions { from: ft.r - ft_act_m.width - 56, ft.cy - 14; size: ft_act_m.width + 60, 28; cursor: pointer; label: "Actions"; role: button }
             on press ft_actions { tap.x = card.x0 + card.w - ctx_w - 8; tap.y = card.y0 + card.h - 8; emit card_actions }
             box { from: ft.r - ft_act_m.width - 56, ft.cy - 13; size: ft_act_m.width + 56, 26; corner: 8; color: cream; opacity: 14% * ft_actions.hover }
-            text "Actions" { at: ft.r - 50, ft.cy; anchor: right center; size: 12.5; weight: 600; color: cream; opacity: 85%; measure: ft_act_m; family: "Inter" }
+            text "Actions" { at: ft.r - 50, ft.cy; anchor: right center; size: 12.5; weight: 600; color: cream; opacity: 100%; outline: 1, #170c07; shadow: 0, 1, 2, 75%; measure: ft_act_m; family: "Inter" }
             box { from: ft.r - 44, ft.cy - 10; size: 44, 20; corner: 6; color: cream; opacity: 14% }
-            text "Ctrl+K" { at: ft.r - 22, ft.cy; anchor: center; size: 10.5; weight: 600; color: cream; opacity: 85%; family: "Inter" }
+            text "Ctrl+K" { at: ft.r - 22, ft.cy; anchor: center; size: 10.5; weight: 600; color: cream; opacity: 100%; outline: 1, #170c07; shadow: 0, 1, 2, 75%; family: "Inter" }
         }
     }
 

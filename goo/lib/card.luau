@@ -12,6 +12,8 @@
 --       copy    a text: a copy button at the row's end puts it on the clipboard (plain rows and large figures)
 --       wheel   function(direction ±1) · sub: rows of a submenu, which gets a row to go back · more: the arrow
 --               of a submenu on a row that opens another card itself
+--       (opts.tail: how many rows at the end stay in place while the rest scrolls: LensShore's strip of modes, the coffee and the foot)
+--       path    what the row is of, for `opts.on_choose`: told once whenever another row is chosen (by the keys or the pointer)
 --       main    what Enter does with it, told beside LensShore's line (else its label) · skip: the arrows pass it by
 --       first   chosen from the start instead of the card's first or last (a tile: the best of what was found)
 --   { head = true, label, hint }                    the heading of a section
@@ -19,6 +21,7 @@
 --   { para = true, label }                          a paragraph
 --   { profile = true, icon, glyph, label, line2, run, on, hint }       `on` shows `hint` as a small badge (the role)
 --   { calc = true, label, line2, hint, glyph, copy, run }   the calculator: `label` what was asked, `hint` the answer, `line2` the kind of what was asked (Percentage…)
+--   { pic = true }                                  the picture of a file (model card_pic, set by whoever asks; 120 high), in the second column
 --   { wave = true }                                  a divider: two layers of coffee, golden behind
 -- `pills` and `tiles` with `per = 2` lie wide: an icon in a square, the name beside it, two to a line.
 --   { slide = true, glyph, label, value, hint, off, run, set }     a slider: `value` 0…1, set = function(0…1) as it
@@ -47,7 +50,7 @@ local ctx = require("lib/ctx")
 local M = {}
 
 local CARD_W, CARD_H, WAVE_AT = 600, 580, 502            -- a family of cards that keep one size (`uniform`) is this wide and at least this tall
-local ROWS, ROWS2, ITEMS, TABS = 24, 12, 6, 6        -- what the scene's models hold (ITEMS: buttons or tiles in a line unless `per` says)
+local ROWS, ROWS2, ROWS3, ITEMS, TABS = 40, 12, 6, 6, 6        -- what the scene's models hold (ITEMS: buttons or tiles in a line unless `per` says)
 local CELLS = 10                             -- a line holds at most this many (parts/card.plm `items max`)
 local RISE = 74                             -- how far from the edge the owner steps to be the card's ear
 local engine                                -- set by lib/engine.luau, which owns the drops
@@ -59,12 +62,22 @@ local preferred = nil                        -- the row that says `first`
 local names = {}                             -- what each row says: the one chosen is told beside LensShore's line
 local items = {}                             -- what each row was given as, for `combo`
 -- the row chosen with the arrows (nil: none): what Enter does is told as `card_main`, and whether Ctrl+K has more
+local on_choose, told = nil, nil              -- `opts.on_choose(row)`: the owner hears which row is chosen (a preview follows it); told: the last one it was told of
 local function choose(id)
     chosen = id
     fact.card_sel = id or -1
     text.card_main = id and names[id] or ""
     fact.card_main_on = id ~= nil and (names[id] or "") ~= ""
     fact.card_more = id ~= nil and rights[id] ~= nil
+    -- told a moment later, and only when it is another row than the last: a card drawn anew from this call would never end
+    if on_choose and id then
+        local it = items[id]
+        local key = it and (it.path or it.label) or id
+        if key ~= told then
+            told = key
+            after(0, function() if chosen == id and on_choose then on_choose(it) end end)
+        end
+    end
 end
 local field = nil
 local calendar = nil                         -- the month shown, if any: who hears a day pressed
@@ -118,7 +131,7 @@ local function height_of(it)
         return math.ceil(n / per) * ((it.cells and (it.big and 120 or 50)) or (it.pills and (per <= 2 and 60 or 46)) or (per <= 2 and 66 or 88))
     end
     if it.prev then return 78 elseif it.head then return 30 elseif it.big then return 64 elseif it.profile then return 84 elseif it.slide then return 44
-    elseif it.wave then return 26 elseif it.calc then return 118 elseif it.gap then return it.gap end
+    elseif it.wave then return 26 elseif it.pic then return 120 elseif it.calc then return 118 elseif it.gap then return it.gap end
     return it.line2 and 54 or 44
 end
 
@@ -234,7 +247,7 @@ function M.open(rows, opts)
             end
             return
         end
-        local kind = (it.gap and "gap") or (it.head and "head") or (it.big and "big") or (it.para and "para") or (it.profile and "profile") or (it.slide and "slide") or (it.wave and "wave") or (it.calc and "calc") or "plain"
+        local kind = (it.gap and "gap") or (it.head and "head") or (it.big and "big") or (it.para and "para") or (it.profile and "profile") or (it.slide and "slide") or (it.wave and "wave") or (it.calc and "calc") or (it.pic and "pic") or "plain"
         local pressed = (kind == "plain" or kind == "profile" or kind == "slide" or kind == "calc" or (kind == "big" and it.run ~= nil)) and not it.quiet
         if kind == "slide" then it = table.clone(it) it.bar, it.keep = it.value or 0, true slides[base + #to] = it.set end
         to[#to + 1] = {
@@ -251,8 +264,10 @@ function M.open(rows, opts)
         if it.wheel then wheels[base + #to - 1] = it.wheel end
     end
     local out2 = {}
-    for _, it in ipairs(rows) do
-        if it.col == 2 and opts.width2 then add(it, out2, ROWS, ROWS2) else add(it, out, 0, ROWS) end
+    local outF = {}
+    for i, it in ipairs(rows) do
+        if opts.tail and opts.tail > 0 and i > #rows - opts.tail and it.col ~= 2 then add(it, outF, ROWS + ROWS2, ROWS3)     -- the rows that stay under the scrolling ones
+        elseif it.col == 2 and opts.width2 then add(it, out2, ROWS, ROWS2) else add(it, out, 0, ROWS) end
     end
     if opts.tiles then
         local IN = { plain = true, slide = true, profile = true, big = true }
@@ -293,11 +308,14 @@ function M.open(rows, opts)
 
     fact.card_pane = opts.pane or 0
     fact.card_menu = opts.menu == true
+    on_choose = opts.on_choose
+    fact.card_hoverpick = on_choose ~= nil
+    if not opts.keep then told = nil end
     fact.card_plate = opts.plate == true
     fact.card_custom = (opts.custom == "clock" and 1) or (opts.custom == "cam" and 2) or (opts.custom == "ai" and 3) or (opts.custom == "calendar" and 4) or 0       -- the card is a scene of its own (parts/clock.plm), not rows
     -- where the coffee of a `wave` row begins: the heights of the rows above it, as parts/rows.plm lays them out
     local function row_h(r)
-        local h = r.prev and 78 or ({ plain = r.tall and 54 or 44, head = 30, big = 64, para = 0, profile = 84, slide = 44, gap = r.bar, wave = 26, calc = 118 })[r.kind]
+        local h = r.prev and 78 or ({ plain = r.tall and 54 or 44, head = 30, big = 64, para = 0, profile = 84, slide = 44, gap = r.bar, wave = 26, calc = 118, pic = 120 })[r.kind]
         if r.kind == "pills" then h = r.per <= 2 and 60 or 46 elseif r.kind == "tiles" then h = r.per <= 2 and 66 or 88 elseif r.kind == "cells" then h = r.tall and 120 or 50 end
         return (h or 0) + (r.line and 14 or 0)
     end
@@ -359,6 +377,7 @@ function M.open(rows, opts)
     shown = { rows = rows, opts = opts }
     model.card = out
     model.card2 = out2
+    model.card_foot = outF
     model.tab = tabs
     calendar = opts.width2 and opts.calendar or nil
     if calendar then
@@ -388,6 +407,10 @@ function M.text(v)
     return text[name] or ""
 end
 
+-- the pointer over a row chooses it too, when the owner follows the choice (`on_choose`): the preview is for the mouse as well
+on("card_soft", function(id)
+    if on_choose and chosen ~= id and actions[id or 0] then choose(id) end
+end)
 on("card_pick", function(id)
     local f = actions[id or 0]
     if f then f() end

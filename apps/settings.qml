@@ -1224,7 +1224,7 @@ ShellRoot {
                 Label { text: I18n.tr("Keep the history for"); width: view.room; color: Theme.dim; font.pixelSize: 13 }
                 Repeater { model: [{ id: "day", name: QT_TR_NOOP("A day") }, { id: "week", name: QT_TR_NOOP("A week") }, { id: "month", name: QT_TR_NOOP("A month") },
                                    { id: "3months", name: QT_TR_NOOP("Three months") }, { id: "forever", name: QT_TR_NOOP("For ever") }]
-                    Pill { required property var modelData; text: I18n.tr(modelData.name); strong: (goo.kept.lens_clip_keep || "month") === modelData.id
+                    Pill { required property var modelData; text: I18n.tr(modelData.name); strong: (goo.kept.lens_clip_keep || "forever") === modelData.id
                            onPressed: goo.set("lens_clip_keep", modelData.id) } }
                 Label { text: I18n.tr("The Enter key"); width: view.room; color: Theme.dim; font.pixelSize: 13 }
                 Repeater { model: [{ id: "paste", name: QT_TR_NOOP("Paste where you were typing") }, { id: "copy", name: QT_TR_NOOP("Copy") }]

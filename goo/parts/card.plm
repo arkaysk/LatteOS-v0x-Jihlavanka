@@ -20,8 +20,17 @@ part Card {
     //   danger   it does not undo: red · more: opens a submenu · line: a rule above it · copy: a copy button at its end
     //   bar      a bar filled this far (0…1), none below 0 · per: how many tiles or buttons make a line; two or fewer
     //            are laid wide, the icon beside the name · wave: two layers of coffee as a divider
-    model card max 24 {
-        kind: plain | head | big | para | pills | tiles | profile | slide | wave | gap | cells | calc = plain
+    model card max 40 {
+        kind: plain | head | big | para | pills | tiles | profile | slide | wave | gap | cells | calc | pic = plain
+        label: text; hint: text; line2: text; glyph: text; icon: image 96, 96; has_icon: bool; tall: bool; prev: bool; peg: bool; hc: bool
+        on: bool; off: bool; quiet: bool; danger: bool; more: bool; line: bool; bar: number = -1; per: number = 4
+        copy: bool                             // a copy button at its end (6B.09): its text goes to the clipboard
+        tile: number = 0                       // part of a tile, a card within the card: 1 its first row, 2 inside, 3 its last, 4 alone
+        list items max 10 { label: text; glyph: text; icon: image 96, 96; has_icon: bool; on: bool; off: bool; danger: bool }
+    }
+    // the rows that stay in place under the scrolling ones (opts.tail in lib/card.luau): LensShore's strip of modes, the coffee and the foot
+    model card_foot max 6 {
+        kind: plain | head | big | para | pills | tiles | profile | slide | wave | gap | cells | calc | pic = plain
         label: text; hint: text; line2: text; glyph: text; icon: image 96, 96; has_icon: bool; tall: bool; prev: bool; peg: bool; hc: bool
         on: bool; off: bool; quiet: bool; danger: bool; more: bool; line: bool; bar: number = -1; per: number = 4
         copy: bool                             // a copy button at its end (6B.09): its text goes to the clipboard
@@ -30,7 +39,7 @@ part Card {
     }
     // the rows of a second column, beside the first: a card with two things to show at once
     model card2 max 12 {
-        kind: plain | head | big | para | pills | tiles | profile | slide | wave | gap | cells | calc = plain
+        kind: plain | head | big | para | pills | tiles | profile | slide | wave | gap | cells | calc | pic = plain
         label: text; hint: text; line2: text; glyph: text; icon: image 96, 96; has_icon: bool; tall: bool; prev: bool; peg: bool; hc: bool
         on: bool; off: bool; quiet: bool; danger: bool; more: bool; line: bool; bar: number = -1; per: number = 4
         copy: bool                             // a copy button at its end (6B.09): its text goes to the clipboard
@@ -39,6 +48,9 @@ part Card {
     }
     model tab max 6 { label: text; glyph: text; on: bool }
     model card_wide max 1 { pic: image 620, 200 }
+    model card_pic max 1 { pic: image 480, 300 }          // the picture of a `pic` row (a file's preview, LensShore's Files); it has a model of its own, not the cafeteria's
+    fact card_hoverpick = false                           // a card whose rows the pointer chooses too (the preview follows it)
+    event card_soft ->                                    // the pointer is over a row: row × 16
     // a month at the top of the second column: six weeks from Monday. `dim`: a day of another month,
     // `chosen`: the day whose events are shown, `dot`: something is written down for it
     model day max 42 { n: text; dim: bool; today: bool; chosen: bool; dot: bool }
@@ -161,7 +173,7 @@ part Card {
     let card.room = max(card.by - ear, H - card.by - ear) - 24
     let card.z = if(card_grow, clamp(min((W - 24) / max(card_w + card_w2, 1), card.room / max(card_min, 1)), 0.85, 1.5), 1)
     let card.w = min((card_w + card_w2) * card.z, W - 24)
-    let card.h = min(max(card_col.height, max(card_min * card.z, card_peak)), H - 24)
+    let card.h = min(max(card_col.height, max(card_min * card.z, card_peak)), H - 24 - if(card_lens or card_dock, 46, 0))      // its top always seen: the panel never grows past the screen's top
     on change card_col.height { card_peak = max(card_peak, card_col.height) }
     let card.sx = if(card_lens, 1, 0) + if(card_lens, 0, 1) * if(cap.h > 0, if(from.dir > 0, if(card.bx + card.w + 12 <= W, 1, -1), if(card.bx - card.w - 12 >= 0, -1, 1)), if(card.bx + card.w + 12 <= W, 1, -1))
     let card.sy = if(card_lens, if(lens_edge == 2, 1, -1), 0) + if(card_lens, 0, 1) * if(cap.v > 0, if(from.dir > 0, if(card.by + card.h + 12 <= H, 1, -1), if(card.by - card.h - 12 >= 0, -1, 1)), if(card.by > H / 2, if(card.by - card.h - 12 >= 0, -1, 1), if(card.by + card.h + 12 <= H, 1, -1)))
