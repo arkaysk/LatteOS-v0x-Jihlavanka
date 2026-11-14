@@ -86,7 +86,7 @@ LATTEOS-GOO.md (koreň)            ← Záväzný dokument: čo platí — pravi
 
 ## Licencie a povolenia
 
-- **LatteOS** — MIT ([LICENSE](../LICENSE))
+- **LatteOS** — licencia zatiaľ nie je (už nie MIT); konečná sa vyberie, keď bude systém hotový, tak aby pokryla AGPL, MIT, Apache aj ďalšie otvorené licencie
 - **pleamar** a **Marea** — BSD-3-Clause, od k4ditano; ostatné cudzie súčasti a ich licencie sú
   v [TRETIE-STRANY.md](../TRETIE-STRANY.md)
 

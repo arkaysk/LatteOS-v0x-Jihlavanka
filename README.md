@@ -140,8 +140,10 @@ Wallpapers in the screenshots belong to their artists and are not part of LatteO
 
 ## Licence
 
-MIT for LatteOS's own code for now ([LICENSE](LICENSE)). The final licence will be chosen before 1.0 so that
-it fits every borrowed part.
+LatteOS has **no licence yet**: it is not MIT any more, and no licence file is shipped with it for now. The final
+licence will be chosen when the system is final, to cover what it needs: it has to be able to use open-source parts under
+any licence (AGPL, GPL, MIT, Apache, BSD…). Until then the author keeps the rights to LatteOS's own code, and every
+borrowed part stays under its own licence ([TRETIE-STRANY.md](TRETIE-STRANY.md)).
 
 ---
 

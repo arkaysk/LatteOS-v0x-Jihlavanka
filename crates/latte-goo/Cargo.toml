@@ -4,7 +4,7 @@ name = "latte-goo"
 description = "LatteOS Goo: pleamar with the physics of goo-phys stepping inside it"
 version = "0.4.0"
 edition = "2021"
-license = "MIT"
+license.workspace = true
 authors = ["Arkay"]
 
 [dependencies]

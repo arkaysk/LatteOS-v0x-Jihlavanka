@@ -85,6 +85,8 @@ local home, folders = "", {}
 local typed, confirm = "", nil       -- what is in the field; the dangerous command asked about
 local found, asked = nil, 0          -- the files found for what is typed; which question the answer is to
 local pages, pages_for = {}, ""      -- the pages of the Settings that match what is typed; what that was
+local worked_label, worked_more = nil, nil    -- the weather: the place for the left of the panel, and the days ahead under it
+local worked_kind = ""                 -- what the answer is: Percentage, Currency, Conversion, Date, Unit
 local worked, worked_for = nil, ""   -- an amount in units or money worked out by qalc for what is typed; what that was
 local render, set_mode
 
@@ -322,20 +324,66 @@ end
 -- goo/lang/<code>-amount.json): Qalculate works it out, with the exchange rates of the European Central Bank fetched
 -- once a day (6B.06). Without qalc, nothing.
 local amount_words = {}
+-- Lines that Qalculate does not read (weather, the time in a city, work hours, the share of the day gone…) are worked out by
+-- bin/latte-calc (ROADMAP 6B.48); what it does not understand goes on to Qalculate.
+local SMART = { weather = N("Weather"), time = N("Time"), diff = N("Time difference"), date = N("Date"), hours = N("Work hours"),
+                elapsed = N("Elapsed"), span = N("Duration") }
+local function sky_of(code)
+    code = tonumber(code) or 3
+    if code == 0 then return N("Clear sky") elseif code <= 2 then return N("Partly cloudy") elseif code == 3 then return N("Overcast")
+    elseif code == 45 or code == 48 then return N("Fog") elseif (code >= 71 and code <= 77) or code == 85 or code == 86 then return N("Snow")
+    elseif code >= 95 then return N("Storm") end
+    return N("Rain")
+end
+local function smart_like(s)
+    s = s:lower()
+    return s:find("^weather ") or s:find("^forecast ") or s:find("^time ") or s:find("^diff ") or s:find("workhours") or s:find("workdays?$")
+        or s:find("percentage$") or s:find("^%a+ ?%%$") or s:find("from now") or s:find("^%a+ %d+ ?%+ ?%d")
+        or (s:find("%d ?[ap]m") and (s:find("%+") or s:find(" to ")))
+end
+local look_for_qalc
 local function look_for_amount()
     local text = typed
+    if smart_like(text) and not calc(text) then
+        run("latte-calc", { text }, function(out)
+            if text ~= typed then return end
+            local ok, r = pcall(json.decode, out or "")
+            if not (ok and type(r) == "table" and r.kind) then look_for_qalc(text) return end
+            if r.kind == "weather" then
+                worked = string.format("%d° %s", r.temp or 0, tr(sky_of(r.code)))
+                worked_label = r.place
+                local days, names = {}, { N("Mo"), N("Tu"), N("We"), N("Th"), N("Fr"), N("Sa"), N("Su") }
+                for i, d in ipairs(r.days or {}) do
+                    days[#days + 1] = (i == 1 and tr("Today") or tr(names[(tonumber(d.weekday) or 0) + 1])) .. " " .. (d.max or 0) .. "°/" .. (d.min or 0) .. "°"
+                end
+                worked_more = table.concat(days, "   ·   ")
+            else
+                worked, worked_label, worked_more = r.answer, nil, nil
+            end
+            worked_for, worked_kind = text, SMART[r.kind] or N("Result")
+            if card.id() == "lens" and (kept.mode == 0 or fact.lens_shore) then render(true) end
+        end)
+        return
+    end
+    look_for_qalc(text)
+end
+look_for_qalc = function(text)
     local asked_for = amount(text, amount_words)
+    worked_label, worked_more = nil, nil
     if not asked_for or calc(text) then worked, worked_for = nil, text return end
     local to = asked_for:match(" to (.+)$") or ""
     local money = to:find("^%u%u%u$") or to == "€" or to == "$" or to == "£" or to == "K\u{10D}"      -- money to the cent
     run("qalc", { "-set", "conv 0", "-set", "max decimals " .. (money and 2 or 4), "-set", "upxrates 1", "-t", asked_for }, function(out)
         if text ~= typed then return end                  -- something else has been typed since
         local got = ((out or ""):match("^[^\n]*") or ""):gsub("%s+$", "")
+        got = got:gsub('^"(.*)"$', "%1")                    -- a date comes quoted
         got = (got .. " "):gsub("(%d+,%d-)0+(%s)", "%1%2"):gsub(",(%s)", "%1"):gsub("%s+$", "")     -- 111,8800 $ → 111,88 $
         local from = asked_for:match("^(.-) to ")
         -- what it could not turn into anything comes back as it went in: no answer, not a wrong one
         if got == "" or got:find("[Ee]rror") or got:find("[Ww]arning") or (from and got:gsub(",0+", "") == from:gsub(",0+", "")) then return end
         worked, worked_for = got, text
+        worked_kind = (text:find("%%") and N("Percentage")) or ((to ~= "" and money) and N("Currency")) or (to ~= "" and N("Conversion"))
+                      or (asked_for:find("today") or asked_for:find("tomorrow") or asked_for:find("yesterday") or asked_for:find("now")) and N("Date") or N("Unit")
         if card.id() == "lens" and (kept.mode == 0 or fact.lens_shore) then render(true) end
     end)
 end
@@ -1952,10 +2000,12 @@ local function shore_rows()
         end
     else
         local q = typed
+        local calc_result = calc(q)
+        local calc_shown = calc_result and number(calc_result) or (worked and worked_for == q and worked) or nil     -- an answer: Enter copies it, not asks the AI
         -- first, chosen: the AI (Enter); with it off, the best of what was found is first instead
         if MODES[4] then
             local p = ai.providers[1] or provider()      -- LensAI's default answers (ask)
-            local first = { { label = tr("Ask the AI") .. ": " .. q, glyph = "sparkles", hint = p and p.name or "", first = true, run = function() ask(q) text.lens_q, fact.lens_typed, typed = "", false, "" end } }
+            local first = { { label = tr("Ask the AI") .. ": " .. q, glyph = "sparkles", hint = p and p.name or "", first = calc_shown == nil, run = function() ask(q) text.lens_q, fact.lens_typed, typed = "", false, "" end } }
             local c = context_row()
             if c then first[#first + 1] = c end
             section(first)
@@ -1969,9 +2019,14 @@ local function shore_rows()
         section(quick_rows(q))
         section(ql_rows(q))
         section(ac_rows(q))
-        local result = calc(q)
-        local shown_amount = result and number(result) or (worked and worked_for == q and worked)
-        if shown_amount then section({ { label = shown_amount, glyph = "calculator", hint = tr("Calculator"), copy = shown_amount, run = function() pcall(sys.call, "clipboard.set", shown_amount) end } }) end
+        local result, shown_amount = calc_result, calc_shown
+        if shown_amount then
+            -- Raycast's calculator: what was asked | → | the answer, and Enter copies the answer
+            local weather = (worked_kind == N("Weather") and worked_for == q and not result)
+            section({ { calc = true, label = weather and worked_label or q, hint = shown_amount, line2 = tr(result and N("Math") or worked_kind), glyph = "arrow-right", copy = shown_amount,
+                        main = tr("Copy Answer"), first = true, run = function() pcall(sys.call, "clipboard.set", shown_amount) end },
+                        weather and worked_more and { label = worked_more, glyph = "cloud", quiet = true } or nil })
+        end
         local hits, rows = ranked(q, 5), {}
         for i, a in ipairs(hits) do
             if i > 4 then break end

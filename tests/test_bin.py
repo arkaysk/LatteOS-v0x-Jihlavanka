@@ -783,6 +783,15 @@ if shutil.which("lua"):
     assert put("20 stup\u0148ov celzia na fahrenheit") == "20 \u00b0C to \u00b0F"
     assert put("15 % z 80") == "15% * 80" and put("15% of 80") == "15% * 80"
     assert put("2048 game") == "-" and put("Spotify") == "-"            # an app's name is not worked out
+    # Raycast's calculator forms: `in` joins like `to` (not after a number: inches), a percentage, a date, units added
+    assert put("12% of $321 in jpy") == "12% * $321 to JPY", put("12% of $321 in jpy")
+    assert put("5 in to cm") == "5 in to cm" and put("150 + 20%") == "150 + 20%"
+    assert put("tomorrow + 3 days") == "tomorrow + 3 days" and put("2 h + 30 min") == "2 h + 30 min"
+    assert put("asdf qwe") == "-" and put("50 fifty") == "-"
+    assert put("20% discount off $500") == "$500 - 20%" and put("5% gratuity on $95") == "$95 + 5%"
+    assert put("5 feet 3 inches in cm") == "5 ft + 3 inch to cm", put("5 feet 3 inches in cm")
+    assert put("cotd(45)") == "cot(45 deg)" and put("2 kilo to lb") == "2 kg to lb" and put("5 yr to days") == "5 year to days"
+    assert put("USD1K to eur") == "1k USD to eur" or put("USD1K to eur").startswith("(1 * 1000) USD"), put("USD1K to eur")
     os.remove(script)
 
 

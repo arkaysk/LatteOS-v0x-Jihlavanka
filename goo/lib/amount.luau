@@ -14,6 +14,29 @@ return function(line, words)
     local s = " " .. line:lower() .. " "
     for _, w in ipairs(words.asking or {}) do s = s:gsub(" " .. w .. " ", " ", 1) end
     s = s:gsub("[%?=]+%s*$", " "):gsub("→", " to "):gsub("=>", " to ")
+    -- Raycast 2.12's phrasings, put as Qalculate reads them (each sets `said`: such a line is worked out even with no conversion in it)
+    local said = false
+    local function rule(pattern, with)
+        local out, n = s:gsub(pattern, with)
+        if n > 0 then s, said = out, true end
+    end
+    rule("(%d[%d%.]*)%s*%%%s*discount%s+off%s+(%S+)", "%2 - %1%%")                 -- 20% discount off $500
+    rule("(%d[%d%.]*)%s*%%%s*off%s+(%S+)", "%2 - %1%%")                            -- 20% off 80
+    rule("(%d[%d%.]*)%s*%%%s*gratuity%s+on%s+(%S+)", "%2 + %1%%")                  -- 5% gratuity on $95
+    rule("(%d[%d%.]*)%s*%%%s*tip%s+on%s+(%S+)", "%2 + %1%%")
+    rule("(%d[%d%.]*)%s*(f[eo]+t)%s+(%d[%d%.]*)%s*(inch[es]*)", "%1 ft + %3 inch")      -- 5 feet 3 inches in cm
+    rule("(%d[%d%.]*)%s*ft%s+(%d[%d%.]*)%s*in%f[%A]", "%1 ft + %2 inch")
+    rule("%f[%a]kilos?%f[%A]", "kg")                                               -- kilo is kg
+    rule("%f[%a]yr%f[%A]", "year")                                                 -- unit shorthands
+    rule("%f[%a]mo%f[%A]", "month")
+    for _, f in ipairs({ "sin", "cos", "tan", "cot", "sec", "csc" }) do            -- the degree variants: cotd(45), acotd(1)
+        rule("%f[%a]" .. f .. "d%(([^%)]*)%)", f .. "(%1 deg)")
+        rule("%f[%a]a" .. f .. "d%(([^%)]*)%)", "(a" .. f .. "(%1) * 180 / pi)")
+    end
+    s = s:gsub("%f[%a](%a%a%a)(%d[%d%.]*k?)%f[%A]", function(code, n) if CODES[code] then said = true return n .. " " .. code end end)   -- USD1K → 1K USD
+    rule("(%d[%d%.]*)k%f[%A]", "(%1 * 1000)")                                      -- 10k = 10,000 (10 K = kelvin)
+    -- "12% of $321 in jpy": `in` joins the two sides unless a number stands before it (5 in to cm: inches)
+    s = s:gsub("(%S+) in ", function(prev) if not prev:match("^[%d%.,]+$") then return prev .. " to " end end)
     -- a share: 15 % of 80
     for _, w in ipairs({ "of", table.unpack(words.of or {}) }) do s = s:gsub("(%d)%s*%%%s*" .. w .. "%s+", "%1%% * ") end
     s = s:gsub("[%a\128-\255]+", function(w)
@@ -25,6 +48,10 @@ return function(line, words)
         return w
     end)
     s = s:gsub("%s+", " "):gsub("^ ", ""):gsub(" $", "")
-    if not s:find("%d") or not (s:find(" to ") or s:find("%% %*")) then return nil end
-    return s
+    if not s:find("%d") then return nil end
+    if said or s:find(" to ") or s:find("%% %*") then return s end
+    -- what Qalculate works out without a conversion: a percentage (150 + 20%), a date (tomorrow + 3 days), units added (2 h + 30 min)
+    if s:find("%d%s*%%") or s:find("%f[%a]today%f[%A]") or s:find("%f[%a]tomorrow%f[%A]") or s:find("%f[%a]yesterday%f[%A]") or s:find("%f[%a]now%f[%A]")
+       or s:find("%d%s*%a+%s*[%+%-]%s*%d") then return s end
+    return nil
 end

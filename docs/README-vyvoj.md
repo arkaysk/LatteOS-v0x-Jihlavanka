@@ -63,7 +63,7 @@ Kliky jednotlivých kvapiek sú v [LATTEOS-GOO.md §4](LATTEOS-GOO.md). Záväzn
 `setup/verejne/zverejnit.sh` — jeden commit, značka `v<verzia>` a vydanie na GitHube s popisom zo
 [ZMENY.md](ZMENY.md). Verzia je v `Cargo.toml`; každé vydanie musí mať novú. Čo ostáva súkromné, určuje
 `setup/verejne/vynechat.txt`; verejné README je `setup/verejne/README.md` (iba LatteOS GOO, Classic sa neopisuje).
-Skúška bez zverejnenia: `setup/verejne/zverejnit.sh --nasucho`. Licencia: MIT ([LICENSE](LICENSE)), cudzie súčasti
+Skúška bez zverejnenia: `setup/verejne/zverejnit.sh --nasucho`. Licencia: zatiaľ žiadna (už nie MIT; konečná až pri finálnom systéme), cudzie súčasti
 v [TRETIE-STRANY.md](TRETIE-STRANY.md). Posledné vydanie: **0.3.0 „Jihlavanka“** (6. 10. 2026); zverejňuje
 sa iba na pokyn.
 

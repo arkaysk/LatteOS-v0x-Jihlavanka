@@ -1,0 +1,237 @@
+#!/usr/bin/env python3
+"""latte-calc LINE: the calculator's parts that Qalculate does not read (ROADMAP 6B.48; Raycast 2.12's Calculator as a model).
+
+Prints one JSON object, or {} when it is not a line it understands:
+  {"kind": "weather", "place", "temp", "code" (WMO), "hi", "lo", "days": [{"weekday" (0 Monday), "max", "min", "code"}]}
+  {"kind": "time"|"diff"|"date"|"hours"|"elapsed"|"span", "answer": "15:42 · Fri 14. 11."}
+Places are found OFFLINE: GeoNames' cities of 15,000 people and more (CC BY 4.0: names, their short forms such as SF or NYC,
+coordinates, time zones) and OurAirports (public domain: IATA codes), fetched once into ~/.cache/latteos/places.tsv. So "time in
+San Francisco", "diff Paris" and "time in JFK" need no network at all; only the weather asks Open-Meteo for the forecast (as
+latte-sky does). Without the data file and without a network the places fall back to Open-Meteo's geocoding.
+"""
+import datetime as dt
+import io
+import json
+import math
+import os
+import re
+import sys
+import unicodedata
+import urllib.parse
+import urllib.request
+import zipfile
+from zoneinfo import ZoneInfo
+
+CACHE = os.path.join(os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"), "latteos", "places.tsv")
+CITIES = "https://download.geonames.org/export/dump/cities15000.zip"
+AIRPORTS = "https://davidmegginson.github.io/ourairports-data/airports.csv"
+
+DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
+
+
+def get(url):
+    return json.load(urllib.request.urlopen(url, timeout=8))
+
+
+def fold(text):
+    """Lower case without accents: São Paulo = sao paulo."""
+    return "".join(c for c in unicodedata.normalize("NFD", text.lower()) if unicodedata.category(c) != "Mn").strip()
+
+
+def fetch_data():
+    """Builds the places file: `C name TAB ,alt,alt, TAB lat TAB lon TAB tz TAB population TAB country` for a city, `A IATA TAB city TAB lat
+    TAB lon` for an airport. Latin short names only: the file stays about 3 MB."""
+    rows = []
+    z = zipfile.ZipFile(io.BytesIO(urllib.request.urlopen(CITIES, timeout=60).read()))
+    for line in z.read("cities15000.txt").decode("utf-8").splitlines():
+        f = line.split("\t")
+        alts = {fold(a) for a in f[3].split(",") + [f[1]] if a and len(a) <= 24 and all(ord(c) < 0x250 for c in a)}
+        rows.append("C\t%s\t,%s,\t%s\t%s\t%s\t%s\t%s" % (f[1], ",".join(sorted(alts)), f[4], f[5], f[17], f[14], f[8]))
+    import csv
+    for r in csv.DictReader(io.StringIO(urllib.request.urlopen(AIRPORTS, timeout=60).read().decode("utf-8"))):
+        if r["iata_code"] and r["scheduled_service"] == "yes":
+            rows.append("A\t%s\t%s\t%s\t%s" % (r["iata_code"], r["municipality"], r["latitude_deg"], r["longitude_deg"]))
+    os.makedirs(os.path.dirname(CACHE), exist_ok=True)
+    with open(CACHE + ".new", "w", encoding="utf-8") as f:
+        f.write("\n".join(rows) + "\n")
+    os.replace(CACHE + ".new", CACHE)
+
+
+def load_data():
+    try:
+        return open(CACHE, encoding="utf-8").read().splitlines()
+    except OSError:
+        pass
+    try:
+        fetch_data()
+        return open(CACHE, encoding="utf-8").read().splitlines()
+    except Exception:
+        return []
+
+
+def near(lat, lon, cities):
+    """The city nearest those coordinates (for an airport's time zone)."""
+    return min(cities, key=lambda c: (float(c["latitude"]) - lat) ** 2 + ((float(c["longitude"]) - lon) * math.cos(math.radians(lat))) ** 2)
+
+
+def place(name):
+    """A place by its name, its short form (sf, nyc) or an airport's IATA code: {name, latitude, longitude, timezone, country} or None."""
+    want = fold(name)
+    lines = load_data()
+    cities, air = [], None
+    for line in lines:
+        if line[0] == "C":
+            if "," + want + "," in line:                     # the names are folded, one in `,a,b,` form
+                f = line.split("\t")
+                cities.append({"name": f[1], "latitude": f[3], "longitude": f[4], "timezone": f[5], "pop": int(f[6] or 0), "country": f[7]})
+        elif line.startswith("A\t" + want.upper() + "\t"):
+            f = line.split("\t")
+            air = (float(f[3]), float(f[4]))
+    if lines and air:
+        every = [dict(zip(("name", "latitude", "longitude", "timezone"), l.split("\t")[1:2] + l.split("\t")[3:6])) for l in lines if l[0] == "C"]
+        c = near(air[0], air[1], every)
+        return {"name": want.upper(), "latitude": c["latitude"], "longitude": c["longitude"], "timezone": c["timezone"], "country": ""}
+    if lines and not cities and " " in want:                 # London Heathrow: the city's name first
+        first = want.split(" ")[0]
+        cities = [{"name": l.split("\t")[1], "latitude": l.split("\t")[3], "longitude": l.split("\t")[4], "timezone": l.split("\t")[5],
+                   "pop": int(l.split("\t")[6] or 0), "country": l.split("\t")[7]} for l in lines if l[0] == "C" and "," + first + "," in l]
+    if cities:
+        return dict(max(cities, key=lambda c: c["pop"]))
+    try:                                                     # no data, no network for it: the service's own search
+        r = get("https://geocoding-api.open-meteo.com/v1/search?count=1&name=" + urllib.parse.quote(name.strip()))
+    except Exception:
+        return None
+    return (r.get("results") or [None])[0]
+
+
+def clock(t):
+    return "%02d:%02d" % (t.hour, t.minute)
+
+
+def parse_time(s):
+    """'4:39pm', '8am', '16:30' → a time of day, or None."""
+    m = re.fullmatch(r"(\d{1,2})(?::(\d{2}))?\s*(am|pm)?", s.strip().lower())
+    if not m:
+        return None
+    h, mi, ap = int(m.group(1)), int(m.group(2) or 0), m.group(3)
+    if ap == "pm" and h < 12:
+        h += 12
+    if ap == "am" and h == 12:
+        h = 0
+    if h > 23 or mi > 59:
+        return None
+    return dt.time(h, mi)
+
+
+def weather(where):
+    p = place(where)
+    if not p:
+        return {}
+    try:
+        d = get("https://api.open-meteo.com/v1/forecast?latitude=%s&longitude=%s&current=temperature_2m,weather_code&daily=weather_code,"
+                "temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=4" % (p["latitude"], p["longitude"]))
+    except Exception:
+        return {}
+    cur, day = d.get("current") or {}, d.get("daily") or {}
+    days = [{"weekday": dt.date.fromisoformat(t).weekday(), "max": round(day["temperature_2m_max"][i]), "min": round(day["temperature_2m_min"][i]),
+             "code": day["weather_code"][i]} for i, t in enumerate(day.get("time") or [])]
+    if not days:
+        return {}
+    return {"kind": "weather", "place": "%s, %s" % (p["name"], p.get("country") or p.get("country_code", "")), "temp": round(cur.get("temperature_2m", 0)),
+            "code": cur.get("weather_code", 3), "hi": days[0]["max"], "lo": days[0]["min"], "days": days}
+
+
+def work_hours(year):
+    d, n = dt.date(year, 1, 1), 0
+    while d.year == year:
+        n += d.weekday() < 5
+        d += dt.timedelta(days=1)
+    return n * 8     # ponytail: public holidays are not taken off; a holiday list per country is the upgrade
+
+
+def elapsed(word, now):
+    if word == "day":
+        f = (now.hour * 60 + now.minute) / 1440
+    elif word == "week":
+        f = (now.weekday() * 1440 + now.hour * 60 + now.minute) / (7 * 1440)
+    elif word == "month":
+        days = (dt.date(now.year + now.month // 12, now.month % 12 + 1, 1) - dt.date(now.year, now.month, 1)).days
+        f = ((now.day - 1) * 1440 + now.hour * 60 + now.minute) / (days * 1440)
+    else:
+        start = dt.datetime(now.year, 1, 1)
+        f = (now.replace(tzinfo=None) - start) / (dt.datetime(now.year + 1, 1, 1) - start)
+    return "%.1f %%" % (f * 100)
+
+
+def calc(line, now=None):
+    s = " ".join(line.strip().lower().split())
+    now = now or dt.datetime.now().astimezone()
+    m = re.fullmatch(r"(?:weather|forecast)\s+(?:in|for|at)\s+(.+)", s)
+    if m:
+        return weather(m.group(1))
+    m = re.fullmatch(r"(?:time\s+)?diff\s+(.+)", s) or re.fullmatch(r"time\s+difference\s+(?:to\s+)?(.+)", s)
+    if m:
+        p = place(m.group(1))
+        if not p:
+            return {}
+        there = now.astimezone(ZoneInfo(p["timezone"]))
+        d = (there.utcoffset() - now.utcoffset()).total_seconds() / 3600
+        return {"kind": "diff", "answer": ("%+g h" % d) if d else "0 h"}
+    m = re.fullmatch(r"time\s+in\s+(.+?)\s*\+\s*(\d+(?:\.\d+)?)\s*(?:hours?|h)", s)        # time in brisbane + 4 hours
+    if m:
+        p = place(m.group(1))
+        if not p:
+            return {}
+        t = now.astimezone(ZoneInfo(p["timezone"])) + dt.timedelta(hours=float(m.group(2)))
+        return {"kind": "time", "answer": "%s · %s %d. %d." % (clock(t), DAYS[t.weekday()], t.day, t.month)}
+    m = re.fullmatch(r"time(?:\s+in\s+(\d+(?:\.\d+)?)\s*(?:hours?|h))?(?:\s+in\s+(.+))?", s)
+    if m and (m.group(1) or m.group(2)):
+        t = now
+        if m.group(2):
+            p = place(m.group(2))
+            if not p:
+                return {}
+            t = now.astimezone(ZoneInfo(p["timezone"]))
+        if m.group(1):
+            t += dt.timedelta(hours=float(m.group(1)))
+        return {"kind": "time", "answer": "%s · %s %d. %d." % (clock(t), DAYS[t.weekday()], t.day, t.month)}
+    m = re.fullmatch(r"workhours\s+in\s+(\d{4})", s)
+    if m:
+        return {"kind": "hours", "answer": "%d h" % work_hours(int(m.group(1)))}
+    m = re.fullmatch(r"(\d+(?:\.\d+)?)\s*h(?:ours?)?\s+(?:in|to)\s+workdays?", s)
+    if m:
+        v = float(m.group(1)) / 8
+        return {"kind": "hours", "answer": "%g workdays" % round(v, 2)}
+    m = re.fullmatch(r"(day|week|month|year)\s*(?:percentage|%)", s)
+    if m:
+        return {"kind": "elapsed", "answer": elapsed(m.group(1), now)}
+    m = re.fullmatch(r"(\d+(?:\.\d+)?)\s*(days?|weeks?|hours?|h)\s+from\s+now(?:\s+at\s+(.+))?", s)
+    if m:
+        n, unit = float(m.group(1)), m.group(2)
+        t = now + dt.timedelta(**{("hours" if unit[0] == "h" else "weeks" if unit[0] == "w" else "days"): n})
+        if m.group(3):
+            at = parse_time(m.group(3))
+            if not at:
+                return {}
+            t = t.replace(hour=at.hour, minute=at.minute, second=0, microsecond=0)
+        return {"kind": "date", "answer": "%s %d. %d. %s" % (DAYS[t.weekday()], t.day, t.month, clock(t)) if m.group(3) else "%s %d. %d." % (DAYS[t.weekday()], t.day, t.month)}
+    m = re.fullmatch(r"(%s)\s+(\d{1,2})\s*\+\s*(\d+)(?:\s*days?)?" % "|".join(MONTHS), s)
+    if m:
+        t = dt.date(now.year, MONTHS.index(m.group(1)) + 1, int(m.group(2))) + dt.timedelta(days=int(m.group(3)))
+        return {"kind": "date", "answer": "%s %d. %d." % (DAYS[t.weekday()], t.day, t.month)}
+    m = re.fullmatch(r"(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s*\+\s*(\d+(?:\.\d+)?)(?:\s*(?:hours?|h))?", s)
+    if m and parse_time(m.group(1)) and re.search(r"am|pm|:", m.group(1)):
+        at = parse_time(m.group(1))
+        t = dt.datetime.combine(dt.date.today(), at) + dt.timedelta(hours=float(m.group(2)))
+        return {"kind": "time", "answer": clock(t)}
+    m = re.fullmatch(r"(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s+to\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)", s)
+    if m and parse_time(m.group(1)) and parse_time(m.group(2)):
+        a, b = parse_time(m.group(1)), parse_time(m.group(2))
+        mins = (b.hour * 60 + b.minute - a.hour * 60 - a.minute) % 1440
+        return {"kind": "span", "answer": ("%d h %d min" % (mins // 60, mins % 60)) if mins % 60 else "%d h" % (mins // 60)}
+    return {}
+
+
+if __name__ == "__main__":
+    print(json.dumps(calc(" ".join(sys.argv[1:]))))

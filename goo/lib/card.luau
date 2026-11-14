@@ -18,6 +18,7 @@
 --   { big = true, label, bar }                      a large figure
 --   { para = true, label }                          a paragraph
 --   { profile = true, icon, glyph, label, line2, run, on, hint }       `on` shows `hint` as a small badge (the role)
+--   { calc = true, label, line2, hint, glyph, copy, run }   the calculator: `label` what was asked, `hint` the answer, `line2` the kind of what was asked (Percentage…)
 --   { wave = true }                                  a divider: two layers of coffee, golden behind
 -- `pills` and `tiles` with `per = 2` lie wide: an icon in a square, the name beside it, two to a line.
 --   { slide = true, glyph, label, value, hint, off, run, set }     a slider: `value` 0…1, set = function(0…1) as it
@@ -117,7 +118,7 @@ local function height_of(it)
         return math.ceil(n / per) * ((it.cells and (it.big and 120 or 50)) or (it.pills and (per <= 2 and 60 or 46)) or (per <= 2 and 66 or 88))
     end
     if it.prev then return 78 elseif it.head then return 30 elseif it.big then return 64 elseif it.profile then return 84 elseif it.slide then return 44
-    elseif it.wave then return 26 elseif it.gap then return it.gap end
+    elseif it.wave then return 26 elseif it.calc then return 118 elseif it.gap then return it.gap end
     return it.line2 and 54 or 44
 end
 
@@ -233,8 +234,8 @@ function M.open(rows, opts)
             end
             return
         end
-        local kind = (it.gap and "gap") or (it.head and "head") or (it.big and "big") or (it.para and "para") or (it.profile and "profile") or (it.slide and "slide") or (it.wave and "wave") or "plain"
-        local pressed = (kind == "plain" or kind == "profile" or kind == "slide" or (kind == "big" and it.run ~= nil)) and not it.quiet
+        local kind = (it.gap and "gap") or (it.head and "head") or (it.big and "big") or (it.para and "para") or (it.profile and "profile") or (it.slide and "slide") or (it.wave and "wave") or (it.calc and "calc") or "plain"
+        local pressed = (kind == "plain" or kind == "profile" or kind == "slide" or kind == "calc" or (kind == "big" and it.run ~= nil)) and not it.quiet
         if kind == "slide" then it = table.clone(it) it.bar, it.keep = it.value or 0, true slides[base + #to] = it.set end
         to[#to + 1] = {
             kind = kind, label = it.label or "", hint = it.hint or "", line2 = it.line2 or "", glyph = glyph(it.glyph),
@@ -296,7 +297,7 @@ function M.open(rows, opts)
     fact.card_custom = (opts.custom == "clock" and 1) or (opts.custom == "cam" and 2) or (opts.custom == "ai" and 3) or (opts.custom == "calendar" and 4) or 0       -- the card is a scene of its own (parts/clock.plm), not rows
     -- where the coffee of a `wave` row begins: the heights of the rows above it, as parts/rows.plm lays them out
     local function row_h(r)
-        local h = r.prev and 78 or ({ plain = r.tall and 54 or 44, head = 30, big = 64, para = 0, profile = 84, slide = 44, gap = r.bar, wave = 26 })[r.kind]
+        local h = r.prev and 78 or ({ plain = r.tall and 54 or 44, head = 30, big = 64, para = 0, profile = 84, slide = 44, gap = r.bar, wave = 26, calc = 118 })[r.kind]
         if r.kind == "pills" then h = r.per <= 2 and 60 or 46 elseif r.kind == "tiles" then h = r.per <= 2 and 66 or 88 elseif r.kind == "cells" then h = r.tall and 120 or 50 end
         return (h or 0) + (r.line and 14 or 0)
     end

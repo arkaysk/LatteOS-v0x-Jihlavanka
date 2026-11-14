@@ -51,6 +51,7 @@
 /usr/bin/latte-properties                               <- bin/latte-properties
 /usr/bin/latte-linked                                   <- bin/latte-linked
 /usr/bin/latte-goowidgets                               <- bin/latte-goowidgets
+/usr/bin/latte-calc                                      <- bin/latte-calc
 /usr/bin/latte-calsettings                              <- bin/latte-calsettings
 /usr/bin/latte-chapolera-settings                       <- bin/latte-chapolera-settings
 /usr/bin/latte-wall                                     <- bin/latte-wall
@@ -611,6 +612,8 @@
 /usr/share/latteos/apps/settings/drops/queengoo.png     <- apps/settings/drops/queengoo.png
 /usr/share/latteos/apps/settings/drops/mediagoo.png     <- apps/settings/drops/mediagoo.png
 /usr/share/latteos/apps/settings/drops/clockgoo.png     <- apps/settings/drops/clockgoo.png
+/usr/share/latteos/apps/settings/drops/appcloud.png     <- apps/settings/drops/appcloud.png
+/usr/share/latteos/apps/settings/drops/trayshore.png    <- apps/settings/drops/trayshore.png
 /usr/share/latteos/weather-services.txt                 <- system/weather-services.txt
 /usr/share/latteos/apps/common/Theme.qml                <- apps/common/Theme.qml
 /usr/share/latteos/apps/common/I18n.qml                 <- apps/common/I18n.qml

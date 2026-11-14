@@ -197,7 +197,7 @@ part Rows {
         // the rows come in one after another, each a little later, sliding in from the ear's side
         let come = clamp(reveal * 3.2 - 0.1 * r.index, 0, 1)
         let shown = come * come * (3 - 2 * come)
-        let h = if(r.prev, 78, if(r.kind == gap, max(r.bar, 0), pick(r.kind, if(r.tall, 54, 44), 30, 64, 0, 0, 0, 84, 44, 26)))
+        let h = if(r.prev, 78, if(r.kind == calc, 118, if(r.kind == gap, max(r.bar, 0), pick(r.kind, if(r.tall, 54, 44), 30, 64, 0, 0, 0, 84, 44, 26))))
 
         column parts {
             // a rule above the row
@@ -278,10 +278,25 @@ part Rows {
                 on press right hit { tap.x = cursor.x; tap.y = cursor.y; emit card_right((r.index + base) * 16) }
                 on scroll hit { emit card_wheel((r.index + base) * 2 + if(wheel > 0, 1, 0)) }
 
+                // the calculator (LensShore): a bordered pane, what was asked on the left, an arrow, the answer on the right,
+                // under each a pill with what it is; as Raycast's, in the card's own colours
+                box { from: 12, 7; size: w - 24, h - 14; corner: 16; color: tb2; show: r.kind == calc }
+                box { from: 12, 7; size: w - 24, h - 14; corner: 16; stroke: 1.2; color: tg; opacity: 25% + 75% * if(card_sel == (r.index + base) * 16, 1, 0); show: r.kind == calc }
+                box { from: w / 2 - 0.5, 20; size: 1, h - 40; color: tc; opacity: 14%; show: r.kind == calc }
+                ellipse { at: w / 2, h / 2 - 8; radius: 13; color: tpaper; show: r.kind == calc }
+                ellipse { at: w / 2, h / 2 - 8; radius: 13; stroke: 1; color: tc; opacity: 25%; show: r.kind == calc }
+                text r.glyph { at: w / 2, h / 2 - 8; anchor: center; size: 16; color: tc; show: r.kind == calc; family: "tabler-icons" }
+                text r.label { at: w / 4, h / 2 - 12; anchor: center; width: w / 2 - 44; lines: 2; size: 19; weight: 700; color: tc; show: r.kind == calc; align: center; family: "Inter" }
+                text r.hint { at: w * 3 / 4, h / 2 - 12; anchor: center; width: w / 2 - 44; lines: 1; size: 25; weight: 700; color: tg; show: r.kind == calc; align: center; family: "Inter" }
+                box { at: w / 4, h - 26; size: 96, 20; corner: 6; color: tc; opacity: 12%; show: r.kind == calc }
+                text r.line2 { at: w / 4, h - 26; anchor: center; width: 90; lines: 1; size: 10.5; weight: 600; color: td; show: r.kind == calc; align: center; family: "Inter" }
+                box { at: w * 3 / 4, h - 26; size: 96, 20; corner: 6; color: tc; opacity: 12%; show: r.kind == calc }
+                text "Result" { at: w * 3 / 4, h - 26; anchor: center; width: 90; lines: 1; size: 10.5; weight: 600; color: td; show: r.kind == calc; align: center; family: "Inter" }
+
                 // copy, as beside the AI's messages: quiet at the row's end, lit under the pointer, a tick once done
-                text g_copy { at: w - 26, if(r.kind == big, 28, h / 2); anchor: center; size: 16; color: tc; opacity: 45% + 55% * copy_hit.hover; show: r.copy and card_copied != r.index + base; family: "tabler-icons" }
-                text g_check { at: w - 26, if(r.kind == big, 28, h / 2); anchor: center; size: 16; color: tg; show: r.copy and card_copied == r.index + base; family: "tabler-icons" }
-                zone box copy_hit { from: w - 44, if(r.kind == big, 10, h / 2 - 18); size: 36, 36; cursor: pointer; active: card_open and r.copy; label: "Copy"; role: button }
+                text g_copy { at: w - 30, if(r.kind == big, 28, if(r.kind == calc, 26, h / 2)); anchor: center; size: 16; color: tc; opacity: 45% + 55% * copy_hit.hover; show: r.copy and card_copied != r.index + base; family: "tabler-icons" }
+                text g_check { at: w - 30, if(r.kind == big, 28, if(r.kind == calc, 26, h / 2)); anchor: center; size: 16; color: tg; show: r.copy and card_copied == r.index + base; family: "tabler-icons" }
+                zone box copy_hit { from: w - 48, if(r.kind == big, 10, if(r.kind == calc, 8, h / 2 - 18)); size: 36, 36; cursor: pointer; active: card_open and r.copy; label: "Copy"; role: button }
                 on press copy_hit { emit card_copy(r.index + base) }
             }
 

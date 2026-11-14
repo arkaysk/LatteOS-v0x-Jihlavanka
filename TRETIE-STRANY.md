@@ -96,3 +96,7 @@ inštaláciami; pri distribúcii sa kontroluje konkrétny Fedora build.
 
 - **Ollama** (MIT, github.com/ollama/ollama) — pravidlo odhadu pamäte modelu z hlavičky GGUF (`llm/memory.go`, `fs/ggml` GraphSize), prenesené do `bin/latte-ai` (`estimate`) ako záloha; presný odhad dáva `llama-fit-params` z llama.cpp (MIT), ktorý sa iba spúšťa.
 
+
+- **GeoNames** (CC BY 4.0, geonames.org, `cities15000`) — mestá s 15 000 a viac obyvateľmi: mená, skratky (SF, NYC), súradnice, časové pásma; `bin/latte-calc` si z nich raz stiahne súbor `~/.cache/latteos/places.tsv`, takže „time in tokyo“ a „diff Paris“ idú bez siete. Autor: GeoNames, uvádza sa pri Kalkulačke.
+- **OurAirports** (public domain, ourairports.com) — kódy IATA letísk pre „time in JFK“, ten istý súbor.
+- **Open-Meteo** (CC BY 4.0, open-meteo.com, nekomerčné použitie bez kľúča) — predpoveď pre „weather in …“ v `bin/latte-calc` (rovnako ju už používa `bin/latte-sky`); jediná vec Kalkulačky, ktorá potrebuje sieť.
