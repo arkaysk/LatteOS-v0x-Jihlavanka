@@ -333,8 +333,12 @@ function M.open(rows, opts)
             y += h
         end
     end
+    -- the rows in their order, those that scroll and those that stay under them: the coffee is measured over both
+    local both = {}
+    for _, r in ipairs(out) do both[#both + 1] = r end
+    for _, r in ipairs(outF) do both[#both + 1] = r end
     local split, waved = (#tabs > 0 and 44 or 0) + (opts.field and 46 or 0), false
-    for _, r in ipairs(out) do
+    for _, r in ipairs(both) do
         if r.kind == "wave" then waved, split = true, split + 10 break end
         split = split + row_h(r)
     end
@@ -342,11 +346,11 @@ function M.open(rows, opts)
     -- LensShore's coffee is measured from its plate, the side whose rows are known: what is above (an answer) may not be
     fact.card_tail = 0
     if opts.lens and waved then
-        local at, n = 0, #out
-        for i, r in ipairs(out) do if r.kind == "wave" then at = i end end
+        local at, n = 0, #both
+        for i, r in ipairs(both) do if r.kind == "wave" then at = i end end
         local tail = 0
-        if opts.lens == "top" then for i = 1, at - 1 do tail += row_h(out[i]) end tail += 14
-        else for i = at + 1, n do tail += row_h(out[i]) end tail += 12 end
+        if opts.lens == "top" then for i = 1, at - 1 do tail += row_h(both[i]) end tail += 14
+        else for i = at + 1, n do tail += row_h(both[i]) end tail += 12 end
         fact.card_tail, fact.card_split = tail, 0
     end
     fact.card_dock, fact.card_dock_w = opts.dock ~= nil, tonumber(opts.dock) or 0

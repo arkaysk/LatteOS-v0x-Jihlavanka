@@ -206,7 +206,7 @@ part Rows {
     component CardRow(r: record, base: number, w: number, vis: bool = true) {
         size: if(vis, w, 0), if(vis, parts.height, 0)
         // the rows come in one after another, each a little later, sliding in from the ear's side
-        let come = clamp(reveal * 3.2 - 0.1 * r.index, 0, 1)
+        let come = clamp(reveal * 3.2 - 0.1 * min(r.index, 8), 0, 1)       // the first rows come one after another; a long list is not kept waiting for its last ones
         let shown = come * come * (3 - 2 * come)
         let h = if(r.prev, 78, if(r.kind == pic, 120, if(r.kind == calc, 118, if(r.kind == gap, max(r.bar, 0), pick(r.kind, if(r.tall, 54, 44), 30, 64, 0, 0, 0, 84, 44, 26)))))
 

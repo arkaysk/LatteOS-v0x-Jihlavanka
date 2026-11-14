@@ -64,22 +64,88 @@ end
 function M.reset() state.found, state.asked, state.cur, state.shown = nil, 0, nil, nil end
 function M.filter_id() return state.filter end
 
--- what the line finds: by name in the home folder, by kind (fd's extensions); a folder when that is the filter
-function M.search(text, again)
+-- what the line finds by name, in the home folder and in `roots` (Goo's `lens_files_roots`, more folders to look in): fd looks for the longest
+-- word, the others are asked of the name here; ranked as a launcher ranks (the name starts as typed, words start words, lately opened first).
+-- Not hidden by .gitignore (a file is not lost to a project's rules); what is only noise is left out.
+local NOISE = { "node_modules", "target", ".git", ".cache", "__pycache__", "Trash", ".var", ".npm", ".cargo", ".rustup", ".mozilla" }
+local function score(path, words, query, lately)
+    local name = (path:match("([^/]+)/?$") or path):lower()
+    local bare = name:gsub("%.[%w]+$", "")
+    local s = 0
+    if bare == query or name == query then s = 1000
+    elseif name:sub(1, #query) == query then s = 800
+    else
+        local all_start, all_in = true, true
+        for _, w in ipairs(words) do
+            if not (name:sub(1, #w) == w or name:find("[%s_%-%.]" .. w:gsub("%p", "%%%0"))) then all_start = false end
+            if not name:find(w, 1, true) then all_in = false end
+        end
+        s = (all_start and 600) or (name:find(query, 1, true) and 500) or (all_in and 400) or 200
+    end
+    return s + (lately and (150 - math.min(lately, 100)) or 0) - #name / 10
+end
+function M.search(text, again, roots)
     state.asked += 1
     local mine = state.asked
     state.found = nil
+    state.roots = roots or state.roots
+    roots = state.roots
     if text == "" or home == "" then again() return end
-    local args = { "--max-results", "40", "--absolute-path", "--ignore-case" }
+    local query = text:lower()
+    local words = {}
+    for w in query:gmatch("%S+") do words[#words + 1] = w end
+    local longest = words[1] or query
+    for _, w in ipairs(words) do if #w > #longest then longest = w end end
+    local args = { "--no-ignore-vcs", "--max-results", "400", "--absolute-path", "--ignore-case", "--fixed-strings" }
+    for _, n in ipairs(NOISE) do args[#args + 1] = "-E" args[#args + 1] = n end
     local f = filter()
     if f.dirs then args[#args + 1] = "--type" args[#args + 1] = "d" end
     for _, e in ipairs(f.ext or {}) do args[#args + 1] = "-e" args[#args + 1] = e end
-    for _, a in ipairs({ "--", text, home }) do args[#args + 1] = a end
+    args[#args + 1] = "--" args[#args + 1] = longest
+    args[#args + 1] = home
+    for _, r in ipairs(roots or {}) do if r ~= home then args[#args + 1] = r end end
+    local lately = {}
+    for i, p in ipairs(state.recent or {}) do lately[p] = i end
+    local function finish(list)
+        table.sort(list, function(a, b) return a.score > b.score end)
+        state.found = {}
+        for i = 1, math.min(#list, 36) do state.found[i] = list[i].path end
+        again()
+    end
     run("fd", args, function(out)
         if mine ~= state.asked then return end             -- something else has been typed since
-        state.found = {}
-        for path in (out or ""):gmatch("[^\n]+") do state.found[#state.found + 1] = path end
-        again()
+        local list = {}
+        for path in (out or ""):gmatch("[^\n]+") do
+            local lower, ok = path:lower(), true
+            for _, w in ipairs(words) do if not lower:find(w, 1, true) then ok = false break end end      -- every word, in the name or the folders
+            if ok then list[#list + 1] = { path = path, score = score(path, words, query, lately[path:gsub("/$", "")]) } end
+        end
+        if #list >= 3 or #longest < 4 then return finish(list) end
+        -- hardly anything: a slip of the finger? the letters of the longest word in their order, with anything between (fzf's way), asked once more
+        local pattern = {}
+        for ch in longest:gmatch(".") do pattern[#pattern + 1] = ch:gsub("%p", "\\%0") end
+        local loose = {}
+        for _, a in ipairs(args) do if a ~= "--fixed-strings" then loose[#loose + 1] = a end end
+        for i, a in ipairs(loose) do if a == longest then loose[i] = table.concat(pattern, ".*") end end
+        run("fd", loose, function(out2)
+            if mine ~= state.asked then return end
+            local seen = {}
+            for _, e in ipairs(list) do seen[e.path] = true end
+            for path in (out2 or ""):gmatch("[^\n]+") do
+                local name = (path:match("([^/]+)/?$") or ""):lower()
+                -- the letters must lie in the name, not only in the folders; the nearer together, the better
+                local at, first, ok = 1, nil, true
+                for ch in longest:gmatch(".") do
+                    local f = name:find(ch, at, true)
+                    if not f then ok = false break end
+                    first = first or f
+                    at = f + 1
+                end
+                -- close together: the letters lie within three more than their number (a slip, not a scatter over a long name)
+                if ok and (at - first) <= #longest + 3 and not seen[path] then list[#list + 1] = { path = path, score = 100 - #name / 5 } end
+            end
+            finish(list)
+        end)
     end)
 end
 
@@ -91,7 +157,7 @@ function M.rows(typed, env, again)
     for i, f in ipairs(FILTERS) do if f.id == state.filter then at = i end end
     local nextf = FILTERS[at % #FILTERS + 1]
     local pills = { { label = tr(filter().name), glyph = "adjustments-horizontal", keep = true, skip = true,
-                      run = function() state.filter = nextf.id M.search(typed, again) again() end } }
+                      run = function() state.filter = nextf.id M.search(typed, again, state.roots) again() end } }
     rows[1] = { head = true, label = typed == "" and tr(N("RECENTLY OPENED")) or tr(N("FILES")) }
     local list = typed == "" and state.recent or state.found
     local n = 0
@@ -108,7 +174,7 @@ function M.rows(typed, env, again)
                                 right = function() env.menu(clean, parent, dir) end }
             n += 1
             state.shown[clean] = true
-            if n >= 30 then break end
+            if n >= 36 then break end
         end
     end
     if n == 0 then rows[#rows + 1] = { label = list == nil and typed ~= "" and tr("Searching…") or tr("Nothing found"), glyph = "search", quiet = true } end
