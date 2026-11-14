@@ -140,29 +140,113 @@ def near(lat, lon, cities):
     return min(cities, key=lambda c: (float(c["latitude"]) - lat) ** 2 + ((float(c["longitude"]) - lon) * math.cos(math.radians(lat))) ** 2)
 
 
-def place(name):
-    """A place by its name, its short form (sf, nyc) or an airport's IATA code: {name, latitude, longitude, timezone, country} or None."""
+class Ask(Exception):
+    """A place that may be one of several: what was written, and the places it may be ({label, latitude, longitude, timezone, country}), best first."""
+    def __init__(self, word, options):
+        super().__init__(word)
+        self.word, self.options = word, options
+
+
+PINS = {}                                    # places the user has chosen: folded word → {name, latitude, longitude, timezone, country}
+
+
+def home_country():
+    m = re.search(r"_([A-Z]{2})", os.environ.get("LC_ALL") or os.environ.get("LANG") or "")
+    return m.group(1) if m else ""
+
+
+def apart(a, b):
+    """Two places that are not the same one: more than 25 km between them (degrees: a rough 0.25)."""
+    return abs(float(a["latitude"]) - float(b["latitude"])) > 0.25 or abs(float(a["longitude"]) - float(b["longitude"])) > 0.35
+
+
+def decide(word, cands, margin=None):
+    """One place of those that fit the word, or Ask when the choice is not clear: one only; the only one in the user's country; one far better
+    (a town a few times bigger than the rest, or a score `margin` better than the next); else the user is asked."""
+    distinct = []
+    for c in cands:
+        if all(apart(c, d) for d in distinct):
+            distinct.append(c)
+    if len(distinct) == 1:
+        return distinct[0]
+    home = [c for c in distinct if c.get("country") == home_country()]
+    if len(home) == 1:
+        return home[0]
+    if all("pop" in c for c in distinct):
+        best = sorted(distinct, key=lambda c: -c["pop"])
+        if best[0]["pop"] >= 5 * max(1, best[1]["pop"]):
+            return best[0]
+    if margin is not None and len(distinct) > 1 and distinct[0].get("score", 0) - distinct[1].get("score", 0) >= margin:
+        return distinct[0]
+    raise Ask(word, distinct[:4])
+
+
+def tz_near(lat, lon, lines):
+    every = [dict(zip(("name", "latitude", "longitude", "timezone"), l.split("\t")[1:2] + l.split("\t")[3:6])) for l in lines if l[0] == "C"]
+    return near(lat, lon, every)["timezone"] if every else ""
+
+
+def pelias(name, lines):
+    """What Transitous knows by that name (OpenStreetMap places, typos forgiven): towns and villages first; each {name, latitude, longitude,
+    timezone, country, label, score}. The nearest word only counts: a name nothing like the one written is not the place."""
+    try:
+        found = fetch(GEOCODE + "?language=en&text=" + urllib.parse.quote(name.strip()))
+    except Exception:
+        return []
+    places = [r for r in found if r.get("type") == "PLACE" and r.get("category") not in ("state", "county", "country", "region", "district")]
+    out = []
     want = fold(name)
+    for r in places:
+        like = difflib.SequenceMatcher(None, want, fold(r["name"])).ratio()
+        if like < 0.7 and not fold(r["name"]).startswith(want):
+            continue
+        area = next((a["name"] for a in r.get("areas", []) if a.get("adminLevel") == 4), "")
+        tz = r.get("tz") or (tz_near(r["lat"], r["lon"], lines) if lines else "")
+        out.append({"name": r["name"], "latitude": r["lat"], "longitude": r["lon"], "timezone": tz, "country": r.get("country") or "",
+                    "label": ", ".join(x for x in (r["name"], area, r.get("country") or "") if x), "score": r.get("score", 0)})
+    return out
+
+
+def place(name):
+    """A place by its name, its short form (sf, nyc) or an airport's IATA code: {name, latitude, longitude, timezone, country} or None. A name that fits
+    several places raises Ask, unless one is plainly meant. The towns come from the data file (offline); what is not there, from Transitous."""
+    want = fold(name)
+    if want in PINS:
+        return PINS[want]
     lines = load_data()
     cities, air = [], None
     for line in lines:
         if line[0] == "C":
             if "," + want + "," in line:                     # the names are folded, one in `,a,b,` form
                 f = line.split("\t")
-                cities.append({"name": f[1], "latitude": f[3], "longitude": f[4], "timezone": f[5], "pop": int(f[6] or 0), "country": f[7]})
+                cities.append({"name": f[1], "latitude": f[3], "longitude": f[4], "timezone": f[5], "pop": int(f[6] or 0), "country": f[7], "label": "%s, %s" % (f[1], f[7])})
         elif line.startswith("A\t" + want.upper() + "\t"):
             f = line.split("\t")
             air = (float(f[3]), float(f[4]))
     if lines and air:
-        every = [dict(zip(("name", "latitude", "longitude", "timezone"), l.split("\t")[1:2] + l.split("\t")[3:6])) for l in lines if l[0] == "C"]
-        c = near(air[0], air[1], every)
+        c = near(air[0], air[1], [dict(zip(("name", "latitude", "longitude", "timezone"), l.split("\t")[1:2] + l.split("\t")[3:6])) for l in lines if l[0] == "C"])
         return {"name": want.upper(), "latitude": c["latitude"], "longitude": c["longitude"], "timezone": c["timezone"], "country": ""}
     if lines and not cities and " " in want:                 # London Heathrow: the city's name first
         first = want.split(" ")[0]
         cities = [{"name": l.split("\t")[1], "latitude": l.split("\t")[3], "longitude": l.split("\t")[4], "timezone": l.split("\t")[5],
-                   "pop": int(l.split("\t")[6] or 0), "country": l.split("\t")[7]} for l in lines if l[0] == "C" and "," + first + "," in l]
-    if not cities and lines and len(want) >= 4:
-        # a case ending or a slip of the finger: Bratislave, Bratislva, Tokiu → the nearest name, the biggest town of them
+                   "pop": int(l.split("\t")[6] or 0), "country": l.split("\t")[7], "label": "%s, %s" % (l.split("\t")[1], l.split("\t")[7])}
+                  for l in lines if l[0] == "C" and "," + first + "," in l]
+    if cities:
+        try:
+            return dict(decide(name, sorted(cities, key=lambda c: -c["pop"])))
+        except Ask as ask:
+            # towns of one name: the region says which, as Transitous knows it (else the coordinates)
+            known = pelias(name, lines)
+            for o in ask.options:
+                hit = next((k for k in known if not apart(o, k)), None)
+                o["label"] = hit["label"] if hit else "%s (%.1f, %.1f)" % (o["label"], float(o["latitude"]), float(o["longitude"]))
+            raise
+    # not a big town: Transitous knows villages and stops too, and the slips of the finger (Gbely, Skalica)
+    near_names = pelias(name, lines)
+    if near_names:
+        return dict(decide(name, near_names, margin=3))
+    if lines and len(want) >= 4:
+        # no network, or nothing like it there: a case ending or a slip of the finger in the data file (Bratislave, Tokiu)
         names = {}
         for line in lines:
             if line[0] == "C":
@@ -174,17 +258,12 @@ def place(name):
             longest = max(len(n) for n in stems)
             stems = [n for n in stems if len(n) == longest]            # the longest only: not the short ones that begin the same
         if not stems:
-            stems = difflib.get_close_matches(want, list(names), n=3, cutoff=0.75)
-        for n in stems:
-            f = names[n]
-            cities.append({"name": f[1], "latitude": f[3], "longitude": f[4], "timezone": f[5], "pop": int(f[6] or 0), "country": f[7]})
-    if cities:
-        return dict(max(cities, key=lambda c: c["pop"]))
-    try:                                                     # no data, no network for it: the service's own search
-        r = get("https://geocoding-api.open-meteo.com/v1/search?count=1&name=" + urllib.parse.quote(name.strip()))
-    except Exception:
-        return None
-    return (r.get("results") or [None])[0]
+            stems = difflib.get_close_matches(want, list(names), n=3, cutoff=0.8)
+        cands = [{"name": names[n][1], "latitude": names[n][3], "longitude": names[n][4], "timezone": names[n][5], "pop": int(names[n][6] or 0),
+                  "country": names[n][7], "label": "%s, %s" % (names[n][1], names[n][7])} for n in stems]
+        if cands:
+            return dict(decide(name, cands))
+    return None
 
 
 def clock(t):
@@ -258,14 +337,14 @@ def fetch(url):
 
 
 def where(name):
-    """A place for a connection: a town known offline, else the first place or stop Transitous knows by that name: (lat, lon, name) or None."""
+    """A place for a connection: (lat, lon, name) or None; a name that may be several places raises Ask. Stops are asked of Transitous when no town fits."""
     p = place(name)
     if p and "latitude" in p:
-        return float(p["latitude"]), float(p["longitude"]), p["name"]
+        return float(p["latitude"]), float(p["longitude"]), p["name"], p.get("country") or ""
     try:
         for r in fetch(GEOCODE + "?language=en&text=" + urllib.parse.quote(name.strip())):
             if r.get("lat", -1) > 0 or r.get("lon", -1) > 0:
-                return r["lat"], r["lon"], r["name"].split(",")[0]
+                return r["lat"], r["lon"], r["name"].split(",")[0], r.get("country") or ""
     except Exception:
         pass
     return None
@@ -282,6 +361,12 @@ def transit(a, b, at=None, now=None):
         when = now.replace(hour=at.hour, minute=at.minute, second=0, microsecond=0)
         if when < now - dt.timedelta(minutes=5):
             when += dt.timedelta(days=1)
+    web = "https://api.transitous.org/?fromPlace=%s%%2c%s&fromName=%s&toPlace=%s%%2c%s&toName=%s&time=%s" % (
+        start[0], start[1], urllib.parse.quote(start[2]), end[0], end[1], urllib.parse.quote(end[2]), urllib.parse.quote(when.astimezone(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")))
+    # in Slovakia and Czechia the open data is thin: the national timetable's page (IDOS) is offered too, to be opened in the browser
+    alt = ""
+    if start[3] in ("SK", "CZ") and end[3] in ("SK", "CZ"):
+        alt = "https://cp.%s/vlakbus/spojenie/?f=%s&t=%s" % (start[3].lower(), urllib.parse.quote(start[2]), urllib.parse.quote(end[2]))
     key = "%s|%s|%s" % (start[:2], end[:2], when.strftime("%Y%m%d%H%M"))
     cached = None
     try:
@@ -313,7 +398,7 @@ def transit(a, b, at=None, now=None):
     items.sort(key=lambda i: i["_at"])
     for i in items:
         del i["_at"]
-    answer = {"kind": "transit", "from": start[2], "to": end[2], "items": items[:3]} if items else {}
+    answer = {"kind": "transit", "from": start[2], "to": end[2], "items": items[:3], "web": web, "alt": alt}
     try:
         os.makedirs(os.path.dirname(TRANSIT_CACHE), exist_ok=True)
         json.dump({"key": key, "at": time.time(), "answer": answer}, open(TRANSIT_CACHE, "w"))
@@ -341,6 +426,15 @@ def route(tokens):
 
 
 def calc(line, now=None):
+    """The line worked out; when a place in it may be several, {"kind": "ask", "word", "options": […]}: the caller asks which and says it again with --pin."""
+    try:
+        return work(line, now)
+    except Ask as ask:
+        return {"kind": "ask", "word": fold(ask.word), "text": ask.word,
+                "options": [{k: o.get(k, "") for k in ("label", "name", "latitude", "longitude", "timezone", "country")} for o in ask.options]}
+
+
+def work(line, now=None):
     s = words_of(line)
     now = now or dt.datetime.now().astimezone()
     first = s.split(" ")[0] if s else ""
@@ -415,4 +509,12 @@ def calc(line, now=None):
 
 
 if __name__ == "__main__":
-    print(json.dumps(calc(" ".join(sys.argv[1:]))))
+    args, words = sys.argv[1:], []
+    while args:
+        if args[0] == "--pin" and len(args) > 1:       # --pin "word|lat|lon|Label|timezone|CC": a place the user chose when asked
+            f = args[1].split("|") + [""] * 6
+            PINS[f[0]] = {"name": f[3].split(",")[0], "latitude": f[1], "longitude": f[2], "timezone": f[4], "country": f[5], "label": f[3]}
+            args = args[2:]
+        else:
+            words.append(args.pop(0))
+    print(json.dumps(calc(" ".join(words))))

@@ -86,6 +86,8 @@ local home, folders = "", {}
 local typed, confirm = "", nil       -- what is in the field; the dangerous command asked about
 local found, asked = nil, 0          -- the files found for what is typed; which question the answer is to
 local pages, pages_for = {}, ""      -- the pages of the Settings that match what is typed; what that was
+local place_pins = {}                      -- the places the user chose when a name could be several: folded word → "word|lat|lon|label|tz|cc" (told to bin/latte-calc with --pin)
+local worked_ask = nil                     -- a place that may be several: { word, text, options }, asked in the list
 local worked_label, worked_rows = nil, nil    -- the weather and the connections: what stands on the left of the panel, and the lines under it ({ text, glyph })
 local worked_kind = ""                 -- what the answer is: Percentage, Currency, Conversion, Date, Unit
 local worked, worked_for = nil, ""   -- an amount in units or money worked out by qalc for what is typed; what that was
@@ -364,10 +366,20 @@ local look_for_qalc
 local function look_for_amount()
     local text = typed
     if smart_like(text) and not calc(text) then
-        run("latte-calc", { text }, function(out)
+        local args = {}
+        for _, pin in pairs(place_pins) do args[#args + 1] = "--pin" args[#args + 1] = pin end
+        args[#args + 1] = text
+        run("latte-calc", args, function(out)
             if text ~= typed then return end
             local ok, r = pcall(json.decode, out or "")
             if not (ok and type(r) == "table" and r.kind) then look_for_qalc(text) return end
+            worked_ask = nil
+            if r.kind == "ask" then
+                -- a place that may be one of several: not answered, asked (the rows under the line); the choice is kept for the session
+                worked, worked_label, worked_rows, worked_ask, worked_for = nil, nil, nil, r, text
+                if card.id() == "lens" and (kept.mode == 0 or fact.lens_shore) then render(true) end
+                return
+            end
             if r.kind == "weather" then
                 worked = string.format("%d° %s", r.temp or 0, tr(sky_of(r.code)))
                 worked_label = r.place
@@ -379,15 +391,29 @@ local function look_for_amount()
             elseif r.kind == "transit" then
                 -- the next connections: the first on the panel, all of them under it, and where the data is from (Transitous asks to be named)
                 local first = r.items and r.items[1]
-                if not first then look_for_qalc(text) return end
-                worked, worked_label = first.dep .. " → " .. first.arr, r.from .. " → " .. r.to
+                worked_label = r.from .. " → " .. r.to
                 worked_rows = {}
-                for _, it in ipairs(r.items) do
+                local web, alt = r.web, r.alt
+                if first then worked = first.dep .. " → " .. first.arr
+                else
+                    -- the open data knows no such journey (the Slovak local lines are thin in it): say so, and offer the pages that may know
+                    worked = tr("No connection found")
+                    worked_rows[#worked_rows + 1] = { text = tr("Not in the open data of Transitous"), glyph = "train" }
+                    if alt and alt ~= "" then worked_rows[#worked_rows + 1] = { text = tr("Search in the national timetable (cp.sk)"), glyph = "world", link = alt } end
+                end
+                for _, it in ipairs(r.items or {}) do
                     local h, m = it.minutes // 60, it.minutes % 60
                     worked_rows[#worked_rows + 1] = { text = string.format("%s → %s  ·  %s  ·  %s %d", it.dep, it.arr, h > 0 and string.format("%d h %02d min", h, m) or string.format("%d min", m), tr("Transfers:"), it.transfers),
                                                       glyph = (it.mode == "COACH" or it.mode == "BUS") and "bus" or "train", line2 = it.via .. (it.live and "  ·  " .. tr("live") or "") }
                 end
-                worked_rows[#worked_rows + 1] = { text = tr("Data: Transitous · transitous.org/sources"), glyph = "info-circle", small = true }
+                -- Transitous asks to be named: a press opens the journey on its page, the right button the sources and the other timetable
+                local menu = function()
+                    local items = { { label = tr("Open the journey on the web"), glyph = "world", run = function() then_do(function() open.url(web) end) end },
+                                    { label = tr("Data sources"), glyph = "info-circle", run = function() then_do(function() open.url("https://transitous.org/sources/") end) end } }
+                    if alt and alt ~= "" then table.insert(items, 2, { label = tr("Search in the national timetable (cp.sk)"), glyph = "world", run = function() then_do(function() open.url(alt) end) end }) end
+                    ctx.open(items, { width = 280 })
+                end
+                worked_rows[#worked_rows + 1] = { text = tr("Open on the web · data: Transitous"), glyph = "info-circle", link = web, menu = menu }
             else
                 worked, worked_label, worked_rows = r.answer, nil, nil
             end
@@ -400,7 +426,7 @@ local function look_for_amount()
 end
 look_for_qalc = function(text)
     local asked_for = amount(text, amount_words)
-    worked_label, worked_rows = nil, nil
+    worked_label, worked_rows, worked_ask = nil, nil, nil
     if not asked_for or calc(text) then worked, worked_for = nil, text return end
     local to = asked_for:match(" to (.+)$") or ""
     local money = to:find("^%u%u%u$") or to == "€" or to == "$" or to == "£" or to == "K\u{10D}"      -- money to the cent
@@ -2048,7 +2074,7 @@ local function shore_rows()
         -- first, chosen: the AI (Enter); with it off, the best of what was found is first instead
         if MODES[4] then
             local p = ai.providers[1] or provider()      -- LensAI's default answers (ask)
-            local first = { { label = tr("Ask the AI") .. ": " .. q, glyph = "sparkles", hint = p and p.name or "", first = calc_shown == nil, run = function() ask(q) text.lens_q, fact.lens_typed, typed = "", false, "" end } }
+            local first = { { label = tr("Ask the AI") .. ": " .. q, glyph = "sparkles", hint = p and p.name or "", first = calc_shown == nil and not (worked_ask and worked_for == q), run = function() ask(q) text.lens_q, fact.lens_typed, typed = "", false, "" end } }
             local c = context_row()
             if c then first[#first + 1] = c end
             section(first)
@@ -2067,10 +2093,26 @@ local function shore_rows()
             -- Raycast's calculator: what was asked | → | the answer, and Enter copies the answer
             local weather = ((worked_kind == N("Weather") or worked_kind == N("Journey")) and worked_for == q and not result)
             local under = {}
-            for _, r in ipairs(weather and worked_rows or {}) do under[#under + 1] = { label = r.text, line2 = r.line2, glyph = r.glyph, quiet = true } end
+            for _, r in ipairs(weather and worked_rows or {}) do
+                under[#under + 1] = { label = r.text, line2 = r.line2, glyph = r.glyph, quiet = not r.link,
+                                      run = r.link and function() then_do(function() open.url(r.link) end) end or nil, right = r.menu }
+            end
             section({ { calc = true, label = weather and worked_label or q, hint = shown_amount, line2 = tr(result and N("Math") or worked_kind), glyph = "arrow-right", copy = shown_amount,
                         main = tr("Copy Answer"), first = true, run = function() pcall(sys.call, "clipboard.set", shown_amount) end },
                         table.unpack(under) })
+        end
+        -- a place that may be several: which one? (Raycast asks too); the answer is kept, and the line is worked out again
+        if worked_ask and worked_for == q then
+            local ask = { { head = true, label = tr(N("WHICH PLACE?")) .. " " .. (worked_ask.text or "") } }
+            for _, o in ipairs(worked_ask.options or {}) do
+                ask[#ask + 1] = { label = o.label, glyph = "map-pin", keep = true, first = #ask == 1,
+                                  run = function()
+                                      place_pins[worked_ask.word] = table.concat({ worked_ask.word, o.latitude, o.longitude, o.label, o.timezone or "", o.country or "" }, "|")
+                                      worked_ask = nil
+                                      look_for_amount()
+                                  end }
+            end
+            section(near_line(ask))
         end
         local hits, rows = ranked(q, 5), {}
         for i, a in ipairs(hits) do

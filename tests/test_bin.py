@@ -825,6 +825,28 @@ def test_calc_routes():
 test_calc_routes()
 
 
+def test_calc_places():
+    """latte-calc: which of the places of one name is meant: the only one at home, a town far bigger, else the user is asked."""
+    sys.dont_write_bytecode = True
+    calc = load("latte-calc")
+    here = {"name": "Skalica", "latitude": "48.84", "longitude": "17.22", "country": "SK"}
+    there = {"name": "Skalica", "latitude": "49.70", "longitude": "18.83", "country": "PL"}
+    os.environ["LANG"] = "sk_SK.UTF-8"
+    assert calc.decide("skalica", [there, here]) == here                         # the only one in the user's country
+    os.environ["LANG"] = "en_US.UTF-8"
+    try:
+        calc.decide("skalica", [here, there])
+        assert False, "two places of one name, none at home: ask"
+    except calc.Ask as ask:
+        assert ask.word == "skalica" and len(ask.options) == 2
+    big, small = dict(here, pop=500000), dict(there, pop=20000)
+    assert calc.decide("x", [small, big]) == big                                  # a town five times bigger is the one meant
+    assert calc.decide("x", [here, dict(here, latitude="48.85")]) == here         # the same place twice is one
+
+
+test_calc_places()
+
+
 def test_weather():
     d = tempfile.mkdtemp()
     stub = os.path.join(d, "stub")
