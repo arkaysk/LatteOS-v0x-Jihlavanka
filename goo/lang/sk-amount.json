@@ -2,6 +2,14 @@
  "about": "The words LensGoo reads an amount in units or money by (goo/lib/amount.luau): Slovak. Another language is another file, <code>-amount.json.",
  "connect": ["na", "v", "vo", "do", "ako"],
  "of": ["z"],
+ "discount": ["zľava z", "zlava z", "zľavu z", "zlavu z", "zľava", "zlava"],
+ "tip": ["sprepitné z", "sprepitne z", "sprepitné k", "sprepitne k", "sprepitné", "sprepitne"],
+ "root": ["odmocnina z", "odmocnina"],
+ "cuberoot": ["tretia odmocnina z", "tretia odmocnina"],
+ "split": ["delené", "delene", "deleno", "rozdelené", "rozdelene"],
+ "iswhat": ["je %", "je koľko %", "je kolko %", "je koľko percent", "je kolko percent"],
+ "asof": ["ako % z", "ako percento z", "ako percent z"],
+ "fraction": ["ako zlomok", "na zlomok"],
  "asking": ["koľko je", "kolko je", "koľko", "kolko", "prepočítaj", "prepocitaj", "preveď", "prevod"],
  "names": [
   ["eur", "EUR"], ["dolár", "USD"], ["dolar", "USD"], ["korún", "CZK"], ["korun", "CZK"], ["kč", "CZK"],
@@ -10,6 +18,8 @@
   ["palc", "in"], ["palec", "in"], ["stôp", "ft"], ["stopa", "ft"], ["stopy", "ft"],
   ["kilogram", "kg"], ["kil", "kg"], ["kíl", "kg"], ["gram", "g"], ["litr", "L"],
   ["celzi", "°C"], ["fahrenheit", "°F"], ["stupň", ""], ["stupn", ""],
+  ["dnes", "today"], ["zajtra", "tomorrow"], ["včera", "yesterday"], ["vcera", "yesterday"], ["teraz", "now"],
+  ["dní", "days"], ["dni", "days"], ["dňa", "days"], ["týždň", "weeks"], ["tyzdn", "weeks"], ["mesiac", "month"], ["roky", "years"], ["rokov", "years"],
   ["hodín", "h"], ["hodin", "h"], ["minút", "min"], ["minut", "min"], ["sekúnd", "s"], ["sekund", "s"]
  ]
 }

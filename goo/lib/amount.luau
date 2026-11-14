@@ -15,15 +15,45 @@ return function(line, words)
     for _, w in ipairs(words.asking or {}) do s = s:gsub(" " .. w .. " ", " ", 1) end
     s = s:gsub("[%?=]+%s*$", " "):gsub("→", " to "):gsub("=>", " to ")
     -- Raycast 2.12's phrasings, put as Qalculate reads them (each sets `said`: such a line is worked out even with no conversion in it)
+    s = (s:gsub("^%s+", ""):gsub("%s+$", ""))
+    s = s:gsub("(%d) €", "%1€"):gsub("(%d) £", "%1£")       -- 500 € is one thing for the forms below
     local said = false
+    -- the phrases of the user's language for the forms below ("discount", "tip", "root"…: goo/lang/<code>-amount.json), the English ones always
+    local function phrases(key, english)
+        local list = { english }                                             -- the English one is already a pattern
+        for _, w in ipairs(type(words[key]) == "table" and words[key] or {}) do
+            list[#list + 1] = (w:gsub("[%%%.%-%+%*%?%[%]%(%)%^%$]", "%%%0"):gsub("%s+", "%%s+"))   -- the user's: letters, with any gap between words
+        end
+        return list
+    end
     local function rule(pattern, with)
         local out, n = s:gsub(pattern, with)
         if n > 0 then s, said = out, true end
     end
-    rule("(%d[%d%.]*)%s*%%%s*discount%s+off%s+(%S+)", "%2 - %1%%")                 -- 20% discount off $500
+    for _, w in ipairs(phrases("iswhat", "is%s+what%s*%%")) do rule("^(.-)%s+" .. w .. "$", "(%1) to %%") end                  -- 1/8 is what %
+    for _, w in ipairs(phrases("asof", "as%s*%%%s+of")) do rule("^(.-)%s+" .. w .. "%s+(.+)$", "((%1) / (%2)) to %%") end     -- 750 m as % of 3 km
+    for _, w in ipairs(phrases("cuberoot", "cube%s+root%s+of")) do rule("%f[%a]" .. w .. "%s+([%d%.,]+)", "cbrt(%1)") end
+    for _, w in ipairs(phrases("root", "square%s+root%s+of")) do rule("%f[%a]" .. w .. "%s+([%d%.,]+)", "sqrt(%1)") end
+    rule("([%d%.,]+)%s+power%s+([%d%.,]+)", "%1^%2")                                -- 2 power 10
+    rule("(.-)%s+to%s+nearest%s+(%a+)$", function(x, w)                              -- 3.14159 to nearest hundredth
+        local n = ({ whole = 0, integer = 0, tenth = 1, hundredth = 2, thousandth = 3 })[w]
+        if n then return "(round((" .. x .. ") * 10^" .. n .. ") / 10^" .. n .. ")" end
+    end)
+    for _, w in ipairs(phrases("fraction", "as%s+fraction")) do rule("%f[%a]" .. w .. "%f[%A]", "to fraction") end   -- 1.75 as fraction
+    rule("%f[%a]as%s+mixed%f[%A]", "to fraction")
+    rule("(%S+)%s+at%s+(%d[%d%.]*)%s*%%%s+for%s+(%d+)%s+years?%s*(%a*)%s*(%a*)", function(sum, rate, years, _, how)   -- $1000 at 5% for 10 years compounded annually
+        local f = ({ annually = 1, yearly = 1, semiannually = 2, quarterly = 4, monthly = 12, daily = 365 })[how] or 1
+        return sum .. " * (1 + " .. tonumber(rate) / 100 / f .. ")^(" .. years .. " * " .. f .. ")"
+    end)
+    -- in function arguments a comma separates (min(3, 5)): Qalculate, in a language with a decimal comma, wants a semicolon there
+    s = s:gsub("(%a+)%(([^%(%)]-)%)", function(fn, args)
+        if ({ min = 1, max = 1, gcd = 1, lcm = 1, round = 1, sum = 1, mod = 1, pow = 1, rem = 1 })[fn] and args:find(",") then said = true return fn .. "(" .. args:gsub("%s*,%s*", "; ") .. ")" end
+    end)
+    for _, w in ipairs(phrases("discount", "discount%s+off")) do rule("(%d[%d%.]*)%s*%%%s*" .. w .. "%s+(%S+)", "%2 - %1%%") end   -- 20% discount off $500
     rule("(%d[%d%.]*)%s*%%%s*off%s+(%S+)", "%2 - %1%%")                            -- 20% off 80
-    rule("(%d[%d%.]*)%s*%%%s*gratuity%s+on%s+(%S+)", "%2 + %1%%")                  -- 5% gratuity on $95
+    for _, w in ipairs(phrases("tip", "gratuity%s+on")) do rule("(%d[%d%.]*)%s*%%%s*" .. w .. "%s+(%S+)", "%2 + %1%%") end   -- 5% gratuity on $95
     rule("(%d[%d%.]*)%s*%%%s*tip%s+on%s+(%S+)", "%2 + %1%%")
+    for _, w in ipairs(phrases("split", "split")) do rule("^(.-)%s+" .. w .. "%s+(%d+)$", "(%1) / %2") end                                    -- 25% off $60 split 3
     rule("(%d[%d%.]*)%s*(f[eo]+t)%s+(%d[%d%.]*)%s*(inch[es]*)", "%1 ft + %3 inch")      -- 5 feet 3 inches in cm
     rule("(%d[%d%.]*)%s*ft%s+(%d[%d%.]*)%s*in%f[%A]", "%1 ft + %2 inch")
     rule("%f[%a]kilos?%f[%A]", "kg")                                               -- kilo is kg
@@ -48,6 +78,7 @@ return function(line, words)
         return w
     end)
     s = s:gsub("%s+", " "):gsub("^ ", ""):gsub(" $", "")
+    s = s:gsub("(%d)€", "%1 €"):gsub("(%d)£", "%1 £")         -- unglued again
     if not s:find("%d") then return nil end
     if said or s:find(" to ") or s:find("%% %*") then return s end
     -- what Qalculate works out without a conversion: a percentage (150 + 20%), a date (tomorrow + 3 days), units added (2 h + 30 min)

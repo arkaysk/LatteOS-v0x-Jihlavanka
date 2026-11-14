@@ -772,7 +772,7 @@ with tempfile.TemporaryDirectory() as d:
 if shutil.which("lua"):
     words = json.load(open(os.path.join(ROOT, "goo", "lang", "sk-amount.json"), encoding="utf-8"))
     lua = lambda v: ("{" + ", ".join(lua(x) for x in v) + "}") if isinstance(v, list) else json.dumps(v, ensure_ascii=False)
-    table = "{" + ", ".join("%s = %s" % (k, lua(words[k])) for k in ("connect", "of", "asking", "names")) + "}"
+    table = "{" + ", ".join("%s = %s" % (k, lua(words[k])) for k in ("connect", "of", "asking", "names", "discount", "tip", "root", "cuberoot", "split", "iswhat", "asof", "fraction")) + "}"
     script = os.path.join(tempfile.gettempdir(), "latte-amount-probe.lua")
     open(script, "w", encoding="utf-8").write('package.path = arg[1] .. "/goo/lib/?.luau;" .. package.path\n'
                                               'print(require("amount")(arg[2], %s) or "-")\n' % table)
@@ -791,6 +791,19 @@ if shutil.which("lua"):
     assert put("20% discount off $500") == "$500 - 20%" and put("5% gratuity on $95") == "$95 + 5%"
     assert put("5 feet 3 inches in cm") == "5 ft + 3 inch to cm", put("5 feet 3 inches in cm")
     assert put("cotd(45)") == "cot(45 deg)" and put("2 kilo to lb") == "2 kg to lb" and put("5 yr to days") == "5 year to days"
+    assert put("square root of 625") == "sqrt(625)" and put("2 power 10") == "2^10" and put("1.75 as fraction") == "1.75 to fraction"
+    assert put("min(3, 5)") == "min(3; 5)" and put("gcd(48,18)") == "gcd(48; 18)" and put("1/8 is what %") == "(1/8) to %"
+    assert put("750 m as % of 3 km") == "((750 m) / (3 km)) to %" and put("25% off $60 split 3") == "($60 - 25%) / 3", put("25% off $60 split 3")
+    assert put("3.14159 to nearest hundredth") == "(round((3.14159) * 10^2) / 10^2)"
+    assert put("$1000 at 5% for 10 years compounded annually") == "$1000 * (1 + 0.05)^(10 * 1)", put("$1000 at 5% for 10 years compounded annually")
+    # Slovak, with and without diacritics: the same forms as Raycast 2.12's
+    assert put("20% zľava z 500 \u20ac") == "500 \u20ac - 20%", put("20% zľava z 500 \u20ac")
+    assert put("20% zlava z 500") == "500 - 20%" and put("5% sprepitné k 95") == "95 + 5%", put("5% sprepitné k 95")
+    assert put("odmocnina z 625") == "sqrt(625)" and put("1/8 je koľko %") == "(1/8) to %", put("1/8 je koľko %")
+    assert put("750 m ako % z 3 km") == "((750 m) / (3 km)) to %", put("750 m ako % z 3 km")
+    assert put("25% zľava z $60 delené 3") == "($60 - 25%) / 3", put("25% zľava z $60 delené 3")
+    assert put("1,75 ako zlomok") == "1.75 to fraction" or put("1,75 ako zlomok") == "1,75 to fraction", put("1,75 ako zlomok")
+    assert put("zajtra + 3 dni") == "tomorrow + 3 days", put("zajtra + 3 dni")
     assert put("USD1K to eur") == "1k USD to eur" or put("USD1K to eur").startswith("(1 * 1000) USD"), put("USD1K to eur")
     os.remove(script)
 
