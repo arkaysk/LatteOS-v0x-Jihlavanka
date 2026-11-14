@@ -13,6 +13,9 @@ part Rows {
     zone box card_ground { from: card.x0, card.y0; size: card.w, card.h; active: card_open; agent: hidden }
     // the wheel over LensShore's panel turns its modes as a tape (the user, 29. 10.: "the scroll is to the right and
     // left"), down or to the right the next one; two fingers and a tilted wheel too (lib/lens.luau gathers the turns)
+    // the list goes to the row chosen with the keys, as far as it must for it to be seen
+    on change card_sel while card_open and card_selfollow and card_sel_y >= 0 { list.scroll: clamp(list.scroll, card_sel_y + card_sel_h - list.height, card_sel_y) ~calm }
+    on change card_rev while card_open and card_selfollow and card_sel_y >= 0 { list.scroll: clamp(list.scroll, card_sel_y + card_sel_h - list.height, card_sel_y) ~calm }
     // …unless the list is longer than the panel (the files found, a long history): then the wheel scrolls it, the modes turn with the tape's other ways
     on scroll card_ground while card_lens and list.content <= list.height + 2 { emit lens_swipe(round(-wheel * 1000)) }
 
@@ -104,18 +107,18 @@ part Rows {
                 size: card.tw, 46
                 show: card_field
                 box { from: 0, 2; size: card.tw, 40; corner: 14; color: tb1 }
-                text pick(if(card_sel > 0, 2, if(card_secret, 1, 0)), g_search, g_key, g_pencil) { at: 22, 22; anchor: center; size: 17; color: td; family: "tabler-icons" }
+                text pick(if(card_fsel > 0, 2, if(card_secret, 1, 0)), g_search, g_key, g_pencil) { at: 22, 22; anchor: center; size: 17; color: td; family: "tabler-icons" }
                 text card_hint { at: 44, 22; anchor: left center; width: card.tw - 60; lines: 1; size: 15; color: td; show: not card_typed; family: "Inter" }
-                input card_q { at: 44, 12; width: card.tw - 60; size: 15; color: tc; selection: tb3; show: not card_secret and card_sel == 0; family: "Inter" }
-                input card_stem { at: 44, if(card_sel == 1, 12, -4000); width: card.tw - 60; size: 15; color: tc; selection: tb3; select: stem; show: card_sel == 1; family: "Inter"; label: "Name" }
-                input card_all { at: 44, if(card_sel == 2, 12, -4000); width: card.tw - 60; size: 15; color: tc; selection: tb3; select: all; show: card_sel == 2; family: "Inter"; label: "Name" }
+                input card_q { at: 44, 12; width: card.tw - 60; size: 15; color: tc; selection: tb3; show: not card_secret and card_fsel == 0; family: "Inter" }
+                input card_stem { at: 44, if(card_fsel == 1, 12, -4000); width: card.tw - 60; size: 15; color: tc; selection: tb3; select: stem; show: card_fsel == 1; family: "Inter"; label: "Name" }
+                input card_all { at: 44, if(card_fsel == 2, 12, -4000); width: card.tw - 60; size: 15; color: tc; selection: tb3; select: all; show: card_fsel == 2; family: "Inter"; label: "Name" }
                 on press right card_q { tap.x = cursor.x; tap.y = cursor.y; emit card_field_menu }
                 // a password is typed into a field of its own, which shows dots
                 input card_pw { at: 44, if(card_secret, 12, -4000); width: card.tw - 60; size: 15; color: tc; selection: tb3; secret: true; show: card_secret; family: "Inter"; agent: no }
                 zone box field_hit { from: 0, 2; size: card.tw, 40; cursor: text }
-                on press field_hit while not card_secret and card_sel == 0 { focus card_q }
-                on press field_hit while card_sel == 1 { focus card_stem }
-                on press field_hit while card_sel == 2 { focus card_all }
+                on press field_hit while not card_secret and card_fsel == 0 { focus card_q }
+                on press field_hit while card_fsel == 1 { focus card_stem }
+                on press field_hit while card_fsel == 2 { focus card_all }
                 on press field_hit while card_secret { focus card_pw }
                 on press right field_hit while not card_secret { tap.x = cursor.x; tap.y = cursor.y; emit card_field_menu }   // cut, copy, paste
             }

@@ -160,7 +160,7 @@ function M.right()
         model.card_pic = {}
         rows[1] = { profile = true, glyph = i.dir and "folder" or "file", label = i.name or "", line2 = i.kind or "", quiet = true, col = 2 }
     end
-    local function add(key, value) if value and value ~= "" then rows[#rows + 1] = { label = tr(key), hint = middle(tostring(value), 30), quiet = true, col = 2 } end end
+    local function add(key, value) if value and value ~= "" then rows[#rows + 1] = { label = tr(key), hint = middle(tostring(value), 24), quiet = true, col = 2 } end end
     add(N("Where"), home ~= "" and (i.where or ""):gsub("^" .. home:gsub("%p", "%%%0"), "~") or i.where)
     add(N("Type"), i.kind)
     add(N("Size"), not i.dir and human(i.size) or nil)

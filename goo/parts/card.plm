@@ -49,6 +49,10 @@ part Card {
     model tab max 6 { label: text; glyph: text; on: bool }
     model card_wide max 1 { pic: image 620, 200 }
     model card_pic max 1 { pic: image 480, 300 }          // the picture of a `pic` row (a file's preview, LensShore's Files); it has a model of its own, not the cafeteria's
+    fact card_sel_y = -1                                  // where the row chosen lies in the list, and how tall it is: the list scrolls to it (rows.plm)
+    fact card_sel_h = 0
+    fact card_rev = 0                                     // counts the times the card was given its rows: the scroll to the chosen row is made again after each
+    fact card_selfollow = true                            // …unless the pointer chose it
     fact card_hoverpick = false                           // a card whose rows the pointer chooses too (the preview follows it)
     event card_soft ->                                    // the pointer is over a row: row × 16
     // a month at the top of the second column: six weeks from Monday. `dim`: a day of another month,
@@ -91,7 +95,7 @@ part Card {
     // a name to rename (field.select): `card_stem` chooses it without its ending as it is focused, `card_all` all of it
     text card_stem = ""
     text card_all = ""
-    fact card_sel = 0                          // 0 the usual field, 1 card_stem, 2 card_all
+    fact card_fsel = 0                         // what the field is: 0 the usual field, 1 card_stem, 2 card_all (not card_sel: that is the row chosen, and the two overwrote each other)
     text card_hint = ""
     text g_check = ""                          // glyphs of the icon font the card draws itself; the logic fills them
     text g_more = ""

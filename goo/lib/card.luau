@@ -62,9 +62,13 @@ local preferred = nil                        -- the row that says `first`
 local names = {}                             -- what each row says: the one chosen is told beside LensShore's line
 local items = {}                             -- what each row was given as, for `combo`
 -- the row chosen with the arrows (nil: none): what Enter does is told as `card_main`, and whether Ctrl+K has more
+local ypos = {}                              -- where each row of the first column lies in the list, from its top: { y, h }, for the scroll that follows the choice
 local on_choose, told = nil, nil              -- `opts.on_choose(row)`: the owner hears which row is chosen (a preview follows it); told: the last one it was told of
-local function choose(id)
+local function choose(id, soft)
     chosen = id
+    -- the list scrolls to the row chosen with the keys (parts/rows.plm); not for one the pointer chose, it is already under the pointer
+    local at = id and ypos[id]
+    fact.card_sel_y, fact.card_sel_h, fact.card_selfollow = at and at.y or -1, at and at.h or 0, not soft
     fact.card_sel = id or -1
     text.card_main = id and names[id] or ""
     fact.card_main_on = id ~= nil and (names[id] or "") ~= ""
@@ -319,6 +323,16 @@ function M.open(rows, opts)
         if r.kind == "pills" then h = r.per <= 2 and 60 or 46 elseif r.kind == "tiles" then h = r.per <= 2 and 66 or 88 elseif r.kind == "cells" then h = r.tall and 120 or 50 end
         return (h or 0) + (r.line and 14 or 0)
     end
+    ypos = {}
+    do
+        local y = 0
+        for i, r in ipairs(out) do
+            local h = r.kind == "para" and (24 + 21 * math.ceil(#(r.label or "") / 62)) or row_h(r)
+            local rule = r.line and 14 or 0
+            ypos[(i - 1) * 16] = { y = y + rule, h = h - rule }
+            y += h
+        end
+    end
     local split, waved = (#tabs > 0 and 44 or 0) + (opts.field and 46 or 0), false
     for _, r in ipairs(out) do
         if r.kind == "wave" then waved, split = true, split + 10 break end
@@ -364,9 +378,9 @@ function M.open(rows, opts)
         text.card_hint = field.hint or ""
         fact.card_secret = field.secret == true
         -- a name to rename: "stem" chooses it without its ending as it is focused (a file), "all" all of it (a folder)
-        fact.card_sel = field.select == "stem" and 1 or (field.select == "all" and 2 or 0)
+        fact.card_fsel = field.select == "stem" and 1 or (field.select == "all" and 2 or 0)
     else
-        fact.card_sel = 0
+        fact.card_fsel = 0
     end
     if field and (fresh or not had) then
         text.card_q, text.card_pw, text.card_stem, text.card_all = "", "", "", ""
@@ -377,6 +391,7 @@ function M.open(rows, opts)
     shown = { rows = rows, opts = opts }
     model.card = out
     model.card2 = out2
+    fact.card_rev = (fact.card_rev or 0) + 1
     model.card_foot = outF
     model.tab = tabs
     calendar = opts.width2 and opts.calendar or nil
@@ -409,7 +424,7 @@ end
 
 -- the pointer over a row chooses it too, when the owner follows the choice (`on_choose`): the preview is for the mouse as well
 on("card_soft", function(id)
-    if on_choose and chosen ~= id and actions[id or 0] then choose(id) end
+    if on_choose and chosen ~= id and actions[id or 0] then choose(id, true) end
 end)
 on("card_pick", function(id)
     local f = actions[id or 0]
