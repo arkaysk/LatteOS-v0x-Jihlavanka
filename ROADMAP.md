@@ -4660,6 +4660,12 @@ zostavenia Derivy (`deriva/target`) zo staršieho ručného kopírovania; na lat
 dostane worker a balíky agenta zo zostavenia (`build-pleamar.sh`). Ostáva: `goo.pred-gooengine2` (1,4 MB, záloha
 mimo FILES — rozhodne používateľ), `latte-goo` 26 MB (ladiace symboly? `strip` až po meraní).
 
+**17.08** [ ] (16. 11.) **Štart Goo — zmerať bez záťaže:** bez obrazovky (`tests/screen.sh`, latte-lab vyťažený VM
+a zostavovaním) prvý snímok až po 14,4 s a „a handler has been running for more than 2 s: cut off“ v logike pri
+štarte (časť nastavenia sa potom nemusí vykonať). Zopakovať na voľnom stroji; ak platí, nájsť ten handler
+(`PLEAMAR_TIMING`, `goo.luau` pri štarte) a rozdeliť ho cez `after()`. Pri prihlásení tiež 6× „Dependency failed for
+xdg-desktop-portal“ (niečo ho volá pred `graphical-session.target`), neskôr beží — skontrolovať poradie štartu.
+
 ---
 
 ## 18. [ ] STRESTEST
