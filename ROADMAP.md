@@ -433,6 +433,11 @@ základ, na ktorý sa dajú integrovať ostatné pracovné prúdy.
   `EFI_ABSOLUTE_POINTER_PROTOCOL` (dotyk, tablet QEMU) popri klávesnici v `src/core/input.c`; téma kreslí kurzor
   a vracia obdĺžniky dlaždíc; prejdenie = `nav_select`, klik = `nav_launch`, pohyb myši zastaví odpočítavanie.
   Bez myši vo firmvéri ostáva klávesnica. Záplata do `patches/`, návrh autorovi do `patches/issues/` (neposielať).
+  **16. 11. (noc) téma v1 hotová a overená v UEFI** (OVMF v QEMU, `make`-nutá s gnu-efi): `patches/aarambh/latteos.c`
+  (podľa Cinema; obrázky položiek sa prelínajú ako v Minimal; hodiny 24 h; NOW BREWING / ALSO ON THIS PC),
+  `make-assets.py` (šálka na espresse s pásmi zapečenými v obrázku, SAFE ochladená, Windows stlmená; logá z Tabler),
+  `build.sh` (vloží tému do stromu aarambh a zaregistruje ju). Písmo Inter (statické TTF z `rsms-inter-fonts`).
+  Chýba: myš, inštalácia do systému (`install`: aarambh `setup.sh` + naša `aarambh.conf`, `utc_offset`), FILES.
   Dotyková obrazovka áno (tá istá `ABSOLUTE_POINTER`). Otázka na neskôr: pri viacerých monitoroch kreslí UEFI (GOP)
   spravidla iba na jeden, ktorý určí firmvér — overiť na PC s tromi obrazovkami.
 

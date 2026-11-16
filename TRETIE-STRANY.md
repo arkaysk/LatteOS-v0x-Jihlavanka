@@ -1,15 +1,17 @@
 # Súčasti tretích strán
 
-Vlastný kód a obsah LatteOS (vrátane tapiet v `assets/wallpapers/`) je pod licenciou MIT — pozri [LICENSE](LICENSE).
-LatteOS stojí na cudzích projektoch. Ich zdrojový kód v tomto repozitári nie je; sťahuje ho `resources/fetch.sh`
-a inštalátor ich prekladá alebo inštaluje z balíkov. V repozitári sú iba naše záplaty k nim (`resources/patches/`)
-— tie sa riadia licenciou projektu, ktorý menia.
+Vlastný kód a obsah LatteOS (vrátane tapiet v `assets/wallpapers/`) je pod licenciou GPL-3.0-or-later — pozri
+[LICENSE](LICENSE) (rozhodnuté 16. 11. 2026, predtým MIT). LatteOS stojí na cudzích projektoch. Ich zdrojový kód
+v tomto repozitári väčšinou nie je; inštalátor ich sťahuje a prekladá (`patches/build-*.sh`) alebo inštaluje z balíkov.
+V repozitári sú iba naše záplaty a doplnky k nim (`patches/`) — tie sa riadia licenciou projektu, ktorý menia.
 
 | Projekt | Na čo ho LatteOS používa | Licencia |
 |---|---|---|
 | [pleamar](https://github.com/k4ditano/pleamar) (k4ditano) | kreslenie kvapiek a kariet Goo, jazyk scén `.plm`, logika v Luau | BSD-3-Clause |
 | [K4](https://github.com/k4ditano/k4) (k4ditano) | predloha ostrova LensShore (`apps/lensshore.qml`): ostrov, ktorý v pokoji leží pri okraji a pri písaní pruží von, jeho rozbaľovanie a podoba spúšťača | MIT |
 | [hypridle](https://github.com/hyprwm/hypridle) | zamknutie a zhasnutie obrazoviek pri nečinnosti | BSD-3-Clause |
+| [Aarambh](https://github.com/NarkAgni/aarambh) (NarkAgni) | ponuka štartu (LatteOS · SAFE · Windows); naša téma `patches/aarambh/latteos.c` je odvodená z jeho témy Cinema a zostavuje sa do neho | GPL-3.0 |
+| [Inter](https://github.com/rsms/inter) (Rasmus Andersson) | písmo ponuky štartu (z balíka Fedory `rsms-inter-fonts`) | OFL 1.1 |
 | [pleamar-wm](https://github.com/k4ditano/pleamar-wm) (k4ditano) | správca okien; `system/pleamarwm/wm/` je upravená kópia jeho scény | BSD-3-Clause |
 | [Vitreus](https://github.com/natepayn3/Vitreus) (natepayn3) | vlna po okraji karty Goo pri otváraní podľa jeho `cardrip.wgsl` (dva hrebene bežia po okraji a doznejú); prenesené správanie, kreslené tvarmi tela karty (`goo/parts/card.plm`, `cardframe.plm`) | MIT |
 | [Marea](https://github.com/k4ditano/marea-plm) (k4ditano) | spoločník plochy (guľa s tvárou); celá, bez zmien, v `/usr/share/latteos/marea-plm/`, zapína sa v Nastaveniach › Kvapky › Marea (`bin/latte-marea`) | BSD-3-Clause |
