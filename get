@@ -31,6 +31,10 @@ say "LatteOS: opening the installer…"
 # full screen on this console; whoever asked with sudo is the one LatteOS is set up for first
 # apps/common finds its fonts beside the share (…/fonts/latteos), as in /usr/share
 mkdir -p /opt/latteos/fonts && ln -sfn "$src/assets/fonts" /opt/latteos/fonts/latteos
+# drawn without a graphics card (a virtual machine, or no render node), the moving coffee alone takes a whole core
+# from the build: apps/common/Surface.qml keeps it still for LATTE_TIER=software
+tier=""
+if systemd-detect-virt -q || [ ! -e /dev/dri/renderD128 ]; then tier=software; fi
 # Fedora 45's text console is kmscon, which keeps the graphics card for good (--no-switchvt): the wizard runs as its
 # own service that pauses the console, shows the window and gives the console back when the window closes. This
 # shell lives inside that console, so it ends here. seatd-launch makes a seat just for the wizard, as root kiosks do;
@@ -41,7 +45,7 @@ systemctl reset-failed latteos-installer 2>/dev/null || true
 systemd-run --quiet --collect --unit=latteos-installer \
     --setenv=XDG_RUNTIME_DIR=/run/user/0 --setenv=QT_WAYLAND_DISABLE_WINDOWDECORATION=1 \
     --setenv=LATTE_SHARE="$src" --setenv=LATTE_SRC="$src" --setenv=LATTE_FOR="${SUDO_USER:-}" \
-    --setenv=LANG="${LANG:-C.UTF-8}" \
+    --setenv=LANG="${LANG:-C.UTF-8}" --setenv=LATTE_TIER="$tier" \
     sh -c 'mkdir -p -m 0700 /run/user/0; rm -f /run/seatd.sock; [ -z "$1" ] || systemctl stop $1
            seatd-launch -- cage -s -- qs -n -p "$2" >> /var/log/latteos-get.log 2>&1
            [ -z "$1" ] || systemctl start $1' latteos-installer "$consoles" "$wizard"
