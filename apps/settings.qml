@@ -1150,7 +1150,7 @@ ShellRoot {
                 Row { width: view.room; spacing: 20
                     Rectangle { width: 200; height: 140; radius: 20; color: Theme.card; border.width: 1; border.color: Theme.line   // the picture is a crop of the live desktop (apps/settings/drops/<page>.png); the placeholder stays where there is none
                         Image { id: dropPic; anchors.fill: parent; anchors.margins: 6; fillMode: Image.PreserveAspectFit; smooth: true; asynchronous: true
-                                source: shell.page ? "file://" + shell.share + "/apps/settings/drops/" + (shell.page === "launcher" ? "launcher" : shell.page) + ".png" : "" }
+                                source: aboutPart.info && shell.page ? "file://" + shell.share + "/apps/settings/drops/" + (shell.page === "launcher" ? "launcher" : shell.page) + ".png" : "" }
                         Column { anchors.centerIn: parent; spacing: 8; visible: dropPic.status !== Image.Ready
                             Glyph { anchors.horizontalCenter: parent.horizontalCenter; name: shell.here ? shell.here.icon : "droplet"; font.pixelSize: 44; color: Theme.dim }
                             Label { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.tr("Picture to come"); color: Theme.faint; font.pixelSize: 11 } } }

@@ -1,7 +1,7 @@
 # Patches on pleamar
 
 LatteOS runs on [pleamar](https://github.com/k4ditano/pleamar) built from its source with these changes. They
-apply to pleamar **0.7.27** (tag `v0.7.27`, commit `dc902fe`), each on its own (`git apply`), `pleamar-speed-edges-wheel.patch` after the six before it, then `pleamar-step-hook.patch` and `pleamar-hollow-body.patch`, and each is meant to be offered to pleamar's author:
+apply to pleamar **0.7.27** (tag `v0.7.27`, commit `dc902fe`), each on its own (`git apply`), `pleamar-speed-edges-wheel.patch` after the six before it, then `pleamar-step-hook.patch`, `pleamar-hollow-body.patch` and `pleamar-idle-without-surface.patch`, and each is meant to be offered to pleamar's author:
 none is specific to LatteOS. The scenes work without them, only slower or less sharp.
 
 | Patch | What it does | Why |
@@ -15,6 +15,7 @@ none is specific to LatteOS. The scenes work without them, only slower or less s
 | `pleamar-apps-reload.patch` | Watching `apps` again reads the list again, for every listener. | The list was read once: an app installed while the desktop ran did not show up until the next login. |
 | `pleamar-step-hook.patch` | `pleamar::provide_step(f)`: a program that carries pleamar as a library runs `f(dt, the facts' names, their values)` once a frame, after the pointer's facts and before the rules, and answers whether its world still moves; while it does the scene keeps painting (`PLEAMAR_TIMING` names it "the host's step"), when it does not the scene rests. Also `pleamar::tell_fact(name, value)`: a fact told from any of the host's threads, as the logic tells one, so the scene wakes for what the host hears between frames. | Goo's motion is physics with masses, collisions and a surface that carries waves (`crates/goo-phys`, docs/goo/GOOENGINE-2.md §4): a spring's stiffness is a number, not an expression, and a scene has no loops. `crates/latte-goo` is pleamar with that step inside it. |
 | `pleamar-hollow-body.patch` | A `body` whose `border:` has a negative width is hollow: it paints only that outline, as wide, round its whole silhouette — no fill, no glass, no shadow. Documented in the reference beside `border`. | Goo, the level, a card and the shore's plate are several bodies (each its own material) that must read as one piece: one thin sharp outline round all of them and no line where they meet (docs/goo/GOOENGINE-2.md §7). Clear glass with a border did it too, but glass is worked out on the processor for every shape: 8.3 ms a frame instead of 3.0 on latte-lab. |
+| `pleamar-idle-without-surface.patch` | A scene with no surface wanted open (every `open:` false, so the card was never set up) waits up to half a second for a message instead of going round every 8 ms. | LatteOS's lock screen waits all session for its moment: it took ~12 % of a core with nothing on screen (latte-lab, 16. 11.); now 0.4 %, and `lock_now` still opens it at once (checked in a screenless pleamar-wm). |
 
 On [pleamar-wm](https://github.com/k4ditano/pleamar-wm) 0.6.15 (tag `v0.6.15`, commit `96f37e4`, beside `../pleamar`):
 

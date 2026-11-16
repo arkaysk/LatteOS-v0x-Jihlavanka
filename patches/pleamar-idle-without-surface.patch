@@ -1,0 +1,25 @@
+--- a/src/render.rs
++++ b/src/render.rs
+@@ -4425,8 +4425,20 @@
+             }
+         }
+         let Some(g) = &mut gpu else {
+-            // Nowhere yet: time runs all the same, but unhurried.
+-            std::thread::sleep(Duration::from_millis(8));
++            // Nowhere yet: time runs all the same, but unhurried. With no surface wanted open at all —a lock
++            // screen that waits all session for its moment— there is nothing to get ready for: it waits for a
++            // message (the fact that opens one) instead of going round 125 times a second for nobody, which
++            // was some 12 % of a core all session long.
++            let wanted = scene.surfaces.iter().any(|s| s.open.as_ref().is_none_or(|e| e.is_true(Ctx { props: &props, facts: &facts, seen: None })));
++            if wanted {
++                std::thread::sleep(Duration::from_millis(8));
++            } else {
++                match rx.recv_timeout(Duration::from_millis(500)) {
++                    Ok(m) => held_back.push(m),
++                    Err(RecvTimeoutError::Timeout) => {}
++                    Err(RecvTimeoutError::Disconnected) => return,
++                }
++            }
+             continue;
+         };
+         // `lens = image ... while`: the picture while it holds, a capture of what is behind when it does not.
