@@ -178,7 +178,14 @@ slobodná licencia, do COPR nesmie) a založiť ho iba na pokyn (je verejný).
      polovica, inštalácia druhá polovica, iba dopredu); `get` ukazuje počítadlo balíkov na jednom riadku.
    - **pleamar-wm sa na čistej Fedore nezostavil: chýbal `opus-devel`** (`-lopus`; na latte-lab bol) — doplnený
      do `FILES` (zoznam z výstupov `rustc-link-lib` v `target/`: crypto gbm opus pipewire seat ssl udev xkbcommon).
-     Posuvník počas zostavovania pleamaru stojí (23 %): cargo nehlási priebeh — doplniť z riadkov „Compiling“.
+     Posuvník počas zostavovania pleamaru stojil (23 %): opravené, hýbe sa podľa riadkov „Compiling“.
+   - Zostavenie `latte-goo` padlo na `license.workspace` (má vlastný `[workspace]`): licencia zapísaná priamo.
+   - Marea po čistej inštalácii bez agenta a Derivy (`/usr/share` nesmie zapisovať): `build-pleamar.sh` ich zostaví,
+     `install` kopíruje `agent/node_modules` a `deriva-worker`; `nodejs nodejs-npm` vo FILES. Vo VM `npm ci` prešiel.
+   - Quickshell pre LensAI sa zostavoval aj bez zvolenej súčasti (a padol na chýbajúcom `cmake`): iba so súčasťou.
+   - Sprievodca sa po zmene svojho súboru sám znovu načíta (Quickshell sleduje súbory): počas inštalácie nemeniť
+     `/opt/latteos/src/apps` (git pull v `get` je pred otvorením okna, to je v poriadku).
+   - Odhad „ostáva asi N min“ je v prvých minútach nespoľahlivý (balíky idú rýchlo, zostavovanie pomaly).
    - Tento počítač: čistý názov karty, Secure Boot z premennej UEFI (on/off/bez UEFI), veľkosti „24 GB“, disky
      oddelené „·“, varovanie vo virtuálnom stroji. Všetko opravené 16. 11. večer, overiť v ďalšom behu od snímky.
 
