@@ -28,6 +28,10 @@ ShellRoot {
 
     AppWindow {
         id: win
+        // a size and a name of its own, as every app has: without them a window manager that does not size it
+        // (labwc, the SAFE session) opened it a hand wide, titled "quickshell"
+        title: I18n.tr("Widgets")
+        implicitWidth: 1100; implicitHeight: 740
         heading: I18n.tr("Widgets")
         searchHint: I18n.tr("Search…")
         side: Column { x: 12; y: 16; width: win.sideWidth - 24; spacing: 2

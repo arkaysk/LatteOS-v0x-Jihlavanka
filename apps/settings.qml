@@ -202,9 +202,11 @@ ShellRoot {
         printErrors: false; watchChanges: true
         onFileChanged: reload()
         property var modesOff: []              // LensGoo's modes the user hid: 1 files, 2 web, 3 command (lib/lens.luau)
-        onLoaded: { try { const d = JSON.parse(text()); lists = Array.isArray(d.lists) ? d.lists : []; ai = Array.isArray(d.ai) ? d.ai : null; modesOff = Array.isArray(d.modes_off) ? d.modes_off : [] } catch (e) { lists = []; ai = null; modesOff = [] } }
-        onLoadFailed: { lists = []; ai = null; modesOff = [] }
-        function write() { const d = { lists: lists, modes_off: modesOff }; if (ai !== null) d.ai = ai; setText(JSON.stringify(d)) }
+        // lensFile.ai, never a bare `ai`: the page's `Word { id: ai }` would be meant, and assigning to an id fails
+        // (the whole file was then read as empty, and a write would have saved that Word instead of the list)
+        onLoaded: { try { const d = JSON.parse(text()); lists = Array.isArray(d.lists) ? d.lists : []; lensFile.ai = Array.isArray(d.ai) ? d.ai : null; modesOff = Array.isArray(d.modes_off) ? d.modes_off : [] } catch (e) { lists = []; lensFile.ai = null; modesOff = [] } }
+        onLoadFailed: { lists = []; lensFile.ai = null; modesOff = [] }
+        function write() { const d = { lists: lists, modes_off: modesOff }; if (lensFile.ai !== null) d.ai = lensFile.ai; setText(JSON.stringify(d)) }
         function mode(n, on) { modesOff = modesOff.filter(m => m !== n).concat(on ? [] : [n]); write() }
         function save(l) { lists = l; write() }
     }

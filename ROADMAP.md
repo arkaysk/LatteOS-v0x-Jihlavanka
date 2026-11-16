@@ -4640,6 +4640,18 @@ súborov ťahaním zvonku, čítačka obrazovky). Dovtedy sa QML neprepisuje; no
 v Ruste do `crates/`.
 
 **17.06** [ ] (13. 11.) **Scéna Goo nestíha** (log pleamaru „does not keep up“: 24–50 ms na snímku proti 16,7 na RX 640, čítanie scény 1–2,5 ms): zmerať snímky s hodinami `tick` aj bez nich, nájsť drahé tvary/pravidlá (1024 tvarov, 2795 pravidiel, 1039 zón) a zlacniť. Súvisí s 17.01.
+  **16. 11. (noc) merané** (živá relácia latte-lab, `top` po vláknach; bez obrazovky `tests/screen.sh 30` s
+  `PLEAMAR="env PLEAMAR_TIMING=1 /usr/bin/latte-goo"` — premenná sa inak do relácie nedostane):
+  - `latte-goo` v pokoji **~13 % jadra** (12. 11. po kroku 3: ~1 %). Drží ho `spin tick` cez `breathing`
+    (`parts/drops.plm:169`, rozhodnutie používateľa 13. 11.: kvapky dýchajú a hladina sa vlní stále): 20 kôl/s
+    (`rate: 60, 20 while …`), na kolo pravidlá a pružiny 4,2 ms, skladanie 3,5, kreslenie 3,7 ms (CPU 1,4 + 2,4 + 2,8).
+    **Návrh na rozhodnutie:** keď beží iba dýchanie (nič sa nehýbe ani neotvára), `rate` 10 — dýchanie kvapky má
+    amplitúdu 1,2 % polomeru (pri 40 px pol pixelu), rozdiel by nemal byť vidieť; potom zmerať a porovnať snímky.
+  - `lockscreen.plm` **~12 % jadra celý čas, hoci nič neukazuje**: render pleamaru so scénou bez otvoreného povrchu
+    kolo za kolom (more v shaderoch číta `time`). Oprava v pleamari: scéna, ktorej žiaden povrch nie je otvorený,
+    odpočíva (záplata `pleamar-rest-hidden.patch`, overiť).
+  - `skwd-wall-vk` s videotapetou ~10–13 %: dekóduje cez VA-API (mesa-va-drivers-freeworld), zvyšok je jeho
+    vlastná slučka — cudzí program, nechať; Marea ~6 % (zapnutá voľbou).
 
 ---
 

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Chapolera
+Comment=Sorts a folder by what is in its files, and puts it back if asked
+Comment[sk]=Roztriedi priečinok podľa toho, čo je v súboroch, a na požiadanie ho vráti
+Exec=latte-app chapolera
+Icon=folder-pictures
+Categories=Utility;FileTools;
+StartupWMClass=latteos-chapolera
+NoDisplay=true

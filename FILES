@@ -657,6 +657,7 @@
 /usr/share/applications/latteos-monitor.desktop         <- system/applications/latteos-monitor.desktop
 /usr/share/applications/latteos-settings.desktop        <- system/applications/latteos-settings.desktop
 /usr/share/applications/latteos-files.desktop           <- system/applications/latteos-files.desktop
+/usr/share/applications/latteos-chapolera.desktop       <- system/applications/latteos-chapolera.desktop
 /usr/share/latteos/goo/parts/drops.plm                  <- goo/parts/drops.plm
 /usr/share/latteos/goo/parts/bubble.plm                 <- goo/parts/bubble.plm
 /usr/share/latteos/goo/parts/picks.plm                  <- goo/parts/picks.plm
