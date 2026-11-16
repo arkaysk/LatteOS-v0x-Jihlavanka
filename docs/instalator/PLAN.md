@@ -171,13 +171,13 @@ slobodná licencia, do COPR nesmie) a založiť ho iba na pokyn (je verejný).
    - **Voliteľné mimo Fedory:** steam (RPM Fusion nonfree), gamescope-session(-steam) (COPR), umu-launcher, mpvpaper,
      mise (vlastný repozitár) — `install` ich teraz inštaluje zvlášť s `--skip-unavailable` a vypíše, čo vynechal;
      povinné ostávajú prísne.
-   - Pri vypnutej AI sa ukazovali súčasti AI (server MCP, záložky LensAI) — opravené (`aiWords`). Prezentácia počas
-     inštalácie ukazuje LensAI aj bez AI.
-   - Herná relácia je predvolene zapnutá aj bez karty s Vulkanom (vo VM) — podľa 3.2 má byť iba s Vulkanom.
-   - Kroky `install --progress` („Installing Fedora's packages“) nie sú preložené; posuvník stojí na 0 % počas
-     celého `dnf` (456 balíkov) — chce priebeh z dnf.
-   - Tento počítač: surový názov karty z `lspci`, Secure Boot „neznáme“ (bez `mokutil`), disky bez medzier
-     („600M,/boot 2G“), chýba upozornenie, že vo VM pôjde softvérové kreslenie.
+   - Pri vypnutej AI sa ukazovali súčasti AI (server MCP, záložky LensAI) — opravené (`aiWords`); prezentácia
+     ukazuje LensAI iba s AI a hernú reláciu iba so Steamom (`shown`).
+   - Herná relácia je predvolene zapnutá iba so skutočnou kartou AMD/NVIDIA/Intel mimo VM (`realGpu`, `chosenOf`).
+   - Kroky `install --progress` preložené; posuvník sa počas `dnf` hýbe podľa jeho počítadla [n/m] (sťahovanie
+     polovica, inštalácia druhá polovica, iba dopredu); `get` ukazuje počítadlo balíkov na jednom riadku.
+   - Tento počítač: čistý názov karty, Secure Boot z premennej UEFI (on/off/bez UEFI), veľkosti „24 GB“, disky
+     oddelené „·“, varovanie vo virtuálnom stroji. Všetko opravené 16. 11. večer, overiť v ďalšom behu od snímky.
 
 ## 6. Neskôr: Atomic, všetko v jednom obraze (používateľ 3. 11.)
 

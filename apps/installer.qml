@@ -36,16 +36,22 @@ ShellRoot {
     // ── what the computer is: asked once, shown on "This computer" ──────────────────────────────────────
     property var facts: ({})
     Process { running: true
-        command: ["sh", "-c", "printf 'gpu=%s\\n' \"$(lspci 2>/dev/null | grep -Ei 'vga|3d|display' | sed 's/^[^:]*: //' | head -2 | paste -sd ';')\";"
+        // the card's name without lspci's address, class and revision; Secure Boot from its UEFI variable (mokutil
+        // is not on a fresh Fedora Server): on, off, or bios when there is no UEFI at all
+        command: ["sh", "-c", "printf 'gpu=%s\\n' \"$(lspci 2>/dev/null | grep -Ei 'vga|3d|display' | sed -E 's/^[0-9a-f:.]+ [^:]+: //; s/ \\(rev [0-9a-f]+\\)$//' | head -2 | paste -sd ';')\";"
+                 + "printf 'virt=%s\\n' \"$(systemd-detect-virt 2>/dev/null)\";"
                  + "printf 'ram=%s\\n' \"$(awk '/MemTotal/ {printf \"%.0f\", $2/1048576}' /proc/meminfo)\";"
-                 + "printf 'free=%s\\n' \"$(df -h --output=avail / | tail -1 | tr -d ' ')\";"
-                 + "printf 'sb=%s\\n' \"$(mokutil --sb-state 2>/dev/null | head -1)\";"
+                 + "printf 'free=%s\\n' \"$(df -h --output=avail / | tail -1 | tr -d ' ' | sed -E 's/([0-9])([KMGT])$/\\1 \\2B/')\";"
+                 + "if [ ! -d /sys/firmware/efi ]; then echo sb=bios; else printf 'sb=%s\\n' \"$(od -An -tu1 /sys/firmware/efi/efivars/SecureBoot-8be4df61-93ca-11d2-aa0d-00e098032b8c 2>/dev/null | awk '{print ($NF == 1) ? \"on\" : \"off\"}')\"; fi;"
                  + "printf 'kernel=%s\\n' \"$(uname -r)\";"
-                 + "printf 'disks=%s\\n' \"$(lsblk -rno NAME,SIZE,MOUNTPOINTS | awk '$3 ~ /^\\// {print $3\" \"$2}' | paste -sd ',')\";"
+                 + "printf 'disks=%s\\n' \"$(lsblk -rno NAME,SIZE,MOUNTPOINTS | awk '$3 ~ /^\\// {print $3\" \"$2}' | sed -E 's/([0-9])([KMGT])$/\\1 \\2B/' | paste -sd ',' | sed 's/,/  ·  /g')\";"
                  + "printf 'users=%s\\n' \"$(getent passwd | awk -F: '$3 >= 1000 && $3 < 60000 {print $1}' | paste -sd ',')\";"
                  + "printf 'lang=%s\\n' \"$(localectl status 2>/dev/null | sed -n 's/.*LANG=//p' | head -1)\""]
         stdout: StdioCollector { onStreamFinished: { const f = {}; this.text.split("\n").forEach(l => { const k = l.indexOf("="); if (k > 0) f[l.slice(0, k)] = l.slice(k + 1).trim() }); shell.facts = f } } }
     // GFX6 to GFX8 (an RX 640 is one) need Linux 7.3 and Mesa 26.3 (PLAN 3.4)
+    readonly property bool virtual: !!facts.virt && facts.virt !== "none"
+    // a real AMD, NVIDIA or Intel card: what the Game session needs (Vulkan), so its component is chosen by default
+    readonly property bool realGpu: !virtual && /\b(AMD|ATI|NVIDIA|Intel)\b/i.test(facts.gpu || "")
     readonly property bool oldAmd: /\b(Polaris|Lexa|Baffin|Ellesmere|Tonga|Fiji|Hawaii|Bonaire|Tahiti|Pitcairn|Oland|Cape Verde|Hainan|Iceland|Topaz|Carrizo|Stoney)\b/i.test(facts.gpu || "")
 
     // ── the components: the optional lines of FILES, each with what it is for ──────────────────────────
@@ -58,13 +64,15 @@ ShellRoot {
             for (const raw of text().split("\n")) {
                 if (raw.startsWith("[")) { inNeeds = raw.trim() === "[needs]"; continue }
                 const m = inNeeds && raw.match(/^optional:\s*([^#]+?)\s*(?:#\s*(.*))?$/)
-                if (m) g.push({ packages: m[1].split(/\s+/), note: (m[2] || "").trim(), chosen: true })
+                if (m) g.push({ packages: m[1].split(/\s+/), note: (m[2] || "").trim(), chosen: null })
             }
             shell.groups = g
         } }
     // a group holding one of these is AI's: only with AI (the services' tools, the MCP server, LensAI's web engine)
     readonly property var aiWords: ["mise", "pipewire-utils", "gnome-keyring", "python3-mcp", "qt6-qtwebengine"]
-    readonly property var chosenPackages: groups.filter(g => g.chosen && (ai || !g.packages.some(p => aiWords.indexOf(p) >= 0)))
+    // untouched (null), a group is chosen, except the Game session's without a real graphics card (PLAN 3.2)
+    function chosenOf(g) { return g.chosen === null ? (g.packages.indexOf("steam") < 0 || realGpu) : g.chosen }
+    readonly property var chosenPackages: groups.filter(g => chosenOf(g) && (ai || !g.packages.some(p => aiWords.indexOf(p) >= 0)))
                                                 .reduce((all, g) => all.concat(g.packages), [])
 
     // ── installing: ./install's own lines, read as they come ────────────────────────────────────────────
@@ -99,8 +107,9 @@ ShellRoot {
         { icon: "device-gamepad-2", title: QT_TR_NOOP("The game session"), text: QT_TR_NOOP("Steam Big Picture in one press, and back to the desktop.") },
         { icon: "layout-columns", title: QT_TR_NOOP("Windows your way"), text: QT_TR_NOOP("A tape, tiles or free windows, on each screen its own.") },
         { icon: "lifebuoy", title: QT_TR_NOOP("SAFE and GuardCorgi"), text: QT_TR_NOOP("When something breaks, a safe session that still works, and a guard that tells you why.") } ]
+    readonly property var shown: slides.filter(s => (ai || s.title !== "LensAI") && (chosenPackages.indexOf("steam") >= 0 || s.icon !== "device-gamepad-2"))
     property int slide: 0
-    Timer { interval: 12000; repeat: true; running: shell.page === "install"; onTriggered: shell.slide = (shell.slide + 1) % shell.slides.length }
+    Timer { interval: 12000; repeat: true; running: shell.page === "install"; onTriggered: shell.slide = (shell.slide + 1) % shell.shown.length }
 
     component Switch: Rectangle {              // yes or no, with what it is about beside it (as in Settings)
         id: sw
@@ -166,11 +175,13 @@ ShellRoot {
                             { k: QT_TR_NOOP("Free on the system disk"), v: shell.facts.free || "…" },
                             { k: QT_TR_NOOP("Disks (done by Fedora)"), v: shell.facts.disks || "…" },
                             { k: QT_TR_NOOP("Users (done by Fedora)"), v: shell.facts.users || "…" },
-                            { k: QT_TR_NOOP("Secure Boot"), v: shell.facts.sb || I18n.tr("unknown") },
+                            { k: QT_TR_NOOP("Secure Boot"), v: I18n.tr({ on: QT_TR_NOOP("on"), off: QT_TR_NOOP("off"), bios: QT_TR_NOOP("no UEFI (old BIOS)") }[shell.facts.sb] || QT_TR_NOOP("unknown")) },
                             { k: QT_TR_NOOP("Linux"), v: shell.facts.kernel || "…" } ]
                         Rectangle { required property var modelData; width: pageCol.width; height: 52; radius: 14; color: Theme.card
                             Label { x: 18; width: 220; text: I18n.tr(parent.modelData.k); color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
                             Label { x: 240; width: parent.width - 260; text: parent.modelData.v; elide: Text.ElideRight; anchors.verticalCenter: parent.verticalCenter } } }
+                    Text2 { visible: shell.virtual; color: Theme.gold
+                            text: I18n.tr("This is a virtual machine: LatteOS will draw without a graphics card, slowly. Fine for trying the installation, not for judging the desktop.") }
                     Text2 { visible: shell.oldAmd; color: Theme.gold
                             text: I18n.tr("This graphics card needs Linux 7.3 and Mesa 26.3, which LatteOS brings until Fedora has them. That Linux is not signed: with Secure Boot on it will not start.") } }
 
@@ -188,8 +199,8 @@ ShellRoot {
                                  visible: shell.ai || !g.packages.some(p => shell.aiWords.indexOf(p) >= 0)
                                  // what it is for, said for a person: FILES's note without its pointers into the source
                                  text: I18n.tr(g.note.replace(/\s*\([^)]*[\/.][a-z][^)]*\)/g, "")).replace(/^./, c => c.toUpperCase()) || g.packages.join(" ")
-                                 hint: g.packages.join(" "); on: g.chosen
-                                 onPressed: { const l = shell.groups.slice(); l[index] = Object.assign({}, g, { chosen: !g.chosen }); shell.groups = l } } } }
+                                 hint: g.packages.join(" "); on: shell.chosenOf(g)
+                                 onPressed: { const l = shell.groups.slice(); l[index] = Object.assign({}, g, { chosen: !shell.chosenOf(g) }); shell.groups = l } } } }
 
                 // ── Summary ──
                 Column { visible: shell.page === "summary"; width: parent.width; spacing: 10
@@ -211,7 +222,7 @@ ShellRoot {
                                 Label { text: I18n.tr(modelData.name); font.weight: modelData.state === "now" ? 700 : 500 } } }
                         Label { visible: shell.parts.length === 0; text: I18n.tr("Starting…"); color: Theme.dim } }
                     Rectangle { x: parent.width * 0.5; width: parent.width * 0.5; height: 220; radius: 18; color: Theme.card
-                        readonly property var s: shell.slides[shell.slide]
+                        readonly property var s: shell.shown[shell.slide % shell.shown.length]
                         Glyph { x: 22; y: 22; name: parent.s.icon; font.pixelSize: 40; color: Theme.gold }
                         Label { x: 22; y: 82; text: I18n.tr(parent.s.title); font.pixelSize: 20; font.weight: 800 }
                         Label { x: 22; y: 116; width: parent.width - 44; wrapMode: Text.WordWrap; color: Theme.dim; text: I18n.tr(parent.s.text) } }

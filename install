@@ -233,15 +233,25 @@ def main(a):
         if not repositories(extra):
             say("install: a repository could not be added")
             return 1
-        if must:
-            say("   $ dnf install -y " + " ".join(must))
-            if subprocess.run(["dnf", "install", "-y"] + must).returncode:
-                say("install: dnf could not install them")
-                return 1
+        def dnf(args, lo, hi):
+            """dnf with its lines passed on; its [n/m] counter moves the bar from lo to hi of the packages' part."""
+            say("   $ dnf " + " ".join(args))
+            p = subprocess.Popen(["dnf"] + args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace")
+            best = 0.0              # dnf counts twice (downloading, then installing): the bar only moves forward
+            for line in p.stdout:
+                say(line.rstrip("\n"))
+                m = re.match(r"\[\s*(\d+)/(\d+)\]", line)
+                if m and int(m.group(2)):
+                    # downloads are the first half of the way, the transaction the second
+                    at = int(m.group(1)) / int(m.group(2)) / 2 + (0.5 if "Install" in line or "Remov" in line or "Upgrad" in line else 0)
+                    if at > best: best = at; part("packages", lo + (hi - lo) * at)
+            return p.wait()
+        if must and dnf(["install", "-y"] + must, 0.0, 0.6 if extra else 1.0):
+            say("install: dnf could not install them")
+            return 1
         # a chosen extra still missing from every repository is left out, not fatal
         if extra:
-            say("   $ dnf install -y --skip-unavailable " + " ".join(extra))
-            subprocess.run(["dnf", "install", "-y", "--skip-unavailable"] + extra)
+            dnf(["install", "-y", "--skip-unavailable"] + extra, 0.6 if must else 0.0, 1.0)
             left = [p for p in extra if subprocess.run(["rpm", "-q", "--whatprovides", p], capture_output=True).returncode]
             if left: say("   not in Fedora's repositories, left out: " + " ".join(left))
         must = needs(sections)[0]

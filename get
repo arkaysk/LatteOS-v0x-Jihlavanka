@@ -16,8 +16,12 @@ curl -fsS -o /dev/null --max-time 10 https://fedoraproject.org || { say "LatteOS
 
 say "LatteOS: preparing the installer (git, cage, seatd, quickshell)…"
 say "(a few minutes; details in /var/log/latteos-get.log)"
-# dnf5 prints its whole table even with -q: a wall of packages says nothing to a person, so it goes to the log
-dnf install -y git cage seatd quickshell rsms-inter-fonts >> /var/log/latteos-get.log 2>&1 \
+# dnf5 prints its whole table even with -q: a wall of packages says nothing to a person, so it goes to the log, and
+# the console shows only dnf's own counter on one line (some 300 packages, which can take a quarter of an hour)
+{ dnf install -y git cage seatd quickshell rsms-inter-fonts; echo $? > /run/latteos-get.rc; } 2>&1 \
+    | tee -a /var/log/latteos-get.log | awk '/^\[ *[0-9]+\/[0-9]+\]/ { split($1 $2, n, /[^0-9]+/); printf "\r   %s / %s   ", n[2], n[3]; fflush() }'
+echo
+[ "$(cat /run/latteos-get.rc 2>/dev/null)" = 0 ] \
     || { tail -n 15 /var/log/latteos-get.log; say "LatteOS: installing the installer's packages failed (above)."; exit 1; }
 if [ -d "$src/.git" ]; then git -C "$src" pull -q --ff-only; else mkdir -p "$(dirname "$src")"; git clone -q --depth 1 "$repo" "$src"; fi
 
