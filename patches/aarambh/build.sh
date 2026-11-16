@@ -1,9 +1,14 @@
 #!/bin/sh
-# build.sh AARAMBH_TREE: put LatteOS's theme into a checkout of Aarambh (github.com/NarkAgni/aarambh, GPL-3.0)
-# and build aarambh.efi there (ROADMAP 3.11). Needs gnu-efi-devel. Running it twice changes nothing more.
+# build.sh AARAMBH_TREE: put LatteOS's theme and the mouse patch into a checkout of Aarambh
+# (github.com/NarkAgni/aarambh, GPL-3.0; made against d2611d9 of 12. 11. 2026) and build aarambh.efi there
+# (ROADMAP 3.11). Needs gnu-efi-devel. Running it twice changes nothing more.
 set -eu
 tree="${1:?usage: build.sh AARAMBH_TREE}"
 here="$(cd "$(dirname "$0")" && pwd)"
+# the mouse and touch (mouse.patch): applied once; the theme fills the tiles' places it reads
+if ! git -C "$tree" apply --reverse --check "$here/mouse.patch" 2>/dev/null; then
+    git -C "$tree" apply "$here/mouse.patch"
+fi
 mkdir -p "$tree/src/themes/latteos"
 cp "$here/latteos.c" "$tree/src/themes/latteos/latteos.c"
 reg="$tree/src/core/theme_registry.c"

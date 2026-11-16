@@ -1,0 +1,281 @@
+diff --git a/include/aarambh/theme.h b/include/aarambh/theme.h
+index 93bf113..840bfcc 100644
+--- a/include/aarambh/theme.h
++++ b/include/aarambh/theme.h
+@@ -22,6 +22,14 @@
+  * clock, option list, launch splash) and aarambh/gfx/ (images, shapes, text).
+  */
+ 
++/* Where an entry is on screen, for the mouse and touch (x, y, width, height in pixels; width 0: nowhere). */
++typedef struct {
++    int x;
++    int y;
++    int width;
++    int height;
++} HitBox;
++
+ typedef struct {
+     Image *screen;
+     Entry *entries;
+@@ -31,6 +39,11 @@ typedef struct {
+     Font *font_regular;
+     Font *font_bold;
+     Font *font_mono;
++
++    /* One per entry, cleared before each frame: a theme that draws a tile or a card for each entry fills
++       hits[i] with it, and the pointer then selects and starts entries there. A theme that fills none
++       still works with the keyboard alone. */
++    HitBox *hits;
+ } ThemeContext;
+ 
+ typedef struct {
+diff --git a/src/core/app.c b/src/core/app.c
+index 9990ddb..4e1cfd7 100644
+--- a/src/core/app.c
++++ b/src/core/app.c
+@@ -8,6 +8,7 @@
+ #include "core/editor.h"
+ #include "core/shutdown_splash.h"
+ #include "core/input.h"
++#include "core/pointer.h"
+ #include "core/navigation.h"
+ #include "core/theme_registry.h"
+ #include "efi/system.h"
+@@ -75,8 +76,10 @@ static void draw_frame(void)
+     ThemeFrame frame;
+ 
+     build_frame(&frame, timer_now_ms());
++    SetMem(app.hits, sizeof(app.hits), 0);
+     app.theme->render(&app.context, &frame);
+     editor_draw(&app, frame.now);
++    pointer_draw(&app);
+     video_present(&app.screen);
+ }
+ 
+@@ -90,6 +93,7 @@ static void setup_context(void)
+     app.context.font_regular = &app.fonts.regular;
+     app.context.font_bold = &app.fonts.bold;
+     app.context.font_mono = &app.fonts.mono;
++    app.context.hits = app.hits;
+ }
+ 
+ EFI_STATUS app_init(void)
+@@ -123,6 +127,7 @@ EFI_STATUS app_init(void)
+     setup_context();
+     app.theme->load(&app.context);
+     editor_load(&app.context);
++    pointer_init(&app);
+ 
+     return EFI_SUCCESS;
+ }
+@@ -192,6 +197,7 @@ static void launch_selected(void)
+ static void update(float now)
+ {
+     input_poll(&app, now);
++    pointer_poll(&app, now);
+ 
+     if (app.countdown_active && now >= app.countdown_deadline) {
+         nav_launch(&app, -1, now);
+diff --git a/src/core/app_state.h b/src/core/app_state.h
+index 862313e..a870f76 100644
+--- a/src/core/app_state.h
++++ b/src/core/app_state.h
+@@ -51,6 +51,12 @@ typedef struct {
+     char message[APP_MESSAGE_MAX];
+     float message_time;
+     char status[APP_MESSAGE_MAX];
++
++    HitBox hits[AARAMBH_MAX_ENTRIES];
++    int pointer_shown;
++    float pointer_x;
++    float pointer_y;
++    int pointer_down;
+ } AppState;
+ 
+ #endif
+\ No newline at end of file
+diff --git a/src/core/pointer.c b/src/core/pointer.c
+new file mode 100644
+index 0000000..60c16c3
+--- /dev/null
++++ b/src/core/pointer.c
+@@ -0,0 +1,157 @@
++#include <efi.h>
++#include <efilib.h>
++
++#include "core/pointer.h"
++
++#include "aarambh/gfx/draw.h"
++#include "core/navigation.h"
++
++#define POINTER_MAX 8
++
++static EFI_SIMPLE_POINTER_PROTOCOL *mice[POINTER_MAX];
++static int mouse_count;
++static EFI_ABSOLUTE_POINTER_PROTOCOL *touches[POINTER_MAX];
++static int touch_count;
++
++static int locate(EFI_GUID *guid, void **found, int max)
++{
++    EFI_HANDLE *handles = NULL;
++    UINTN count = 0;
++    int kept = 0;
++    UINTN i;
++
++    if (BS->LocateHandleBuffer(ByProtocol, guid, NULL, &count, &handles) != EFI_SUCCESS) {
++        return 0;
++    }
++    for (i = 0; i < count && kept < max; i++) {
++        if (BS->HandleProtocol(handles[i], guid, &found[kept]) == EFI_SUCCESS && found[kept]) {
++            kept++;
++        }
++    }
++    FreePool(handles);
++    return kept;
++}
++
++/* Firmware usually connects only the keyboard and the screen before a boot loader; the USB mouse and the touch
++   screen get their drivers only when every controller is connected, as rEFInd does before it looks for them. */
++static void connect_everything(void)
++{
++    EFI_HANDLE *handles = NULL;
++    UINTN count = 0;
++    UINTN i;
++
++    if (BS->LocateHandleBuffer(AllHandles, NULL, NULL, &count, &handles) != EFI_SUCCESS) {
++        return;
++    }
++    for (i = 0; i < count; i++) {
++        BS->ConnectController(handles[i], NULL, NULL, TRUE);
++    }
++    FreePool(handles);
++}
++
++void pointer_init(AppState *app)
++{
++    EFI_GUID simple = EFI_SIMPLE_POINTER_PROTOCOL_GUID;
++    EFI_GUID absolute = EFI_ABSOLUTE_POINTER_PROTOCOL_GUID;
++    int i;
++
++    mouse_count = locate(&simple, (void **)mice, POINTER_MAX);
++    touch_count = locate(&absolute, (void **)touches, POINTER_MAX);
++    if (mouse_count == 0 && touch_count == 0) {
++        connect_everything();
++        mouse_count = locate(&simple, (void **)mice, POINTER_MAX);
++        touch_count = locate(&absolute, (void **)touches, POINTER_MAX);
++    }
++    for (i = 0; i < mouse_count; i++) mice[i]->Reset(mice[i], FALSE);
++    for (i = 0; i < touch_count; i++) touches[i]->Reset(touches[i], FALSE);
++    app->pointer_x = app->screen.width / 2.0f;
++    app->pointer_y = app->screen.height / 2.0f;
++}
++
++static int entry_under(const AppState *app)
++{
++    int i;
++
++    for (i = 0; i < app->entries.count; i++) {
++        const HitBox *box = &app->hits[i];
++
++        if (box->width > 0 && app->pointer_x >= box->x && app->pointer_x < box->x + box->width
++            && app->pointer_y >= box->y && app->pointer_y < box->y + box->height) {
++            return i;
++        }
++    }
++    return -1;
++}
++
++static float clamp_to(float value, float limit)
++{
++    return value < 0 ? 0 : (value > limit - 1 ? limit - 1 : value);
++}
++
++void pointer_poll(AppState *app, float now)
++{
++    int moved = 0;
++    int down = app->pointer_down;
++    int i;
++
++    for (i = 0; i < mouse_count; i++) {
++        EFI_SIMPLE_POINTER_STATE state;
++        UINT64 resolution_x = mice[i]->Mode->ResolutionX ? mice[i]->Mode->ResolutionX : 1;
++        UINT64 resolution_y = mice[i]->Mode->ResolutionY ? mice[i]->Mode->ResolutionY : 1;
++
++        if (mice[i]->GetState(mice[i], &state) != EFI_SUCCESS) continue;
++        if (state.RelativeMovementX || state.RelativeMovementY) {
++            /* counts per millimetre: about 4 pixels a millimetre feels like a desktop mouse */
++            app->pointer_x = clamp_to(app->pointer_x + 4.0f * state.RelativeMovementX / (INT64)resolution_x, app->screen.width);
++            app->pointer_y = clamp_to(app->pointer_y + 4.0f * state.RelativeMovementY / (INT64)resolution_y, app->screen.height);
++            moved = 1;
++        }
++        down = state.LeftButton ? 1 : 0;
++    }
++    for (i = 0; i < touch_count; i++) {
++        EFI_ABSOLUTE_POINTER_STATE state;
++        EFI_ABSOLUTE_POINTER_MODE *mode = touches[i]->Mode;
++        UINT64 span_x = mode->AbsoluteMaxX > mode->AbsoluteMinX ? mode->AbsoluteMaxX - mode->AbsoluteMinX : 1;
++        UINT64 span_y = mode->AbsoluteMaxY > mode->AbsoluteMinY ? mode->AbsoluteMaxY - mode->AbsoluteMinY : 1;
++        float x;
++        float y;
++
++        if (touches[i]->GetState(touches[i], &state) != EFI_SUCCESS) continue;
++        x = (float)(state.CurrentX - mode->AbsoluteMinX) * app->screen.width / span_x;
++        y = (float)(state.CurrentY - mode->AbsoluteMinY) * app->screen.height / span_y;
++        if (x != app->pointer_x || y != app->pointer_y) {
++            app->pointer_x = clamp_to(x, app->screen.width);
++            app->pointer_y = clamp_to(y, app->screen.height);
++            moved = 1;
++        }
++        down = (state.ActiveButtons & EFI_ABSP_TouchActive) ? 1 : 0;
++    }
++
++    if (!moved && down == app->pointer_down) return;
++    nav_cancel_countdown(app);
++    app->pointer_shown = 1;
++    if (app->launching || app->edit_open || app->list_open) {
++        app->pointer_down = down;
++        return;
++    }
++
++    i = entry_under(app);
++    if (i >= 0 && i != app->selected) nav_select(app, i, now);
++    /* a click or a tap starts the entry under it when the button comes back up, as on a desktop */
++    if (app->pointer_down && !down && i >= 0) nav_launch(app, -1, now);
++    app->pointer_down = down;
++}
++
++/* An arrow, cream with a dark edge, readable on any theme. */
++void pointer_draw(AppState *app)
++{
++    float x = app->pointer_x;
++    float y = app->pointer_y;
++    float s = app->screen.height / 1080.0f * 22.0f;
++    Point edge[4] = { { x - 1.5f, y - 2.5f }, { x - 1.5f, y + s + 3 }, { x + s * 0.32f, y + s * 0.74f }, { x + s * 0.78f + 3, y + s * 0.74f } };
++    Point arrow[4] = { { x, y }, { x, y + s }, { x + s * 0.30f, y + s * 0.70f }, { x + s * 0.72f, y + s * 0.70f } };
++
++    if (!app->pointer_shown || app->launching) return;
++    draw_polygon(&app->screen, edge, 4, 0x140d09, 230);
++    draw_polygon(&app->screen, arrow, 4, 0xf6eee2, 256);
++}
+diff --git a/src/core/pointer.h b/src/core/pointer.h
+new file mode 100644
+index 0000000..208321c
+--- /dev/null
++++ b/src/core/pointer.h
+@@ -0,0 +1,16 @@
++#ifndef AARAMBH_CORE_POINTER_H
++#define AARAMBH_CORE_POINTER_H
++
++#include "core/app_state.h"
++
++/*
++ * The mouse and touch, beside the keyboard: every pointing device the firmware offers (Simple Pointer for
++ * mice and touchpads, Absolute Pointer for touch screens and tablets). Over an entry's tile it selects that
++ * entry, a click or a tap starts it. The cursor only shows once the pointer has moved, so a PC without one
++ * looks as before. Firmware that offers no pointer leaves the menu to the keyboard.
++ */
++void pointer_init(AppState *app);
++void pointer_poll(AppState *app, float now);
++void pointer_draw(AppState *app);
++
++#endif

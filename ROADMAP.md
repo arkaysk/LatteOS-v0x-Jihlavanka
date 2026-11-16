@@ -437,7 +437,11 @@ základ, na ktorý sa dajú integrovať ostatné pracovné prúdy.
   (podľa Cinema; obrázky položiek sa prelínajú ako v Minimal; hodiny 24 h; NOW BREWING / ALSO ON THIS PC),
   `make-assets.py` (šálka na espresse s pásmi zapečenými v obrázku, SAFE ochladená, Windows stlmená; logá z Tabler),
   `build.sh` (vloží tému do stromu aarambh a zaregistruje ju). Písmo Inter (statické TTF z `rsms-inter-fonts`).
-  Chýba: myš, inštalácia do systému (`install`: aarambh `setup.sh` + naša `aarambh.conf`, `utc_offset`), FILES.
+  **Myš a dotyk napísané** (`patches/aarambh/mouse.patch`, `src/core/pointer.c`): Simple + Absolute Pointer, pri
+  žiadnom nájdenom pripojí ovládače ku všetkým zariadeniam (ako rEFInd), téma hlási dlaždice (`context->hits`),
+  prejdenie vyberie, pustenie tlačidla spustí, kurzor až po pohybe. **Neoverené**: v QEMU s OVMF sa zariadenia
+  nájdu, ale `GetState` vracia stále NOT_READY (USB tablet aj myš, xHCI aj EHCI, aj PS/2) — overiť na skutočnom PC.
+  Chýba: inštalácia do systému (`install`: aarambh `setup.sh` + naša `aarambh.conf`, `utc_offset`), FILES.
   Dotyková obrazovka áno (tá istá `ABSOLUTE_POINTER`). Otázka na neskôr: pri viacerých monitoroch kreslí UEFI (GOP)
   spravidla iba na jeden, ktorý určí firmvér — overiť na PC s tromi obrazovkami.
 

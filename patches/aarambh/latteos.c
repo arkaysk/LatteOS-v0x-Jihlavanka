@@ -148,6 +148,12 @@ static void draw_tiles(const ThemeContext *context, const ThemeFrame *frame, flo
         float x = left + i * (width + gap);
         float icon = kit_s(screen, 34);
 
+        if (context->hits) {        /* where the mouse and touch find this entry (patches/aarambh/mouse.patch) */
+            context->hits[i].x = (int)x;
+            context->hits[i].y = (int)top;
+            context->hits[i].width = (int)width;
+            context->hits[i].height = (int)height;
+        }
         draw_round_rect(screen, x, top, width, height, kit_s(screen, 8), 0, LATTE_TILE, alpha);
         draw_round_rect(screen, x, top, width, height, kit_s(screen, 8), 0, LATTE_LIT, (int)(alpha * weight));
         kit_logo(screen, entry, &latte.letter, x + (width - icon) / 2, top + (height - icon) / 2, icon, 0xfae2be,
