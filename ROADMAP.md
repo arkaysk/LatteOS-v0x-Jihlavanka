@@ -4654,6 +4654,12 @@ v Ruste do `crates/`.
   - `skwd-wall-vk` s videotapetou ~10–13 %: dekóduje cez VA-API (mesa-va-drivers-freeworld), zvyšok je jeho
     vlastná slučka — cudzí program, nechať; Marea ~6 % (zapnutá voľbou).
 
+**17.07** [~] (16. 11.) **Veľkosť na disku:** `/usr/share/latteos` 474 MB, z toho Marea 461 MB — 308 MB boli súbory
+zostavenia Derivy (`deriva/target`) zo staršieho ručného kopírovania; na latte-lab zmazané okrem `deriva-worker`
+(Marea 159 MB, z toho 149 MB balíky agenta). `install` stromy zostavenia nekopíruje; Marea po čistej inštalácii
+dostane worker a balíky agenta zo zostavenia (`build-pleamar.sh`). Ostáva: `goo.pred-gooengine2` (1,4 MB, záloha
+mimo FILES — rozhodne používateľ), `latte-goo` 26 MB (ladiace symboly? `strip` až po meraní).
+
 ---
 
 ## 18. [ ] STRESTEST
