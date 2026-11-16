@@ -272,12 +272,27 @@ def main(a):
         owner = os.environ.get("SUDO_USER") if os.geteuid() == 0 else None      # cargo's files stay the user's
         as_user = ["sudo", "-u", owner] if owner and owner != "root" else []
         crates = sorted({s[6:] for _, s in pairs(sections.get("files", [])) if s.startswith("build:")})
-        if crates and subprocess.run(as_user + ["cargo", "build", "--release"] + [x for c in crates for x in ("-p", c)], cwd=HERE).returncode:
+
+        def compiled(cmd, name, crates_about, cwd=None):
+            """A build with its lines passed on; cargo's "Compiling …" lines move the bar through `name`'s part.
+            cargo does not say how many there will be: about as many as the lock files hold."""
+            p = subprocess.Popen(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace")
+            n = 0
+            for line in p.stdout:
+                say(line.rstrip("\n"))
+                if line.lstrip().startswith("Compiling "):
+                    n += 1
+                    part(name, min(0.97, n / crates_about))
+            return p.wait()
+
+        # ponytail: the counts are the lock files' of 16. 11. (226 here; pleamar 339, pleamar-wm 444 sharing most of
+        # them); the bar only slows near its end if they grow, it never goes back
+        if crates and compiled(as_user + ["cargo", "build", "--release"] + [x for c in crates for x in ("-p", c)], "build", 230, cwd=HERE):
             return 1
         # the desktop itself: pleamar and pleamar-wm with LatteOS's patches (not under --root either: ten minutes)
         if with_pleamar:
             part("pleamar")
-            if subprocess.run(as_user + ["sh", os.path.join(HERE, "patches", "build-pleamar.sh")]).returncode:
+            if compiled(as_user + ["sh", os.path.join(HERE, "patches", "build-pleamar.sh")], "pleamar", 500):
                 say("install: pleamar or pleamar-wm could not be built")
                 return 1
         # LensAI's web tabs: a Quickshell of its own; without it LensAI only goes without them
