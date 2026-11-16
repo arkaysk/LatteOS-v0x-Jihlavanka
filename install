@@ -57,7 +57,9 @@ def built(source):
         if name.endswith("/**"):        # a whole tree, as it is (Marea's scenes), without git's and the evidence's files
             top, found = os.path.join(src, name[:-3]), []
             for d, ds, fs in os.walk(top):
-                ds[:] = [x for x in ds if x not in (".git", ".github", "evidencia", "target", "node_modules")]
+                # build trees stay out; her agent's packages go with her (patches/build-pleamar.sh fetched them)
+                ds[:] = [x for x in ds if x not in (".git", ".github", "evidencia", "target")
+                         and not (x == "node_modules" and os.path.basename(d) != "agent")]
                 found += [(os.path.join(d, f), os.path.relpath(os.path.join(d, f), top)) for f in sorted(fs)]
             return found
         return [(os.path.join(src, name) if "/" in name else os.path.join(src, "target", "release", name), os.path.basename(name))]
@@ -80,7 +82,8 @@ def copies(sections, section):
 
 def needs(sections, have=None, there=os.path.exists):
     """What the system lacks: (packages that must be there, optional ones, files that must be, optional files)."""
-    have = have or (lambda p: subprocess.run(["rpm", "-q", p], capture_output=True).returncode == 0)
+    # --whatprovides: a package that gives the same under another name counts (nodejs22 gives nodejs)
+    have = have or (lambda p: subprocess.run(["rpm", "-q", "--whatprovides", p], capture_output=True).returncode == 0)
     must, may, files, may_files = [], [], [], []
     for line in sections.get("needs", []):
         head, _, rest = line.partition(":")

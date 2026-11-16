@@ -23,7 +23,7 @@ for p in apps-reload right-selection steady-glass windows-and-icons window-carry
 done
 get pleamar-wm 96f37e486fd90d66d5f68c4b941fd7294dd4553c       # v0.6.15
 for p in "$here"/patches/pleamar-wm-*.patch; do git -C "$src/pleamar-wm" apply "$p"; done
-# Marea (k4ditano/marea-plm, BSD-3): scenes and scripts only, nothing to build; install copies the tree
+# Marea (k4ditano/marea-plm, BSD-3): scenes and scripts, and two pieces built below; install copies the tree
 get marea-plm d0cad02814f761531cd3a365ac48e549df03f8b0         # 29. 10. 2026
 # one target for both: pleamar is built once; --locked: the libraries too as their Cargo.lock has them
 export CARGO_TARGET_DIR="$src/target"
@@ -33,3 +33,9 @@ export CARGO_TARGET_DIR="$src/target"
 # latte-goo: pleamar as a library with LatteOS's physics stepping inside it (docs/goo/GOOENGINE-2.md §4.1). Outside
 # the workspace, since it needs the pleamar fetched above; the same target, so pleamar is not built twice.
 (cd "$here/crates/latte-goo" && cargo build --release)
+# Marea builds these herself in her own folder, which /usr/share does not let her write: Deriva's worker (her
+# library: what is dropped on her) and her agent's packages (her chat and Build). Made here, install copies them.
+(cd "$src/marea-plm/deriva" && cargo build --release --locked)
+if command -v npm > /dev/null; then
+    (cd "$src/marea-plm/agent" && npm ci --ignore-scripts --no-audit --no-fund)    # no package runs anything
+fi
