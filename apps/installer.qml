@@ -62,7 +62,8 @@ ShellRoot {
             }
             shell.groups = g
         } }
-    readonly property var aiWords: ["mise", "pipewire-utils", "gnome-keyring"]      // the AI services' tools: only with AI
+    // a group holding one of these is AI's: only with AI (the services' tools, the MCP server, LensAI's web engine)
+    readonly property var aiWords: ["mise", "pipewire-utils", "gnome-keyring", "python3-mcp", "qt6-qtwebengine"]
     readonly property var chosenPackages: groups.filter(g => g.chosen && (ai || !g.packages.some(p => aiWords.indexOf(p) >= 0)))
                                                 .reduce((all, g) => all.concat(g.packages), [])
 
@@ -186,7 +187,7 @@ ShellRoot {
                                  readonly property var g: shell.groups[index]
                                  visible: shell.ai || !g.packages.some(p => shell.aiWords.indexOf(p) >= 0)
                                  // what it is for, said for a person: FILES's note without its pointers into the source
-                                 text: g.note.replace(/\s*\([^)]*[\/.][a-z][^)]*\)/g, "").replace(/^./, c => c.toUpperCase()) || g.packages.join(" ")
+                                 text: I18n.tr(g.note.replace(/\s*\([^)]*[\/.][a-z][^)]*\)/g, "")).replace(/^./, c => c.toUpperCase()) || g.packages.join(" ")
                                  hint: g.packages.join(" "); on: g.chosen
                                  onPressed: { const l = shell.groups.slice(); l[index] = Object.assign({}, g, { chosen: !g.chosen }); shell.groups = l } } } }
 
@@ -195,6 +196,10 @@ ShellRoot {
                     Text2 { text: I18n.tr("LatteOS, pleamar and pleamar-wm (built here with LatteOS's patches), and these from Fedora:") }
                     Rectangle { width: parent.width; height: chosenText.implicitHeight + 28; radius: 14; color: Theme.card
                         Label { id: chosenText; x: 16; y: 14; width: parent.width - 32; wrapMode: Text.WordWrap; text: shell.chosenPackages.join("  ·  ") || "—" } }
+                    // the repositories beyond Fedora's that ./install adds (install: repositories()), said before Install
+                    Text2 { text: I18n.tr("Also added to this computer's repositories: a COPR with hypridle and newer Quickshell (lionheartp/Hyprland).") }
+                    Text2 { visible: shell.chosenPackages.indexOf("steam") >= 0
+                            text: I18n.tr("For the Game session: RPM Fusion (Steam, not free software) and Terra (gamescope-session only).") }
                     Text2 { text: I18n.tr("It takes about half an hour, most of it building. The computer can be left alone meanwhile.") } }
 
                 // ── Installing: the parts on the left, LatteOS shown on the right, the bar under them ──

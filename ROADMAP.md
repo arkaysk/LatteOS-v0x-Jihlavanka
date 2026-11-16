@@ -34,9 +34,9 @@ LatteOS:2.x xxx
 > **spoje** (6B.49 v1: vlaky, autobusy, električky, metro cez Transitous — pozor na podmienky: iba open-source a nekomerčné, kontakt do User-Agent čaká na používateľa).
 > **Ďalej (poradie, neskôr):** (1) spoje: odchody zo zastávky, „zajtra o 8:00“, vlastný smerovač nad GTFS, kontakt do User-Agent po súhlase; (2) súbory: index (`latte-index` hľadanie), náhľad textu a zvuku, priečinky hľadania v Nastaveniach (`lens_files_roots`), rozbaľovací filter, režim aj v LensGoo;
 > (3) kalkulačka: farby, zložený úrok po slovensky, lety nie (6B.49 nahradzuje), nastavenia a História (Ctrl+K), v LensGoo; (4) Widgety a nové Goo: import cudzieho Goo, vlastné Goo; (5) obrázky stránok Kvapiek (BarGoo, QuickGoo, CamGoo);
-> (6) 6N.04 príboj hladiny pri konci minútky; (7) výber licencie LatteOS (pozri 6B.49 a README); (8) po dokončení kategórií 17 Optimalizácia (scéna goo.plm narástla na ~11 tis. vlastností: pozri `card_foot`, model `card` 40 riadkov) a 18 STRESTEST.
+> (6) 6N.04 príboj hladiny pri konci minútky; (7) ~~výber licencie LatteOS~~ (16. 11.: GPL-3.0-or-later, 14.22); (8) po dokončení kategórií 17 Optimalizácia (scéna goo.plm narástla na ~11 tis. vlastností: pozri `card_foot`, model `card` 40 riadkov) a 18 STRESTEST.
 
-> **Stav po nočnej relácii 14. 11. (Claude, pokračovať odtiaľto):** hotové a nasadené, **necommitnuté** (commit iba na pokyn):
+> **Stav po nočnej relácii 14. 11. (Claude, pokračovať odtiaľto):** hotové a nasadené, commitnuté (16. 11. overené, `git status` čistý):
 > 6.36 posúvanie a spájanie Shore s Alt (Alt platí až po **novom prihlásení** — nová binárka pleamar-wm so záplatou `alt-held`),
 > 6.37 Ctrl+Alt+Del menu (skratka po prihlásení; pozri poznámku o `~/.config/pleamar/keys.conf`), 6.38, 6.39 (Hravé · Profi · Minimal),
 > 6.41 stránka Kvapky (+ voľba Správa úloh platí), 6H.09, 6N LensCloud (tretí spúšťač, **overiť meno s používateľom**), 6B.47 krok 1
@@ -266,6 +266,7 @@ Obnoviť (dva štvorce). Dvojklik na hlavičku vracal okno do rohu: pleamar-wm p
 miesto a zrušil maximalizáciu; teraz iba po skutočnom ťahaní (`dragging`). Dvojklik rieši iba WM (`AppWindow` ho prepínal
 druhý raz). Stav zisťuje `AppWindow` z veľkosti okna, pleamar-wm ho aplikácii neposiela. 4. 11.
 **1D.48** [~] (13. 11.) **`breathe.wgsl` nechá duchov kurzora a trhá karty** (latte-lab, pleamar 0.7.27): kým skupina so shaderom, ktorý beží stále (`shader: breathe …`, parts/body.plm a outline.plm), je zapnutá, po pohybe myši zostávajú na obrazovke obrysy kurzora a sklenené karty sa trhajú. Overené zapnutím a vypnutím pri rovnakom pohybe (ydotool); vybratie kurzora zo skupiny nepomohlo. `PLEAMAR_FULL_REPAINT=1` nepomohla, takže nejde o poškodenie snímok pre kompozitor, ale pravdepodobne o obraz skupiny so shaderom, ktorý sa tam, odkiaľ sa obsah pohol, nečistí. Dočasne: `alive = false` (drops.plm), dýchanie kvapiek beží cez čísla scény (`breathing` v hodinách `tick`, ~13 % jadra v pokoji, kvapka dýcha 1,2 %), vlnenie hladiny chýba. Ostáva: nájsť príčinu v pleamare (patches/issues/pleamar-shader-group-stale-picture.txt, neposlané), potom `alive` vrátiť.
+**1D.49** [ ] (16. 11.) **Flatpak aplikácie s GPU (Vulkan) sú v pleamar-wm rozsypané** (latte-lab, RX 640 GFX8, Linux 7.3, Mesa 26.3-rc3 v `/opt/mesa-26.3` z `patches/old-amd.sh`): PhotoCraft 0.10 a WordCraft 0.8 (`ai.storyteller.*`, Rust egui + wgpu → RADV) majú text a detaily rozhádzané po blokoch, jednofarebné plochy celé, čierne obdĺžniky; aj náhľad okna v doku. Flatpak nesie vlastnú Mesu 26.2.2/26.2.5 (runtime `org.freedesktop.Platform` 26.08), hostiteľ 26.3-rc3 → nesúlad rozloženia (tiling/DCC) dmabuf medzi klientom a kompozítorom, rovnaký druh chyby ako pri monitore (`pleamar-wm-scanout-layouts.patch`). Overené: ďalšia kópia cez GPU v pleamar-wm rozbitá, s `RADV_DEBUG=nodcc` horšia; pod labwc headless a v pleamar-wm cez XWayland čistá (tam si však PhotoCraft sám prepol kreslenie na CPU — ktorá strana číta rozloženie zle, pleamar-wm alebo Mesa vo flatpaku, ešte nie je isté). Goo (wgpu, Mesa hostiteľa) je v poriadku. **Obídenie:** `flatpak override --user --nosocket=wayland --socket=x11 <id>` (alebo PhotoCraft › Preferences › Performance › Linux display server X11). **Riešenie (vybrať):** (a) pleamar-wm na kartách GFX6–8 ponúkne klientom v linux-dmabuf feedback iba lineárne rozloženie (záplata, ako `scanout-layouts`); (b) flatpaky dostanú tú istú Mesu ako hostiteľ (rozšírenie `org.freedesktop.Platform.GL.*` s Mesou 26.3, do `old-amd.sh` a inštalátora 2.10). Najprv zistiť, ktoré rozloženie klient posiela (`WAYLAND_DEBUG`, modifier v `zwp_linux_buffer_params_v1.add`), a overiť inú GPU flatpak aplikáciu. Po prechode Fedory na Mesu 26.3 (1D.16) overiť znova.
 
 
 
@@ -277,6 +278,9 @@ Barista instalator OS je prva prezentacia baristu ktory bude mat v hotovom syste
 
 
 **2.01** [ ] je nutnost ponuknut aj možnost instalacie ako dualboot. 
+  16. 11.: dátové disky NTFS iba pripojiť (`ntfs3`), nikdy ich neponúknuť na rozdelenie; kontrola Rýchleho spustenia
+  a hibernácie Windowsu (inak NTFS „dirty“); prefixy Proton/Wine a prostredia Pythonu na Linuxe, veľké súbory smú na NTFS.
+  Pripojené disky pod menom, ktoré zvolí človek (nie iba `/data`).
 
 **2.02** [ ] preverit možnost instalacie na obsadeny disk (ntfs) bez straty povodnych dat.
 
@@ -314,6 +318,8 @@ možno spoľahlivo dokončiť v alpha rozsahu.
   `docs/instalator/PLAN.md`. Neskôr Atomic, všetko v jednom obraze — sivé kroky prevezme náš sprievodca (časť 6).
 **2.07** [ ] Aktualizácia na v0.5 myšou, bez terminálu a bez AI (používateľ 31. 10.): nový kernel, Mesa a pleamar nainštaluje App Manager s postupom a návratom (nadväzuje na 10H.14). Kým ich Fedora nemá, jeden balík LatteOS; ručné kroky z latte-lab sa používateľom nedávajú. (z 1D.13: patrí k inštalátoru; treba aj aktualizátor systému, 2.08)
 **2.08** [ ] **Aktualizátor systému** (používateľ 2. 11.): aktualizácie LatteOS, pleamaru a pleamar-wm (so záplatami), kernelu a Mesy myšou, s postupom a návratom (nadväzuje na 10H.14 a 2.07).
+**2.09** [ ] **Marea voliteľná, prináša aj Builder** (používateľ 16. 11.): LatteOS z Marei nič nevyhnutne nepotrebuje; v kroku „Súčasti“ predvolene zapnutá. S ňou prichádza Builder (Arrecife, Win+B, `marea-plm/builder`) — okno Widgety a nové Goo (`bin/latte-goowidgets`) bez Marei tlačidlo Build skryje alebo ponúkne doinštalovanie; Super+Space bez nej nesmie ostať mŕtve.
+**2.10** [ ] **Ovládače podľa karty** (16. 11.): NVIDIA (akmod z RPM Fusion; pri Secure Boot podpis kľúčom MOK), Intel (Mesa z Fedory), AMD GFX6–8 (`patches/old-amd.sh`). Pri RTX 20/30/40 voľba gpu-unlock (3.10).
 
 ### 2A. [ ] Prvé spustenie
 Po prvom prihlásení sa kvapky predstavia.
@@ -408,6 +414,27 @@ základ, na ktorý sa dajú integrovať ostatné pracovné prúdy.
 - [ ] Overiť čistú inštaláciu, prvé spustenie, aktualizáciu a obnovu po neúspešnom štarte.
 
 **3.10** [ ] (Boot a štart) Overit. https://github.com/Zagitta/gpu-unlock pre nvdia karty a či sa to bude zavadzat pri boote. 
+  16. 11. (Claude): GPL-2.0, modul jadra pred ovládačom NVIDIA (ovládač ani VBIOS nemení), zapína ho `gpu_unlock.targets=all`
+  v riadku jadra. RTX 3060 „stable“, RTX 20/40 experimentálne, RTX 50 nie. Prínos: llama.cpp/GGUF 0–15 %, obrázky a trénovanie
+  +30–55 %, hry nič. Do inštalátora ako voľba iba pri RTX 20/30/40 (2.10), zapnutie/vypnutie v Nastaveniach a v ponuke štartu (3.11).
+  **Windows-GPU-UNLOCK** (GPL-2.0, súbor EFI pred Windows): experimentálny, iba konkrétne dosky; RTX 3060 hlásená iba
+  „headless USB“ — do inštalátora nie, iba odkaz; položka v ponuke štartu až po overení na hlavnom PC s možnosťou návratu.
+
+**3.11** [ ] **Ponuka štartu v štýle LatteOS podľa aarambh** (používateľ 16. 11.; https://github.com/NarkAgni/aarambh, GPL-3.0):
+  vlastná téma podľa Cinema, pozadie kávový sliz v šálke z README; položky LatteOS · LatteOS SAFE · Windows 11. GRUB ostáva ako
+  záložný, Windows nájde sám (`autodetect`), Secure Boot cez shim Fedory (MOK raz pri prvom štarte, `docs/SECURE_BOOT.md`).
+  Položka = `entry <title> | <loader EFI> | <logo> | <pozadie> | <key>`. Overiť: vlastné voľby jadra na položku (LatteOS
+  s gpu-unlock/bez neho), malý ESP Windowsu (100 MB) pri kópii jadier, BitLocker Windowsu pri zmene poradia štartu.
+  16. 11. (používateľ): **tmavý variant** (šálka so slizom vystrihnutá na espresso, rozloženie Cinema, dlaždice LatteOS ·
+  SAFE · Windows 11 · Reštart · Vypnúť; návrh `inspo/boot-latteos-tmavy.png`), **texty iba anglicky** (aarambh kreslí iba
+  ASCII). Zistené z kódu: téma je súbor C (`src/themes/latteos/latteos.c`), myš nepodporuje (iba klávesnica), voľby jadra
+  na položku nemá → gpu-unlock cez `/etc/modprobe.d` z Nastavení, nie z ponuky štartu.
+  **Myš áno** (používateľ 16. 11.): záplata aarambh — `EFI_SIMPLE_POINTER_PROTOCOL` (USB myš cez firmvér) a
+  `EFI_ABSOLUTE_POINTER_PROTOCOL` (dotyk, tablet QEMU) popri klávesnici v `src/core/input.c`; téma kreslí kurzor
+  a vracia obdĺžniky dlaždíc; prejdenie = `nav_select`, klik = `nav_launch`, pohyb myši zastaví odpočítavanie.
+  Bez myši vo firmvéri ostáva klávesnica. Záplata do `patches/`, návrh autorovi do `patches/issues/` (neposielať).
+  Dotyková obrazovka áno (tá istá `ABSOLUTE_POINTER`). Otázka na neskôr: pri viacerých monitoroch kreslí UEFI (GOP)
+  spravidla iba na jeden, ktorý určí firmvér — overiť na PC s tromi obrazovkami.
 
 ---
 
@@ -4445,6 +4472,11 @@ overená na latte-lab a dá sa nainštalovať od nuly — nie podľa dátumu.
 - Tretie číslo (0.5.1…) = opravná verzia v rámci fázy, bez nových funkcií. Zamknuté verzie pleamaru, pleamar-wm,
   Quickshellu a Mesy sa menia iba s novou verziou LatteOS. Každá verzia: značka v gite (`v0.6.0`), záznam v `ZMENY.md`,
   riadok v README. Návrh: odteraz jedna hlavná vetva a verzie ako značky (vetvy a značky na GitHube iba na pokyn).
+
+**14.22** [ ] **Licencia LatteOS: GPL-3.0-or-later** (rozhodol používateľ 16. 11.): platí pre náš vlastný kód; cudzie programy
+  (pleamar BSD-3, aarambh GPL-3, gpu-unlock GPL-2, `goo/shaders/sea.wgsl` CC BY-NC-SA) ostávajú samostatné so svojou licenciou
+  a autorom v `TRETIE-STRANY.md`; GPL-2.0-only a NC kód sa nekopíruje do našich súborov. 16. 11.: `LICENSE` (text GPL-3) a oddiel
+  Licence v README hotové; súpis v `TRETIE-STRANY.md` skontrolovaný (GPL-2/3 iba samostatné programy). Chýba: hlavičky SPDX v súboroch (netreba hneď).
 ## 15. [ ] Inšpirácie a tech radar
 Nápady bez rozhodnutia; samostatné úlohy z nich sú pri svojej kategórii. `inspo/`.
 Zdroje: `inspo/dalsie_inspiracie.md`, `inspo/LatteOS – technologický radar 2026.md`

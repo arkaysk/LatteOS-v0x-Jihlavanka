@@ -118,6 +118,42 @@ def leftovers(root, targets, sections):
     return sorted(os.path.join(d, f) for own in OWN for d, _, files in os.walk(root + own) for f in files if os.path.join(d, f) not in wanted)
 
 
+# The repositories beyond Fedora's (user 16. 11.): the COPR always (hypridle, Quickshell 0.3, mpvpaper), RPM Fusion and
+# Terra only with the Game session (steam; gamescope-session, Terra limited to those two as Bazzite does), mise's own
+# with the AI tools. The installer's Summary says so before anything is added.
+GAMES = ("steam", "gamescope-session", "gamescope-session-steam")
+TERRA = """[terra-latteos]
+name=Terra (Fyra Labs), only gamescope-session for LatteOS's Game session
+baseurl=https://repos.fyralabs.com/terra$releasever
+enabled=1
+gpgcheck=1
+gpgkey=https://repos.fyralabs.com/terra$releasever/key.asc
+repo_gpgcheck=0
+includepkgs=gamescope-session gamescope-session-steam
+"""
+
+
+def repositories(extra):
+    """Add what the chosen packages come from; False when one could not be added."""
+    have = subprocess.run(["dnf", "repolist", "--enabled"], capture_output=True, text=True).stdout
+    steps = []
+    if "lionheartp:Hyprland" not in have:
+        steps.append(["dnf", "copr", "enable", "-y", "lionheartp/Hyprland"])
+    if any(p in GAMES for p in extra):
+        if "rpmfusion-nonfree" not in have:
+            v = subprocess.run(["rpm", "-E", "%fedora"], capture_output=True, text=True).stdout.strip()
+            steps.append(["dnf", "install", "-y"] + ["https://mirrors.rpmfusion.org/%s/fedora/rpmfusion-%s-release-%s.noarch.rpm" % (k, k, v)
+                                                     for k in ("free", "nonfree")])
+        if "terra-latteos" not in have:
+            with open("/etc/yum.repos.d/terra-latteos.repo", "w") as f: f.write(TERRA)
+    if "mise" in extra and "mise-repo" not in have:
+        steps.append(["dnf", "config-manager", "addrepo", "--from-repofile=https://mise.jdx.dev/rpm/mise.repo"])
+    for step in steps:
+        print("   $ " + " ".join(step), flush=True)
+        if subprocess.run(step).returncode: return False
+    return True
+
+
 def main(a):
     flags = {f for f in a if f in ("--go", "--remove", "--purge", "--prune", "--progress", "--old-amd")}
     rest = [x for x in a if x not in flags]
@@ -193,10 +229,21 @@ def main(a):
     # Fedora's packages it brings itself; a missing file that is not a package still has to be there first
     if with_packages:
         part("packages")
-        say("   $ dnf install -y " + " ".join(fetch))
-        if subprocess.run(["dnf", "install", "-y"] + fetch).returncode:
-            say("install: dnf could not install them")
+        extra = [p for p in fetch if p not in must]
+        if not repositories(extra):
+            say("install: a repository could not be added")
             return 1
+        if must:
+            say("   $ dnf install -y " + " ".join(must))
+            if subprocess.run(["dnf", "install", "-y"] + must).returncode:
+                say("install: dnf could not install them")
+                return 1
+        # a chosen extra still missing from every repository is left out, not fatal
+        if extra:
+            say("   $ dnf install -y --skip-unavailable " + " ".join(extra))
+            subprocess.run(["dnf", "install", "-y", "--skip-unavailable"] + extra)
+            left = [p for p in extra if subprocess.run(["rpm", "-q", "--whatprovides", p], capture_output=True).returncode]
+            if left: say("   not in Fedora's repositories, left out: " + " ".join(left))
         must = needs(sections)[0]
     if (must or files) and "--go" in flags and not root:
         say("install: what is missing has to be there first")

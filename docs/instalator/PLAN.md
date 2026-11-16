@@ -145,15 +145,39 @@ slobodná licencia, do COPR nesmie) a založiť ho iba na pokyn (je verejný).
    Ostrá skúška `dnf` až na čistej Fedore (na latte-lab nič povinné nechýba).
 2. Skript `get` (hotový 3. 11., v koreni repa) a spustenie `cage` + Quickshell na čistej Fedore 45 Server vo VM
    (neoverené: `cage` z textovej konzoly pod `sudo`).
+   **16. 11.: overené vo VM** (Fedora 45 Server z kickstartu, UEFI, `virtio-vga` bez virgl, `/data/vm/f45`): prihlásenie
+   na konzole → jeden príkaz → sprievodca na celej obrazovke. Cestou opravené: (a) **konzola Fedory 45 je `kmscon`**,
+   ktorý drží grafickú kartu natrvalo (`--no-switchvt`), takže `cage` ju nedostal ani ako root, ani ako používateľ —
+   `get` teraz spustí sprievodcu ako službu `latteos-installer` (`systemd-run`), ktorá kmscon na čas okna zastaví
+   a potom vráti; (b) `seatd-launch` (balík `seatd`) dáva sprievodcovi vlastné miesto ako pri kioskoch pod rootom;
+   (c) `XDG_RUNTIME_DIR` pod `sudo` chýba; (d) výpis `dnf` ide do `/var/log/latteos-get.log`. Krok pred sprievodcom
+   trval vo VM ~15 min (303 balíkov, Quickshell si ťahá PipeWire, GStreamer, ffmpeg) — ukázať priebeh, nie ticho.
+   Po zatvorení sprievodcu kmscon začne odznova: človek sa prihlási znova (pri inštalácii nasleduje reštart).
 3. Sprievodca `apps/installer.qml` — prvá verzia 3. 11.: všetky obrazovky z časti 2, kroky Fedory sivé, kontrola
    počítača (karta, RAM, disky, používatelia, Secure Boot, varovanie pri GFX6–8), AI áno/nie, súčasti z riadkov
    `optional:` vo `FILES`, zhrnutie, inštalácia (`./install --go --progress --with …`: zoznam častí, zlatý `DotBar`,
    čas, ktorý ostáva, prezentácia súčastí, záznam, „Skúsiť znova“), hotovo s reštartom. Snímky bez obrazovky
-   (`LATTE_INSTALLER_PAGE=…`). Ostáva: preložiť opisy súčastí (sú to poznámky z `FILES`), obrázky do prezentácie,
-   overenie na Quickshelli 0.2.1 z Fedory (napísané na 0.3.2).
+   (`LATTE_INSTALLER_PAGE=…`). Ostáva: obrázky do prezentácie.
+   16. 11.: overené na Quickshelli 0.2.1 z Fedory 45 (kontajner, `cage` headless, softvérové kreslenie) — beží;
+   opisy súčastí preložené (`sk.plm`, kontrola v `tests/check.sh`); `get` vypína rám okna od Qt
+   (`QT_WAYLAND_DISABLE_WINDOWDECORATION=1`, inak nad sprievodcom lišta ─ □ ✕).
    Prvá inštalácia nemusí byť dokonalá, stačí, keď funguje; po anglicky stačí (používateľ 3. 11.).
 4. Kontrola počítača (karta, Secure Boot, kernel/Mesa) a podmienené kroky 3.4.
 5. Skúška od nuly vo VM, potom na latte-lab (čistá Fedora 45 Server).
+   **16. 11. — prvý beh vo VM, zistené:**
+   - **`hypridle` (povinný) nie je vo Fedore** — na latte-lab z COPR `lionheartp/Hyprland` (ako Quickshell 0.3).
+     Inštalácia sa zastavila s jasnou správou a „Skúsiť znova“; vo VM COPR zapnutý ručne. Rozhodnúť: zapnúť COPR
+     v `install`, alebo nahradiť `hypridle` vlastným (pleamar-wm má `idle` v `session.conf`).
+   - **Voliteľné mimo Fedory:** steam (RPM Fusion nonfree), gamescope-session(-steam) (COPR), umu-launcher, mpvpaper,
+     mise (vlastný repozitár) — `install` ich teraz inštaluje zvlášť s `--skip-unavailable` a vypíše, čo vynechal;
+     povinné ostávajú prísne.
+   - Pri vypnutej AI sa ukazovali súčasti AI (server MCP, záložky LensAI) — opravené (`aiWords`). Prezentácia počas
+     inštalácie ukazuje LensAI aj bez AI.
+   - Herná relácia je predvolene zapnutá aj bez karty s Vulkanom (vo VM) — podľa 3.2 má byť iba s Vulkanom.
+   - Kroky `install --progress` („Installing Fedora's packages“) nie sú preložené; posuvník stojí na 0 % počas
+     celého `dnf` (456 balíkov) — chce priebeh z dnf.
+   - Tento počítač: surový názov karty z `lspci`, Secure Boot „neznáme“ (bez `mokutil`), disky bez medzier
+     („600M,/boot 2G“), chýba upozornenie, že vo VM pôjde softvérové kreslenie.
 
 ## 6. Neskôr: Atomic, všetko v jednom obraze (používateľ 3. 11.)
 

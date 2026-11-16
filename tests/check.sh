@@ -104,6 +104,15 @@ for f, pattern in sorted(said.items()):
     for text in sorted(set(re.findall(pattern, open(f, encoding="utf-8").read()))):
         if '"%s" = ' % text not in table:
             bad.append("%s: no Slovak for «%s»" % (f, text))
+# the installer shows ./install's parts (@step) by name
+for text in re.findall(r'\("\w+", "([^"]+)", \d+\)', open("install", encoding="utf-8").read()):
+    if '"%s" = ' % text not in table:
+        bad.append("install: no Slovak for the part «%s»" % text)
+# the installer shows FILES's optional notes, without their pointers into the source (apps/installer.qml, same regex)
+for note in re.findall(r"^optional:[^#\n]*#[ \t]*(.*)$", open("FILES", encoding="utf-8").read(), re.M):
+    note = re.sub(r"\s*\([^)]*[/.][a-z][^)]*\)", "", note.strip())
+    if '"%s" = ' % note not in table:
+        bad.append("FILES: no Slovak for the component «%s»" % note)
 
 print("\n".join(bad) if bad else "   ok")
 sys.exit(1 if bad else 0)

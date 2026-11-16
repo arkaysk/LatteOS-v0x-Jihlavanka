@@ -14,8 +14,11 @@ say() { printf '%s\n' "$*"; }
 [ "${ID:-}" = fedora ] && [ "${VERSION_ID:-}" = 45 ] || { say "LatteOS needs Fedora 45 (this is ${PRETTY_NAME:-something else})."; exit 1; }
 curl -fsS -o /dev/null --max-time 10 https://fedoraproject.org || { say "LatteOS: no internet. Connect first (nmtui), then run this again."; exit 1; }
 
-say "LatteOS: preparing the installer (git, cage, quickshell)…"
-dnf install -y -q git cage quickshell rsms-inter-fonts
+say "LatteOS: preparing the installer (git, cage, seatd, quickshell)…"
+say "(a few minutes; details in /var/log/latteos-get.log)"
+# dnf5 prints its whole table even with -q: a wall of packages says nothing to a person, so it goes to the log
+dnf install -y git cage seatd quickshell rsms-inter-fonts >> /var/log/latteos-get.log 2>&1 \
+    || { tail -n 15 /var/log/latteos-get.log; say "LatteOS: installing the installer's packages failed (above)."; exit 1; }
 if [ -d "$src/.git" ]; then git -C "$src" pull -q --ff-only; else mkdir -p "$(dirname "$src")"; git clone -q --depth 1 "$repo" "$src"; fi
 
 wizard="$src/apps/installer.qml"
@@ -24,4 +27,17 @@ say "LatteOS: opening the installer…"
 # full screen on this console; whoever asked with sudo is the one LatteOS is set up for first
 # apps/common finds its fonts beside the share (…/fonts/latteos), as in /usr/share
 mkdir -p /opt/latteos/fonts && ln -sfn "$src/assets/fonts" /opt/latteos/fonts/latteos
-LATTE_SHARE="$src" LATTE_SRC="$src" LATTE_FOR="${SUDO_USER:-}" exec cage -s -- qs -n -p "$wizard"
+# Fedora 45's text console is kmscon, which keeps the graphics card for good (--no-switchvt): the wizard runs as its
+# own service that pauses the console, shows the window and gives the console back when the window closes. This
+# shell lives inside that console, so it ends here. seatd-launch makes a seat just for the wizard, as root kiosks do;
+# a socket left by a wizard that was killed would stop seatd. sudo leaves no runtime folder, and cage needs one.
+# cage gives the window no frame of its own, so Qt would draw a desktop title bar over it.
+consoles="$(systemctl list-units --no-legend --plain --state=active 'kmsconvt@*' | awk '{print $1}' | tr '\n' ' ')"
+systemctl reset-failed latteos-installer 2>/dev/null || true
+systemd-run --quiet --collect --unit=latteos-installer \
+    --setenv=XDG_RUNTIME_DIR=/run/user/0 --setenv=QT_WAYLAND_DISABLE_WINDOWDECORATION=1 \
+    --setenv=LATTE_SHARE="$src" --setenv=LATTE_SRC="$src" --setenv=LATTE_FOR="${SUDO_USER:-}" \
+    --setenv=LANG="${LANG:-C.UTF-8}" \
+    sh -c 'mkdir -p -m 0700 /run/user/0; rm -f /run/seatd.sock; [ -z "$1" ] || systemctl stop $1
+           seatd-launch -- cage -s -- qs -n -p "$2" >> /var/log/latteos-get.log 2>&1
+           [ -z "$1" ] || systemctl start $1' latteos-installer "$consoles" "$wizard"

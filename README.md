@@ -140,10 +140,11 @@ Wallpapers in the screenshots belong to their artists and are not part of LatteO
 
 ## Licence
 
-LatteOS has **no licence yet**: it is not MIT any more, and no licence file is shipped with it for now. The final
-licence will be chosen when the system is final, to cover what it needs: it has to be able to use open-source parts under
-any licence (AGPL, GPL, MIT, Apache, BSD…). Until then the author keeps the rights to LatteOS's own code, and every
-borrowed part stays under its own licence ([TRETIE-STRANY.md](TRETIE-STRANY.md)).
+LatteOS's own code is free software under the **GNU General Public License, version 3 or (at your option) any later
+version** ([LICENSE](LICENSE)). LatteOS is a distribution: the programs it installs next to its own code (pleamar,
+pleamar-wm, Quickshell, labwc and the others) are separate works and keep their own licences, and every borrowed file
+keeps its licence and its author ([TRETIE-STRANY.md](TRETIE-STRANY.md)). One file is not free software:
+`goo/shaders/sea.wgsl` is CC BY-NC-SA 3.0 (non-commercial), so LatteOS as a whole may not be sold with it.
 
 ---
 
