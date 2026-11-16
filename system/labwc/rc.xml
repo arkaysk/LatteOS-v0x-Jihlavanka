@@ -11,4 +11,8 @@
     <keybind key="A-Tab"><action name="NextWindow"/></keybind>
     <keybind key="W-S-m"><action name="Exit"/></keybind>
   </keyboard>
+  <!-- LatteOS's own apps draw their own header with its buttons: labwc's frame over it was a second title bar -->
+  <windowRules>
+    <windowRule identifier="latteos-*" serverDecoration="no"/>
+  </windowRules>
 </labwc_config>
