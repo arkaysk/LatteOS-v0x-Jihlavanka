@@ -176,6 +176,9 @@ slobodná licencia, do COPR nesmie) a založiť ho iba na pokyn (je verejný).
    - Herná relácia je predvolene zapnutá iba so skutočnou kartou AMD/NVIDIA/Intel mimo VM (`realGpu`, `chosenOf`).
    - Kroky `install --progress` preložené; posuvník sa počas `dnf` hýbe podľa jeho počítadla [n/m] (sťahovanie
      polovica, inštalácia druhá polovica, iba dopredu); `get` ukazuje počítadlo balíkov na jednom riadku.
+   - **pleamar-wm sa na čistej Fedore nezostavil: chýbal `opus-devel`** (`-lopus`; na latte-lab bol) — doplnený
+     do `FILES` (zoznam z výstupov `rustc-link-lib` v `target/`: crypto gbm opus pipewire seat ssl udev xkbcommon).
+     Posuvník počas zostavovania pleamaru stojí (23 %): cargo nehlási priebeh — doplniť z riadkov „Compiling“.
    - Tento počítač: čistý názov karty, Secure Boot z premennej UEFI (on/off/bez UEFI), veľkosti „24 GB“, disky
      oddelené „·“, varovanie vo virtuálnom stroji. Všetko opravené 16. 11. večer, overiť v ďalšom behu od snímky.
 

@@ -848,7 +848,7 @@ package: pulseaudio-utils                                            # Settings 
 package: fd-find xdg-utils xdg-user-dirs                             # the launcher: finding files, opening them, the home folders
 optional: brightnessctl power-profiles-daemon                        # the brightness keys; the power profiles in PowerGoo's card
 optional: steam gamescope gamescope-session gamescope-session-steam  # the Game session; without them it is not offered
-package: git cargo gcc-c++ pkgconf wayland-devel libxkbcommon-devel pam-devel vulkan-loader clang-devel libinput-devel libseat-devel systemd-devel mesa-libgbm-devel xorg-x11-server-Xwayland pipewire-devel openssl-devel   # building pleamar and pleamar-wm (their install.sh's list for dnf; patches/build-pleamar.sh)
+package: git cargo gcc-c++ pkgconf wayland-devel libxkbcommon-devel pam-devel vulkan-loader clang-devel libinput-devel libseat-devel systemd-devel mesa-libgbm-devel xorg-x11-server-Xwayland pipewire-devel openssl-devel opus-devel   # building pleamar and pleamar-wm (their install.sh's list for dnf; patches/build-pleamar.sh)
 package: wine winetricks cabextract unshield innoextract 7zip icoutils bubblewrap    # Barista: Windows programs, each in a folder and a fence of its own
 optional: wine-dxvk wine-dxvk-d3d9 wine-dxvk-d3d8 mingw32-wine-gecko mingw64-wine-gecko wine-mono    # Direct3D 8 to 11 over Vulkan; web views and .NET inside Wine
 optional: umu-launcher protontricks lutris gamemode mangohud dosbox-staging xorriso     # Proton outside Steam (GE-Proton in /opt/latteos/proton), other runners and tools

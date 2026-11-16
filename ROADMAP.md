@@ -4649,7 +4649,8 @@ v Ruste do `crates/`.
     amplitúdu 1,2 % polomeru (pri 40 px pol pixelu), rozdiel by nemal byť vidieť; potom zmerať a porovnať snímky.
   - `lockscreen.plm` **~12 % jadra celý čas, hoci nič neukazuje**: render pleamaru so scénou bez otvoreného povrchu
     kolo za kolom (more v shaderoch číta `time`). Oprava v pleamari: scéna, ktorej žiaden povrch nie je otvorený,
-    odpočíva (záplata `pleamar-rest-hidden.patch`, overiť).
+    čaká na správu (záplata `pleamar-idle-without-surface.patch`): **hotové a nasadené 16. 11., 12 % → 0,4 %**,
+    zamknutie overené v pleamar-wm bez obrazovky.
   - `skwd-wall-vk` s videotapetou ~10–13 %: dekóduje cez VA-API (mesa-va-drivers-freeworld), zvyšok je jeho
     vlastná slučka — cudzí program, nechať; Marea ~6 % (zapnutá voľbou).
 
