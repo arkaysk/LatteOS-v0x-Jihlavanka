@@ -37,7 +37,7 @@ MONTHS = ["january", "february", "march", "april", "may", "june", "july", "augus
 # The words of the lines: English here, other languages in goo/lang/<code>-amount.json (`calc`, folded), each to its English one. The
 # first word of a line may be misspelt: the nearest of these wins (wether → weather), and the small words are the languages' own.
 VOCAB = {"route": "route", "connection": "route", "train": "route", "bus": "route", "trip": "route", "weather": "weather", "forecast": "weather", "time": "time", "diff": "diff", "workhours": "workhours", "today": "today",
-         "tomorrow": "tomorrow"}
+         "tomorrow": "tomorrow", "today": "today", "departures": "departures", "departure": "departures"}
 SMALL = {"in": "in", "for": "in", "at": "in"}
 SKIP = {"time", "to"}
 FROM, TO, AT = {"from"}, {"to"}, {"at", "in"}               # the little words of a connection: from Zvolen to Kosice at 8:00
@@ -61,7 +61,7 @@ def load_words():
             FROM.update(calc_words.get("from", []))
             TO.update(calc_words.get("to", []))
             AT.update(calc_words.get("at", []))
-            for key in ("weather", "time", "diff", "today", "tomorrow", "route"):
+            for key in ("weather", "time", "diff", "today", "tomorrow", "route", "departures"):
                 for w in calc_words.get(key, []):
                     VOCAB[w] = key
             for w in calc_words.get("workhours", []):
@@ -231,6 +231,14 @@ def place(name):
         cities = [{"name": l.split("\t")[1], "latitude": l.split("\t")[3], "longitude": l.split("\t")[4], "timezone": l.split("\t")[5],
                    "pop": int(l.split("\t")[6] or 0), "country": l.split("\t")[7], "label": "%s, %s" % (l.split("\t")[1], l.split("\t")[7])}
                   for l in lines if l[0] == "C" and "," + first + "," in l]
+    if cities and all(fold(c["name"]) != want for c in cities):
+        # only another name of a smaller town (Pirna is "Brna" too): a bent form of a far bigger one is meant (do Brna)
+        try:
+            b = bent_forms(name, want, lines)
+        except Ask:
+            b = None
+        if b and int(b.get("pop") or 0) > 5 * max(c["pop"] for c in cities):
+            return b
     if cities:
         try:
             return dict(decide(name, sorted(cities, key=lambda c: -c["pop"])))
@@ -241,10 +249,27 @@ def place(name):
                 hit = next((k for k in known if not apart(o, k)), None)
                 o["label"] = hit["label"] if hit else "%s (%.1f, %.1f)" % (o["label"], float(o["latitude"]), float(o["longitude"]))
             raise
-    # not a big town: Transitous knows villages and stops too, and the slips of the finger (Gbely, Skalica)
+    # not a big town by that very word: Transitous knows villages and stops by their own names first; then a
+    # bent form of a big town before what Transitous finds only alike
     near_names = pelias(name, lines)
+    exact = [n for n in near_names if fold(n["name"]) == want]
+    # the user's own country by the language they use (sk_SK → SK): a village there by that name beats a bent town;
+    # one abroad does not beat a big town said in another case
+    home = (re.split(r"[.@]", os.environ.get("LC_ALL") or os.environ.get("LANG") or "")[0].split("_") + [""])[1].upper()
+    if [n for n in exact if n.get("country") == home]:
+        return dict(decide(name, [n for n in exact if n.get("country") == home], margin=3))
+    bent = bent_forms(name, want, lines)
+    if bent:
+        return bent
+    if exact:
+        return dict(decide(name, exact, margin=3))
     if near_names:
         return dict(decide(name, near_names, margin=3))
+    return None
+
+
+def bent_forms(name, want, lines):
+    """A big town of the data file said in another case (its ending changed) or misspelt, or None."""
     if lines and len(want) >= 4:
         # no network, or nothing like it there: a case ending or a slip of the finger in the data file (Bratislave, Tokiu)
         names = {}
@@ -253,7 +278,8 @@ def place(name):
                 f = line.split("\t")
                 for n in [fold(f[1])] + [x for x in f[2].split(",") if len(x) > 4]:
                     names.setdefault(n, f)
-        stems = [n for n in names if len(n) > 3 and want.startswith(n[:-1])] if len(want) >= 5 else []       # Bratislave → Bratislava
+        # the ending changed: Bratislave → Bratislava, Brna → Brno, Viedne → Vieden, Kosic → Kosice (one letter more or less at most)
+        stems = [n for n in names if len(n) > 3 and abs(len(want) - len(n)) <= 1 and want.startswith(n[:-1])]
         if stems:
             longest = max(len(n) for n in stems)
             stems = [n for n in stems if len(n) == longest]            # the longest only: not the short ones that begin the same
@@ -350,17 +376,14 @@ def where(name):
     return None
 
 
-def transit(a, b, at=None, now=None):
-    """The next connections from a to b (names), from `at` (a time of day) or now: up to three, each {dep, arr, minutes, transfers, via, live}."""
+def transit(a, b, at=None, now=None, day=0):
+    """The next connections from a to b (names), from `at` (a time of day) or now, today or `day` days on: up to three,
+    each {dep, arr, minutes, transfers, via, live}."""
     now = now or dt.datetime.now().astimezone()
     start, end = where(a), where(b)
     if not start or not end:
         return {}
-    when = now
-    if at:
-        when = now.replace(hour=at.hour, minute=at.minute, second=0, microsecond=0)
-        if when < now - dt.timedelta(minutes=5):
-            when += dt.timedelta(days=1)
+    when = when_of(now, at, day)
     web = "https://api.transitous.org/?fromPlace=%s%%2c%s&fromName=%s&toPlace=%s%%2c%s&toName=%s&time=%s" % (
         start[0], start[1], urllib.parse.quote(start[2]), end[0], end[1], urllib.parse.quote(end[2]), urllib.parse.quote(when.astimezone(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")))
     # in Slovakia and Czechia the open data is thin: the national timetable's page (IDOS) is offered too, to be opened in the browser
@@ -407,11 +430,78 @@ def transit(a, b, at=None, now=None):
     return answer
 
 
+def day_of(t):
+    """The words without "today" or "tomorrow" (in any of the languages), and how many days on: 0 or 1."""
+    day = 0
+    for w in list(t):
+        if VOCAB.get(w) in ("today", "tomorrow"):
+            day = 1 if VOCAB[w] == "tomorrow" else 0
+            t.remove(w)
+    return t, day
+
+
+def when_of(now, at, day):
+    """The moment asked about: today or tomorrow, at a time of day or the present one; a time already gone today is tomorrow's."""
+    when = now + dt.timedelta(days=day)
+    if at:
+        when = when.replace(hour=at.hour, minute=at.minute, second=0, microsecond=0)
+        if not day and when < now - dt.timedelta(minutes=5):
+            when += dt.timedelta(days=1)
+    return when
+
+
+STOPTIMES = "https://api.transitous.org/api/v5/stoptimes"
+
+
+def departures(name, at=None, now=None, day=0):
+    """What leaves a stop next (Transitous): {"kind": "departures", "stop", "items": [{"time", "line", "to", "mode",
+    "track", "live"}], "web"}; the stop by its name, as Transitous knows stops (typos forgiven)."""
+    now = now or dt.datetime.now().astimezone()
+    when = when_of(now, at, day)
+    key = "dep|%s|%s" % (fold(name), when.strftime("%Y%m%d%H%M"))
+    try:
+        cached = json.load(open(TRANSIT_CACHE))
+        if cached.get("key") == key and time.time() - cached.get("at", 0) < 60:
+            return cached["answer"]
+    except (OSError, ValueError, AttributeError):
+        pass
+    try:
+        stops = [r for r in fetch(GEOCODE + "?language=en&type=STOP&text=" + urllib.parse.quote(name.strip())) if r.get("type") == "STOP" and r.get("id")]
+        if not stops:
+            return {}
+        # the one most like what was said: a name said in another case finds the stop it bends, not one merely alike
+        want = fold(name)
+        stop = max(stops[:8], key=lambda r: difflib.SequenceMatcher(None, want, fold(r["name"].split(",")[-1])).ratio())
+        d = fetch("%s?stopId=%s&n=8&time=%s" % (STOPTIMES, urllib.parse.quote(stop["id"]),
+                  urllib.parse.quote(when.astimezone(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))))
+    except Exception:
+        return {}
+    items = []
+    for s in d.get("stopTimes") or []:
+        p = s.get("place") or {}
+        t = p.get("departure") or p.get("scheduledDeparture")
+        if not t:
+            continue
+        at_ = dt.datetime.fromisoformat(t.replace("Z", "+00:00")).astimezone()
+        items.append({"time": clock(at_), "line": s.get("displayName") or s.get("routeShortName") or s.get("mode", "").title(),
+                      "to": s.get("headsign") or (s.get("tripTo") or {}).get("name", ""), "mode": s.get("mode", ""),
+                      "track": p.get("track") or "", "live": bool(s.get("realTime"))})
+    answer = {"kind": "departures", "stop": stop["name"].split(",")[0], "items": items,
+              "web": "https://api.transitous.org/?stopId=%s" % urllib.parse.quote(stop["id"])}
+    try:
+        os.makedirs(os.path.dirname(TRANSIT_CACHE), exist_ok=True)
+        json.dump({"key": key, "at": time.time(), "answer": answer}, open(TRANSIT_CACHE, "w"))
+    except OSError:
+        pass
+    return answer
+
+
 def route(tokens):
-    """"from zvolen to kosice at 8:00", "route zvolen kosice": the two places and the time of day, or None."""
+    """"from zvolen to kosice at 8:00", "route zvolen kosice tomorrow": the two places, the time of day and the day (0, 1), or None."""
     t = list(tokens)
     if t and (t[0] in FROM or t[0] == "route"):
         t = t[1:]
+    t, day = day_of(t)
     at = None
     for i, w in enumerate(t):
         if w in AT and i + 1 < len(t) and parse_time(t[i + 1]):
@@ -419,9 +509,9 @@ def route(tokens):
             break
     cut = next((i for i, w in enumerate(t) if w in TO), None)
     if cut is not None and 0 < cut < len(t) - 1:
-        return " ".join(t[:cut]), " ".join(t[cut + 1:]), at
+        return " ".join(t[:cut]), " ".join(t[cut + 1:]), at, day
     if len(t) == 2:                                           # "route zvolen kosice"
-        return t[0], t[1], at
+        return t[0], t[1], at, day
     return None
 
 
@@ -441,7 +531,19 @@ def work(line, now=None):
     if first in ("route", "from") or first in FROM:
         r = route(s.split(" "))
         if r:
-            return transit(r[0], r[1], r[2], now)
+            return transit(r[0], r[1], r[2], now, r[3])
+    if first == "departures":
+        t = [w for w in s.split(" ")[1:]]
+        t, day = day_of(t)
+        while t and t[0] in FROM:                             # "odchody zo Zvolena"
+            t = t[1:]
+        at = None
+        for i, w in enumerate(t):
+            if w in AT and i + 1 < len(t) and parse_time(t[i + 1]):
+                at, t = parse_time(t[i + 1]), t[:i]
+                break
+        if t:
+            return departures(" ".join(t), at, now, day)
     m = re.fullmatch(r"(?:weather|forecast)\s+(?:in|for|at)\s+(.+)", s)
     if m:
         return weather(m.group(1))

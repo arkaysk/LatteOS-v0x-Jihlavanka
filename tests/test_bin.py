@@ -814,11 +814,12 @@ def test_calc_routes():
     calc = load("latte-calc")
     calc.FROM.update(["z", "zo"]); calc.TO.update(["do"]); calc.AT.update(["o"])
     t = calc.parse_time("8:00")
-    assert calc.route("from zvolen to kosice".split()) == ("zvolen", "kosice", None)
-    assert calc.route("from new york to jersey city at 8:00".split()) == ("new york", "jersey city", t)
-    assert calc.route("route zvolen kosice".split()) == ("zvolen", "kosice", None)
-    assert calc.route("z zvolena do kosic o 8:00".split()) == ("zvolena", "kosic", t)
-    assert calc.route("from zvolen to kosice in 8:00".split()) == ("zvolen", "kosice", t)         # words_of turns `at` into `in`
+    assert calc.route("from zvolen to kosice".split()) == ("zvolen", "kosice", None, 0)
+    assert calc.route("from new york to jersey city at 8:00".split()) == ("new york", "jersey city", t, 0)
+    assert calc.route("route zvolen kosice".split()) == ("zvolen", "kosice", None, 0)
+    assert calc.route("z zvolena do kosic o 8:00".split()) == ("zvolena", "kosic", t, 0)
+    assert calc.route("from zvolen to kosice in 8:00".split()) == ("zvolen", "kosice", t, 0)
+    assert calc.route("from zvolen to kosice tomorrow at 8:00".split()) == ("zvolen", "kosice", t, 1)    # 6B.49: zajtra         # words_of turns `at` into `in`
     assert calc.route("route zvolen".split()) is None
 
 

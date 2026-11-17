@@ -337,7 +337,7 @@ end
 local amount_words = {}
 -- Lines that Qalculate does not read (weather, the time in a city, work hours, the share of the day gone…) are worked out by
 -- bin/latte-calc (ROADMAP 6B.48); what it does not understand goes on to Qalculate.
-local SMART = { transit = N("Journey"), weather = N("Weather"), time = N("Time"), diff = N("Time difference"), date = N("Date"), hours = N("Work hours"),
+local SMART = { transit = N("Journey"), departures = N("Departures"), weather = N("Weather"), time = N("Time"), diff = N("Time difference"), date = N("Date"), hours = N("Work hours"),
                 elapsed = N("Elapsed"), span = N("Duration") }
 local function sky_of(code)
     code = tonumber(code) or 3
@@ -346,7 +346,7 @@ local function sky_of(code)
     elseif code >= 95 then return N("Storm") end
     return N("Rain")
 end
-local FIRST = { wea = 1, wet = 1, wht = 1, ["for"] = 1, tim = 1, tie = 1, dif = 1, wor = 1 }    -- how a line for latte-calc may begin; the user's language adds its own (`smart`)
+local FIRST = { wea = 1, wet = 1, wht = 1, ["for"] = 1, tim = 1, tie = 1, dif = 1, wor = 1, dep = 1 }    -- how a line for latte-calc may begin; the user's language adds its own (`smart`)
 local function smart_like(s)
     s = s:lower()
     -- two words at least, the first one starting like one of those, even misspelt: bin/latte-calc decides (it finds the nearest word)
@@ -388,6 +388,20 @@ local function look_for_amount()
                     days[#days + 1] = (i == 1 and tr("Today") or tr(names[(tonumber(d.weekday) or 0) + 1])) .. " " .. (d.max or 0) .. "°/" .. (d.min or 0) .. "°"
                 end
                 worked_rows = { { text = table.concat(days, "   ·   "), glyph = "cloud" } }
+            elseif r.kind == "departures" then
+                -- what leaves a stop next (latte-calc departures): the first on the panel, the rest under it with the platform
+                local first = r.items and r.items[1]
+                worked_label = r.stop
+                worked = first and (first.time .. "  " .. first.line .. " → " .. first.to) or tr("No departures found")
+                worked_rows = {}
+                for _, it in ipairs(r.items or {}) do
+                    local extra = {}
+                    if it.track and it.track ~= "" then extra[#extra + 1] = tr("Platform") .. " " .. it.track end
+                    if it.live then extra[#extra + 1] = tr("live") end
+                    worked_rows[#worked_rows + 1] = { text = string.format("%s   %s → %s", it.time, it.line, it.to), line2 = table.concat(extra, "  ·  "),
+                                                      glyph = (it.mode == "COACH" or it.mode == "BUS") and "bus" or "train" }
+                end
+                worked_rows[#worked_rows + 1] = { text = tr("Open on the web · data: Transitous"), glyph = "info-circle", link = r.web }
             elseif r.kind == "transit" then
                 -- the next connections: the first on the panel, all of them under it, and where the data is from (Transitous asks to be named)
                 local first = r.items and r.items[1]
