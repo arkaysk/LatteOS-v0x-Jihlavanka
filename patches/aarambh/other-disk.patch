@@ -1,0 +1,108 @@
+diff --git a/src/boot/image_loader.c b/src/boot/image_loader.c
+index 003eff4..72d75b9 100644
+--- a/src/boot/image_loader.c
++++ b/src/boot/image_loader.c
+@@ -20,7 +20,21 @@ EFI_STATUS image_loader_load(const CHAR16 *path, EFI_HANDLE *child)
+ 
+     buffer = fs_read_path(path, &size);
+     if (buffer == NULL) {
+-        return EFI_NOT_FOUND;
++        /* Not on this partition: another one's (Windows on its own disk), read and checked by the firmware itself */
++        EFI_HANDLE other = fs_find_elsewhere(path);
++
++        if (other == NULL) {
++            return EFI_NOT_FOUND;
++        }
++
++        device_path = FileDevicePath(other, (CHAR16 *)path);
++        if (device_path == NULL) {
++            return EFI_NOT_FOUND;
++        }
++
++        status = BS->LoadImage(FALSE, system_image_handle(), device_path, NULL, 0, child);
++        FreePool(device_path);
++        return status;
+     }
+ 
+     device_path = FileDevicePath(system_device_handle(), (CHAR16 *)path);
+diff --git a/src/core/entries.c b/src/core/entries.c
+index 21fcf3e..0fcde88 100644
+--- a/src/core/entries.c
++++ b/src/core/entries.c
+@@ -64,7 +64,7 @@ static int resolve_target(Entry *entry, const char *target)
+     entry->action = ENTRY_ACTION_EFI;
+     fs_make_path(entry->loader, LOADER_PATH_MAX, target);
+ 
+-    if (!fs_exists(entry->loader)) {
++    if (!fs_exists(entry->loader) && fs_find_elsewhere(entry->loader) == NULL) {
+         return 0;
+     }
+ 
+diff --git a/src/efi/fs.c b/src/efi/fs.c
+index c5e7bc1..53d8f1a 100644
+--- a/src/efi/fs.c
++++ b/src/efi/fs.c
+@@ -1,5 +1,6 @@
+ #include "efi/fs.h"
+ 
++#include "efi/system.h"
+ #include "lib/memory.h"
+ #include "lib/str.h"
+ 
+@@ -60,6 +61,43 @@ int fs_exists(const CHAR16 *path)
+     return 1;
+ }
+ 
++EFI_HANDLE fs_find_elsewhere(const CHAR16 *path)
++{
++    EFI_GUID guid = SIMPLE_FILE_SYSTEM_PROTOCOL;
++    EFI_HANDLE *handles = NULL;
++    EFI_HANDLE found = NULL;
++    UINTN count = 0;
++    UINTN i;
++
++    if (BS->LocateHandleBuffer(ByProtocol, &guid, NULL, &count, &handles) != EFI_SUCCESS) {
++        return NULL;
++    }
++
++    for (i = 0; i < count && found == NULL; i++) {
++        EFI_FILE_HANDLE other;
++        EFI_FILE_HANDLE file;
++
++        if (handles[i] == system_device_handle()) {
++            continue;
++        }
++
++        other = LibOpenRoot(handles[i]);
++        if (other == NULL) {
++            continue;
++        }
++
++        if (other->Open(other, &file, (CHAR16 *)path, EFI_FILE_MODE_READ, 0) == EFI_SUCCESS) {
++            file->Close(file);
++            found = handles[i];
++        }
++
++        other->Close(other);
++    }
++
++    FreePool(handles);
++    return found;
++}
++
+ static EFI_FILE_HANDLE open_path(const CHAR16 *path, UINTN *size)
+ {
+     EFI_FILE_HANDLE file;
+diff --git a/src/efi/fs.h b/src/efi/fs.h
+index 20d169b..51cf5b5 100644
+--- a/src/efi/fs.h
++++ b/src/efi/fs.h
+@@ -13,6 +13,8 @@ EFI_STATUS fs_init(EFI_HANDLE device);
+ 
+ void fs_make_path(CHAR16 *output, int capacity, const char *name);
+ int fs_exists(const CHAR16 *path);
++/* The partition other than this one that holds path (Windows on its own disk), or NULL. */
++EFI_HANDLE fs_find_elsewhere(const CHAR16 *path);
+ 
+ typedef int (*FsDirectoryCallback)(const CHAR16 *name, int is_directory, void *context);
+ 

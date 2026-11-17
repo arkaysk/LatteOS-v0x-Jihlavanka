@@ -6,9 +6,10 @@ set -eu
 tree="${1:?usage: build.sh AARAMBH_TREE}"
 here="$(cd "$(dirname "$0")" && pwd)"
 # the mouse and touch (mouse.patch): applied once; the theme fills the tiles' places it reads
-if ! git -C "$tree" apply --reverse --check "$here/mouse.patch" 2>/dev/null; then
-    git -C "$tree" apply "$here/mouse.patch"
-fi
+# and a loader on another partition (other-disk.patch: Windows on its own disk), each applied once
+for p in mouse other-disk; do
+    git -C "$tree" apply --reverse --check "$here/$p.patch" 2>/dev/null || git -C "$tree" apply "$here/$p.patch"
+done
 mkdir -p "$tree/src/themes/latteos"
 cp "$here/latteos.c" "$tree/src/themes/latteos/latteos.c"
 reg="$tree/src/core/theme_registry.c"

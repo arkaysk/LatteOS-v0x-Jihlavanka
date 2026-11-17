@@ -4,8 +4,8 @@
 # installed by its own scripts/install.sh: on the EFI partition in EFI/aarambh, first in the firmware's boot order,
 # signed through shim when Secure Boot is on, its kernel list kept by its hooks. GRUB and EFI/fedora stay as they are
 # (the firmware's next entry); Plymouth stays LatteOS's (--no-plymouth). Then the menu's entries become LatteOS's:
-# LatteOS, LatteOS SAFE (latte-bootmenu-safe), and Windows 11 when its loader is on this EFI partition.
-# ponytail: Windows on another disk (its own EFI partition) is not found: Aarambh only reads its own partition.
+# LatteOS, LatteOS SAFE (latte-bootmenu-safe), and Windows 11 when its loader is on an EFI partition of this PC: this
+# one or another disk's (other-disk.patch lets Aarambh start it from there; the other disk is only read, never written).
 set -eu
 here="$(cd "$(dirname "$0")" && pwd)"
 repo="$(cd "$here/../.." && pwd)"
@@ -26,11 +26,27 @@ conf="$ESP_DIR/aarambh.conf"
 loader="$(awk -F'|' -v key="$KEY" '/^entry[ \t]/ { k = $5; gsub(/^[ \t]+|[ \t]+$/, "", k); if (k == key) { l = $2; gsub(/^[ \t]+|[ \t]+$/, "", l); print l; exit } }' "$conf")"
 [ -n "$loader" ] || { echo "boot menu: Aarambh did not add this system to $conf" >&2; exit 1; }
 gold="#e2aa5c"
+win='\EFI\Microsoft\Boot\bootmgfw.efi'
+windows() {      # is Windows' loader on this EFI partition, or on another one?
+    [ -f "$ESP_ROOT/EFI/Microsoft/Boot/bootmgfw.efi" ] && return 0
+    own="$(findmnt -no SOURCE "$ESP_ROOT")"
+    for dev in $(lsblk -lnpo NAME,PARTTYPE | awk 'tolower($2) == "c12a7328-f81f-11d2-ba4b-00a0c93ec93b" { print $1 }'); do
+        [ "$dev" = "$own" ] && continue
+        m="$(mktemp -d)"
+        if mount -o ro "$dev" "$m" 2>/dev/null; then
+            found=no; [ -f "$m/EFI/Microsoft/Boot/bootmgfw.efi" ] && found=yes
+            umount "$m"; rmdir "$m"
+            [ $found = yes ] && return 0
+        else
+            rmdir "$m"
+        fi
+    done
+    return 1
+}
 {
     echo "entry LatteOS | $loader | logos/latteos.png | backgrounds/latteos.jpg | $KEY | $gold"
     echo "entry LatteOS SAFE | $loader | logos/safe.png | backgrounds/safe.jpg | latteos-safe | $gold"
-    [ ! -f "$ESP_ROOT/EFI/Microsoft/Boot/bootmgfw.efi" ] \
-        || echo "entry Windows 11 | \\EFI\\Microsoft\\Boot\\bootmgfw.efi | logos/windows.png | backgrounds/windows.jpg | windows | $gold"
+    ! windows || echo "entry Windows 11 | $win | logos/windows.png | backgrounds/windows.jpg | windows | $gold"
     # Aarambh's own lines but the entries replaced above (Firmware, Restart, Power Off stay)
     awk -F'|' -v key="$KEY" '/^entry[ \t]/ { k = $5; gsub(/^[ \t]+|[ \t]+$/, "", k); if (k == key || k == "latteos-safe" || k == "windows") next } { print }' "$conf" \
         | sed -e 's/^theme .*/theme latteos/' -e 's/^default .*/default 0/' -e 's/^timeout .*/timeout 5/'

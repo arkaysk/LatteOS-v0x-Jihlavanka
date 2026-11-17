@@ -447,9 +447,11 @@ základ, na ktorý sa dajú integrovať ostatné pracovné prúdy.
   prvá, GRUB za ňou, podpis cez shim, háky pri aktualizácii kernelu, `utc_offset` si píše sám), potom naše položky
   v `aarambh.conf`. **LatteOS SAFE** = rovnaké kernely s `latte.mode=safe` (`/usr/libexec/latte-bootmenu-safe`, obnovuje
   `latte-bootmenu-safe.path` pri každej zmene zoznamu). Vo VM: ponuka sa ukáže, LatteOS štartuje priamo (direct boot),
-  SAFE dá `reason_id = kernel-safe`. **Ostáva:** (a) **Windows na inom disku** (vlastná ESP) aarambh nenájde — hľadá iba
-  na svojej ESP; záplata ako rEFInd (prehľadať všetky zväzky, `LoadImage` z cesty iného disku), (b) Secure Boot zapnutý
-  (MOK pri prvom štarte) neoverený, (c) myš na skutočnom PC.
+  SAFE dá `reason_id = kernel-safe`. **Windows na inom disku** (vlastná ESP): záplata `patches/aarambh/other-disk.patch`
+  (zavádzač, ktorý nie je na vlastnej ESP, hľadá na ostatných zväzkoch ako rEFInd a spustí ho cez firmvér, ktorý ho sám
+  overí), `setup-latteos.sh` pozrie ESP ostatných diskov iba na čítanie — vo VM overené s druhým diskom (dlaždica
+  Windows 11 spustila zavádzač z neho). **Ostáva:** skutočný Windows (BitLocker, Secure Boot s MOK pri prvom štarte),
+  myš na skutočnom PC.
   Dotyková obrazovka áno (tá istá `ABSOLUTE_POINTER`). Otázka na neskôr: pri viacerých monitoroch kreslí UEFI (GOP)
   spravidla iba na jeden, ktorý určí firmvér — overiť na PC s tromi obrazovkami.
 
