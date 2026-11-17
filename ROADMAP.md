@@ -3748,6 +3748,25 @@ upozornenie na pád s „Opýtať sa AI“, okno pre človeka bez `journalctl`. 
 službami systemd (polkit potrebuje prihlásenú reláciu — overiť), vlastnú slučku reštartov vyhodiť, `keep` cez
 `systemd-run --user -p Restart=always`; zvážiť zrušenie DogHouse (rootova stráž nad strážou, prepisuje používateľove
 úpravy služieb). Kandidát na prvý pomocný program v Ruste (17.05).
+  **Rozhodnuté 17. 11. (používateľ): reštarty robí systemd, GuardCorgi vlastní zoznam a zdravie.** GuardCorgi drží deklaratívny
+  zoznam „čo má bežať“ (`COMPONENTS` + manifest) a zosúlaďuje ho so skutočnosťou; každá súčasť je jednotka systemd
+  s `Restart=always`, a systemd ju vráti za 1 s (GuardCorgi 5 s + dve zlyhania). GuardCorgi sám nereštartuje to, čo systemd vie.
+  Plán migrácie (každý krok samostatne, po kroku `tests/check.sh` a `tests/test_guardcorgi.sh`):
+  1. [ ] **Tapeta** → `latte-wallpaper.service` (dnes `latte-wall restore` cez `quiet`), `Restart=always`, zdravie = `wallpaper_up`.
+  2. [ ] **Schránka** → `latte-clipboard.service` (dnes `start_detached` s `wl-paste --watch`).
+  3. [ ] **Polkit** → overiť, či agent pôjde ako jednotka (potrebuje prihlasovaciu reláciu; dnes ho spúšťa Hyprland cez
+     `hyprctl eval` a GuardCorgi ho po zabití vráti rovnako). Ak nie, ostáva jediná súčasť s vlastným štartom.
+  4. [ ] **`keep`** (programy používateľa) → `systemd-run --user -p Restart=always` a názov jednotky do `guardcorgi.json`;
+     SHA-256 kontrola dvojníka ostáva v GuardCorgi.
+  5. [ ] **Zdravie namiesto reštartu:** `look()` pri zlyhaní už nevolá `start()`, ale (a) vráti chýbajúcu, zastavenú,
+     zamaskovanú alebo podvrhnutú jednotku (`systemctl --user revert/unmask/start`), (b) pri živom, ale nezdravom procese
+     (`goo_alive`) ho reštartuje jednotkou, (c) pri opakovaní iba upozorní. Zrušiť `MISSES`, `TRIES`, `WINDOW`, `REST` a
+     stav `failed`; Prehľad číta `NRestarts` (už dnes „fell“).
+  6. [ ] **Seba:** `WatchdogSec` ostáva (systemd), vlastné `alive_to_systemd()` z každej súčasti vyhodiť.
+  7. [ ] **DogHouse:** rozhodnúť (zrušiť, alebo iba hlásiť a nezasahovať) — kým sa nerozhodne, ostáva.
+  8. [ ] **Skúšky:** rozšíriť `tests/test_guardcorgi.sh` o zastavenú, zamaskovanú a podvrhnutú jednotku a o živý, ale nezdravý
+     proces; napodobeniny v `tests/test_bin.py`. Zapísať nové jednotky do `FILES` a nasadiť (`systemctl --user restart latte-goo`,
+     po zmene `/usr/bin/latte-*` aj `sudo latte-guardcorgi manifest`).
 
 **10F.13** [ ] **Nové zameranie: strážca domova** (používateľ 17. 11.): GuardCorgi sa mení zo strážcu procesov (10F.12,
 duplikuje systemd) na strážcu proti ransomvéru, spyvéru a prompt injection — sleduje správanie, nie databázu vírusov.
