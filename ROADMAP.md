@@ -319,7 +319,15 @@ možno spoľahlivo dokončiť v alpha rozsahu.
 **2.07** [ ] Aktualizácia na v0.5 myšou, bez terminálu a bez AI (používateľ 31. 10.): nový kernel, Mesa a pleamar nainštaluje App Manager s postupom a návratom (nadväzuje na 10H.14). Kým ich Fedora nemá, jeden balík LatteOS; ručné kroky z latte-lab sa používateľom nedávajú. (z 1D.13: patrí k inštalátoru; treba aj aktualizátor systému, 2.08)
 **2.08** [ ] **Aktualizátor systému** (používateľ 2. 11.): aktualizácie LatteOS, pleamaru a pleamar-wm (so záplatami), kernelu a Mesy myšou, s postupom a návratom (nadväzuje na 10H.14 a 2.07).
 **2.09** [ ] **Marea voliteľná, prináša aj Builder** (používateľ 16. 11.): LatteOS z Marei nič nevyhnutne nepotrebuje; v kroku „Súčasti“ predvolene zapnutá. S ňou prichádza Builder (Arrecife, Win+B, `marea-plm/builder`) — okno Widgety a nové Goo (`bin/latte-goowidgets`) bez Marei tlačidlo Build skryje alebo ponúkne doinštalovanie; Super+Space bez nej nesmie ostať mŕtve.
-**2.10** [ ] **Ovládače podľa karty** (16. 11.): NVIDIA (akmod z RPM Fusion; pri Secure Boot podpis kľúčom MOK), Intel (Mesa z Fedory), AMD GFX6–8 (`patches/old-amd.sh`). Pri RTX 20/30/40 voľba gpu-unlock (3.10).
+**2.10** [~] **Ovládače podľa karty** (16. 11.): NVIDIA (akmod z RPM Fusion; pri Secure Boot podpis kľúčom MOK), Intel (Mesa z Fedory), AMD GFX6–8 (`patches/old-amd.sh`). Pri RTX 20/30/40 voľba gpu-unlock (3.10).
+  - **17. 11. (používateľ): sprievodca analyzuje hardvér a ponúkne ovládače; systém nenesie ovládače cudzích kariet.** Výrobca karty podľa
+    PCI ID (`10de` NVIDIA, `1002` AMD, `8086` Intel; správanie podľa ubuntu-drivers, GPL-2, kód sa nepreberá). `install --gpu "nvidia intel"`:
+    firmvér kariet, ktoré v PC nie sú (`amd-`/`intel-`/`nvidia-gpu-firmware`, spolu ~140 MB; nikto ich nevyžaduje, `linux-firmware` ich
+    iba odporúča), sa odstráni a zakáže v `/etc/dnf/libdnf5.conf.d/latteos-gpu.conf`, aby ho aktualizácia nevrátila. Mesa (jeden balík
+    pre všetky karty, SAFE z nej potrebuje llvmpipe) a moduly jadra ostávajú — nenačítajú sa. NVIDIA od Turingu (RTX 20+, PCI ID ≥ 0x1e00):
+    `akmod-nvidia` + `xorg-x11-drv-nvidia-cuda` z RPM Fusion (predvolene otvorené moduly), zostavenie modulu (~5 min) beží na pozadí
+    súbežne so zostavovaním pleamaru; pri Secure Boot kľúč `kmodgenca` pred zostavením a `mokutil --import` s heslom z písmen bez y/z
+    (MokManager má QWERTY), ktoré sprievodca ukáže na konci. Staršie NVIDIA zatiaľ nouveau (ovládač 580xx neskôr). Zdroj: rpmfusion.org/Howto/NVIDIA, Howto/Secure Boot.
 
 ### 2A. [ ] Prvé spustenie
 Po prvom prihlásení sa kvapky predstavia.
@@ -462,6 +470,11 @@ základ, na ktorý sa dajú integrovať ostatné pracovné prúdy.
   v sprievodcovi, skutočný Windows (BitLocker), Secure Boot na skutočnom PC, myš na skutočnom PC.
   Dotyková obrazovka áno (tá istá `ABSOLUTE_POINTER`). Otázka na neskôr: pri viacerých monitoroch kreslí UEFI (GOP)
   spravidla iba na jeden, ktorý určí firmvér — overiť na PC s tromi obrazovkami.
+
+**3.12** [ ] **bootvine pri pomalom štarte a v SAFE** (používateľ 17. 11.: zavedieme; [bootvine](https://codeberg.org/wvhulle/bootvine),
+GPL-3.0, Rust, samostatný program): živý strom úloh systemd na konzole — čo čaká na čo. Overiť súžitie s Plymouthom
+a aarambh (3.11): ukázať namiesto splashu, keď štart trvá dlho alebo na Esc, v SAFE vždy. GuardCorgi z toho istého
+stromu ukáže, čo sa pri štarte spustilo a komu patrí (10F.01). Zdroj: `inspo/LatteOS novinky – november 2026.md`.
 
 ---
 
@@ -1816,6 +1829,11 @@ iba ako okno ~960 × 600 v strede (overené snímkou 14. 11.); veľkosť z `W`, 
 **6N.09** [x] 14. 11. **AppCloud: pruhy hore a dole štvrtinové** (2 % pri okraji, kávový stred sa rozplýva do 5 %), matné sklo bez farby bočného panela — béžová farba prebarvovala hladinu aj Shore, preto sa nepoužíva; overené snímkou aj po zatvorení.
 **6.47** [~] 14. 11. **Nastavenia › Kvapky: nové poradie** (používateľ 14. 11.): hlavná stránka zhora — vzhľady (Hravé Goo · Profi Shore · Minimalistic) · Spúšťač (LensGoo, LensShore, AppCloud) · Správa okien (BarGoo, DockShore, nič) · všeobecné voľby Goo + **Widgety a nové Goo** · Prehliadka úplne dole, **bez Preskočiť**. Podstránky v bočnom menu v poradí LensGoo, LensShore, AppCloud, BarGoo, DockShore, PowerGoo, TrayShore, ClockGoo, QueenGoo, MediaGoo, MareaGoo, CamGoo, QuickGoo (nové stránky AppCloud a TrayShore). Hotové a nasadené. **Okno „Widgety a nové Goo“ hotové (14. 11., v1):** `bin/latte-goowidgets` + `goo/widgets.plm/.luau`, tlačidlo v Kvapkách ho otvorí; ukazuje tvorby Buildu pleamar-wm (`~/.local/share/pleamar/marea/creations/index.json`, ako to píše pleamar — používateľ 14. 11.: Build je súčasť pleamar-wm, jeho widgety už platia), stav „spúšťa sa s reláciou“ z `creations.autostart`, tlačidlá Postaviť niečo (`pleamar-wm build on`), Otvoriť priečinok, Obnoviť. Overené s falošnou tvorbou, na latte-lab zatiaľ žiadna nie je; pravidlo `float frame=own` v `session.conf` platí až po novom prihlásení. **Chýba:** import cudzieho Goo (odložené na neskôr, používateľ 14. 11.), vlastné Goo, vypínanie a mazanie tvorieb (ostáva v „Mis creaciones“ Buildu), obrázky `apps/settings/drops/{appcloud,trayshore,…}.png`.
 ikonku zrušiť alebo dať jej jasnú funkciu (otvorí mriežku?). Karty času a dátumu z dosky **úplne bez ucha** — dnes majú malé ucho.
+
+**6N.10** [ ] **PhoneBox: starý Android ako doska k PC** (používateľ 17. 11.: zavedieme; [PhoneBox](https://github.com/ersinkoc/phonebox),
+MIT, agent .NET 10 pre Windows/Linux/macOS + aplikácia Android 7+, USB alebo Wi-Fi bez cloudu): 41 widgetov, editor
+rozloženia, médiá, skratky, štatistiky PC. Mobil ako ďalšia doska MultiShore alebo panel LatteMonitora. Najprv skúška
+linuxového agenta na latte-lab, potom widgety napojiť na naše údaje (latte-sysmond, MediaGoo). Zdroj: `inspo/LatteOS novinky – november 2026.md`.
 
 ---
 
@@ -3426,6 +3444,23 @@ Nastavenia v LensAI.
   odmietnuté; pri klávesnici „Všade“ písanie vo foot prešlo a klik myšou ostal odmietnutý. Chýba: kliknutie myšou po stránke Ruky (skúšaná
   `latte-ai hands`), hláška odmietnutia hovorí `hands` aj pri `mouse`/`keys`; otvorenie programu (`agent open`) tieto pravidlá nekontrolujú.
 
+**10B.59** [ ] **Llama-modchip ako najvyšší stupeň lokálnej AI na CPU** (používateľ 17. 11.: zavedieme; [llama-modchip](https://github.com/synchopate/llama-modchip),
+Apache-2.0, upravený llama.cpp): veľké MoE modely v RAM bez silnej GPU (hlavné PC až 80 GB RAM). Zaradiť ako stupeň
+podľa RAM vedľa llama.cpp Vulkan v `/data/ai`; čísla autora (284B pod 59 GB) overiť meraním. Modely „abliterated“
+(bez umelo nastavenej cenzúry) ostávajú vo výbere (používateľ 17. 11.: veľa ľudí na nich trvá). Zdroj: `inspo/LatteOS novinky – november 2026.md`.
+
+**10B.60** [ ] **Agentové prostredie: najlepšie nápady z hotových aplikácií** (používateľ 17. 11.: takých aplikácií je
+veľa a každá vie niečo iné — vybrať najlepšie a spojiť do jedného; nadväzuje na pozastavenú Kaviareň 10B.36 a clodfarm):
+- [agentes-chat](https://github.com/agentes-chat/agentes-chat) (AGPL-3.0) — hlavný kandidát: kanály, kde sú ľudia aj agenti
+  rôznych AI, router určí, kto odpovie, agenti si prácu odovzdávajú, rutiny, MCP s právami na agenta, schvaľovanie.
+- [Agent Autoloop](https://github.com/KKKKhazix/agent-autoloop) (MIT) — dlhé úlohy na pozadí; inšpirácia pre vlastné prostredie.
+- [agent-desktop](https://github.com/vercel-labs/agent-desktop) (Apache-2.0) — vybraná AI spravuje systém cez strom prístupnosti
+  bez snímok obrazovky; k 10B.58 (vlastná myš a klávesnica agenta).
+- [plannotator](https://github.com/backnotprop/plannotator) (Apache-2.0) — schvaľovanie plánov a diffov jedným klikom.
+- MCP pre tvorivé skilly: [Blender AI MCP](https://github.com/hitkeeen/blender-ai-mcp-addon), [Klad](https://github.com/klad-app/klad)
+  a ostatné z časti „MCP host, pamäť a prehliadač“ v `inspo/LatteOS novinky – november 2026.md` (claude-mem/beacon, agweb, Coral).
+Najprv skúška agentes-chat na latte-lab (self-hosted), potom rozhodnúť: prevziať celé, alebo vlastné z týchto nápadov.
+
 ### 10C. [ ] Heidelberg
 
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví
@@ -3550,6 +3585,10 @@ pre históriu a súvislý graf v štýle EEG, s výberom obdobia aspoň za posle
 obdobie podľa uchovávania telemetrie (10D.07, 10D.15). Nad údajmi pri prejdení kurzorom zobraziť poznámku k vybranému
 času; uviesť tri aplikácie s najväčším podielom na zaznamenanej záťaži v danom okamihu. Rozlíšiť namerané hodnoty
 od odhadov; história podlieha súhlasu, nastaveniu uchovávania a možnosti vymazania (10D.15).
+
+**10D.19** [ ] **Karta GPU z GPU Taskman** (používateľ 17. 11.: zavedieme; [GPU Taskman](https://github.com/shanselman/gputaskman), MIT,
+Python): VRAM a aktivita GPU po procesoch, načítané LLM modely a ich KV-cache; NVIDIA všade, AMD a Intel na Linuxe.
+Karta, ktorá v Mission Center chýba (10D.17), aj panel pre PowerGoo. Overiť na RX 640 (latte-lab) a RTX 3060. Zdroj: `inspo/LatteOS novinky – november 2026.md`.
 
 ### 10E. [~] DeviceManager
 
@@ -3702,6 +3741,25 @@ službami systemd (polkit potrebuje prihlásenú reláciu — overiť), vlastnú
 `systemd-run --user -p Restart=always`; zvážiť zrušenie DogHouse (rootova stráž nad strážou, prepisuje používateľove
 úpravy služieb). Kandidát na prvý pomocný program v Ruste (17.05).
 
+**10F.13** [ ] **Nové zameranie: strážca domova** (používateľ 17. 11.): GuardCorgi sa mení zo strážcu procesov (10F.12,
+duplikuje systemd) na strážcu proti ransomvéru, spyvéru a prompt injection — sleduje správanie, nie databázu vírusov.
+Rozhodnuté vrstvy sú 10F.14–10F.18 a 3.12. owLSM (EDR v jadre) smie bežať samostatne popri GuardCorgi,
+bez integrácie; návnadové súbory sú návrh. Zdroj: `inspo/LatteOS novinky – november 2026.md`.
+**10F.14** [ ] **CloneGuard pred inštaláciou** (používateľ 17. 11.: zavedieme; [CloneGuard](https://github.com/tharun208/cloneguard), MIT, Go):
+iba číta repozitár alebo balík (krádež hesiel, skryté sieťové volania, obfuskácia, auto-run hooky) a nič nespúšťa.
+Napojiť na AppManager (10H.15 Quiver, GitHub releases) a Baristu: z neznámeho zdroja sa nič nespustí bez kontroly.
+**10F.15** [ ] **Stroq — vrstva GuardCorgi pre LensAI** (používateľ 17. 11.: zavedieme; [Stroq](https://github.com/AGGIB/Stroq), Apache-2.0):
+lokálny audit agenta — pomenuje stránku, súbor alebo výsledok nástroja, ktorý agenta presvedčil spustiť príkaz.
+**10F.16** [ ] **PentestCode — test vlastnej siete** (používateľ 17. 11.: zavedieme do GuardCorgi alebo NetManagera;
+[PentestCode](https://github.com/s0ld13rr/pentestcode), MIT): pravidelný test domácej siete a služieb (aj ZimaOS pred
+zverejnením Jellyfinu/Immichu). Sťahovať iba originál z tohto repa — kolovali infikované kópie.
+**10F.17** [ ] **OpenSnitch — kto kam volá** (používateľ 17. 11.: zavedieme; [OpenSnitch](https://github.com/evilsocket/opensnitch), GPL-3.0,
+eBPF): pri prvom spojení aplikácie sa opýta, pravidlá podľa procesu, cieľa a portu. Základ tlačidla NET pri aplikácii
+(11A) a prehľadu „kto volá domov“; okno otázky v štýle LatteOS, nie jeho Qt.
+**10F.18** [ ] **Pipelock — firewall medzi agentom a sieťou** (používateľ 17. 11.: zavedieme; [Pipelock](https://github.com/pipelab-org/pipelock), Apache-2.0):
+HTTP, WebSocket aj MCP prevádzka, blokuje únik prihlasovacích údajov a prompt injection, sandbox agenta. Stroq (10F.15)
+vysvetlí, prečo agent niečo urobil, Pipelock tomu zabráni — spolu obrana LensAI ako MCP hosta.
+
 ### 10G. [~] NetManager
 
 Zdroje: `bin/latte-network`, `bin/latte-net`, `bin/latte-network`
@@ -3840,6 +3898,14 @@ ponúkne ako súčasť (záložka/zdroj „GitHub a GitLab“): inštalácia, sp
 katalóg, módy. Preveriť: beh .NET aplikácie na latte-labe, napojenie na profil dôvery a NET (aplikácie z Quiveru ako
 nedôveryhodné), ako mu odovzdať odkaz z App Managera. Meno a logo Quiver sú ochranná známka (TRADEMARKS.md) — uvádzať
 ako Quiver, nepremenovať. Zapísať do TRETIE-STRANY.md.
+
+**10H.16** [ ] **Porovnanie kontajnerových runtime po čistej inštalácii** (používateľ 17. 11.): výkon a schopnosti
+viacerých (Podman, Docker, [Kiri](https://github.com/libracoder/kiri) Apache-2.0, …) na čistom LatteOS; víťaz pod
+AppManager a Translator. Zdroj: `inspo/LatteOS novinky – november 2026.md`.
+**10H.17** [ ] **Doplnkové aplikácie** (používateľ 17. 11.): nie aplikácie LatteOS, ale ponúknuť ich v AppManageri —
+napr. [sure](https://github.com/we-promise/sure) (osobné financie, AGPL-3.0, self-hosted), [Aircad](https://aircad.com)
+(2D/3D CAD v prehliadači), [Yogurt](https://github.com/FrigadeHQ/yogurt) (lokálne poznámky z porád, samostatná aplikácia,
+bez integrácie). Zoznam dopĺňať.
 
 ### 10I. [~] Barista
 
@@ -4335,6 +4401,11 @@ Zdroje: `bin/latte-net`, `system/libexec/latte-netd`
 
 
 
+**11.10** [ ] **Snapper do inštalácie** (zistené 17. 11.): latte-lab ho má (snapper 0.13.0), ale `FILES` ho
+neinštaluje — iba volá `snapper -c root set-config …` (Predchádzajúce verzie 10L) a inštalátor ráta so snímkou pred
+inštaláciou (docs/instalator/PLAN.md). Na čistej Fedore bez snappera tento riadok zlyhá. Doplniť `package: snapper`
+a `snapper -c root create-config /`, iba ak je koreň Btrfs (inak súčasť vypnúť); obmedzenie počtu snímok ako na latte-lab.
+
 ### 11A. NET a sieťové profily
 Odstavenie aplikácie od internetu (tlačidlo NET je v 8.01), profily pre Wine/Proton.
 
@@ -4506,7 +4577,7 @@ overená na latte-lab a dá sa nainštalovať od nuly — nie podľa dátumu.
   Licence v README hotové; súpis v `TRETIE-STRANY.md` skontrolovaný (GPL-2/3 iba samostatné programy). Chýba: hlavičky SPDX v súboroch (netreba hneď).
 ## 15. [ ] Inšpirácie a tech radar
 Nápady bez rozhodnutia; samostatné úlohy z nich sú pri svojej kategórii. `inspo/`.
-Zdroje: `inspo/dalsie_inspiracie.md`, `inspo/LatteOS – technologický radar 2026.md`
+Zdroje: `inspo/dalsie_inspiracie.md`, `inspo/LatteOS – technologický radar 2026.md`, `inspo/LatteOS novinky – november 2026.md`
 
 **15.01** [ ] (Inšpirácie a tech radar) Z inšpirácií a tech radaru — úvod · r. 366–366
 [ ] **Z inšpirácií a tech radaru (20. 10.)** — po bodoch 12 a 13, nič z toho nie je naliehavé:
@@ -4526,6 +4597,10 @@ stavy) — nie v ponukách a pri práci; iba na vyšších stupňoch výkonu, pr
 predlôh pre Arrecife (1D.19) — „sprav prepínač ako tento“; prepisuje sa do pleamaru, kód sa nepreberá.
 **15.05** [x] **open-design-agent-kit** ([feimacode](https://github.com/feimacode/open-design-agent-kit), MIT + Apache-2.0)
 nainštalovaný do Claude Code na latte-lab 2. 11. (plugin `open-design@open-design-agent-kit` 0.3.2, rozsah používateľ).
+
+**15.06** [ ] **Novinky november 2026** (17. 11.): `inspo/LatteOS novinky – november 2026.md` — 100 návrhov od štyroch AI, overené licencie a dátumy.
+Rozhodnuté: 3.12, 6N.10, 10B.59, 10B.60, 10D.19, 10F.13–10F.18, 10H.16, 10H.17. Scrapling pre Bean Scout áno —
+Bean Scout v ROADMAP ešte nemá miesto. Ostatné sú návrhy, používateľ ich ešte preskúma.
 
 ---
 
