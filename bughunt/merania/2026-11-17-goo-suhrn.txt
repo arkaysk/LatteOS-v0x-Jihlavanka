@@ -1,0 +1,6 @@
+-- restart at 17:43
+17:43–18:43  latte-goo  14.2 % CPU, RSS  230 MB   pleamar-wm  28.6 % CPU, RSS  427 MB
+18:43–19:43  latte-goo  14.2 % CPU, RSS  270 MB   pleamar-wm  25.2 % CPU, RSS  429 MB
+19:43–20:43  latte-goo  14.6 % CPU, RSS  267 MB   pleamar-wm  25.3 % CPU, RSS  482 MB
+-- restart at 21:10
+last: 21:20  latte-goo RSS 228 MB, pleamar-wm RSS 394 MB
