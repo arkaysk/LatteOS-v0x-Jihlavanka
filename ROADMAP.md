@@ -4662,6 +4662,8 @@ mimo FILES — rozhodne používateľ), `latte-goo` 26 MB (ladiace symboly? `str
 
 **17.08** [x] (17. 11.) **Štart Goo bez záťaže:** prvý snímok po 1,2 s (14,4 s bolo vyťaženie VM), žiadny prerušený handler. xdg-desktop-portal zlyhá ~1,4 s pred `latte-session.target` (programy z autostartu sa pýtajú skôr, než latte-screens zapne cieľ); potom beží — iba šum v zázname.
 
+**17.09** [ ] (17. 11.) **Zamknutá obrazovka kreslí celú noc:** pri „obrazovku nevypínať“ (Nastavenia › Zámok, `screen=0`) beží `lockscreen.plm` pri 60 fps a berie ~25 % CPU (latte-lab, zamknuté 7 h). Návrh: po `sys_idle 3` (6 min bez dotyku) zámku znížiť `rate` (napr. 10–20) alebo zastaviť dážď/more, pri pohybe myši späť. Rozhodne používateľ (vzhľad), spolu s návrhom k dýchaniu Goo (17.06).
+
 ---
 
 ## 18. [ ] STRESTEST
