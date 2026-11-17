@@ -153,12 +153,24 @@ while true; do
     { echo "blur passes $passes"; [ -n "$kb" ] && echo "$kb"; cat "$wmconf"; screens; [ ! -e "$own/session.conf" ] || cat "$own/session.conf"; } > "$tiered" && wmconf="$tiered"
     # the agent's hands where Settings say, LatteOS's own windows when nobody chose (LensAI › Settings › Hands)
     latte-ai hands apply 2>/dev/null || true
+    from=$(( $(stat -c %s "$state/session.log" 2>/dev/null || echo 0) + 1 ))
     PATH="$share/pleamarwm/bin:$PATH" PLEAMAR_CONFIG="$own" PLEAMAR_WM_CONFIG="$wmconf" PLEAMAR_WM_AUTOSTART="$hconf" pleamar-wm session &
     hpid=$!
+    # A card that cannot show what it paints (no GPU driver: llvmpipe, a VM without 3D) leaves pleamar-wm running
+    # on a black screen. When no monitor takes its picture, it is stopped and SAFE (labwc) shows one instead.
+    rm -f "$run/no-picture"
+    ( for _ in $(seq 20); do
+          sleep 1; kill -0 $hpid 2>/dev/null || exit 0
+          log="$(tail -c +$from "$state/session.log" 2>/dev/null)"
+          all=$(printf '%s\n' "$log" | grep -c '^session · monitor .*: [0-9]*×[0-9]* at')
+          bad=$(printf '%s\n' "$log" | grep -c 'the monitor does not take the buffer')
+          if [ "$all" -gt 0 ] && [ "$bad" -ge "$all" ]; then touch "$run/no-picture"; kill $hpid; exit 0; fi
+      done ) &
     wait $hpid
     rc=$?
     dt=$(( $(date +%s) - t0 ))
     echo "$desk ended: exit $rc after $dt s"
+    [ -e "$run/no-picture" ] && { systemctl --user stop latte-session.target 2>/dev/null; clean_env; run_safe desktop-crash "$desk: no monitor takes its picture (the card paints on the CPU: no GPU driver?)"; }
     systemctl --user stop latte-session.target 2>/dev/null
     clean_env
 
