@@ -110,8 +110,8 @@ Pôvodný zoznam (7. 10. 2026, 540 testov bez stavu): `docs_zaloha/2026-10-07-st
 | 043 | ChatGoo bez nainštalovaného Beepera (kvapka sa neukáže alebo ponúkne inštaláciu; ChatGoo nie je AI) | P1 | ⬜ | | |
 | 044 | GOO nastavenia prežijú reštart | P1 | ✅ | 13. 10. · latte-lab (bez obrazovky) | zapnutý pás výkonu a miesto kvapky prežili nový štart scény (`power.json`, `places.json`) |
 | 045 | GOO sa nezrúti pri chybe jedného dropu | P1 | ⬜ | | |
-| 542 | Engine Goo v nečinnosti: CPU a RAM pod dohodnutým limitom (10 min, latte-lab) *(nové)* | P1 | ⬜ | | |
-| 543 | Engine Goo 8 h bez úniku pamäte (RSS pleamaru a pomocníkov na začiatku a na konci) *(nové)* | P1 | ⬜ | | |
+| 542 | Engine Goo v nečinnosti: CPU a RAM pod dohodnutým limitom (10 min, latte-lab) *(nové)* | P1 | ⚠️ | 17. 11. · latte-lab | v pokoji latte-goo ~14 % jadra / 230 MB, pleamar-wm ~29 % jadra / 430 MB; limit nie je dohodnutý, záťaž v pokoji vysoká → 17.01, 17.06 (`bughunt/merania/2026-11-17-goo-8h.txt`) |
+| 543 | Engine Goo 8 h bez úniku pamäte (RSS pleamaru a pomocníkov na začiatku a na konci) *(nové)* | P1 | ⚠️ | 17. 11. · latte-lab | 2,5 h (PC sa vypína o 21:30): v pokoji bez rastu (pleamar-wm 425→428 MB za 1 h 45 min, Goo 230 MB); rastie iba pri novom načítaní scény / reštarte Goo (Goo +40 MB, wm desiatky MB). Zopakovať 8 h cez noc na hlavnom PC |
 | 544 | Kvapky sa po zväčšení neprekrývajú (pravidlo 22: odstup 0,95 Σr, ikry 1,2) *(nové)* | P1 | ⬜ | | |
 | 545 | Pás výkonu (pravý klik GooPower) odtlačí susedov a po vtiahnutí ich vráti na miesto *(nové)* | P1 | ✅ | 13. 10. · latte-lab (bez obrazovky) | pás výkonu odtlačil BarGoo z x 763 na 603 a po vtiahnutí ju vrátil na 760 |
 | 546 | Kvapky na všetkých štyroch okrajoch: karty sa otvoria dovnútra, nič neujde mimo obrazovky *(nové)* | P1 | ⬜ | | |

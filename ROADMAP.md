@@ -88,6 +88,8 @@ môže využiť jeho fakty, inak použije vlastný scan a databázu.
  27. [ ] **Optimalizácia** — zrýchlenie načítania, zmenšenie na úložisku, nižšia náročnosť na hardvér, bez obmedzenia výsledku — (17)
  28. [ ] **STRESTEST** — úplne posledný — (18)
 
+**Štvrtok 20. 11. 2026 (používateľ):** čistá inštalácia latte-lab od nuly (Fedora 45 Server → `get` → sprievodca), potom hlavné PC; body 4–8 zo zoznamu „Ďalej“ zatiaľ odložené (používateľ 17. 11.).
+
 **Aktuálny cieľ — alpha vydanie (30. 10. 2026):** najbližší 1–2-týždňový blok Claude weekly session využiť na
 dokončenie už rozpracovaných a schválených úloh **a** kompaktný grafický inštalátor (2.06); potom pripraviť verejné
 alpha vydanie s možnosťou prihlásiť dobrovoľných testerov (14.20). **Nepridávať nové produktové funkcie ani nápady.**
@@ -1552,7 +1554,7 @@ aj funkcie najnovšej verzie Raycastu** (overiť aktuálnu verziu a changelog v 
   - **17. 11.: odchody zo zastávky a „zajtra“** — `odchody Hlavná stanica`, `odchody z hlavnej stanice zajtra o 8:00`, `departures Wien Hbf`
     (Transitous `stoptimes`: čas, linka, smer, nástupište, naživo; zastávka podľa najpodobnejšieho mena), spoje s „dnes/zajtra“. Opravené mestá v inom
     páde: „z Bratislavy“ bolo „Erb Bratislavy“, „do Brna“ Pirna, „z Košíc“ chorvátsky Kosić, „Prahy“ francúzska dedina — teraz presné meno v krajine
-    používateľa → skloňovaný tvar veľkého mesta → podobné. Ostáva: dni v týždni („v piatok“), vlastný smerovač, kontakt do User-Agent.
+    používateľa → skloňovaný tvar veľkého mesta → podobné. Ostáva: dni v týždni („v piatok“), vlastný smerovač. Kontakt v User-Agent (používateľ 17. 11.: rawisz@seznam.cz) doplnený.
 **6B.50** [~] 14. 11. **Hľadanie súborov s náhľadom** (používateľ 14. 11., podľa Raycast Search Files): v LensShore nový režim **Súbory** (ikona v pruhu režimov a riadok „Hľadať súbory s náhľadom“ pri hľadaní): vľavo naposledy otvorené (`latte-files recent`) alebo nájdené podľa mena (`fd`) s filtrom druhu (Všetko → Dokumenty → Obrázky → Videá → Zvuk → Priečinky, jedno tlačidlo), vpravo **náhľad vybraného** — obrázok, titulná strana PDF alebo snímka videa (`latte-files thumb`), inak ikona — a údaje z `latte-props info` (Kde, Typ, Veľkosť, Zmenené); päta Otvoriť ↵ a Akcie Ctrl+K (pôvodná ponuka súboru). Výber riadi klávesnica **aj myš** (`on_choose` v `card.luau`, pravidlo `enter` v `rows.plm`). Panel ostáva **šírkou LensShore** (620 px: stĺpce sa delia o ňu; používateľ 14. 11.: vysunuté okno sa nesmie rozšíriť viac než LensShore). Nové: druh riadku `pic` a model `card_pic` (`parts/card.plm`, `rows.plm`, `lib/card.luau`), `goo/lib/filesview.luau`. Overené snímkami (png, mp4, markdown, nič nenájdené, myš). **Hľadanie dotiahnuté (14. 11.):** `.gitignore` sa neberie do úvahy (`--no-ignore-vcs`; šum ako `node_modules`, `target`, `.git`, `.cache` sa preskakuje), viac slov v ľubovoľnom poradí („shells build“), **radenie ako v launcheri** (presný názov, začiatok názvu, začiatky slov, nedávno otvorené, kratší názov), pri málo nájdených **preklep** (písmená najdlhšieho slova v poradí a blízko seba: `roadmp` → ROADMAP.md), ďalšie priečinky z nastavenia `lens_files_roots` (zatiaľ iba v súbore, UI príde). Opravené: po rozdelení karty na rolujúcu časť a pevnú pätu (`card_foot`) zmizla kávová **hladina** pod panelom — výška hladiny sa merala len z rolujúcich riadkov (`card.luau`, teraz z oboch). Opravená chyba zo zasúvania riadkov: riadky s poradím nad 32 sa v dlhom zozname nikdy nezobrazili (`rows.plm`).
 **Hľadanie podľa obsahu (14. 11.):** pod menami sekcia „V texte súborov“ — `latte-files grep TEXT DIR…` (ripgrep, najviac 40 súborov a 6 s, riadok s nálezom ako druhý riadok), v Dokumentoch, Stiahnutých a priečinkoch z `lens_files_roots` (celý domov by bol pomalý: **index chýba**). Oprava: názvy s diakritikou v údajoch náhľadu sa rezali po bajtoch a rozbili celú kartu (neplatné UTF-8, „error converting Lua string“) — skracovanie je teraz po písmenách. Oprava rolovania: pravidlo pri výbere nechá zoznam za koncom, ak je obsah kratší (`rows.plm`).
 **Chýba:** index súborov (`latte-index` zatiaľ bez hľadania; obsah celého disku), náhľad textu a zvuku, filter ako rozbaľovacia ponuka, priečinky hľadania v Nastaveniach, v LensGoo.
@@ -4788,6 +4790,10 @@ mimo FILES — rozhodne používateľ), `latte-goo` 26 MB (ladiace symboly? `str
 
 **17.09** [ ] (17. 11.) **Zamknutá obrazovka kreslí celú noc:** pri „obrazovku nevypínať“ (Nastavenia › Zámok, `screen=0`) beží `lockscreen.plm` pri 60 fps a berie ~25 % CPU (latte-lab, zamknuté 7 h). Návrh: po `sys_idle 3` (6 min bez dotyku) zámku znížiť `rate` (napr. 10–20) alebo zastaviť dážď/more, pri pohybe myši späť. Rozhodne používateľ (vzhľad), spolu s návrhom k dýchaniu Goo (17.06).
 
+**17.10** [ ] (17. 11., z 543) **Pamäť po novom načítaní scény:** každé načítanie `goo.plm` (nasadenie, úprava) alebo reštart Goo
+nechá v latte-goo ~40 MB a v pleamar-wm desiatky MB. V pokoji pamäť stojí, takže bežného používateľa to netrápi; zistiť, čo ostáva
+(textúry kariet, sklo, staré telá), a uvoľniť. Merané `bughunt/meranie-goo.sh`.
+
 ---
 
 ## 18. [ ] STRESTEST
@@ -4839,6 +4845,9 @@ pripojenie a odpojenie za behu (6A.04), BarGoo na druhom monitore, presun okna n
 **18.10** [~] **Hľadanie chýb pred hlavným PC a zverejnením** (používateľ 17. 11.: STRESTEST teraz, pomocníci smú): 6 oblastí prečítaných
 a skúšaných v pieskovisku; 9 vážnych opravených a nasadených, otvorené zoradené v `bughunt/najdene-chyby.md` (17. 11.). Beží 542/543:
 `bughunt/meranie-goo.sh` → `bughunt/merania/2026-11-17-goo-8h.txt` (CPU a pamäť latte-goo a pleamar-wm každú minútu, 8 h).
+  17. 11. večer: **542/543 vyhodnotené** (STRESTEST): v pokoji bez úniku pamäte; pamäť rastie pri novom načítaní scény Goo a reštarte
+  (Goo +40 MB, pleamar-wm desiatky MB) → 17.10; CPU v pokoji Goo ~14 %, pleamar-wm ~29 % jadra (17.01). **Zopakovať na hlavnom PC
+  cez noc 8 h** (používateľ spí): `setsid nohup bughunt/meranie-goo.sh bughunt/merania/DATUM-hlavne-pc.txt 8 1 &`, ráno `bughunt/merania/suhrn.sh`.
 
 ---
 

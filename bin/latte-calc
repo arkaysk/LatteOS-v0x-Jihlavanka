@@ -354,7 +354,7 @@ def elapsed(word, now):
 # ── connections: Transitous (MOTIS), the open routing service of public transport ─────────────────────────────────────
 PLAN = "https://api.transitous.org/api/v5/plan"
 GEOCODE = "https://api.transitous.org/api/v1/geocode"
-AGENT = "latteos-calc/0.1"                    # Transitous asks every client to say who it is (name, version, contact); ponytail: no contact is given until the project has one
+AGENT = "latteos-calc/0.1 (+https://github.com/arkaysk/LatteOS-v0x-Jihlavanka; rawisz@seznam.cz)"     # Transitous asks every client to say who it is: name, version, contact (user 17. 11.)
 TRANSIT_CACHE = os.path.join(os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"), "latteos", "transit.json")
 
 
