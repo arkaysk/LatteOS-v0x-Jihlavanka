@@ -29,7 +29,7 @@ end
 function M.lock()
     if fact.locked then return end
     card.close()
-    run("latte-lock", {}, function(_, code) if code ~= 0 then lock_here() end end)
+    run("latte-lock", { "--scene" }, function(_, code) if code ~= 0 then lock_here() end end)     -- only the scene: latte-lock asks Goo itself
 end
 
 on("lock_now", M.lock)

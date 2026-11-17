@@ -9,7 +9,7 @@ return function(line)
     -- something has to be worked out: an operator between two things, or a function
     if not (s:find("[%d%)][%+%-%*/%^%%][%d%(%a%-]") or s:find("%a+%(")) then return nil end
     local at = 1
-    local expr
+    local expr, power
 
     local function atom()
         local c = s:sub(at, at)
@@ -21,7 +21,7 @@ return function(line)
             return v
         elseif c == "-" then
             at += 1
-            return -atom()
+            return -power()             -- -2^2 is -4: the power first
         end
         local number = s:match("^%d+%.?%d*", at) or s:match("^%.%d+", at)
         if number then
@@ -41,7 +41,7 @@ return function(line)
         end
         return CONSTANTS[name] or error("unknown")
     end
-    local function power()
+    power = function()
         local v = atom()
         if s:sub(at, at) == "^" then at += 1 return v ^ power() end
         return v

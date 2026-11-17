@@ -6,7 +6,12 @@ local FILE = "timers.json"
 local data
 local base, c0 = os.time(), os.clock()       -- the clock by seconds, and a finer one to count on from it
 
-function M.now() return math.floor((base + (os.clock() - c0)) * 1000) end
+function M.now()
+    local t = base + (os.clock() - c0)
+    -- os.clock stands still while the PC sleeps: after a suspend the clock by seconds leads, and is taken again
+    if math.abs(os.time() - t) > 2 then base, c0 = os.time(), os.clock() t = base end
+    return math.floor(t * 1000)
+end
 -- 5:07, or 1:05:07 past the hour; with tenths for a stopwatch
 function M.clock(ms, tenths)
     ms = math.max(0, math.floor(ms))

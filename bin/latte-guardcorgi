@@ -69,9 +69,9 @@ def note(what, ident, text):
     try:
         lines = read(LOG).splitlines()[-(LOG_KEEP - 1):] + [line]
         os.makedirs(os.path.dirname(LOG), exist_ok=True)
-        with open(LOG + ".tmp", "w") as f:
+        with open(LOG + ".%d.tmp" % os.getpid(), "w") as f:
             f.write("\n".join(lines) + "\n")
-        os.replace(LOG + ".tmp", LOG)
+        os.replace(LOG + ".%d.tmp" % os.getpid(), LOG)
     except OSError:
         pass
 
@@ -308,9 +308,9 @@ def switched_off():
 
 def keep_choices(d):
     os.makedirs(os.path.dirname(CHOICES), exist_ok=True)
-    with open(CHOICES + ".tmp", "w") as f:
+    with open(CHOICES + ".%d.tmp" % os.getpid(), "w") as f:
         json.dump(d, f)
-    os.replace(CHOICES + ".tmp", CHOICES)
+    os.replace(CHOICES + ".%d.tmp" % os.getpid(), CHOICES)
 
 
 def kept():
@@ -593,7 +593,7 @@ def watch():
             except Exception as e:                       # one component's trouble does not stop the watch over the others
                 print("guardcorgi: %s: %s" % (ident, e), file=sys.stderr, flush=True)
         shown = [{k: c[k] for k in ("id", "name", "state", "restarts", "off")} for c in mine.values()]
-        tmp = STATE + ".tmp"
+        tmp = STATE + ".%d.tmp" % os.getpid()
         with open(tmp, "w") as f:
             json.dump(shown, f)
         os.replace(tmp, STATE)
@@ -673,7 +673,7 @@ def manifest():
             files[path] = files[real] = sha(real)
     body = {"version": 1, "written": int(time.time()), "files": files, "components": [c[0] for c in COMPONENTS]}
     os.makedirs(os.path.dirname(MANIFEST), exist_ok=True)
-    tmp = MANIFEST + ".tmp"
+    tmp = MANIFEST + ".%d.tmp" % os.getpid()
     with open(tmp, "w") as f:
         json.dump(body, f, indent=1, sort_keys=True)
     os.chmod(tmp, 0o644)

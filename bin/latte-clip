@@ -48,9 +48,9 @@ def times():
 
 def save_times(t):
     os.makedirs(STATE, exist_ok=True)
-    with open(TIMES + ".part", "w") as f:
+    with open(TIMES + ".%d.part" % os.getpid(), "w") as f:
         json.dump(t, f)
-    os.replace(TIMES + ".part", TIMES)
+    os.replace(TIMES + ".%d.part" % os.getpid(), TIMES)
 
 
 def cliphist(*args, data=None):
@@ -83,9 +83,9 @@ def kind(text):
 def decode(ident, path):
     if not os.path.exists(path):
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path + ".part", "wb") as f:
+        with open(path + ".%d.part" % os.getpid(), "wb") as f:
             f.write(cliphist("decode", ident))
-        os.replace(path + ".part", path)
+        os.replace(path + ".%d.part" % os.getpid(), path)
     return path
 
 
@@ -198,6 +198,12 @@ def store():
 
 
 def main(a):
+    # one at a time for whatever writes the times: a copy made while `list` forgets old ones would lose one or the other
+    if a and a[0] in ("store", "list", "delete", "replace"):
+        import fcntl
+        os.makedirs(STATE, exist_ok=True)
+        lock = open(os.path.join(STATE, "clip.lock"), "w")
+        fcntl.flock(lock, fcntl.LOCK_EX)
     if a == ["store"]:
         return store()
     if a == ["list"]:

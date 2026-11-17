@@ -103,9 +103,15 @@ ShellRoot {
         property var data: null
         property string buf: ""
         signal done()
-        function ask(args) { running = false; command = args; running = true }
+        // queue: writes go one after another and none is cut off (a new event's add, then its notes and alarms);
+        // without it a newer question replaces the one running (reads, where only the latest answer counts)
+        property bool queue: false
+        property var waiting: []
+        function ask(args) { if (queue && running) { waiting = waiting.concat([args]); return } running = false; command = args; running = true }
         stdout: StdioCollector { onStreamFinished: q.buf = this.text }
-        onExited: { try { q.data = JSON.parse(q.buf) } catch (e) { q.data = null } q.done() }
+        onExited: { try { q.data = JSON.parse(q.buf) } catch (e) { q.data = null }
+                    if (q.waiting.length) { q.command = q.waiting[0]; q.waiting = q.waiting.slice(1); q.running = true; return }
+                    q.done() }
     }
     Ask { id: evq; onDone: { shell.events = data || []; if (shell.picked) shell.picked = shell.events.find(e => e.uid === shell.picked.uid && e.date === shell.picked.date) || null } }
     // ── the work calendar: the working days of the year by month, and two small calculators (latte-cal workdays) ──
@@ -135,7 +141,7 @@ ShellRoot {
     Timer { interval: 6000; repeat: true; running: true; onTriggered: cfgq.ask(["latte-cal", "settings"]) }
     Ask { id: yearq; onDone: { const l = {}; for (const e of data || []) if (e.kind === "event") l[e.date] = (l[e.date] || 0) + (e.time ? Math.max(0.5, (shell.minutes(e.end) - shell.minutes(e.time)) / 60) : 2); shell.load = l } }
     Ask { id: skyq; onDone: shell.sky = data && data.days ? data.days : [] }
-    Ask { id: writer; onDone: shell.reload() }
+    Ask { id: writer; queue: true; onDone: shell.reload() }
     function reload() {
         evq.ask(["latte-cal", "events", "--from", iso(plus(range[0], -7)), "--to", iso(plus(range[1], 7))])
         yearq.ask(["latte-cal", "events", "--from", iso(plus(monday(new Date()), -84)), "--to", iso(plus(monday(new Date()), 98))])

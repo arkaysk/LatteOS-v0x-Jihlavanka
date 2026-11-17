@@ -51,6 +51,17 @@ def told(argv, lines=False, timeout=30, **env):
         return {"error": "%s: %s" % (argv[0], e)}
 
 
+def allowed(ctx, what, detail):
+    """The person's word in LensAI before an AI reads their conversations or windows or asks another AI (user 17. 11.):
+    None when allowed, else what to answer the agent."""
+    try:
+        who = ctx.session.client_params.clientInfo.name
+    except AttributeError:
+        who = "AI"
+    r = told(["latte-skill", "allow", what, detail, "--by", who], timeout=150)
+    return None if isinstance(r, dict) and r.get("answer") == "yes" else {"error": "the user did not allow it", **(r if isinstance(r, dict) else {})}
+
+
 def run(tool, args):
     try:
         return subprocess.run([shutil.which(tool, path=SEARCH) or tool] + args, capture_output=True, text=True, timeout=30,
@@ -75,15 +86,23 @@ def serve():
                                         "each done only after the user allowed it in LensAI.")
 
     @server.tool()
-    def conversations() -> list | dict:
+    def conversations(ctx: Context) -> list | dict:
         """The user's conversations with every AI, kept in LensAI, the newest first: id, title, provider, model, when
-        it was last written to, how many messages, and where it began (from: lensai, lensgoo, lensshore)."""
+        it was last written to, how many messages, and where it began (from: lensai, lensgoo, lensshore).
+        The user allows it in LensAI first; do not ask again for what was refused."""
+        no = allowed(ctx, "conversations", "")
+        if no: return no
         found = told(["latte-ai", "chats"])
         return [c for c in found if not c.get("machine")] if isinstance(found, list) else found
 
     @server.tool()
-    def conversation(id: str) -> dict:
-        """One conversation whole, by its id from `conversations`: its messages with who said each and when."""
+    def conversation(id: str, ctx: Context) -> dict:
+        """One conversation whole, by its id from `conversations`: its messages with who said each and when.
+        The user allows it in LensAI first."""
+        found = told(["latte-ai", "chats"])
+        title = next((c.get("title", "") for c in found if c.get("id") == id), "") if isinstance(found, list) else ""
+        no = allowed(ctx, "conversation", title or id)
+        if no: return no
         return told(["latte-ai", "chat", id]) or {"error": "no such conversation"}
 
     @server.tool()
@@ -106,8 +125,11 @@ def serve():
         return told(["pleamar-wm", "agents", "--json"], lines=True)
 
     @server.tool()
-    def windows() -> dict:
-        """The windows open on the desktop: program, title, where each is. Their contents are not read."""
+    def windows(ctx: Context) -> dict:
+        """The windows open on the desktop: program, title, where each is. Their contents are not read.
+        The user allows it in LensAI first."""
+        no = allowed(ctx, "windows", "")
+        if no: return no
         done = run("pleamar-wm", ["agent", "windows"]) if not turned_off() else None
         if done and done.returncode == 0:
             return {"windows": done.stdout}
@@ -133,13 +155,15 @@ def serve():
         return told(["latte-skill", "ask", skill, json.dumps(args), "--by", who], timeout=150)
 
     @server.tool()
-    def ask(provider: str, model: str, question: str) -> dict:
+    def ask(provider: str, model: str, question: str, ctx: Context) -> dict:
         """Asks another AI of `providers` (its id, and the id of one of its models) one question and gives its answer:
         a second opinion, or what that one knows or does better. One question, no conversation. It uses up the
         user's limit with that service and the user sees who was asked and what: do not pass on what the user
         would not send to that service, and do not ask what you can answer yourself."""
         if os.environ.get("LATTE_NO_TOOLS"):
             return {"error": "an AI that another AI asked answers itself: it cannot ask on"}
+        no = allowed(ctx, "ask", "%s · %s: %s" % (provider, model, question))      # the user sees whom and what before it goes
+        if no: return no
         r = told(["latte-ai", "send", "new", provider, model, question, "--from", "ask"], timeout=310, LATTE_NO_TOOLS="1")
         return {k: r[k] for k in ("answer", "ok") if k in r} if isinstance(r, dict) and "answer" in r else r
 

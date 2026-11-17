@@ -22,6 +22,7 @@ fn execute(args: &[String]) -> Result<String, String> {
                 "updated": summary.updated,
                 "unchanged": summary.unchanged,
                 "missing": summary.missing,
+                "skipped": summary.skipped,
             }).to_string())
         }
         [command, ..] if command == "status" && command_len == 1 => {

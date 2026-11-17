@@ -433,9 +433,9 @@ def set_settings(change):
         elif k == "hours" and isinstance(v, (int, float)) and 0 < v <= 24:
             now[k] = v
     os.makedirs(os.path.dirname(SETTINGS), exist_ok=True)
-    with open(SETTINGS + ".new", "w") as f:
+    with open(SETTINGS + ".%d.new" % os.getpid(), "w") as f:
         json.dump(now, f)
-    os.replace(SETTINGS + ".new", SETTINGS)
+    os.replace(SETTINGS + ".%d.new" % os.getpid(), SETTINGS)
     return now
 
 
@@ -766,9 +766,9 @@ def save_state(st, now):
     old = (now - dt.timedelta(days=3)).timestamp()
     st["fired"] = {k: v for k, v in st["fired"].items() if v > old}
     os.makedirs(os.path.dirname(STATE), exist_ok=True)
-    with open(STATE + ".tmp", "w") as f:
+    with open(STATE + ".%d.tmp" % os.getpid(), "w") as f:
         json.dump(st, f)
-    os.replace(STATE + ".tmp", STATE)
+    os.replace(STATE + ".%d.tmp" % os.getpid(), STATE)
 
 
 def due(now, st):

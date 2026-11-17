@@ -42,3 +42,49 @@ Nastavenia › Sklo vypnúť úplne (kvapky bez skla) a pozrieť, či pás zmizn
 - Scéna pritom po zavretí karty hlási skrytú (`card_alive` = 0): staré snímky nie sú zo scény. **Zdroj je sklo (lens), ktoré číta snímky obrazovky** (pleamar berie pozadie pre sklo po prezentovaní, `--docs reference`), a pleamar-wm ich vracia zastarané; za Hyprlandu to bolo inak. Súhlasí to s tým, že artefakty začali po prechode na pleamar-wm.
 - **Prečo Sklo 0 nič nezmenilo:** `engine.luau` nastaví `fact.panes = 1` bez ohľadu na úroveň a `lens` v `card.plm` je zapnutý pre `card.pn` aj pri úrovni 0. Oprava: úroveň skla 0 vypne `lens` (a `panes`); ešte nespravená (pokus pred vrátením mal iba `panes`, nie `lens`).
 - Test pre používateľa: `~/.config/systemd/user/latte-goo.service.d/test-bez-skla.conf` (`PLEAMAR_NO_LENS=1`).
+
+## 17. 11. 2026 — hľadanie chýb pred inštaláciou na hlavné PC a pred zverejnením (Claude, 6 pomocníkov)
+
+Prečítané a vyskúšané v pieskovisku: inštalácia, štart a SAFE, nástroje `bin/`, Goo (Luau), aplikácie QML, Rust. Testy: `cargo test`
+(9 crate), `tests/test_session.sh`, `tests/test_bin.py`, `tests/check.sh` — všetko prešlo; QML aplikácie sa načítali bez chýb.
+V gite nie je heslo ani `.claude-local`. Značky: **[x]** opravené a nasadené na latte-lab 17. 11., **[ ]** otvorené.
+
+**Opravené (overené v pieskovisku alebo testom):**
+- [x] DualBrew › Rozbaliť prepísal súbor s rovnakým menom a Ctrl+Z ho potom zmazal natrvalo (`latte-files`, overené: PRECIOUS → NEW).
+  Teraz do skrytého priečinka a von pod voľným menom.
+- [x] Rozdeliť (`split`) prepísal existujúce `SÚBOR.000` → `SÚBOR (2).000`. Odobrať obľúbený priečinok s `.` v mene odobral aj iné.
+- [x] Ctrl+Z nevrátil súbor zmazaný na inom disku (kôš `.Trash-UID` na 2 TB disku) — teraz hľadá aj tam.
+- [x] Prihlasovacia obrazovka: labwc s predvolenými skratkami → Super+Enter otvoril terminál bez hesla (`system/greeter/labwc/rc.xml`).
+- [x] Štart s NVIDIA: `latte-boot` čakal iba na prvú `/dev/dri/card*` (simpledrm) → celá relácia softvérovo. Teraz čaká na skutočný ovládač (do 10 s).
+- [x] SAFE › „Skúsiť plnú plochu“ nefungovalo do reštartu (session.env patrí rootovi) → jednorazový príznak `~/.local/state/latteos/try-normal`.
+- [x] `install`: zlyhaný krok (`systemctl enable greetd`, SAFE položky…) sa stratil a sprievodca ohlásil „hotovo“ → teraz chyba so zoznamom krokov;
+  `semanage` opakovateľné, `snapper` voliteľný (`- ` na začiatku riadku v `[steps]`). Firmvér (`--gpu`) sa odstráni pred zákazom v dnf.
+- [x] Goo: `settings.json` sa mohol prepísať takmer prázdnym, keď ho Nastavenia práve zapisovali (`engine.luau`); AppCloud `tabs = 0` (`cloud.luau`);
+  minútka a stopky po uspatí meškali o čas spánku (`timers.luau`); ISO týždeň 31. 12. 2024 = 53 (`clockgoo.luau`); posunuté mestá svetového času
+  pri neplatnej zóne; −03:30 zle; „UTC+5“ namiesto „UTC+5:30“; „zajtra“ cez +86400 pri zmene času; kalkulačka `-2^2` = 4.
+
+**Otvorené — vysoká priorita:**
+- [x] (17. 11.: `folder_of`/`drive_c_path` odmietnu `../`, remove maže overené meno) `latte-barista` (`remove`, `install`): `id` a `folder` z receptu sa nekontrolujú — recept s `../` zmaže priečinok mimo hier (overené pomocníkom).
+- [x] (17. 11.: wine pri inštalácii v plote; plot: vlastné /tmp, z /run/user iba Wayland/PipeWire/Pulse, iné disky skryté; Proton cez umu v plote neoverený) `latte-barista` install: `wineboot`, `msiexec` a inštalátor bežia mimo bubblewrap (prístup k celému domovu a k 2 TB disku); `fence` púšťa celé `/run/user/UID`.
+- [x] (17. 11.: súhlas v LensAI, `latte-skill allow`) `latte-mcp`: `conversation(s)`, `windows`, `ask` bez súhlasu používateľa — agent s prompt injection prečíta konverzácie a pošle ich inej AI. **Rozhodnúť.**
+- [x] (17. 11.: nečitateľné sa preskočí a spočíta v `skipped`, iba jeden disk; ukladanie po dávkach nie) `latte-index`: jeden nečitateľný súbor (práva, `.hidden` mimo UTF-8, súbor sa mení, chýba `file`) zahodí celé indexovanie; prechádza aj cez iné
+  disky a sieťové pripojenia bez obmedzenia.
+- [x] (17. 11.: po 20 s bez monitora sa pýta jadra — nič pripojené = vypnutý, čaká; pripojený a bez obrazu = SAFE) Žiadny monitor (NVIDIA GBM/modeset zlyhá): `latte-screens --watch` čaká navždy → čierna obrazovka bez SAFE (`latte-session` 162–168).
+- [x] (17. 11.: SIGTERM od systemd = odhlásenie/vypnutie, počet pádov sa vynuluje) Reštart do 60 s po prihlásení sa počíta ako pád → po dvoch rýchlych reštartoch (bežné po čistej inštalácii) štart do SAFE.
+
+**Otvorené — stredná:**
+- [x] (17. 11.: hypridle a Super+L priamo `latte-lock`: scéna → jej spustenie → zámok Goo; skutočné zamknutie neskúšané) Zamknutie (nečinnosť, uspatie, Super+L) ide iba cez Goo — keď Goo padá alebo sa reštartuje, PC sa uspí nezamknuté.
+- [x] (17. 11.: koniec do 5 s = pád; headless s pauzou) pleamar-wm skončí s kódom 0 hneď po štarte → slučka prihlasovania bez SAFE; v `headless` slučka bez pauzy.
+- [x] (17. 11.: `--require latte-goo`) Zdravie relácie `--require pleamar` prejde aj vtedy, keď Goo padá (iné scény sa volajú tiež `pleamar`).
+- [x] (17. 11.: dočasné meno s PID všade, zámok v latte-clip; overené 3×300 súbežných zápisov bez chyby) Stavové JSON (`latte-clip`, `latte-guardcorgi`, `latte-skill`, `latte-wall`, `latte-cal`) zapisujú cez pevné meno `.new`/`.tmp` → súbežné behy padajú
+  alebo zapíšu polovicu (overené: 2 výnimky a 1 poškodené čítanie z 3 súbežných).
+- [x] (17. 11.: rad úkonov, chyba v päte) DualBrew: všetky úkony jeden `Process` — nový úkon zabije bežiaci (napr. mazanie 300 súborov v polovici); chyby sa neukážu.
+- [x] (17. 11.: zápisy v rade) Kalendár: zápisy zdieľajú jeden proces — nová udalosť bez poznámok/pripomienok, keď medzitým príde iný zápis.
+- [x] (17. 11.: po zlyhaní ponúkne Späť) Chapolera: zlyhané `plan-apply` sa tvári ako nespustené a ponúkne Použiť znova (časť súborov už presunutá, bez Späť).
+- [x] (17. 11.: Aarambh `uninstall.sh --purge` v [undo]; neskúšané naostro) `install --remove` nevráti ponuku štartu (Aarambh, BootOrder, `latte-bootmenu-safe.service`).
+- [x] (17. 11.) `get`: pri opakovanom behu po zlyhanom `dnf` číta starý kód návratu 0; `old-amd.sh`: prerušené sťahovanie sa už nikdy nezopakuje.
+- [x] (17. 11.: voľné meno; tabulátor/nový riadok v mene sa do Späť nezapíše) `latte-walls`: tapeta s rovnakým názvom prepíše existujúci súbor. `latte-files`: meno súboru s tabulátorom rozbije záznam Späť.
+
+**Otvorené — nízka (výber):** latte-hw: Surface/„microsoft“ v DMI = VM → softvérové kreslenie; Intel Arc „minimal“; Ice/Jasper Lake chýbajú;
+btrfs: varovanie HDD nikdy; `df -B1G` zaokrúhľuje nahor. `latte-ai invite` ostáva bežať po odhlásení (3 procesy). SAFE sa nedá zamknúť.
+Budík vynechá, keď Goo stojí práve v tú minútu. `latte-apps` berie `--all` ako balík. lockscreen sťahuje správy každú minútu aj odomknutý.

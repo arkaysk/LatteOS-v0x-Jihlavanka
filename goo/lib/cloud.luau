@@ -16,7 +16,7 @@ local cols, win, first = 8, 80, 0            -- columns; apps in the model: the 
 local KINDS = { { "Network", N("Internet") }, { "Office", N("Office") }, { "AudioVideo", N("Media") }, { "Graphics", N("Graphics") },
                 { "Game", N("Games") }, { "Development", N("Development") }, { "System", N("System") } }
 
-local all, shown, tabs = {}, {}, 0, {}
+local all, shown, tabs = {}, {}, {}
 local function num(v, d) return type(v) == "number" and v or d end
 local function kinds_of(a) return type(a.categories) == "table" and table.concat(a.categories, ";") or tostring(a.categories or "") end
 

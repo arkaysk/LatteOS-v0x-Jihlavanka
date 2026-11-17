@@ -1,6 +1,8 @@
 <?xml version="1.0"?>
-<!-- labwc only carries the login scene: no decorations, no shortcuts of its own. -->
+<!-- labwc only carries the login scene: no decorations, no shortcuts of its own. No <default/>: labwc's defaults open
+     a terminal (Super+Enter) as the greeter's user, without a password. A keybind of its own, doing nothing, keeps labwc
+     from adding its defaults when it finds none. -->
 <labwc_config>
   <core><decoration>none</decoration></core>
-  <keyboard><default/></keyboard>
+  <keyboard><keybind key="W-Return"><action name="None"/></keybind></keyboard>
 </labwc_config>

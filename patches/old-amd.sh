@@ -34,8 +34,11 @@ fi
 if [ ! -f "$prefix/lib64/libvulkan_radeon.so" ]; then
     dnf builddep -y mesa                         # what Fedora itself builds Mesa with
     as_user mkdir -p "$work"
-    [ -f "$work/mesa-$MESA.tar.xz" ] || as_user curl -fsSL -o "$work/mesa-$MESA.tar.xz" "https://archive.mesa3d.org/mesa-$MESA.tar.xz"
-    echo "$MESA_SHA256  $work/mesa-$MESA.tar.xz" | sha256sum -c --quiet
+    # a download cut off half way is not kept: it goes to .part, and only a whole one with the right sum is taken
+    echo "$MESA_SHA256  $work/mesa-$MESA.tar.xz" | sha256sum -c --quiet 2>/dev/null || {
+        as_user curl -fsSL -o "$work/mesa-$MESA.tar.xz.part" "https://archive.mesa3d.org/mesa-$MESA.tar.xz"
+        echo "$MESA_SHA256  $work/mesa-$MESA.tar.xz.part" | sha256sum -c --quiet || { rm -f "$work/mesa-$MESA.tar.xz.part"; exit 1; }
+        mv -f "$work/mesa-$MESA.tar.xz.part" "$work/mesa-$MESA.tar.xz"; }
     as_user tar -xf "$work/mesa-$MESA.tar.xz" -C "$work"
     cd "$work/mesa-$MESA"
     as_user meson setup build --buildtype=release --prefix="$prefix" -Dplatforms=x11,wayland \

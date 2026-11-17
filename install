@@ -181,13 +181,13 @@ def firmware_off(cards, say):
     drop = [p for p in sorted(set(FIRMWARE.values()) - keep)
             if subprocess.run(["rpm", "-q", "--whatrequires", p], capture_output=True).returncode]
     if not drop: return
+    there = [p for p in drop if not subprocess.run(["rpm", "-q", p], capture_output=True).returncode]
+    if there:                       # first off, then kept off: dnf cannot remove a package it already excludes
+        say("   $ dnf remove -y --noautoremove " + " ".join(there))
+        subprocess.run(["dnf", "remove", "-y", "--noautoremove", "--setopt=excludepkgs="] + there)
     with open(EXCLUDE, "w") as f:
         f.write("# LatteOS (install --gpu): firmware of graphics cards this PC does not have; delete this file for another card\n"
                 "[main]\nexcludepkgs=%s\n" % ",".join(drop))
-    there = [p for p in drop if not subprocess.run(["rpm", "-q", p], capture_output=True).returncode]
-    if there:
-        say("   $ dnf remove -y --noautoremove " + " ".join(there))
-        subprocess.run(["dnf", "remove", "-y", "--noautoremove"] + there)
     say("   left out, firmware of cards this PC does not have: " + " ".join(drop))
 
 
@@ -265,7 +265,7 @@ def main(a):
         k = next(i for i, p in enumerate(parts) if p[0] == name)
         if share == 0.0: say("@step %d/%d %s" % (k + 1, len(parts), parts[k][1]))
         say("@percent %d" % int(100 * (sum(w for _, _, w in parts[:k]) + parts[k][2] * share) / whole))
-    run = (lambda cmd: say("   $ " + cmd)) if (root or not act) else (lambda cmd: (say("   $ " + cmd), subprocess.run(cmd, shell=True))[0])
+    run = (lambda cmd: say("   $ " + cmd)) if (root or not act) else (lambda cmd: (say("   $ " + cmd), subprocess.run(cmd, shell=True))[1])
     kernels = sorted(os.listdir("/lib/modules")) if os.path.isdir("/lib/modules") else []
 
     if "--remove" in flags:
@@ -445,13 +445,19 @@ def main(a):
     say("== the steps" + (" (not run under --root)" if root and act else ("" if act else " (not run without --go)")))
     part("steps")
     todo = commands(sections.get("steps", []), users(), kernels)
+    failed = []
     for n, cmd in enumerate(todo):
-        if "--go" in flags: run(cmd); part("steps", (n + 1) / len(todo))
+        may_fail = cmd.startswith("- ")            # as in a Makefile: a step that may fail without the install failing
+        cmd = cmd[2:] if may_fail else cmd
+        if "--go" in flags:
+            done = run(cmd)
+            if not root and done.returncode and not may_fail: failed.append(cmd)
+            part("steps", (n + 1) / len(todo))
         else: say("   $ " + cmd)
     if with_boot:
         part("boot")
         if subprocess.run(["sh", os.path.join(HERE, "patches", "aarambh", "setup-latteos.sh")]).returncode:
-            say("   the boot menu was not installed: the PC starts through GRUB as before")
+            say("   the boot menu was not set up whole: if the PC starts into Aarambh, LatteOS is there under its own name; sudo ./install --remove takes the menu off")
     if building:
         part("driver")
         building.wait()
@@ -463,6 +469,11 @@ def main(a):
         if mok:
             say("@mok " + mok)
             say("   Secure Boot: at the next start MokManager asks for the password " + mok + " once (Enroll MOK, Continue, Yes)")
+    if failed:
+        # the wizard must not say "installed" when the login screen or SAFE was not set up
+        say("install: these steps failed:")
+        for cmd in failed: say("   " + cmd)
+        return 1
     if "--progress" in flags and "--go" in flags: say("@percent 100")
     if "--go" in flags and not root:
         say("LatteOS is in place. It starts with the next boot: the login screen is greetd's.")

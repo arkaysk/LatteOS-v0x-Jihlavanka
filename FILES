@@ -878,14 +878,14 @@ optional /usr/bin/whyd: whyd (github.com/vmaltarello/whyd, the rpm of its releas
 groupadd -f latte
 usermod -aG latte USER
 systemd-tmpfiles --create /usr/lib/tmpfiles.d/latteos.conf
-semanage fcontext -a -t xdm_var_run_t '/run/latteos(/.*)?'          # the login screen runs as xdm_t and may read only its own labels
-semanage fcontext -a -t xdm_var_lib_t '/var/lib/latteos/login(/.*)?'
+semanage fcontext -a -t xdm_var_run_t '/run/latteos(/.*)?' || semanage fcontext -m -t xdm_var_run_t '/run/latteos(/.*)?'          # the login screen runs as xdm_t and may read only its own labels
+semanage fcontext -a -t xdm_var_lib_t '/var/lib/latteos/login(/.*)?' || semanage fcontext -m -t xdm_var_lib_t '/var/lib/latteos/login(/.*)?'
 restorecon -R /run/latteos /var/lib/latteos/login
 fc-cache /usr/share/fonts/latteos
 plymouth-set-default-theme latteos -R                               # rebuilds the initramfs
 /etc/kernel/install.d/96-latteos-safe.install add VERSION
 latte-guardcorgi manifest                                           # what LatteOS is made of, with hashes, for GuardCorgi
-snapper -c root set-config ALLOW_GROUPS=latte SYNC_ACL=yes          # Properties › Previous versions: LatteOS's users may read the snapshots (each file keeps its own rights)
+- snapper -c root set-config ALLOW_GROUPS=latte SYNC_ACL=yes          # Properties › Previous versions: LatteOS's users may read the snapshots (each file keeps its own rights)
 systemctl daemon-reload
 systemctl enable latte-boot.service greetd.service latte-netd.service
 systemctl enable --now latte-doghouse.timer                         # the root's watch over GuardCorgi
@@ -897,6 +897,8 @@ systemctl set-default graphical.target
 systemctl disable --now latte-netd.service
 systemctl disable --now latte-doghouse.timer
 systemctl disable latte-boot.service greetd.service
+systemctl disable latte-bootmenu-safe.service 2>/dev/null || true
+[ ! -r /etc/aarambh.env ] || { . /etc/aarambh.env; [ ! -r "$ESP_DIR/hooks/uninstall.sh" ] || bash "$ESP_DIR/hooks/uninstall.sh" --purge; }     # the boot menu: its EFI entry, folder and key go, the PC starts through GRUB again
 systemctl enable NetworkManager-wait-online.service
 /etc/kernel/install.d/96-latteos-safe.install remove VERSION
 plymouth-set-default-theme spinner -R

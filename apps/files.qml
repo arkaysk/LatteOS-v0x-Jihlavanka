@@ -388,8 +388,16 @@ ShellRoot {
     readonly property var fsColours: ({ "vfat": "#c9a227", "ext4": "#5f9fb8", "btrfs": "#7d9be0", "xfs": "#6fb39a", "ntfs": "#a58be0", "exfat": "#d6895f", "swap": "#c4677a" })
     property string placesText: ""
 
-    Process { id: doer; onExited: { left.again(); right.again() } }
-    function act(args) { doer.running = false; doer.command = ["latte-files"].concat(args); doer.running = true }
+    // one at a time, in the order asked: a new action waits for the one running (a delete of 300 files is not cut in
+    // half by a rename), and one that fails says so at the foot
+    property var queued: []
+    Process { id: doer
+        stderr: StdioCollector { id: doerErr }
+        onExited: code => {
+            if (code !== 0) shell.say(I18n.tr("It did not go through: {what}", { what: doerErr.text.trim().split("\n").pop() || doer.command[1] }))
+            if (shell.queued.length) { doer.command = shell.queued[0]; shell.queued = shell.queued.slice(1); doer.running = true }
+            else { left.again(); right.again() } } }
+    function act(args) { const c = ["latte-files"].concat(args); if (doer.running) queued = queued.concat([c]); else { doer.command = c; doer.running = true } }
     // a moment as the lists say it: today with the hour, else the day
     function when(t) { const d = new Date(t * 1000); return d.toDateString() === new Date().toDateString() ? I18n.tr("Today") + " " + Qt.formatTime(d, "hh:mm") : Qt.formatDateTime(d, "d. M. yyyy  hh:mm") }
     function bytes(b) { const u = ["B", "KB", "MB", "GB", "TB"]; let v = b || 0, i = 0; while (v >= 1024 && i < 4) { v /= 1024; i++ } return v.toFixed(i ? 1 : 0) + " " + u[i] }

@@ -16,6 +16,8 @@ pub struct IndexSummary {
     pub updated: u64,
     pub unchanged: u64,
     pub missing: u64,
+    /// files that could not be read now (no permission, changing as they were read): left as they were, tried next time
+    pub skipped: u64,
 }
 
 pub fn default_database_path() -> Result<PathBuf, String> {
@@ -172,7 +174,7 @@ fn index_file(
     path: &Path,
     summary: &mut IndexSummary,
 ) -> Result<(), String> {
-    let metadata = fs::symlink_metadata(path).map_err(|error| format!("{}: {error}", path.display()))?;
+    let Ok(metadata) = fs::symlink_metadata(path) else { summary.skipped += 1; return Ok(()) };
     if !metadata.is_file() {
         return Ok(());
     }
@@ -221,12 +223,23 @@ fn index_file(
         }
     }
 
-    let sha256 = sha256_file(path)?;
-    let mime_type = detect_mime(path)?;
-    let verified = fs::symlink_metadata(path).map_err(|error| format!("{}: {error}", path.display()))?;
-    if !verified.is_file() || FileFingerprint::from_metadata(&verified, path)? != observed {
-        return Err(format!("{}: file changed while indexing; run the scan again", path.display()));
-    }
+    // one file that cannot be read now (permission, an open log being written) is left as it was, not the end of
+    // the whole scan: what it was before stays present, and the next scan tries it again
+    let read = sha256_file(path).and_then(|sha| Ok((sha, detect_mime(path)?)));
+    let same = fs::symlink_metadata(path).ok().filter(|m| m.is_file())
+        .and_then(|m| FileFingerprint::from_metadata(&m, path).ok()).is_some_and(|f| f == observed);
+    let (sha256, mime_type) = match read {
+        Ok(read) if same => read,
+        result => {
+            eprintln!("{}: {}, passed over", path.display(), result.err().unwrap_or_else(|| "changed while it was read".into()));
+            summary.skipped += 1;
+            if let Some((asset_id, ..)) = previous {
+                transaction.execute("UPDATE assets SET present = 1 WHERE id = ?1", [asset_id])
+                    .map_err(|error| format!("could not keep indexed file {}: {error}", path.display()))?;
+            }
+            return Ok(());
+        }
+    };
     let media_family = media_family(&mime_type);
     let original_name = path.file_name().unwrap_or_default().to_string_lossy().into_owned();
     let existing_id = match previous {
@@ -330,17 +343,12 @@ fn detect_mime(path: &Path) -> Result<String, String> {
     if let Some(kind) = detect_signature(path)? {
         return Ok(kind.mime_type);
     }
-    let output = Command::new("file")
-        .args(["-b", "--mime-type", "--"])
-        .arg(path)
-        .output()
-        .map_err(|error| format!("{}: could not run MIME fallback 'file': {error}", path.display()))?;
+    // without `file` (or when it fails) the kind is not known, which is no reason to stop the scan
+    let Ok(output) = Command::new("file").args(["-b", "--mime-type", "--"]).arg(path).output() else {
+        return Ok("application/octet-stream".into());
+    };
     if !output.status.success() {
-        return Err(format!(
-            "{}: MIME fallback 'file' failed: {}",
-            path.display(),
-            String::from_utf8_lossy(&output.stderr).trim()
-        ));
+        return Ok("application/octet-stream".into());
     }
     let mime = String::from_utf8(output.stdout)
         .map_err(|error| format!("{}: MIME detector returned invalid UTF-8: {error}", path.display()))?

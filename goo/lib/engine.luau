@@ -944,7 +944,9 @@ function E.apply_hidden()
 end
 local function settings()
     local ok, t = pcall(sys.ask, "files.read", SETTINGS, "json")
-    if not ok or type(t) ~= "table" then t = {} end
+    -- a read that fails (Settings writing it this moment, a broken file) keeps what was read last: E.set must not
+    -- write an empty table over the user's settings
+    if not ok or type(t) ~= "table" then t = chosen_settings or {} end
     chosen_settings = t
     fact.lively = t.lively ~= false
     local m = t.material == "glass" and 1 or tonumber(t.material) or 0
@@ -984,6 +986,8 @@ end
 -- what is set now, and setting one thing: it is written down and taken up at once
 function E.settings() return chosen_settings end
 function E.set(key, value)
+    local ok, t = pcall(sys.ask, "files.read", SETTINGS, "json")
+    if ok and type(t) == "table" then chosen_settings = t end      -- what Settings wrote since, not an older copy
     chosen_settings[key] = value
     pcall(sys.call, "files.write", SETTINGS, chosen_settings)
     settings()

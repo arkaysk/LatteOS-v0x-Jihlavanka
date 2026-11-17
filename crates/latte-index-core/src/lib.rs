@@ -70,14 +70,20 @@ pub fn walk_visible_files(
     root: &Path,
     visitor: &mut impl FnMut(&Path) -> Result<(), String>,
 ) -> Result<usize, String> {
+    use std::os::unix::fs::MetadataExt;
+    // the root's own disk only: another disk, a network place or /proc under it is not walked into
+    let device = fs::metadata(root).map_err(|error| format!("{}: {error}", root.display()))?.dev();
     let mut subfolders = 0;
     let mut pending = vec![root.to_path_buf()];
     while let Some(directory) = pending.pop() {
-        let hidden = hidden_names(&directory)?;
-        let mut entries = fs::read_dir(&directory)
-            .map_err(|error| format!("{}: {error}", directory.display()))?
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(|error| format!("{}: {error}", directory.display()))?;
+        let hidden = hidden_names(&directory);
+        // a folder that cannot be read is passed over (said on stderr), not the end of the whole walk; the root must be readable
+        let entries = fs::read_dir(&directory).and_then(|rd| rd.collect::<Result<Vec<_>, _>>());
+        let mut entries = match entries {
+            Ok(entries) => entries,
+            Err(error) if directory != root => { eprintln!("{}: {error}, passed over", directory.display()); continue }
+            Err(error) => return Err(format!("{}: {error}", directory.display())),
+        };
         entries.sort_by_key(|entry| entry.file_name());
         let mut subdirectories = Vec::new();
 
@@ -88,10 +94,11 @@ pub fn walk_visible_files(
                 continue;
             }
             let path = entry.path();
-            let file_type = entry
-                .file_type()
-                .map_err(|error| format!("{}: {error}", path.display()))?;
+            let Ok(file_type) = entry.file_type() else { continue };
             if file_type.is_dir() {
+                if entry.metadata().map(|m| m.dev() != device).unwrap_or(true) {
+                    continue;
+                }
                 subfolders += 1;
                 subdirectories.push(path);
             } else if file_type.is_file() {
@@ -103,13 +110,11 @@ pub fn walk_visible_files(
     Ok(subfolders)
 }
 
-fn hidden_names(directory: &Path) -> Result<HashSet<String>, String> {
-    let path = directory.join(".hidden");
-    match fs::read_to_string(&path) {
-        Ok(contents) => Ok(contents.lines().map(str::to_string).collect()),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(HashSet::new()),
-        Err(error) => Err(format!("{}: {error}", path.display())),
-    }
+/// The names a `.hidden` file lists; one that cannot be read, or is not UTF-8, hides nothing.
+fn hidden_names(directory: &Path) -> HashSet<String> {
+    fs::read(directory.join(".hidden"))
+        .map(|bytes| String::from_utf8_lossy(&bytes).lines().map(str::to_string).collect())
+        .unwrap_or_default()
 }
 
 #[cfg(test)]

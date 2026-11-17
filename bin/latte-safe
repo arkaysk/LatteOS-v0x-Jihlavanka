@@ -45,7 +45,9 @@ why)
     fi
     exit ;;
 try-normal)
-    latte-boot reset && labwc --exit
+    # the crash count for the next boot, and the next login tries the full desktop once (latte-session)
+    latte-boot reset; mkdir -p -- "${XDG_STATE_HOME:-$HOME/.local/state}/latteos" && : > "${XDG_STATE_HOME:-$HOME/.local/state}/latteos/try-normal"
+    labwc --exit
     exit ;;
 menu-xml)
     item() { printf '    <item label="%s"><action name="%s"%s</item>\n' "$1" "$2" "${3:+ command=\"$3\"}/>"; }

@@ -18,7 +18,9 @@ say "LatteOS: preparing the installer (git, cage, seatd, quickshell)…"
 say "(a few minutes; details in /var/log/latteos-get.log)"
 # dnf5 prints its whole table even with -q: a wall of packages says nothing to a person, so it goes to the log, and
 # the console shows only dnf's own counter on one line (some 300 packages, which can take a quarter of an hour)
-{ dnf install -y git cage seatd quickshell rsms-inter-fonts; echo $? > /run/latteos-get.rc; } 2>&1 \
+# the result is written whatever it is (set -e would end the group before echo, and an older 0 would be read)
+rm -f /run/latteos-get.rc
+{ rc=0; dnf install -y git cage seatd quickshell rsms-inter-fonts || rc=$?; echo $rc > /run/latteos-get.rc; } 2>&1 \
     | tee -a /var/log/latteos-get.log | awk '/^\[ *[0-9]+\/[0-9]+\]/ { split($1 $2, n, /[^0-9]+/); printf "\r   %s / %s   ", n[2], n[3]; fflush() }'
 echo
 [ "$(cat /run/latteos-get.rc 2>/dev/null)" = 0 ] \

@@ -143,13 +143,19 @@ pub fn gpus() -> Vec<Gpu> {
     out
 }
 
-/// Waits for `/dev/dri/card*`: the graphics driver may load after this starts.
+/// Waits for a `/dev/dri/card*` of a real graphics driver: the firmware's framebuffer (simpledrm) is there at once,
+/// the card's own driver (nvidia-drm, amdgpu) may load seconds later, and the probe must see that one.
 /// Returns how long it took in ms, or `None` when it never came.
 pub fn wait_for_drm(timeout: Duration) -> Option<u128> {
     let start = Instant::now();
     loop {
-        let found = fs::read_dir("/dev/dri")
-            .map(|rd| rd.filter_map(|e| e.ok()).any(|e| e.file_name().to_string_lossy().starts_with("card")))
+        let found = fs::read_dir("/sys/class/drm")
+            .map(|rd| rd.filter_map(|e| e.ok()).any(|e| {
+                let n = e.file_name().to_string_lossy().into_owned();
+                let driver = fs::read_link(e.path().join("device/driver")).ok()
+                    .and_then(|l| l.file_name().map(|f| f.to_string_lossy().into_owned())).unwrap_or_default();
+                n.starts_with("card") && !n.contains('-') && !["simpledrm", "simple-framebuffer", "efidrm", "vesadrm", ""].contains(&driver.as_str())
+            }))
             .unwrap_or(false);
         if found {
             return Some(start.elapsed().as_millis());

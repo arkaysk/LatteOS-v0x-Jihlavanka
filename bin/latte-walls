@@ -84,14 +84,16 @@ def get(url, name):
         r = fetch(url, timeout=60)
         kind = r.headers.get("Content-Type", "")
         ending = ".mp4" if "video" in kind or "mp4" in r.geturl() else (".png" if "png" in kind else ".jpg")
-        path = os.path.join(library(), name + ending)
-        with open(path + ".part", "wb") as f:
+        path, n = os.path.join(library(), name + ending), 2
+        while os.path.lexists(path):            # a picture of that name already there (the same title again, or the user's own) stays
+            path, n = os.path.join(library(), "%s (%d)%s" % (name, n, ending)), n + 1
+        with open(path + ".%d.part" % os.getpid(), "wb") as f:
             while True:
                 chunk = r.read(1 << 16)
                 if not chunk:
                     break
                 f.write(chunk)
-        os.replace(path + ".part", path)
+        os.replace(path + ".%d.part" % os.getpid(), path)
     except OSError as e:
         print(e, file=sys.stderr)
         return 1

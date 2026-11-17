@@ -61,8 +61,9 @@ def recipes():
         for path in sorted(glob.glob(os.path.join(folder, "*.json"))):
             try:
                 r = json.load(open(path))
+                folder_of(r["id"])          # a recipe whose id is not a plain name (../) is not taken
                 found[r["id"]] = r
-            except (OSError, ValueError, KeyError):
+            except (OSError, ValueError, KeyError, TypeError):
                 pass
     return found
 
@@ -290,7 +291,20 @@ def analyze_made(sources):
 
 
 def folder_of(ident):
+    """The program's own folder; ValueError for an id that is not a plain name: a recipe is sent between people, and
+    remove deletes this folder whole."""
+    if not isinstance(ident, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,80}", ident) or ".." in ident:
+        raise ValueError("not a plain name: %r" % (ident,))
     return os.path.join(GAMES, ident)
+
+
+def drive_c_path(home, folder):
+    """The program's folder in drive_c, refused when the recipe's folder leads out of drive_c (../)."""
+    drive_c = os.path.join(home, "prefix", "drive_c")
+    path = os.path.normpath(os.path.join(drive_c, *str(folder).split("/")))
+    if os.path.commonpath([path, drive_c]) != drive_c:
+        raise ValueError("the folder leads out of C:: %r" % (folder,))
+    return path
 
 
 def wine_env(home):
@@ -306,13 +320,17 @@ def install(sources, network=False):
             return say(ok=False, error="cannot install it: " + (why or "kind")) or 1
     if missing:
         return say(ok=False, error="missing: " + ", ".join(missing)) or 1
-    home = folder_of(r["id"])
+    try:
+        home = folder_of(r["id"])
+        target = drive_c_path(home, r["folder"])
+    except (ValueError, KeyError) as e:
+        return say(ok=False, error="the recipe is not right: %s" % e) or 1
     if os.path.exists(os.path.join(home, "manifest.json")):
         return say(ok=False, error="installed already") or 1
     steps = 2 + len(used) + len(r.get("install", [])) + ("run" not in r)
     at = 0
 
-    media, target = os.path.join(home, ".media"), os.path.join(home, "prefix", "drive_c", *r["folder"].split("/"))
+    media = os.path.join(home, ".media")
     os.makedirs(os.path.join(home, "logs"), exist_ok=True)
     started = datetime.datetime.now()
     record_path = os.path.join(home, "logs", "log_install_%s_%s.md" % (r["id"], started.strftime("%d%m%Y")))
@@ -333,6 +351,10 @@ def install(sources, network=False):
     def run(argv, env=None):
         """Runs a command; what it is and all it says goes to the console and into the record."""
         import shlex
+        # what is Windows's runs fenced as the program will run (wineboot, msiexec, the setup): not the whole home
+        if argv[0] in ("wine", "wineboot", "wineserver") and shutil.which("bwrap"):
+            os.makedirs(os.path.join(home, ".tmp"), exist_ok=True)
+            argv = fence(home, network) + argv
         record.extend(["", "```"])
         note("$ " + " ".join(shlex.quote(x) for x in argv))
         t0, said = datetime.datetime.now(), 0
@@ -491,10 +513,37 @@ def manifest_of(ident):
         return None
 
 
+# the system's own mounts; any other (the documents disk, USB, network places) is hidden from a Windows program
+SYSTEM_MOUNTS = ("/", "/boot", "/boot/efi", "/efi", "/usr", "/var", "/home", "/opt", "/srv", "/tmp", "/etc", "/usr/local", "/root")
+DATA_FS = ("ext2", "ext3", "ext4", "btrfs", "xfs", "f2fs", "ntfs", "ntfs3", "fuseblk", "vfat", "exfat", "nfs", "nfs4", "cifs", "smb3",
+           "fuse.rclone", "fuse.sshfs", "zfs", "bcachefs")
+
+
+def other_disks():
+    out = []
+    try:
+        for line in open("/proc/self/mounts"):
+            _, at, fs = line.split()[:3]
+            at = at.replace("\\040", " ")
+            if fs in DATA_FS and at not in SYSTEM_MOUNTS and not at.startswith(("/sys", "/proc", "/dev", "/run/user")) \
+                    and not (at + "/").startswith(HOME + "/"):
+                out.append(at)
+    except OSError:
+        pass
+    return sorted(set(out))
+
+
 def fence(home, network):
-    """bubblewrap: the system as it is but read-only, the user's home empty but for this program's folder."""
-    a = ["bwrap", "--die-with-parent", "--ro-bind", "/", "/", "--dev-bind", "/dev", "/dev", "--proc", "/proc", "--tmpfs", "/tmp",
-         "--tmpfs", HOME, "--bind", home, home, "--bind", RUNTIME, RUNTIME]
+    """bubblewrap: the system as it is but read-only, the user's home empty but for this program's folder; no other
+    disk; of the session only the picture (Wayland, X11) and the sound. /tmp is the program's own, so every wine of one
+    install meets the same wineserver."""
+    a = ["bwrap", "--die-with-parent", "--ro-bind", "/", "/", "--dev-bind", "/dev", "/dev", "--proc", "/proc",
+         "--bind", os.path.join(home, ".tmp"), "/tmp", "--tmpfs", HOME, "--bind", home, home, "--tmpfs", RUNTIME]
+    for name in (os.environ.get("WAYLAND_DISPLAY") or "wayland-0", "pipewire-0", "pulse"):
+        if os.path.exists(os.path.join(RUNTIME, name)):
+            a += ["--bind", os.path.join(RUNTIME, name), os.path.join(RUNTIME, name)]
+    for at in other_disks():
+        a += ["--tmpfs", at]
     if os.path.isdir("/tmp/.X11-unix"):
         a += ["--ro-bind", "/tmp/.X11-unix", "/tmp/.X11-unix"]
     for keep in (".Xauthority", ".config/fontconfig", ".local/share/fonts"):
@@ -554,8 +603,12 @@ def run_it(ident):
     if not m:
         print("latte-barista: nothing installed is called " + ident, file=sys.stderr)
         return 1
-    home = folder_of(ident)
-    where = os.path.join(home, "prefix", "drive_c", *m["folder"].split("/"))
+    try:
+        home = folder_of(ident)
+        where = drive_c_path(home, m["folder"])
+    except (ValueError, KeyError) as e:
+        print("latte-barista: " + str(e), file=sys.stderr)
+        return 1
     argv = ["wine", m["run"]["exe"]] + list(m["run"].get("args", []))
     env = dict(wine_env(home), WINEDEBUG="fixme-all")
     proton = sorted(glob.glob("/opt/latteos/proton/GE-Proton*"))
@@ -564,6 +617,7 @@ def run_it(ident):
         argv[0] = "umu-run"
         env.update(GAMEID="umu-default", PROTONPATH=proton[-1], UMU_RUNTIME_UPDATE="0")
     if shutil.which("bwrap"):
+        os.makedirs(os.path.join(home, ".tmp"), exist_ok=True)
         umu = os.path.join(DATA, "umu")
         argv = fence(home, m.get("network", False)) + (["--bind", umu, umu] if argv[0] == "umu-run" and os.path.isdir(umu) else []) + ["--chdir", where] + argv
     with open(os.path.join(home, "logs", "run.log"), "w") as log:
@@ -617,7 +671,7 @@ def main(a):
         for entry in m.get("menu", []):
             if os.path.dirname(entry) == os.path.join(DATA, "applications") and os.path.exists(entry):
                 os.remove(entry)
-        shutil.rmtree(folder_of(m["id"]))
+        shutil.rmtree(folder_of(a[1]))            # the folder asked for, not an id the manifest could say
     else:
         print(__doc__.strip(), file=sys.stderr)
         return 2

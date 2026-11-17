@@ -3460,6 +3460,14 @@ veľa a každá vie niečo iné — vybrať najlepšie a spojiť do jedného; na
 - MCP pre tvorivé skilly: [Blender AI MCP](https://github.com/hitkeeen/blender-ai-mcp-addon), [Klad](https://github.com/klad-app/klad)
   a ostatné z časti „MCP host, pamäť a prehliadač“ v `inspo/LatteOS novinky – november 2026.md` (claude-mem/beacon, agweb, Coral).
 Najprv skúška agentes-chat na latte-lab (self-hosted), potom rozhodnúť: prevziať celé, alebo vlastné z týchto nápadov.
+  **17. 11. nainštalovaný na latte-lab** (na pokyn používateľa): server 0.1.2 bez Dockeru (vstavaná PGlite) v `~/.agentes`,
+  `http://127.0.0.1:4310`, služba `agentes-server.service` (systemd --user), `TELEMETRY=off`, `PUSH_SENDER=off`, súčet
+  balíka overený proti `native.json`. Mimo `FILES` — skúška, nie súčasť LatteOS. Ďalej: účet vlastníka (používateľ),
+  počítač agentov `latte-lab` pripojený (runner `agentes-runner.service`, pod používateľom arkay — vývojové PC, schválil používateľ), kópia repa pre agentov `~/agentes/latteos` (povolený priečinok, s CLAUDE.md, bez `.claude-local`); Claude plán pripojený (zdieľané prihlásenie Claude Code na latte-lab; agenti Iara, Caio, Ada
+  na počítači latte-lab — bez neho prihlásenie plánu píše „Connect a computer“; Lodi ako „pravá ruka“ počítač mať nesmie;
+  latte-lab „Belongs to the workspace“ zapnuté). **Prvá úloha prešla** (17. 11., 17:57): Ada cez Claude Code (Sonnet 5.5)
+  prečítala CLAUDE.md a ROADMAP v `~/agentes/latteos` a správne zhrnula LatteOS a 10B.60, nič nemenila. Ďalej: úloha so
+  zmenou kódu a `tests/check.sh`, rutiny ukážkových agentov (denne 9:00) by míňali limit Claude — rozhodnúť.
 
 ### 10C. [ ] Heidelberg
 
@@ -4804,6 +4812,10 @@ Zdroje: `bughunt/STRESTEST.md`, `bughunt/stav.py`, `bughunt/najdene-chyby.md`
 pripojenie a odpojenie za behu (6A.04), BarGoo na druhom monitore, presun okna na inú obrazovku (6A.06) a ťahaním ikry
 (6A.07), Rozšíriť / Duplikovať, režim pre každý monitor (8A.13), prehľad úloh cez obe obrazovky (6A.08), Canvas
 (Phantomat) iba na jednom monitore pri inom režime na druhom (8A.12).
+
+**18.10** [~] **Hľadanie chýb pred hlavným PC a zverejnením** (používateľ 17. 11.: STRESTEST teraz, pomocníci smú): 6 oblastí prečítaných
+a skúšaných v pieskovisku; 9 vážnych opravených a nasadených, otvorené zoradené v `bughunt/najdene-chyby.md` (17. 11.). Beží 542/543:
+`bughunt/meranie-goo.sh` → `bughunt/merania/2026-11-17-goo-8h.txt` (CPU a pamäť latte-goo a pleamar-wm každú minútu, 8 h).
 
 ---
 

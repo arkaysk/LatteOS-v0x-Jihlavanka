@@ -69,6 +69,12 @@ run_safe() {   # $1 the reason's key, $2 the technical detail; latte-safe shows 
 
 [ "${1:-}" = safe ] && run_safe chosen
 mode_toml() { sed -n "s/^$1 = \"\(.*\)\"$/\1/p" "${LATTE_RUN_DIR:-/run/latteos}/mode.toml" 2>/dev/null | head -1; }
+# "Try the full desktop again" in SAFE (latte-safe try-normal): once, whatever the boot decided (session.env is the
+# root's, and stays until the next boot); a desktop that fails still goes back to SAFE by the watch below
+try="${XDG_STATE_HOME:-$HOME/.local/state}/latteos/try-normal"
+if [ -e "$try" ] && [ "$LATTE_MODE" != normal ]; then
+    rm -f -- "$try"; journal notice "SAFE: the user asked for the full desktop once"; LATTE_MODE=normal LATTE_RENDERER=hw; export LATTE_MODE LATTE_RENDERER
+fi
 [ "$LATTE_MODE" = normal ] || run_safe "$(mode_toml reason_id)" "$(mode_toml reason)"
 latte-boot session-start
 [ $? -eq 3 ] && run_safe crashes
@@ -126,6 +132,10 @@ headless() {
 go_next=desktop
 [ "${1:-}" = game ] && go_next=game
 restarts=()
+# SIGTERM comes from systemd ending the session (logout, shutdown, reboot), never from a crash: two quick reboots
+# after a fresh install must not count as two crashes and send the next boot to SAFE
+hpid=
+trap 'latte-boot ok >/dev/null 2>&1; [ -n "$hpid" ] && kill "$hpid" 2>/dev/null; exit 0' TERM HUP
 while true; do
     if [ "$go_next" = game ]; then run_game; go_next=desktop; export XDG_CURRENT_DESKTOP="$desktop_names"; fi
     t0=$(date +%s)
@@ -164,20 +174,30 @@ while true; do
           log="$(tail -c +$from "$state/session.log" 2>/dev/null)"
           all=$(printf '%s\n' "$log" | grep -c '^session · monitor .*: [0-9]*×[0-9]* at')
           bad=$(printf '%s\n' "$log" | grep -c 'the monitor does not take the buffer')
-          if [ "$all" -gt 0 ] && [ "$bad" -ge "$all" ]; then touch "$run/no-picture"; kill $hpid; exit 0; fi
-      done ) &
+          if [ "$all" -gt 0 ] && [ "$bad" -ge "$all" ]; then
+              echo "$desk: no monitor takes its picture (the card paints on the CPU: no GPU driver?)" > "$run/no-picture"; kill $hpid; exit 0
+          fi
+      done
+      # 20 s and not one monitor. The kernel sees none connected: switched off or unplugged (a DisplayPort monitor
+      # switched off is gone for the card too), so it waits: pleamar-wm takes it when it is switched on. The kernel
+      # sees one and pleamar-wm still none: the driver cannot drive it (NVIDIA without modeset), so SAFE.
+      if [ "$all" = 0 ] && kill -0 $hpid 2>/dev/null && grep -qx connected /sys/class/drm/card*-*/status 2>/dev/null; then
+          echo "$desk: a monitor is connected, but the desktop cannot show a picture on it (the graphics driver?)" > "$run/no-picture"; kill $hpid
+      fi ) &
     wait $hpid
     rc=$?
     dt=$(( $(date +%s) - t0 ))
     echo "$desk ended: exit $rc after $dt s"
-    [ -e "$run/no-picture" ] && { systemctl --user stop latte-session.target 2>/dev/null; clean_env; run_safe desktop-crash "$desk: no monitor takes its picture (the card paints on the CPU: no GPU driver?)"; }
+    [ -e "$run/no-picture" ] && { systemctl --user stop latte-session.target 2>/dev/null; clean_env; run_safe desktop-crash "$(cat "$run/no-picture")"; }
     systemctl --user stop latte-session.target 2>/dev/null
     clean_env
 
+    # exit 0 within seconds is no logout: pleamar-wm could not start (its config, no output); counted as a crash
+    [ $rc -eq 0 ] && [ $dt -lt 5 ] && rc=1
     if [ $rc -eq 0 ]; then
         latte-boot ok >/dev/null                 # a logout is not a crash
         if [ "$(cat "$next" 2>/dev/null)" = game ]; then rm -f "$next"; go_next=game; continue; fi
-        if headless; then echo "logout with no monitor: starting the session again"; continue; fi
+        if headless; then echo "logout with no monitor: starting the session again"; sleep 2; continue; fi
         exit 0
     fi
     crash_report "$rc" "$dt" "$t0"

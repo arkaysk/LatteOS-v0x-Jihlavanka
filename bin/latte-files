@@ -90,7 +90,13 @@ free_name() {   # DIR NAME: that name, or the first "NAME (n)" nothing has yet
 # how to undo what this run does: lines of ID, KIND (moved, made, trashed), WHERE IT WAS, WHERE IT IS
 # and, for a history that is shown, WHAT IT WAS CALLED. Something new done ends what could be done again.
 log="${XDG_STATE_HOME:-$HOME/.local/state}/latteos/files-undo${LATTE_UNDO:+-$LATTE_UNDO}"; id="$(date +%s%N)"
-did() { [ "${LATTE_UNDO:-}" = - ] && return 0; mkdir -p "$(dirname "$log")"; rm -f -- "$log.redo"
+# a name with a tab or a new line would split its line: such a step is not written down (it cannot be undone, rather
+# than an undo that moves some other file)
+tab="$(printf '\t')"; nl='
+'
+did() { [ "${LATTE_UNDO:-}" = - ] && return 0
+        case "$2${3:-}" in *"$tab"*|*"$nl"*) return 0 ;; esac
+        mkdir -p "$(dirname "$log")"; rm -f -- "$log.redo"
         printf '%s\t%s\t%s\t%s\t%s\n' "$id" "$1" "$2" "${3:-}" "$(printf '%s' "${LATTE_UNDO_LABEL:-}" | tr '\t\n' '  ')" >> "$log"; }
 # SRC DIR: where SRC goes in DIR. When the name is taken there, by $LATTE_CONFLICT: both (a free name beside it, the
 # default: nothing is lost), replace (the one there goes to the Trash), older (replaced only when it is older), skip.
@@ -226,7 +232,7 @@ iso)    dev="$(udisksctl loop-setup -r -f "$1" --no-user-interaction | sed -n 's
 pin|unpin)
         marks="${XDG_CONFIG_HOME:-$HOME/.config}/gtk-3.0/bookmarks"; mkdir -p -- "$(dirname -- "$marks")"; touch -- "$marks"
         uri="file://$(python3 -I -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1]))' "$1")"
-        grep -v "^$uri\( \|\$\)" -- "$marks" > "$marks.new"; [ "$what" = pin ] && printf '%s\n' "$uri" >> "$marks.new"; mv -- "$marks.new" "$marks" ;;
+        awk -v u="$uri" '$1 != u' "$marks" > "$marks.new" || exit 1; [ "$what" = pin ] && printf '%s\n' "$uri" >> "$marks.new"; mv -- "$marks.new" "$marks" ;;
 about)  f="$1"; stat --printf 'when\t%Y\n' -- "$f" 2>/dev/null; [ -d "$f" ] || stat --printf 'bytes\t%s\n' -- "$f" 2>/dev/null
         if [ -d "$f" ]; then
             printf 'items\t%s\n' "$(find "$f" -mindepth 1 -maxdepth 1 2>/dev/null | wc -l)"
@@ -375,7 +381,10 @@ job)    how="$1"; d="$2"; shift 2
         case "$how" in split|join)
             # split: FILE into pieces of DIR megabytes beside it (FILE.000, .001…); join: FILE.000 and its next ones into one
             f="$1"; base="${f%.000}"
-            if [ "$how" = split ]; then total="$(stat -c %s -- "$f")"; out="$f."; split -b "${d}M" -d -a 3 -- "$f" "$out" & pid=$!
+            if [ "$how" = split ]; then total="$(stat -c %s -- "$f")"; out="$f."; i=2
+                # pieces already there (an earlier split, or the user's own FILE.000) are not written over: FILE (2).000…
+                while ls -d -- "$out"[0-9][0-9][0-9] >/dev/null 2>&1; do out="$f ($i)."; i=$((i + 1)); done
+                split -b "${d}M" -d -a 3 -- "$f" "$out" & pid=$!
             else total="$(cat -- "$base".[0-9][0-9][0-9] | wc -c)"; out="$(free_name "$(dirname -- "$base")" "$(basename -- "$base")")"
                  cat -- "$base".[0-9][0-9][0-9] > "$out" & pid=$!; fi
             echo "total $total"; echo "file $(basename -- "$f")"
@@ -398,11 +407,17 @@ job)    how="$1"; d="$2"; shift 2
                 for f in "$@"; do
                     name="$(basename -- "$f")"; base="${name%.*}"; base="${base%.tar}"; echo "file $name"
                     top="$(bsdtar -tf "$f" 2>/dev/null | sed 's|^\./||; s|/.*||' | sort -u | grep -c .)"
-                    to="$d"; [ "$top" = 1 ] || { to="$(free_name "$d" "$base")"; mkdir -p -- "$to"; }
+                    # into a hidden folder of its own first, then out under a free name: nothing already there is written over
+                    to="$(free_name "$d" ".$base.unpacking")"; mkdir -p -- "$to"
                     case "$name" in *.rar|*.RAR|*.tar*|*.tgz) bsdtar -xf "$f" -C "$to" ;; *) 7z x -y -bso0 -bsp0 -o"$to" -- "$f" ;; esac &
                     pid=$!; trap 'kill "$pid" 2>/dev/null; exit 1' TERM
                     while kill -0 "$pid" 2>/dev/null; do echo "done $(du -sb -- "$to" 2>/dev/null | cut -f1)"; sleep 0.4; done
-                    if wait "$pid"; then [ "$to" = "$d" ] && to="$d/$(bsdtar -tf "$f" | head -n1 | sed 's|^\./||; s|/.*||')"; did made "$to"; else echo "failed $name"; fi
+                    ok=0; wait "$pid" || ok=1
+                    one="$(find "$to" -mindepth 1 -maxdepth 1 -print -quit)"
+                    if [ "$ok" = 0 ] && [ "$top" = 1 ] && [ -n "$one" ]; then
+                        t="$(free_name "$d" "$(basename -- "$one")")"; mv -n -- "$one" "$t" && rmdir -- "$to"
+                    else t="$(free_name "$d" "$base")"; mv -n -- "$to" "$t"; fi        # many things, or a half one when it failed
+                    did made "$t"; [ "$ok" = 0 ] || echo "failed $name"
                 done
             else
                 base="${first%.*}"; [ -d "$1" ] || [ -z "$base" ] && base="$first"
@@ -449,20 +464,26 @@ undo|redo)
         [ -s "$from" ] || exit 1
         last="$(tail -n1 "$from" | cut -f1)"
         # out of the Trash to where it was: the newest of that name (not `gio trash --list`: gvfs's list lags behind)
-        # ponytail: only the home Trash; what went to another disk's .Trash-UID does not come back this way
+        # the home Trash, and for a file on another disk (the documents disk) that disk's own, as gio trash used it:
+        # TOP/.Trash-UID or TOP/.Trash/UID, where Path= is relative to TOP
         restore() { python3 -I - "$1" "${XDG_DATA_HOME:-$HOME/.local/share}/Trash" <<'PY'
 import glob, os, shutil, sys, urllib.parse
-want, trash = sys.argv[1], sys.argv[2]
+want, home = sys.argv[1], sys.argv[2]
+top = os.path.dirname(want)
+while not os.path.ismount(top): top = os.path.dirname(top)
+trashes = [(home, "")] + [(t, top) for t in (os.path.join(top, ".Trash-%d" % os.getuid()), os.path.join(top, ".Trash", str(os.getuid())))]
 best = None
-for info in glob.glob(trash + "/info/*.trashinfo"):
-    path = date = ""
-    for line in open(info, encoding="utf-8", errors="replace"):
-        if line.startswith("Path="): path = urllib.parse.unquote(line[5:].strip())
-        elif line.startswith("DeletionDate="): date = line[13:].strip()
-    if path == want and (best is None or date > best[1]): best = (info, date)
-if best and not os.path.lexists(want):
-    shutil.move(os.path.join(trash, "files", os.path.basename(best[0])[:-len(".trashinfo")]), want)
-    os.remove(best[0])
+for trash, rel in trashes:
+    for info in glob.glob(glob.escape(trash) + "/info/*.trashinfo"):
+        path = date = ""
+        for line in open(info, encoding="utf-8", errors="replace"):
+            if line.startswith("Path="): path = urllib.parse.unquote(line[5:].strip())
+            elif line.startswith("DeletionDate="): date = line[13:].strip()
+        if rel and not path.startswith("/"): path = os.path.join(rel, path)
+        if path == want and (best is None or date > best[2]): best = (trash, info, date)
+if not best or os.path.lexists(want): sys.exit(1)
+shutil.move(os.path.join(best[0], "files", os.path.basename(best[1])[:-len(".trashinfo")]), want)
+os.remove(best[1])
 PY
         }
         grep "^$last	" "$from" | $order | while IFS="$(printf '\t')" read -r _ kind was is _; do
@@ -472,7 +493,7 @@ PY
             undo:moved)   [ -e "$was" ] || mv -n -- "$is" "$was" ;;
             redo:moved)   [ -e "$is" ] || mv -n -- "$was" "$is" ;;
             undo:made|redo:trashed)  { [ -e "$was" ] || [ -L "$was" ]; } && gio trash -- "$was" ;;
-            undo:trashed|redo:made)  restore "$was" ;;
+            undo:trashed|redo:made)  restore "$was" || echo "not in the Trash any more, or its place is taken: $was" >&2 ;;
             esac
         done
         grep "^$last	" "$from" >> "$to"

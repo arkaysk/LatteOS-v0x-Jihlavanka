@@ -1,6 +1,16 @@
 #!/bin/sh
-# latte-lock: locks the session with the lock screen that is the login screen (goo/lockscreen.plm, its own scene
-# all through the session). It fails when that scene is not there, so whoever asked can lock another way: the Goo
-# scene then shows its own simple lock (goo/parts/lock.plm), and the session is locked all the same.
+# latte-lock [--scene]: locks the session with the lock screen that is the login screen (goo/lockscreen.plm, its own
+# scene all through the session, latte-lockscreen.service). Idle, sleep and Super+L come here, not through Goo, so the
+# session locks while Goo is down or starting again:
+#   1. the lock screen scene;
+#   2. not there (being restarted, or a SAFE session that has none): started, and asked again for up to 3 s;
+#   3. the Goo scene's own simple lock (goo/parts/lock.plm).
+# --scene: only 1, for Goo itself (it falls back to its own lock), so the two never ask each other in a ring.
+# Exit 1 when nothing took the lock.
 s="${PLEAMAR_SOCKETS:-${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/pleamar}/lockscreen.sock"   # pleamar-wm's session: a folder of its own
-[ -S "$s" ] && pleamar --say lockscreen "emit lock_now" >/dev/null 2>&1
+scene() { [ -S "$s" ] && pleamar --say lockscreen "emit lock_now" >/dev/null 2>&1; }
+scene && exit 0
+[ "${1:-}" = --scene ] && exit 1
+systemctl --user start latte-lockscreen.service >/dev/null 2>&1
+for _ in 1 2 3 4 5 6; do sleep 0.5; scene && exit 0; done
+pleamar --say goo "emit lock_now" >/dev/null 2>&1

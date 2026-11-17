@@ -113,9 +113,9 @@ def sync_ai():
     paper["wallpaperLayer"] = "background"
     conf["semantic"], conf["paper"] = part, paper
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path + ".new", "w") as f:
+    with open(path + ".%d.new" % os.getpid(), "w") as f:
         json.dump(conf, f, indent=1)
-    os.replace(path + ".new", path)
+    os.replace(path + ".%d.new" % os.getpid(), path)
     quiet("systemctl", "--user", "try-restart", "skwd-walld.service")       # it reads its settings when it starts
 
 
@@ -143,9 +143,9 @@ def load():
 
 def save(s):
     os.makedirs(CONFIG, exist_ok=True)
-    with open(STATE + ".new", "w") as f:
+    with open(STATE + ".%d.new" % os.getpid(), "w") as f:
         json.dump(s, f, indent=1, ensure_ascii=False)
-    os.replace(STATE + ".new", STATE)
+    os.replace(STATE + ".%d.new" % os.getpid(), STATE)
     # one path for whoever only asks which picture is behind the desktop
     path = showing(s, "*")
     if path:
@@ -321,8 +321,8 @@ def compose(layers, m, stills=False, clear=False):
     out = sole(key) + ext
     if not os.path.exists(out):
         os.makedirs(WALLS, exist_ok=True)
-        paint(layers, m, m["pw"], m["ph"], stills, clear).save(out + ".part" + ext, **({} if clear else {"quality": 93}))
-        os.replace(out + ".part" + ext, out)
+        paint(layers, m, m["pw"], m["ph"], stills, clear).save(out + ".%d.part" % os.getpid() + ext, **({} if clear else {"quality": 93}))
+        os.replace(out + ".%d.part" % os.getpid() + ext, out)
     return out
 
 
@@ -572,9 +572,9 @@ def transition():
         return
     now.update(want)
     conf["transition"] = now
-    with open(path + ".new", "w") as f:
+    with open(path + ".%d.new" % os.getpid(), "w") as f:
         json.dump(conf, f, indent=1)
-    os.replace(path + ".new", path)
+    os.replace(path + ".%d.new" % os.getpid(), path)
     time.sleep(0.4)                            # for it to read them anew before the change
 
 
@@ -888,9 +888,9 @@ def main(a):
             if not isinstance(got, dict):
                 return 2
             os.makedirs(CONFIG, exist_ok=True)
-            with open(CHOSEN + ".new", "w") as f:
+            with open(CHOSEN + ".%d.new" % os.getpid(), "w") as f:
                 json.dump({"use": got.get("use"), "picked": got.get("picked"), "ms": got.get("ms")}, f)
-            os.replace(CHOSEN + ".new", CHOSEN)
+            os.replace(CHOSEN + ".%d.new" % os.getpid(), CHOSEN)
         print(json.dumps(dict(chosen(), names=TRANSITIONS, engine="skwd" if skwd() else "plain")))
     elif len(a) == 2 and a[0] == "try" and a[1] in TRANSITIONS:
         # away to a picture of LatteOS's own and back, both ways with that transition; what skwd-wall says

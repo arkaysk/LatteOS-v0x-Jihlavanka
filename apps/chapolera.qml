@@ -793,7 +793,9 @@ ShellRoot {
             if (code !== 0) {
                 const wasUndo = shell.planState === "undoing"
                 shell.planError = plannerErr.text.trim() || I18n.tr("The folder plan failed (exit code {code}).", { code })
-                shell.planState = wasUndo ? "applied" : (shell.plan ? "proposed" : "error")
+                // a move that stopped half way has moved some files already: Undo is offered for them (the plan stays
+                // "applying" in the database, which undo takes), not Apply as if nothing had happened
+                shell.planState = wasUndo || shell.planState === "moving" ? "applied" : (shell.plan ? "proposed" : "error")
                 return
             }
             try {

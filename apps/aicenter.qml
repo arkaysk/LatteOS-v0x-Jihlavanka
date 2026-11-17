@@ -513,7 +513,7 @@ ShellRoot {
                         Label { text: I18n.tr("{who} asks to change this computer", { who: ak.modelData.by }); color: Theme.gold; font.pixelSize: 12; font.weight: 700 }
                         Label { width: parent.width; wrapMode: Text.WordWrap; text: ak.modelData.label; font.pixelSize: 16; font.weight: 800 }
                         Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
-                                text: ak.modelData.what + ": " + (ak.modelData.from ? ak.modelData.from + " → " : "") + ak.modelData.to }
+                                text: ak.modelData.what + (ak.modelData.to ? ": " + (ak.modelData.from ? ak.modelData.from + " → " : "") + ak.modelData.to : "") }     // a read (latte-skill allow) has no "to"
                         // what can lose work is allowed twice: the second time it says what will be lost
                         Label { visible: ak.armed; width: parent.width; wrapMode: Text.WordWrap; color: Theme.red; font.pixelSize: 13; font.weight: 700; text: ak.modelData.warn || "" } }
                     Row { id: akBtns; anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; spacing: 8

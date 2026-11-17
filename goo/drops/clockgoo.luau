@@ -261,16 +261,17 @@ end
 local function learn_world()
     if os.clock() - world_at < 30 and #world > 0 then return end
     world_at = os.clock()
-    local list, command = zones(), {}
-    for i, z in ipairs(list) do
+    local list, command = {}, {}
+    for i, z in ipairs(zones()) do          -- only the zones asked about, so the answers' lines match them one to one
         if i > 6 then break end
-        if type(z.zone) == "string" and z.zone:match("^[%w_/%-%+]+$") then command[#command + 1] = "TZ=" .. z.zone .. " date '+%H:%M %z %Z'" end
+        if type(z.zone) == "string" and z.zone:match("^[%w_/%-%+]+$") then list[#list + 1] = z command[#command + 1] = "TZ=" .. z.zone .. " date '+%H:%M %z %Z'" end
     end
     if #command == 0 then return end
     run("sh", { "-c", table.concat(command, "; ") }, function(out)
-        local here, lines = tonumber(os.date("%z")) or 0, {}
+        local z, lines = tonumber(os.date("%z")) or 0, {}
+        local here = (z < 0 and -1 or 1) * (math.abs(z) // 100 + math.abs(z) % 100 / 60)      -- -0330 is -3.5 hours
         for time, sign, hh, mm, abbr in (out or ""):gmatch("(%d%d:%d%d) ([%+%-])(%d%d)(%d%d) (%S+)") do
-            local diff = (tonumber(hh) + tonumber(mm) / 60) * (sign == "-" and -1 or 1) - math.floor(here / 100) - (here % 100) / 60
+            local diff = (tonumber(hh) + tonumber(mm) / 60) * (sign == "-" and -1 or 1) - here
             lines[#lines + 1] = { time = time, diff = diff, abbr = abbr }
         end
         world = {}
@@ -346,15 +347,15 @@ local forecasts = nil                       -- the days ahead from several weath
 -- everything the scene shows, once a second while the card is open
 local function fill_clock()
     local t = os.date("*t")
-    local week = (t.yday - ((t.wday + 5) % 7 + 1) + 10) // 7
-    if week < 1 then week = 52 end
+    -- the ISO week: the year-day of this week's Thursday, as the calendar counts it
+    local week = (os.date("*t", os.time({ year = t.year, month = t.month, day = t.day + 3 - (t.wday + 5) % 7, hour = 12 })).yday - 1) // 7 + 1
     text.clk_tab0, text.clk_tab1, text.clk_tab2 = tr("Overview"), tr("Timers and alarms"), tr("Weather in detail")
     text.ic_world, text.ic_sun, text.ic_moon, text.ic_arrow, text.ic_drop = icons["world"], icons["sun"], icons["moon"], icons["arrow-right"], icons["droplet"]
     text.ic_leaf, text.ic_bulb, text.ic_grid, text.ic_bell = icons["leaf"], icons["bulb"], icons["layout-grid"], icons["bell-off"]
     text.ic_dash, text.ic_alarm, text.ic_cloud = icons["layout-dashboard"], icons["alarm"], icons["cloud"]
     -- the time
     local off = tonumber(os.date("%z")) or 0
-    local utc = string.format("UTC%s%d", off < 0 and "-" or "+", math.abs(off) // 100)
+    local utc = string.format("UTC%s%d", off < 0 and "-" or "+", math.abs(off) // 100) .. (math.abs(off) % 100 > 0 and string.format(":%02d", math.abs(off) % 100) or "")
     text.clk_zone = (ZONE_NAMES[here_abbr] and tr(ZONE_NAMES[here_abbr]) or here_abbr) .. " (" .. tr(here_abbr) .. " / " .. utc .. ")"
     text.clk_hm, text.clk_s, text.clk_ampm = os.date("%H:%M"), ":" .. os.date("%S"), tr(t.hour < 12 and "AM" or "PM")
     text.clk_date = tr(WEEKDAYS[t.wday]) .. ", " .. t.day .. ". " .. tr(MONTHS[t.month]) .. " " .. t.year
@@ -626,7 +627,7 @@ local function hhmm(n) return string.format("%02d:%02d", n // 60, n % 60) end
 local function next_event()
     local now = os.date("*t")
     local today, minute = iso(now), now.hour * 60 + now.min
-    local tomorrow = iso(os.date("*t", os.time() + 86400))
+    local tomorrow = iso(os.date("*t", os.time({ year = now.year, month = now.month, day = now.day + 1, hour = 12 })))
     for _, key in ipairs({ today, tomorrow }) do
         for _, e in ipairs(events_on(key)) do
             local m = mins(e.time)
@@ -646,7 +647,7 @@ fill_calendar = function()
     -- the weather of the coming days, by date (latte-sky's days start today)
     local temps = {}
     for i, w in ipairs(type(sky) == "table" and type(sky.days) == "table" and sky.days or {}) do
-        temps[iso(os.date("*t", os.time() + (i - 1) * 86400))] = tostring(math.floor((tonumber(w.max) or 0) + 0.5)) .. "°"
+        temps[iso(os.date("*t", os.time({ year = now.year, month = now.month, day = now.day + i - 1, hour = 12 })))] = tostring(math.floor((tonumber(w.max) or 0) + 0.5)) .. "°"
     end
     local cells, names = {}, {}
     month.cells = {}

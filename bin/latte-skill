@@ -11,6 +11,9 @@ command, so that every AI reaches the same ones through bin/latte-mcp.
                                    --now JSON after `row` or `do`: what `list` said a moment ago, not read anew (LensShore)
   latte-skill ask ID JSON --by WHO the change asked for by an AI: LensAI shows it and the person allows or refuses it
                                    there; allowed, it is done. {"ok", "answer": "yes" | "no" | "timeout" | "invalid"}
+  latte-skill allow ID TEXT --by WHO   what an AI wants to read or send (bin/latte-mcp: conversations, conversation,
+                                   windows, ask), asked in LensAI as a change is; nothing is done here.
+                                   {"ok", "answer": "yes" | "no" | "timeout" | "invalid"}
   latte-skill asks                 what waits for the person now: [{"req", "by", "label", "what", "from", "to", "at"}]
   latte-skill answer REQ yes|no    the person's word (LensAI's buttons)
   latte-skill do ID JSON [--by WHO]   does it at once: for what the person asked for themselves
@@ -85,9 +88,9 @@ def set_quiet(on):
     """Do not disturb is Goo's own setting: written where Goo watches (as Settings does), taken up at once."""
     kept = dict(goo(), quiet=on)
     os.makedirs(os.path.dirname(GOO), exist_ok=True)
-    with open(GOO + ".new", "w") as f:
+    with open(GOO + ".%d.new" % os.getpid(), "w") as f:
         json.dump(kept, f, ensure_ascii=False, indent=1)
-    os.replace(GOO + ".new", GOO)
+    os.replace(GOO + ".%d.new" % os.getpid(), GOO)
     return True
 
 
@@ -296,16 +299,38 @@ def pending():
 def keep(r):
     os.makedirs(ASKS, exist_ok=True)
     path = os.path.join(ASKS, r["req"] + ".json")
-    with open(path + ".new", "w") as f:
+    with open(path + ".%d.new" % os.getpid(), "w") as f:
         json.dump(r, f, ensure_ascii=False)
-    os.replace(path + ".new", path)
+    os.replace(path + ".%d.new" % os.getpid(), path)
     return path
+
+
+# what an AI may read or send only with the person's word (user 17. 11.: as a change is allowed)
+READS = {"conversations": "Read the list of your conversations with every AI",
+         "conversation": "Read one of your conversations whole",
+         "windows": "See the titles of the open windows",
+         "ask": "Send a question to another AI, on your account"}
+
+
+def allow(ident, detail, by):
+    if ident not in READS:
+        return {"ok": False, "answer": "invalid"}
+    answer = wait({"label": T(READS[ident]), "what": detail[:400], "from": None, "to": None}, by, ident, {"detail": detail[:400]})
+    return {"ok": answer == "yes", "answer": answer}
 
 
 def ask(ident, a, by):
     v, said = row(ident, a, state())
     if v is None:
         return {"ok": False, "answer": "invalid"}
+    answer = wait(said, by, ident, a)
+    if answer != "yes":
+        return {"ok": False, "answer": answer}
+    return {"ok": do(ident, a, by, undo="lensai"), "answer": "yes"}
+
+
+def wait(said, by, ident, a):
+    """Shown in LensAI until the person answers or two minutes pass: "yes", "no" or "timeout"."""
     path = keep(dict(said, req=uuid.uuid4().hex[:10], by=by, skill=ident, args=a, at=time.time()))
     journal(by, ident, a, "asked")
     # LensAI shows it (already open, this starts no second one); the person answers there
@@ -324,10 +349,8 @@ def ask(ident, a, by):
         os.remove(path)
     except OSError:
         pass
-    if answer != "yes":
-        journal(by, ident, a, "refused" if answer == "no" else "not answered")
-        return {"ok": False, "answer": answer}
-    return {"ok": do(ident, a, by, undo="lensai"), "answer": "yes"}
+    journal(by, ident, a, "allowed" if answer == "yes" else "refused" if answer == "no" else "not answered")
+    return answer
 
 
 def main(a):
@@ -355,6 +378,10 @@ def main(a):
             return 1
         keep(dict(r, answer=a[2]))
         return 0
+    if len(a) == 3 and a[0] == "allow":
+        r = allow(a[1], a[2], by or "AI")
+        print(json.dumps(r))
+        return 0 if r["ok"] else 1
     if len(a) == 3 and a[0] in ("row", "do", "ask"):
         try:
             args = json.loads(a[2])

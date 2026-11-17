@@ -216,8 +216,9 @@ fn cmdline_warnings(c: &latte_hw::Cmdline) -> Vec<String> {
 
 fn cmd_select(p: &Paths, dry: bool) -> ExitCode {
     let cfg = Config::load(p);
-    if latte_hw::wait_for_drm(Duration::from_secs(5)).is_none() {
-        eprintln!("latte-boot: /dev/dri/card* did not show up within 5 s");
+    // 10 s: NVIDIA's module (akmod) loads later than amdgpu
+    if latte_hw::wait_for_drm(Duration::from_secs(10)).is_none() {
+        eprintln!("latte-boot: no graphics driver's /dev/dri/card* within 10 s (only the firmware's framebuffer, or none)");
     }
     let probe = Probe::run();
     for w in cmdline_warnings(&probe.cmdline) {
