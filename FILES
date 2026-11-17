@@ -821,6 +821,7 @@
 /var/lib/greetd/latte-last-session
 /boot/loader/entries/*-lattesafe.conf
 /boot/loader/entries/*-lattesafe-nomodeset.conf
+/etc/dnf/libdnf5.conf.d/latteos-gpu.conf                 # install --gpu: firmware of graphics cards this PC does not have stays out (ROADMAP 2.10); --remove deletes it
 $XDG_RUNTIME_DIR/latteos/                               # per user: the reason for SAFE, labwc's menu, where to go next
 ~/.local/state/latteos/                                 # per user: session.log, safe.log, window-mode
 ~/.config/latteos/                                      # per user: locale, tier, coffee, wallpaper (the user's own choices)

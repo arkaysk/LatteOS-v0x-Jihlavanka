@@ -35,6 +35,13 @@ grep -q "could not be found" "$stage.log" && { cat "$stage.log"; exit 1; }
 ./install --remove --purge --root "$stage" > /dev/null
 left="$(find "$stage" -type f | head -5)"; [ -z "$left" ] || { echo "install --remove left: $left"; exit 1; }
 rm -rf "$stage" "$stage.log"
+# the Secure Boot password reads the same on QWERTY and QWERTZ (MokManager), and the firmware of cards a PC has is kept
+python3 - <<'PY' || { echo "install: MOK password or the graphics firmware's choice is wrong"; exit 1; }
+import importlib.machinery, importlib.util
+spec = importlib.util.spec_from_loader("inst", importlib.machinery.SourceFileLoader("inst", "install")); m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+assert all(len(p) == 8 and not set(p) & set("yzlo") and p.isalpha() for p in (m.mok_password() for _ in range(200)))
+assert "nvidia" not in m.FIRMWARE and m.FIRMWARE["nouveau"] == "nvidia-gpu-firmware"     # NVIDIA's own driver brings its firmware
+PY
 for f in install tests/pointer.py tests/fake-player.py; do python3 -c 'import sys; compile(open(sys.argv[1]).read(), sys.argv[1], "exec")' "$f"; done
 tests/test_session.sh
 tests/test_screens.sh

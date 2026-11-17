@@ -39,6 +39,7 @@ ShellRoot {
         // the card's name without lspci's address, class and revision; Secure Boot from its UEFI variable (mokutil
         // is not on a fresh Fedora Server): on, off, or bios when there is no UEFI at all
         command: ["sh", "-c", "printf 'gpu=%s\\n' \"$(lspci 2>/dev/null | grep -Ei 'vga|3d|display' | sed -E 's/^[0-9a-f:.]+ [^:]+: //; s/ \\(rev [0-9a-f]+\\)$//' | head -2 | paste -sd ';')\";"
+                 + "printf 'pci=%s\\n' \"$(lspci -nn 2>/dev/null | grep -Ei 'vga|3d|display' | grep -oE '\\[(10de|1002|8086):[0-9a-f]{4}\\]' | paste -sd ' ')\";"
                  + "printf 'virt=%s\\n' \"$(systemd-detect-virt 2>/dev/null)\";"
                  + "printf 'ram=%s\\n' \"$(awk '/MemTotal/ {printf \"%.0f\", $2/1048576}' /proc/meminfo)\";"
                  + "printf 'free=%s\\n' \"$(df -h --output=avail / | tail -1 | tr -d ' ' | sed -E 's/([0-9])([KMGT])$/\\1 \\2B/')\";"
@@ -53,6 +54,17 @@ ShellRoot {
     // a real AMD, NVIDIA or Intel card: what the Game session needs (Vulkan), so its component is chosen by default
     readonly property bool realGpu: !virtual && /\b(AMD|ATI|NVIDIA|Intel)\b/i.test(facts.gpu || "")
     readonly property bool oldAmd: /\b(Polaris|Lexa|Baffin|Ellesmere|Tonga|Fiji|Hawaii|Bonaire|Tahiti|Pitcairn|Oland|Cape Verde|Hainan|Iceland|Topaz|Carrizo|Stoney)\b/i.test(facts.gpu || "")
+
+    // the graphics cards by their PCI ids (ROADMAP 2.10, as ubuntu-drivers does): NVIDIA's driver is offered from Turing
+    // on (device 0x1e00 and up, RTX 20+), which RPM Fusion's akmod-nvidia carries; the firmware of other makers' cards is left out
+    // ponytail: older NVIDIA cards get nouveau; RPM Fusion's 580xx driver for them is not offered yet
+    readonly property var cards: (facts.pci || "").split(" ").filter(s => s).map(s => ({ vendor: s.slice(1, 5), device: parseInt(s.slice(6, 10), 16) }))
+    readonly property bool nvidiaNew: !virtual && cards.some(c => c.vendor === "10de" && c.device >= 0x1e00)
+    property bool nvidiaDriver: true
+    readonly property string gpuArg: virtual ? "" : cards.map(c => ({ "1002": "amd", "8086": "intel" })[c.vendor]
+                                                              || (c.device >= 0x1e00 && nvidiaDriver ? "nvidia" : "nouveau"))
+                                                         .filter((v, i, all) => all.indexOf(v) === i).join(" ")
+    property string mok: ""                     // the password Secure Boot's MokManager asks for once (./install's "@mok")
 
     // ── the components: the optional lines of FILES, each with what it is for ──────────────────────────
     property bool ai: true
@@ -84,12 +96,13 @@ ShellRoot {
     property real started: 0
     property string failed: ""
     Process { id: run
-        command: ["sh", "-c", "cd \"$1\" && ./install --go --progress $3 --with \"$2\" 2>&1", "sh", shell.src, shell.chosenPackages.join(" "), shell.oldAmd ? "--old-amd" : ""]
+        command: ["sh", "-c", "cd \"$1\" && ./install --go --progress $3 ${4:+--gpu \"$4\"} --with \"$2\" 2>&1", "sh", shell.src, shell.chosenPackages.join(" "), shell.oldAmd ? "--old-amd" : "", shell.gpuArg]
         stdout: SplitParser { onRead: line => {
             if (line.startsWith("@step ")) {
                 const name = line.replace(/^@step \d+\/\d+ /, "")
                 shell.parts = shell.parts.map(p => ({ name: p.name, state: "done" })).concat([{ name: name, state: "now" }])
-            } else if (line.startsWith("@percent ")) shell.percent = parseInt(line.slice(9))
+            } else if (line.startsWith("@mok ")) shell.mok = line.slice(5)
+            else if (line.startsWith("@percent ")) shell.percent = parseInt(line.slice(9))
             else shell.log = (shell.log + line + "\n").slice(-20000)
         } }
         onExited: code => { if (code === 0) { shell.parts = shell.parts.map(p => ({ name: p.name, state: "done" })); shell.percent = 100; shell.next() }
@@ -184,6 +197,13 @@ ShellRoot {
                             Label { x: 240; width: parent.width - 260; text: parent.modelData.v; elide: Text.ElideRight; anchors.verticalCenter: parent.verticalCenter } } }
                     Text2 { visible: shell.virtual; color: Theme.gold
                             text: I18n.tr("This is a virtual machine: without a graphics card the GOO desktop cannot show, so after login LatteOS SAFE opens. Fine for trying the installation, not for judging the desktop.") }
+                    Switch { visible: shell.nvidiaNew; width: pageCol.width; on: shell.nvidiaDriver; onPressed: shell.nvidiaDriver = !shell.nvidiaDriver
+                             text: I18n.tr("NVIDIA's driver (recommended)")
+                             hint: I18n.tr("From RPM Fusion, not free software: full speed, games and CUDA for AI. Without it nouveau, slower.") }
+                    Text2 { visible: shell.nvidiaNew && shell.nvidiaDriver && shell.facts.sb === "on"; color: Theme.gold
+                            text: I18n.tr("Secure Boot is on: the driver is signed with a key of this computer. At the end you get a password, and at the next start a blue screen asks for it once.") }
+                    Text2 { visible: shell.gpuArg !== ""
+                            text: I18n.tr("Only this computer's graphics cards get their firmware; the other makers' is left out and stays out.") }
                     Text2 { visible: shell.oldAmd; color: Theme.gold
                             text: I18n.tr("This graphics card needs Linux 7.3 and Mesa 26.3, which LatteOS brings until Fedora has them. That Linux is not signed: with Secure Boot on it will not start.") } }
 
@@ -211,6 +231,8 @@ ShellRoot {
                         Label { id: chosenText; x: 16; y: 14; width: parent.width - 32; wrapMode: Text.WordWrap; text: shell.chosenPackages.join("  ·  ") || "—" } }
                     // the repositories beyond Fedora's that ./install adds (install: repositories()), said before Install
                     Text2 { text: I18n.tr("Also added to this computer's repositories: a COPR with hypridle and newer Quickshell (lionheartp/Hyprland).") }
+                    Text2 { visible: shell.gpuArg.split(" ").indexOf("nvidia") >= 0
+                            text: I18n.tr("For NVIDIA's driver: RPM Fusion (akmod-nvidia, not free software).") }
                     Text2 { visible: shell.chosenPackages.indexOf("steam") >= 0
                             text: I18n.tr("For the Game session: RPM Fusion (Steam, not free software) and Terra (gamescope-session only).") }
                     Text2 { text: I18n.tr("It takes about half an hour, most of it building. The computer can be left alone meanwhile.") } }
@@ -240,6 +262,13 @@ ShellRoot {
                 Column { visible: shell.page === "done"; width: parent.width; spacing: 14
                     Label { text: I18n.tr("LatteOS is installed"); font.pixelSize: 30; font.weight: 800 }
                     Text2 { text: I18n.tr("It starts with the next boot.") }
+                    // Secure Boot's key for NVIDIA's driver: MokManager asks for it once, its keys read as on QWERTY
+                    Rectangle { visible: shell.mok !== ""; width: parent.width; height: mokCol.implicitHeight + 32; radius: 16; color: Theme.card
+                        Column { id: mokCol; x: 18; y: 16; width: parent.width - 36; spacing: 10
+                            Label { text: I18n.tr("Write this password down"); font.weight: 700 }
+                            Label { text: shell.mok; font.pixelSize: 34; font.weight: 800; font.family: "monospace"; color: Theme.gold }
+                            Text2 { text: I18n.tr("At the next start a blue screen (MokManager) asks for it once: Enroll MOK, Continue, Yes, the password, Reboot.") }
+                            Text2 { text: I18n.tr("Without it NVIDIA's driver does not load and LatteOS SAFE opens; the key can be enrolled at any later start.") } } }
                     Pill { icon: "refresh"; strong: true; text: I18n.tr("Restart now"); onPressed: Quickshell.execDetached(["systemctl", "reboot"]) } }
 
                 // what ./install said, for when it goes wrong

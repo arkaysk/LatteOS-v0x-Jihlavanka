@@ -13,6 +13,9 @@
                              window chose them
   --old-amd                  with --go: Linux 7.3 and Mesa 26.3 too, for AMD cards of GFX6 to GFX8 (an RX 640), until
                              Fedora has them (patches/old-amd.sh); --remove takes that Mesa off again
+  --gpu "CARDS"              with --go: the graphics cards this PC has, as the installer's window found them (nvidia,
+                             nouveau for NVIDIA without its driver, amd, intel): NVIDIA's driver from RPM Fusion for
+                             nvidia, and the firmware of the cards it does not have is taken off and kept off (2.10)
   --progress                 with --go: lines for the installer's window besides the usual ones, "@step N/M text"
                              when a part begins and "@percent P" as it goes (docs/instalator/PLAN.md)
 
@@ -22,6 +25,7 @@ import glob
 import os
 import pwd
 import re
+import secrets
 import shutil
 import subprocess
 import sys
@@ -136,17 +140,17 @@ includepkgs=gamescope-session gamescope-session-steam
 """
 
 
-def repositories(extra):
-    """Add what the chosen packages come from; False when one could not be added."""
+def repositories(extra, nvidia=False):
+    """Add what the chosen packages come from (RPM Fusion for NVIDIA's driver too); False when one could not be added."""
     have = subprocess.run(["dnf", "repolist", "--enabled"], capture_output=True, text=True).stdout
     steps = []
     if "lionheartp:Hyprland" not in have:
         steps.append(["dnf", "copr", "enable", "-y", "lionheartp/Hyprland"])
+    if (any(p in GAMES for p in extra) or nvidia) and "rpmfusion-nonfree" not in have:
+        v = subprocess.run(["rpm", "-E", "%fedora"], capture_output=True, text=True).stdout.strip()
+        steps.append(["dnf", "install", "-y"] + ["https://mirrors.rpmfusion.org/%s/fedora/rpmfusion-%s-release-%s.noarch.rpm" % (k, k, v)
+                                                 for k in ("free", "nonfree")])
     if any(p in GAMES for p in extra):
-        if "rpmfusion-nonfree" not in have:
-            v = subprocess.run(["rpm", "-E", "%fedora"], capture_output=True, text=True).stdout.strip()
-            steps.append(["dnf", "install", "-y"] + ["https://mirrors.rpmfusion.org/%s/fedora/rpmfusion-%s-release-%s.noarch.rpm" % (k, k, v)
-                                                     for k in ("free", "nonfree")])
         if "terra-latteos" not in have:
             with open("/etc/yum.repos.d/terra-latteos.repo", "w") as f: f.write(TERRA)
     if "mise" in extra and "mise-repo" not in have:
@@ -157,12 +161,74 @@ def repositories(extra):
     return True
 
 
+# The graphics cards' firmware (ROADMAP 2.10): Fedora's linux-firmware only recommends these, so the ones of cards this PC
+# does not have go, and a file of dnf's keeps updates from bringing them back. NVIDIA's own driver brings its firmware.
+FIRMWARE = {"amd": "amd-gpu-firmware", "intel": "intel-gpu-firmware", "nouveau": "nvidia-gpu-firmware"}
+EXCLUDE = "/etc/dnf/libdnf5.conf.d/latteos-gpu.conf"
+NVIDIA = ["akmod-nvidia", "xorg-x11-drv-nvidia-cuda"]       # RPM Fusion: the open modules on RTX 20 and newer, CUDA for AI
+MOK_KEY = "/etc/pki/akmods/certs/public_key.der"
+
+
+def secure_boot():
+    try:
+        with open("/sys/firmware/efi/efivars/SecureBoot-8be4df61-93ca-11d2-aa0d-00e098032b8c", "rb") as f: return f.read()[-1:] == b"\x01"
+    except OSError: return False
+
+
+def firmware_off(cards, say):
+    """Take off the firmware of the cards this PC does not have, unless a package still needs it; keep it off."""
+    keep = {FIRMWARE[c] for c in cards if c in FIRMWARE}
+    drop = [p for p in sorted(set(FIRMWARE.values()) - keep)
+            if subprocess.run(["rpm", "-q", "--whatrequires", p], capture_output=True).returncode]
+    if not drop: return
+    with open(EXCLUDE, "w") as f:
+        f.write("# LatteOS (install --gpu): firmware of graphics cards this PC does not have; delete this file for another card\n"
+                "[main]\nexcludepkgs=%s\n" % ",".join(drop))
+    there = [p for p in drop if not subprocess.run(["rpm", "-q", p], capture_output=True).returncode]
+    if there:
+        say("   $ dnf remove -y --noautoremove " + " ".join(there))
+        subprocess.run(["dnf", "remove", "-y", "--noautoremove"] + there)
+    say("   left out, firmware of cards this PC does not have: " + " ".join(drop))
+
+
+def mok_password():
+    """Eight letters that are where they are on QWERTY and QWERTZ alike (MokManager reads the keys as QWERTY), no l or o."""
+    return "".join(secrets.choice("abcdefghijkmnpqrstuvwx") for _ in range(8))
+
+
+def mok_key(say):
+    """With Secure Boot on, a key of this PC's that akmods signs NVIDIA's module with, before it is built; the firmware
+    learns it at the next start (MokManager asks for the password once). The password, "" when none is asked."""
+    subprocess.run(["kmodgenca", "-a"])                 # a key already there is kept
+    tested = subprocess.run(["mokutil", "--test-key", MOK_KEY], capture_output=True, text=True)
+    if "already enrolled" in tested.stdout + tested.stderr: return ""
+    password = mok_password()
+    hashed = subprocess.run(["mokutil", "--generate-hash=" + password], capture_output=True, text=True).stdout.strip()
+    path = "/run/latteos-mok.hash"
+    with open(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w") as f: f.write(hashed + "\n")
+    done = subprocess.run(["mokutil", "--import", MOK_KEY, "--hash-file", path]).returncode == 0
+    os.remove(path)
+    if not done:
+        say("   the key for Secure Boot was not queued: NVIDIA's driver will not load until it is (mokutil --import " + MOK_KEY + ")")
+        return ""
+    return password
+
+
+def default_kernel():
+    """The kernel the next start runs: NVIDIA's module is built for it."""
+    k = subprocess.run(["grubby", "--default-kernel"], capture_output=True, text=True).stdout.strip()
+    return os.path.basename(k)[len("vmlinuz-"):] if k.startswith("/boot/vmlinuz-") else os.uname().release
+
+
 def main(a):
     flags = {f for f in a if f in ("--go", "--remove", "--purge", "--prune", "--progress", "--old-amd")}
     rest = [x for x in a if x not in flags]
     chosen = []
     if "--with" in rest[:-1]:
         k = rest.index("--with"); chosen = rest[k + 1].split(); rest = rest[:k] + rest[k + 2:]
+    cards = []
+    if "--gpu" in rest[:-1]:
+        k = rest.index("--gpu"); cards = rest[k + 1].split(); rest = rest[:k] + rest[k + 2:]
     root = ""
     if rest[:1] == ["--root"] and len(rest) == 2:
         root, rest = os.path.abspath(rest[1]), []
@@ -184,13 +250,14 @@ def main(a):
     with_pleamar = "--go" in flags and not root and any(s.startswith("pleamar:") for _, s in pairs(sections.get("files", [])))
     must, may, files, may_files = needs(sections)
     fetch = must + [p for p in chosen if p in may]       # what dnf brings: what is missing, and what was chosen of the rest
-    with_packages = "--go" in flags and not root and bool(fetch)
     old_amd = "--old-amd" in flags and "--go" in flags and not root
+    nvidia = "nvidia" in cards and "--go" in flags and not root
+    with_packages = "--go" in flags and not root and bool(fetch or cards)
     parts = ([("packages", "Installing Fedora's packages", 25)] if with_packages else []) \
         + ([("gpu", "Linux 7.3 and Mesa 26.3 for this graphics card", 35)] if old_amd else []) + [("build", "Building LatteOS's programs", 15)] + ([("pleamar", "Building pleamar and pleamar-wm", 45)] if with_pleamar else []) \
         + ([("web", "Building Quickshell for LensAI", 40)] if with_web else []) \
         + [("files", "Copying the files", 25), ("steps", "Setting the system up", 20)] \
-        + ([("boot", "The boot menu", 10)] if with_boot else [])
+        + ([("boot", "The boot menu", 10)] if with_boot else []) + ([("driver", "NVIDIA's driver, built for this Linux", 8)] if nvidia else [])
     whole = sum(w for _, _, w in parts)
     def part(name, share=0.0):
         """Where the bar is: at `share` (0…1) of that part; with --progress, a line for the installer's window."""
@@ -206,6 +273,9 @@ def main(a):
         for cmd in commands(sections.get("undo", []), users(), kernels): run(cmd)
         if not root and os.path.isdir("/opt/mesa-26.3"):             # what --old-amd put there
             run("sh " + os.path.join(HERE, "patches", "old-amd.sh") + " remove")
+        if not root and os.path.exists(EXCLUDE):                     # what --gpu put there; NVIDIA's driver stays
+            os.remove(EXCLUDE)
+            say("   dnf may bring every graphics card's firmware again (NVIDIA's driver stays: dnf remove akmod-nvidia)")
         say("== the files")
         gone = 0
         for _, target in copies(sections, "files") + copies(sections, "replaces"):
@@ -238,7 +308,7 @@ def main(a):
     if with_packages:
         part("packages")
         extra = [p for p in fetch if p not in must]
-        if not repositories(extra):
+        if not repositories(extra, nvidia):
             say("install: a repository could not be added")
             return 1
         def dnf(args, lo, hi):
@@ -263,6 +333,21 @@ def main(a):
             left = [p for p in extra if subprocess.run(["rpm", "-q", "--whatprovides", p], capture_output=True).returncode]
             if left: say("   not in Fedora's repositories, left out: " + " ".join(left))
         must = needs(sections)[0]
+    building, mok = None, ""
+    if nvidia:
+        say("== NVIDIA's driver")
+        if secure_boot():
+            if dnf(["install", "-y", "akmods", "mokutil", "openssl"], 0.9, 0.92):
+                say("install: the tools for Secure Boot's key could not be installed")
+                return 1
+            mok = mok_key(say)
+        if dnf(["install", "-y"] + NVIDIA, 0.92, 1.0):
+            say("install: NVIDIA's driver could not be installed")
+            return 1
+        # its module is built in the background while LatteOS and pleamar are (about 5 minutes); waited for at the end
+        building = subprocess.Popen(["akmods", "--kernels", default_kernel()], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if cards and with_packages:
+        firmware_off(cards, say)
     if (must or files) and "--go" in flags and not root:
         say("install: what is missing has to be there first")
         return 1
@@ -367,6 +452,17 @@ def main(a):
         part("boot")
         if subprocess.run(["sh", os.path.join(HERE, "patches", "aarambh", "setup-latteos.sh")]).returncode:
             say("   the boot menu was not installed: the PC starts through GRUB as before")
+    if building:
+        part("driver")
+        building.wait()
+        k = default_kernel()
+        if subprocess.run(["modinfo", "-F", "version", "nvidia", "-k", k], capture_output=True).returncode:
+            say("   NVIDIA's module is not built yet: akmods builds it at the next start (its log: /var/cache/akmods/nvidia/)")
+        else:
+            say("   NVIDIA's module is built for Linux " + k)
+        if mok:
+            say("@mok " + mok)
+            say("   Secure Boot: at the next start MokManager asks for the password " + mok + " once (Enroll MOK, Continue, Yes)")
     if "--progress" in flags and "--go" in flags: say("@percent 100")
     if "--go" in flags and not root:
         say("LatteOS is in place. It starts with the next boot: the login screen is greetd's.")

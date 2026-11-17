@@ -163,6 +163,13 @@ slobodná licencia, do COPR nesmie) a založiť ho iba na pokyn (je verejný).
    (`QT_WAYLAND_DISABLE_WINDOWDECORATION=1`, inak nad sprievodcom lišta ─ □ ✕).
    Prvá inštalácia nemusí byť dokonalá, stačí, keď funguje; po anglicky stačí (používateľ 3. 11.).
 4. Kontrola počítača (karta, Secure Boot, kernel/Mesa) a podmienené kroky 3.4.
+   **17. 11. — ovládače podľa karty (ROADMAP 2.10):** sprievodca číta PCI ID (`lspci -nn`), pri NVIDIA od RTX 20 ponúkne
+   ovládač (prepínač, predvolene zapnutý) a pošle `install --gpu "nvidia intel"`. `install` pridá RPM Fusion, pri Secure Boot
+   vytvorí kľúč (`kmodgenca -a`) a zaradí ho (`mokutil --import --hash-file`, heslo 8 písmen bez y/z/l/o, sprievodca ho ukáže
+   na konci, riadok `@mok`), nainštaluje `akmod-nvidia xorg-x11-drv-nvidia-cuda`, modul zostavuje na pozadí počas
+   zostavovania pleamaru a na konci naň počká. Firmvér kariet, ktoré PC nemá, odstráni (iba ak ho nič nevyžaduje)
+   a zakáže v `/etc/dnf/libdnf5.conf.d/latteos-gpu.conf`. Overené: stránky sprievodcu s napodobnenou RTX 3060 + Intel
+   (labwc bez obrazovky), dnf5 číta `excludepkgs` z toho priečinka. **Neoverené:** ostrá inštalácia na karte NVIDIA.
 5. Skúška od nuly vo VM, potom na latte-lab (čistá Fedora 45 Server).
    **16. 11. — prvý beh vo VM, zistené:**
    - **`hypridle` (povinný) nie je vo Fedore** — na latte-lab z COPR `lionheartp/Hyprland` (ako Quickshell 0.3).
