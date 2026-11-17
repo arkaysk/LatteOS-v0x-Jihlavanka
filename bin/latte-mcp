@@ -5,6 +5,8 @@ It knows nothing itself: each tool is a thin cover over a command that is there 
   latte-mcp                 serves on stdio: what an agent's tool (Claude Code, Codex, Gemini CLI) starts
   latte-mcp install|remove  writes it into, or takes it out of, the agents installed here, for this user
   latte-mcp status          {"ai", "agents": [{"id", "name", "installed", "has"}]}: which agents have it
+  latte-mcp servers         every MCP server the agents are given (their user settings), by name: [{"name", "how" (the
+                            command line or the URL), "clients": ["Claude Code", "Codex", "Gemini CLI"]}]; never env or headers
 
 It reads: the conversations kept in LensAI, who can answer and what is left of the limits, the agents at work and the
 windows open. And it changes what bin/latte-skill names (the Wi-Fi, the volume, the brightness…), each change only
@@ -77,6 +79,46 @@ def status():
         listed = run(a["tool"], ["mcp", "list"]) if there else None
         out.append({"id": i, "name": a["name"], "installed": there, "has": bool(listed and NAME in listed.stdout + listed.stderr)})
     return {"ai": not turned_off(), "agents": out}
+
+
+def servers():
+    """Every MCP server the agents' own settings give them, by name: [{"name", "how" (command line or URL), "clients"}].
+    Only the user's scope (Claude Code keeps a project's own under "projects"); env and headers are never read out."""
+    import tomllib
+    found = {}
+
+    def read(path, toml=False):
+        try:
+            with open(os.path.expanduser(path), "rb") as f:
+                got = tomllib.load(f) if toml else json.load(f)
+                return got if isinstance(got, dict) else {}
+        except (OSError, ValueError):
+            return {}
+
+    def shown(s):
+        """What it is, without what may be a secret: a URL's scheme and host, a command's name and its arguments, those
+        after a key, token or secret flag (or holding one) masked."""
+        import re
+        import urllib.parse
+        url = s.get("url") or s.get("httpUrl")
+        if url:
+            u = urllib.parse.urlsplit(str(url))
+            return "%s://%s" % (u.scheme, u.hostname or "")
+        words, hide = [os.path.basename(str(s.get("command", "")))], False
+        for x in [str(a) for a in s.get("args") or []]:
+            secret = re.search(r"key|token|secret|passw|bearer|auth", x, re.I)
+            words.append("•••" if hide or (secret and "=" in x) else x)
+            hide = bool(secret) and x.startswith("-") and "=" not in x
+        return " ".join(w for w in words if w).strip()
+    for client, given in (("Claude Code", read("~/.claude.json").get("mcpServers")),
+                          ("Codex", read("~/.codex/config.toml", toml=True).get("mcp_servers")),
+                          ("Gemini CLI", read("~/.gemini/settings.json").get("mcpServers"))):
+        for name, s in (given or {}).items():
+            s = s if isinstance(s, dict) else {}
+            how = shown(s)
+            row = found.setdefault(name, {"name": name, "how": how, "clients": []})
+            row["clients"].append(client)
+    return sorted(found.values(), key=lambda s: s["name"].lower())
 
 
 def serve():
@@ -179,6 +221,9 @@ def main(a):
         return 0
     if a == ["status"]:
         print(json.dumps(status()))
+        return 0
+    if a == ["servers"]:
+        print(json.dumps(servers(), ensure_ascii=False))
         return 0
     if a in (["install"], ["remove"]):
         for s in status()["agents"]:

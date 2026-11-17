@@ -3474,6 +3474,50 @@ Najprv skúška agentes-chat na latte-lab (self-hosted), potom rozhodnúť: prev
   latte-lab „Belongs to the workspace“ zapnuté). **Prvá úloha prešla** (17. 11., 17:57): Ada cez Claude Code (Sonnet 5.5)
   prečítala CLAUDE.md a ROADMAP v `~/agentes/latteos` a správne zhrnula LatteOS a 10B.60, nič nemenila. Ďalej: úloha so
   zmenou kódu a `tests/check.sh`, rutiny ukážkových agentov (denne 9:00) by míňali limit Claude — rozhodnúť.
+  **Rozhodnuté 17. 11. (používateľ): vlastný fork agentes-chat ako súčasť LensAI** — položka „Agent Chats“, vlastné skilly
+  tvorivých úloh, konektory MCP pre ComfyUI, Blender, Kritu. Zistené: fork ostáva AGPL-3.0 (s GPL-3.0 LatteOS zlučiteľné),
+  zdroj verejný; meno a logo agentes.chat sú ochranné známky → fork musí mať vlastné meno, v O aplikácii „Based on agentes.chat
+  by AGENTESCHAT, LLC“ (NOTICE). Bez CLI agenti rozprávajú, odovzdávajú prácu, rutiny, skilly (`SKILL.md`, .zip), MCP podľa URL;
+  misie (práca na súboroch) potrebujú počítač s Claude Code. Lokálny model ako „Other provider“ (OpenAI-kompatibilný). Konektory
+  MCP pre ComfyUI/Blender/Kritu sú väčšinou stdio → treba ich vystaviť cez HTTP (napr. mcp-proxy). Otvorené: web v prehliadači,
+  alebo webová aplikácia v okne LensAI; meno forku.
+  **17. 11. návrh okna** (klikateľný prototyp, artefakt „Prototyp LensAI“) **a rozhodnutia po posudku:** panel zúžiteľný na ikony,
+  prstene v paneli, jedno pole s tlačidlom „Urobiť to“ v odpovedi, Agent Chats s vlastným menu v okne LensAI, stránky Skilly
+  (všetky skilly, aj z Agent Chats) a Konektory (MCP servery), Pult zrušený → „Čaká na teba“ na Prehľade a upozornenia
+  (`docs/goo/ROZHODNUTIA.md`, 17. 11.). Rozhovory: doplniť relácie Claude Code z ich záznamov iba na čítanie s „Pokračovať v termináli“.
+
+**10B.61** [~] **LensAI v podobe návrhu zo 17. 11.** (používateľ 17. 11.: „urob to“) — hotové a nasadené 17. 11. (`apps/aicenter.qml`, `apps/common/Nav.qml`):
+panel sa zúži na ikony (tlačidlo hore; sám pri webe služby a Agent Chats, dá sa nechať otvorený) a posúva sa; prstene sú pod položkami;
+Prehľad bez šošovky: jedno pole (nový rozhovor s tým, kto odpovedá, a vetou, kam otázka ide), Čaká na teba (žiadosti AI s Povoliť/Odmietnuť,
+agenti v termináloch, čo sa pýtajú), Teraz beží, Tento počítač, Spotreba s obnovou, Naposledy; pod odpoveďou s príkazmi v bloku kódu „Urob to“
+(`latte-ai do` s otázkou, agent najprv plánuje); Agent Chats v okne (záložka s vlastným profilom na `127.0.0.1:4310`, keď server nebeží:
+„Spustiť“); Skilly (`latte-ai skills`, zoskupené podľa toho, kde žijú) a Konektory (`latte-mcp servers`, prepínač latte-mcp presunutý
+z Nastavení › CLI); Rozhovory aj s reláciami Claude Code (`latte-ai sessions`, „Pokračovať v termináli“). Overené naživo myšou agenta
+(pleamar-wm agent): zúženie, otázka z Prehľadu s odpoveďou a „Urob to“, prsteň otvorí web a panel sa zúži, posúvanie panela.
+Chýba: fork agentes-chat (meno, téma, slovenčina), upozornenia Agent Chats na ploche, skilly agentov Agent Chats na stránke Skilly,
+interaktívne prvky v odpovedi (výber, súčet ako v ChatGPT), „Ukázať jeho terminál“ neoverené (pole okna v `pleamar-wm agents --json`),
+tvorivé skilly (Komiks) a konektory ComfyUI, Blender, Krita.
+  **Posudky 17. 11.** (inžiniersky, dizajnový, CEO) a opravy hneď: Agent Chats sa otvorí až keď jeho port odpovedá, po „Spustiť“
+  skúša znova; relácie sa čítajú jedným volaním, ktoré iné neprerušia, vyrovnávacia pamäť sa zapisuje celá alebo vôbec; „Urob to“ iba pri
+  bloku kódu shellu a ako tlačidlo; pri pracujúcej relácii sa „Pokračovať“ neponúka, terminál po skončení ostane otvorený; v Konektoroch
+  sa nezobrazujú kľúče a tokeny; mená ikon a prsteňov pri ukázaní myšou; Skilly po riadku, skupiny zbalené. Ostáva z posudkov:
+  CEO — **jedna sada konektorov a skillov pre všetky AI z LensAI** (tlačidlo „Dať všetkým AI“; najväčší prínos pre ciele 1–3),
+  jedna skutočná viacagentová úloha v Agent Chats pred forkom, prihlásenie a schválenia Agent Chats do „Čaká na teba“, import exportov
+  rozhovorov (10B.16); dizajn — jednotná hlavička sekcií, kratšie úvodné vety, priehľadnosť obsahu nad tapetou, model dvakrát v poli
+  rozhovoru, „Odstrániť“ v hlavičke rozhovoru; „Choose your agent“ na ploche je po anglicky (nie LensAI); skilly pluginov Claude Code
+  a konektory claude.ai na stránkach chýbajú; „Spustiť“ Agent Chats pri zastavenom serveri neskúšané naživo.
+  **17. 11. neskôr (používateľ):** panel sa zužuje iba ručne a ostáva, ako ho používateľ nechal, na každej stránke. Weby AI sa načítavali
+  dlho (stránka sa spúšťala až po kliknutí; obrázky a skripty už boli na disku): LensAI ich po otvorení pripraví v pozadí, jednu za 1,5 s
+  (stupeň full všetky, standard prvé tri, nižšie žiadnu) — ChatGPT hotový 0,6 s po kliknutí. Stojí to pamäť: 7 webov + Agent Chats
+  spolu ~3,3 GB (PSS). Rozhodnúť: pripravovať všetky, iba najpoužívanejšie, alebo voľba pri každej službe v Nastaveniach › Web.
+  Merané: jeden proces na stránky (`--renderer-process-limit=1`) 3,2 GB, úsporný JS 3,8 GB — pamäť berú skripty webov (3–4 procesy
+  po 260–740 MB), nie grafika. Návrh: živé iba viditeľná + 2 naposledy použité, ostatné uspať (WebEngineView `lifecycleState` Discarded)
+  a kým sa prebúdzajú (2–4 s), ukázať ich posledný obrázok. Príklady úloh na Prehľade sú žltý tip s krížikom (hotové, nasadené).
+  **Agent Chats (Latte edition)** bez prihlasovania (rozhodnuté 17. 11.): API agentes (`/api/openapi.json`, 570 ciest) má skilly
+  (`/app/organizations/{org}/skills`, import), prístupy k AI (`credentials`, aj vlastný server s modelmi), osobné tokeny pre skripty a
+  vlastníka servera s odkazom `/owner#claim=…` — LensAI im dá skilly, MCP (latte-mcp cez HTTP na 127.0.0.1), kľúče a lokálny model cez API;
+  vo forku iba: meno, prihlásenie miestneho vlastníka bez hesla, téma LatteOS, slovenčina. **Schválené 17. 11. (používateľ): uspávanie webov
+  aj tento postup — ďalej ako prvé prihlásenie bez hesla, potom uspávanie webov s obrázkom.**
 
 ### 10C. [ ] Heidelberg
 

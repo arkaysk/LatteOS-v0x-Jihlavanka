@@ -33,6 +33,11 @@ Item {
     onBesideChanged: open()
     readonly property bool split: beside !== "" && beside !== current && current !== ""
     onServicesChanged: open()
+    // pages to make ready behind before they are asked for, one every second and a half (all at once would make the window
+    // wait); a page loaded out of sight shows at once when its tab is chosen
+    property var warm: []
+    Timer { interval: 1500; repeat: true; running: tabs.warm.some(id => tabs.has(id) < 0 && tabs.services.some(s => s.id === id))
+            onTriggered: { const id = tabs.warm.find(x => tabs.has(x) < 0 && tabs.services.some(s => s.id === x)); if (id) opened.append({ service: id }) } }
     // the small window a page asks for, until the page in it closes it (or the person does)
     Component {
         id: popup

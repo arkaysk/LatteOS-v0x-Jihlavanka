@@ -47,6 +47,11 @@ No API key: the official tool of a service answers, with the account the user is
                             "asked"}], "stats": {"week", "today", "model", "busiest", "prompts", "sessions"}}
   latte-ai skill install|reset|path   LatteOS's skill for the agents (Claude Code, Codex, Gemini): the user's copy in
                             ~/.config/latteos/skills/latteos, linked into each agent's skills; reset brings back LatteOS's own
+  latte-ai skills           every agent skill on this computer, once by its real SKILL.md: [{"name", "description", "path",
+                            "home" (latteos, claude, agents, codex, other: where the file lives), "seen" (the tools that
+                            find it: Claude Code, Codex, Gemini CLI)}]
+  latte-ai sessions [N]     the user's Claude Code sessions, the newest N (30): [{"id", "title" (the first prompt), "folder",
+                            "when", "turns"}]; one goes on with `claude --resume ID` run in "folder"
   latte-ai do TASK [AGENT] [--in DIR]  "Do it for me": the agent (claude, chatgpt = Codex, gemini; else the chosen one) on
                             the task in a terminal (in DIR, else home), planning first with LatteOS's skill and changing
                             nothing until the user says yes
@@ -1476,6 +1481,126 @@ def skill(what):
     return mine
 
 
+# what Claude Code writes as a user's line that the user did not type: slash commands, their output, notes to the model
+NOT_PROMPT = ("<command-", "<local-command", "Caveat:", "<system-reminder", "<bash-", "<task-notification", "<ide_",
+              "[Request interrupted")
+
+
+def sessions(most=30):
+    """The user's Claude Code sessions, the newest first, to be resumed with `claude --resume ID` in "folder":
+    [{"id", "title" (Claude Code's own ai-title, else the first prompt, one line), "folder", "when", "turns" (prompts)}].
+    Only top-level transcripts (subagents' are in subfolders); one with no prompt of the user's (a subagent's own) or run
+    by a program through the SDK (entrypoint sdk-*) is left out. A transcript only grows, so each is read on from where
+    it was read last (kept in sessions-claude-2.json; the number goes up when what is kept changes)."""
+    home = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~/.claude")
+    cache_path = os.path.join(ROOM, "sessions-claude-2.json")
+    try:
+        with open(cache_path) as f:
+            cache = json.load(f)
+    except (OSError, ValueError):
+        cache = {}
+    fresh = {}
+    for path in glob.glob(os.path.join(home, "projects", "*", "*.jsonl")):
+        try:
+            size = os.path.getsize(path)
+        except OSError:
+            continue
+        kept = cache.get(path)
+        if not kept or kept["s"] > size:
+            kept = {"s": 0, "title": "", "ai": "", "folder": "", "when": "", "turns": 0, "sdk": False}
+        if kept["s"] < size:
+            with open(path, "rb") as f:
+                f.seek(kept["s"])
+                for raw in f:
+                    if not raw.endswith(b"\n"):     # a line still being written: read next time
+                        break
+                    kept["s"] += len(raw)
+                    line = raw.decode(errors="replace")
+                    if '"timestamp":"' in line:
+                        kept["when"] = max([kept["when"]] + re.findall(r'"timestamp":"([0-9T:.Z-]+)"', line))
+                    kept["sdk"] = kept["sdk"] or '"entrypoint":"sdk-' in line
+                    if line.startswith('{"type":"ai-title"'):
+                        try:
+                            kept["ai"] = json.loads(line).get("aiTitle") or kept["ai"]
+                        except ValueError:
+                            pass
+                        continue
+                    if '"type":"user"' not in line or '"type":"tool_result"' in line:
+                        continue
+                    try:
+                        d = json.loads(line)
+                    except ValueError:
+                        continue
+                    if d.get("type") != "user" or d.get("isSidechain") or d.get("isMeta") or d.get("isCompactSummary"):
+                        continue
+                    c = (d.get("message") or {}).get("content")
+                    texts = [c] if isinstance(c, str) else [b.get("text", "") for b in c or [] if isinstance(b, dict) and b.get("type") == "text"]
+                    text = next((t.strip() for t in texts if t.strip() and not t.strip().startswith(NOT_PROMPT)), "")
+                    if not text:
+                        continue
+                    kept["turns"] += 1
+                    if not kept["title"]:
+                        first = text.splitlines()[0].strip()
+                        kept["title"] = first if len(first) <= 80 else first[:79] + "…"
+                        kept["folder"] = d.get("cwd", "")
+        fresh[path] = kept
+    os.makedirs(ROOM, exist_ok=True)
+    with open(cache_path + ".new", "w") as f:      # whole or not at all: a run ended halfway leaves the last cache
+        json.dump(fresh, f)
+    os.replace(cache_path + ".new", cache_path)
+    found = [{"id": os.path.basename(p)[:-6], "title": s["ai"] or s["title"], "folder": s["folder"], "when": s["when"], "turns": s["turns"]}
+             for p, s in fresh.items() if s["turns"] and not s["sdk"]]
+    return sorted(found, key=lambda s: s["when"], reverse=True)[:most]
+
+
+def front_matter(path):
+    """name and description from a SKILL.md's YAML head: plain, quoted, or folded (> |) values only, no YAML library."""
+    found, key = {}, None
+    with open(path, errors="replace") as f:
+        if f.readline().strip() != "---":
+            return found
+        for line in f:
+            if line.strip() == "---":
+                break
+            if key and line[:1] in (" ", "\t"):
+                found[key] = (found[key] + " " + line.strip()).strip()
+                continue
+            key = None
+            name, colon, value = line.partition(":")
+            if colon and name in ("name", "description"):
+                value = value.strip()
+                if value[:1] in ("'", '"') and value[-1:] == value[:1]:
+                    value = value[1:-1]
+                found[name] = "" if value in (">", "|", ">-", "|-") else value
+                key = name
+    return found
+
+
+# where each skill lives, and which tool reads each folder: Gemini CLI reads ~/.agents/skills (SKILL_HOMES links it
+# there for ~/.gemini, as Omarchy does)
+SKILL_DIRS = (("latteos", "~/.config/latteos/skills", None), ("claude", "~/.claude/skills", "Claude Code"),
+              ("agents", "~/.agents/skills", "Gemini CLI"), ("codex", "~/.codex/skills", "Codex"))
+
+
+def skills_all():
+    """Every agent skill on this computer, by its real SKILL.md: [{"name", "description", "path", "home", "seen"}]."""
+    found = {}
+    for home, where, tool in SKILL_DIRS:
+        for path in glob.glob(os.path.join(os.path.expanduser(where), "*", "SKILL.md")):
+            real = os.path.realpath(path)
+            if real not in found:
+                try:
+                    head = front_matter(real)
+                except OSError:
+                    continue
+                lives = next((h for h, w, _ in SKILL_DIRS if real.startswith(os.path.realpath(os.path.expanduser(w)) + os.sep)), "other")
+                found[real] = {"name": head.get("name") or os.path.basename(os.path.dirname(path)),
+                               "description": head.get("description", ""), "path": real, "home": lives, "seen": []}
+            if tool and tool not in found[real]["seen"]:
+                found[real]["seen"].append(tool)
+    return sorted(found.values(), key=lambda s: s["name"].lower())
+
+
 # ── "Do it for me": a task for an agent, in a terminal the user sees (Omarchy's `omarchy agent prompt`, MIT, but never
 # approving by itself): the agent plans first with LatteOS's skill and changes nothing until the user says yes there.
 DOERS = {
@@ -2384,6 +2509,12 @@ def main(a):
         return 0
     if a == ["agents"]:
         print(json.dumps(agents(), ensure_ascii=False))
+        return 0
+    if a[:1] == ["sessions"] and len(a) <= 2 and (len(a) == 1 or a[1].isdigit()):
+        print(json.dumps(sessions(int(a[1]) if len(a) == 2 else 30), ensure_ascii=False))
+        return 0
+    if a == ["skills"]:
+        print(json.dumps(skills_all(), ensure_ascii=False))
         return 0
     if a == ["stop"]:
         subprocess.run(["pkill", "-f", "llama-server.*--port %d" % LOCAL_PORT])
