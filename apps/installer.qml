@@ -71,8 +71,9 @@ ShellRoot {
     // a group holding one of these is AI's: only with AI (the services' tools, the MCP server, LensAI's web engine)
     readonly property var aiWords: ["mise", "pipewire-utils", "gnome-keyring", "python3-mcp", "qt6-qtwebengine"]
     // untouched (null), a group is chosen, except the Game session's without a real graphics card (PLAN 3.2)
-    // off by default: the Game session without a real graphics card, the boot menu without UEFI
-    function chosenOf(g) { return g.chosen === null ? ((g.packages.indexOf("steam") < 0 || realGpu) && (g.packages.indexOf("gnu-efi-devel") < 0 || facts.sb !== "bios")) : g.chosen }
+    // off by default: the Game session without a real graphics card; the boot menu without UEFI, and with Secure Boot
+    // on (its key waits for a password at the next start that this window does not show yet, ROADMAP 3.11)
+    function chosenOf(g) { return g.chosen === null ? ((g.packages.indexOf("steam") < 0 || realGpu) && (g.packages.indexOf("gnu-efi-devel") < 0 || facts.sb === "off")) : g.chosen }
     readonly property var chosenPackages: groups.filter(g => chosenOf(g) && (ai || !g.packages.some(p => aiWords.indexOf(p) >= 0)))
                                                 .reduce((all, g) => all.concat(g.packages), [])
 

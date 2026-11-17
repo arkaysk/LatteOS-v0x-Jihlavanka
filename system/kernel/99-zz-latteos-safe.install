@@ -1,0 +1,5 @@
+#!/bin/sh
+# kernel-install plugin: after Aarambh's own (99-aarambh.install, named before this one) has listed the kernels again,
+# the boot menu's SAFE entry gets the same list (/usr/libexec/latte-bootmenu-safe). Nothing without Aarambh.
+case "${1:-}" in add|remove) exec /usr/libexec/latte-bootmenu-safe ;; esac
+exit 0

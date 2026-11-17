@@ -765,7 +765,7 @@
 /usr/share/plymouth/themes/latteos/                     <- system:/usr/share/plymouth/themes/spinner/*.png
 /usr/lib/systemd/system/latte-boot.service              <- system/systemd/latte-boot.service
 /usr/lib/systemd/system/latte-netd.service              <- system/systemd/latte-netd.service
-/usr/lib/systemd/system/latte-bootmenu-safe.path        <- system/systemd/latte-bootmenu-safe.path
+/usr/lib/kernel/install.d/99-zz-latteos-safe.install   <- system/kernel/99-zz-latteos-safe.install
 /usr/lib/systemd/system/latte-bootmenu-safe.service     <- system/systemd/latte-bootmenu-safe.service
 /usr/lib/systemd/system/latte-doghouse.service          <- system/systemd/latte-doghouse.service
 /usr/lib/systemd/system/latte-doghouse.timer            <- system/systemd/latte-doghouse.timer

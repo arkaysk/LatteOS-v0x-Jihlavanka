@@ -1,6 +1,13 @@
+# The boot menu's SAFE entry: its kernels made again from Aarambh's list (system/libexec/latte-bootmenu-safe) at each
+# start, besides after each kernel update (system/kernel/99-zz-latteos-safe.install). Enabled by
+# patches/aarambh/setup-latteos.sh when the boot menu is installed.
 [Unit]
 Description=LatteOS boot menu: the SAFE entry's kernels
+RequiresMountsFor=/boot/efi
 
 [Service]
 Type=oneshot
 ExecStart=/usr/libexec/latte-bootmenu-safe
+
+[Install]
+WantedBy=multi-user.target

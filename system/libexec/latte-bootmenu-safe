@@ -3,7 +3,8 @@
 # <KEY>.kernels on the EFI partition (title|id|kernel|initrd|cmdline, written by its aarambh-kernels on each kernel
 # update); latteos-safe.kernels is the same list with latte.mode=safe added (what latte-boot reads, crates/latte-hw).
 # A kernel without its own command line there (no direct boot) is left out: it would start through GRUB, not SAFE.
-# Run by latte-bootmenu-safe.path whenever the list changes. Without Aarambh it does nothing.
+# Run after each kernel update (system/kernel/99-zz-latteos-safe.install) and at each start
+# (latte-bootmenu-safe.service). Without Aarambh it does nothing.
 set -eu
 [ -r /etc/aarambh.env ] || exit 0
 . /etc/aarambh.env

@@ -446,12 +446,20 @@ základ, na ktorý sa dajú integrovať ostatné pracovné prúdy.
   aarambh zamknutý na commit, naša téma a myš, jeho `scripts/install.sh --theme latteos --no-plymouth` (ESP, položka UEFI
   prvá, GRUB za ňou, podpis cez shim, háky pri aktualizácii kernelu, `utc_offset` si píše sám), potom naše položky
   v `aarambh.conf`. **LatteOS SAFE** = rovnaké kernely s `latte.mode=safe` (`/usr/libexec/latte-bootmenu-safe`, obnovuje
-  `latte-bootmenu-safe.path` pri každej zmene zoznamu). Vo VM: ponuka sa ukáže, LatteOS štartuje priamo (direct boot),
+  zásuvný modul `kernel-install` po každom kerneli a služba pri štarte — path jednotka na FAT nereagovala na `mv`). Vo VM: ponuka sa ukáže, LatteOS štartuje priamo (direct boot),
   SAFE dá `reason_id = kernel-safe`. **Windows na inom disku** (vlastná ESP): záplata `patches/aarambh/other-disk.patch`
   (zavádzač, ktorý nie je na vlastnej ESP, hľadá na ostatných zväzkoch ako rEFInd a spustí ho cez firmvér, ktorý ho sám
   overí), `setup-latteos.sh` pozrie ESP ostatných diskov iba na čítanie — vo VM overené s druhým diskom (dlaždica
-  Windows 11 spustila zavádzač z neho). **Ostáva:** skutočný Windows (BitLocker, Secure Boot s MOK pri prvom štarte),
-  myš na skutočnom PC.
+  Windows 11 spustila zavádzač z neho); riadok Windows sa píše vždy, aarambh ho ukáže iba keď zavádzač nájde (aj Windows
+  nainštalovaný neskôr). **Čo setup aarambh urobí navyše:** GRUB skryje (`GRUB_TIMEOUT=0`, hidden — položky
+  `~lattesafe` v GRUB sa teda neukážu, záloha je ponuka aarambh), zapne `aarambh-clear` a `aarambh-shutdown-splash`
+  (aj s `--no-plymouth`), zapíše háky do `/etc/kernel/install.d`, `/usr/local/{lib,sbin,bin}/aarambh*`,
+  `/etc/aarambh.env`, `/var/lib/aarambh/keys` — mimo `FILES`; `install --remove` ich nechá (aarambh má
+  `hooks/uninstall.sh`, zapojiť). Položka SAFE bez priameho štartu (kernel sa nedá skopírovať na ESP) spustí GRUB
+  a ten skrytý naštartuje bežný LatteOS, nie SAFE. **Secure Boot zapnutý:** kľúč sa zaradí bez terminálu (heslo si
+  aarambh vygeneruje), ale 8-miestne heslo pre modrú obrazovku MokManagera je iba v zázname inštalácie → kým ho
+  sprievodca neukáže na stránke Hotovo, súčasť je pri zapnutom Secure Boot predvolene vypnutá. **Ostáva:** heslo MOK
+  v sprievodcovi, skutočný Windows (BitLocker), Secure Boot na skutočnom PC, myš na skutočnom PC.
   Dotyková obrazovka áno (tá istá `ABSOLUTE_POINTER`). Otázka na neskôr: pri viacerých monitoroch kreslí UEFI (GOP)
   spravidla iba na jeden, ktorý určí firmvér — overiť na PC s tromi obrazovkami.
 
