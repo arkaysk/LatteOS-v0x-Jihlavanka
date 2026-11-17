@@ -2971,6 +2971,7 @@ library Slovak {
         "Building LatteOS's programs" = "Zostavujem programy LatteOS"
         "Building pleamar and pleamar-wm" = "Zostavujem pleamar a pleamar-wm"
         "Building Quickshell for LensAI" = "Zostavujem Quickshell pre LensAI"
+        "The boot menu" = "Ponuka pri štarte"
         "Copying the files" = "Kopírujem súbory"
         "Setting the system up" = "Nastavujem systém"
         // the installer's components: the notes of FILES's optional lines, without their pointers into the source
@@ -2983,6 +2984,7 @@ library Slovak {
         "LensAI's tabs: Quickshell with a web engine, built here" = "Záložky LensAI: Quickshell s webovým jadrom, zostavený na tomto počítači"
         "the brightness keys; the power profiles in PowerGoo's card" = "Klávesy jasu; režimy napájania v karte PowerGoo"
         "the Game session; without them it is not offered" = "Herná relácia; bez nich sa neponúkne"
+        "the boot menu: LatteOS, LatteOS SAFE and Windows when the PC starts" = "Ponuka pri štarte: LatteOS, LatteOS SAFE a Windows pri zapnutí počítača"
         "Direct3D 8 to 11 over Vulkan; web views and .NET inside Wine" = "Direct3D 8 až 11 cez Vulkan; webové zobrazenia a .NET vo Wine"
         "Proton outside Steam, other runners and tools" = "Proton mimo Steamu, ďalšie spúšťače a nástroje"
         "the keyring (Secret Service): keys of AI services of one's own (Lens AI centre); greetd's PAM unlocks it at login" = "Zväzok kľúčov: vlastné kľúče služieb AI (centrum Lens AI); odomkne sa pri prihlásení"

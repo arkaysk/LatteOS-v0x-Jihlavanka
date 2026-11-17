@@ -179,6 +179,8 @@ def main(a):
     # LensAI's web tabs only when wanted: the installer's window says so in --with (its component brings qt6-qtwebengine)
     with_web = "--go" in flags and not root and any(s.startswith("qsweb:") for _, s in pairs(sections.get("files", []))) \
         and ("--with" not in a or "qt6-qtwebengine" in chosen)
+    # the boot menu (Aarambh) only when the installer's window chose it: it changes what the firmware starts first
+    with_boot = "--go" in flags and not root and "gnu-efi-devel" in chosen
     with_pleamar = "--go" in flags and not root and any(s.startswith("pleamar:") for _, s in pairs(sections.get("files", [])))
     must, may, files, may_files = needs(sections)
     fetch = must + [p for p in chosen if p in may]       # what dnf brings: what is missing, and what was chosen of the rest
@@ -187,7 +189,8 @@ def main(a):
     parts = ([("packages", "Installing Fedora's packages", 25)] if with_packages else []) \
         + ([("gpu", "Linux 7.3 and Mesa 26.3 for this graphics card", 35)] if old_amd else []) + [("build", "Building LatteOS's programs", 15)] + ([("pleamar", "Building pleamar and pleamar-wm", 45)] if with_pleamar else []) \
         + ([("web", "Building Quickshell for LensAI", 40)] if with_web else []) \
-        + [("files", "Copying the files", 25), ("steps", "Setting the system up", 20)]
+        + [("files", "Copying the files", 25), ("steps", "Setting the system up", 20)] \
+        + ([("boot", "The boot menu", 10)] if with_boot else [])
     whole = sum(w for _, _, w in parts)
     def part(name, share=0.0):
         """Where the bar is: at `share` (0…1) of that part; with --progress, a line for the installer's window."""
@@ -360,6 +363,10 @@ def main(a):
     for n, cmd in enumerate(todo):
         if "--go" in flags: run(cmd); part("steps", (n + 1) / len(todo))
         else: say("   $ " + cmd)
+    if with_boot:
+        part("boot")
+        if subprocess.run(["sh", os.path.join(HERE, "patches", "aarambh", "setup-latteos.sh")]).returncode:
+            say("   the boot menu was not installed: the PC starts through GRUB as before")
     if "--progress" in flags and "--go" in flags: say("@percent 100")
     if "--go" in flags and not root:
         say("LatteOS is in place. It starts with the next boot: the login screen is greetd's.")

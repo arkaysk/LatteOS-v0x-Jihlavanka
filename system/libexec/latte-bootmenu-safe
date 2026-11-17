@@ -1,0 +1,13 @@
+#!/bin/sh
+# latte-bootmenu-safe: the boot menu's "LatteOS SAFE" entry (ROADMAP 3.11). Aarambh lists this system's kernels in
+# <KEY>.kernels on the EFI partition (title|id|kernel|initrd|cmdline, written by its aarambh-kernels on each kernel
+# update); latteos-safe.kernels is the same list with latte.mode=safe added (what latte-boot reads, crates/latte-hw).
+# A kernel without its own command line there (no direct boot) is left out: it would start through GRUB, not SAFE.
+# Run by latte-bootmenu-safe.path whenever the list changes. Without Aarambh it does nothing.
+set -eu
+[ -r /etc/aarambh.env ] || exit 0
+. /etc/aarambh.env
+[ -f "$ESP_DIR/$KEY.kernels" ] || exit 0
+awk -F'|' -v OFS='|' '/^@/ || NF < 5 || $3 == "" { next } { $5 = $5 " latte.mode=safe"; print }' \
+    "$ESP_DIR/$KEY.kernels" > "$ESP_DIR/latteos-safe.kernels.new"
+mv -f "$ESP_DIR/latteos-safe.kernels.new" "$ESP_DIR/latteos-safe.kernels"

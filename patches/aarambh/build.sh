@@ -16,5 +16,7 @@ grep -q latteos_theme "$reg" || sed -i \
     -e 's/^extern const Theme cinema_theme;/&\nextern const Theme latteos_theme;/' \
     -e 's/^\( *\)&cinema_theme,/&\n\1\&latteos_theme,/' "$reg"
 grep -q '&latteos_theme' "$reg" || { echo "build.sh: the theme could not be registered in $reg" >&2; exit 1; }
+# the names `aarambh --theme` and scripts/install.sh accept
+grep -q '^THEMES=".*latteos' "$tree/hooks/bin/aarambh" || sed -i 's/^THEMES="\(.*\)"/THEMES="\1 latteos"/' "$tree/hooks/bin/aarambh"
 make -C "$tree" -j"$(nproc)" >/dev/null
 echo "$tree/build/aarambh.efi"

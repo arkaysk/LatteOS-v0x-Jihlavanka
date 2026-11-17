@@ -1,0 +1,6 @@
+[Unit]
+Description=LatteOS boot menu: the SAFE entry's kernels
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/latte-bootmenu-safe

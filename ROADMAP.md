@@ -441,7 +441,15 @@ základ, na ktorý sa dajú integrovať ostatné pracovné prúdy.
   žiadnom nájdenom pripojí ovládače ku všetkým zariadeniam (ako rEFInd), téma hlási dlaždice (`context->hits`),
   prejdenie vyberie, pustenie tlačidla spustí, kurzor až po pohybe. **Neoverené**: v QEMU s OVMF sa zariadenia
   nájdu, ale `GetState` vracia stále NOT_READY (USB tablet aj myš, xHCI aj EHCI, aj PS/2) — overiť na skutočnom PC.
-  Chýba: inštalácia do systému (`install`: aarambh `setup.sh` + naša `aarambh.conf`, `utc_offset`), FILES.
+  **17. 11. inštalácia hotová a overená vo VM** (čistá Fedora 45 po LatteOS): súčasť „Ponuka pri štarte“ v sprievodcovi
+  (riadok `optional:` vo FILES, predvolene zapnutá okrem PC bez UEFI) → `install` spustí `patches/aarambh/setup-latteos.sh`:
+  aarambh zamknutý na commit, naša téma a myš, jeho `scripts/install.sh --theme latteos --no-plymouth` (ESP, položka UEFI
+  prvá, GRUB za ňou, podpis cez shim, háky pri aktualizácii kernelu, `utc_offset` si píše sám), potom naše položky
+  v `aarambh.conf`. **LatteOS SAFE** = rovnaké kernely s `latte.mode=safe` (`/usr/libexec/latte-bootmenu-safe`, obnovuje
+  `latte-bootmenu-safe.path` pri každej zmene zoznamu). Vo VM: ponuka sa ukáže, LatteOS štartuje priamo (direct boot),
+  SAFE dá `reason_id = kernel-safe`. **Ostáva:** (a) **Windows na inom disku** (vlastná ESP) aarambh nenájde — hľadá iba
+  na svojej ESP; záplata ako rEFInd (prehľadať všetky zväzky, `LoadImage` z cesty iného disku), (b) Secure Boot zapnutý
+  (MOK pri prvom štarte) neoverený, (c) myš na skutočnom PC.
   Dotyková obrazovka áno (tá istá `ABSOLUTE_POINTER`). Otázka na neskôr: pri viacerých monitoroch kreslí UEFI (GOP)
   spravidla iba na jeden, ktorý určí firmvér — overiť na PC s tromi obrazovkami.
 
