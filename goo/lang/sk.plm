@@ -2964,7 +2964,7 @@ library Slovak {
         "Also added to this computer's repositories: a COPR with hypridle and newer Quickshell (lionheartp/Hyprland)." = "Do repozitárov tohto počítača sa pridá aj COPR s hypridle a novším Quickshellom (lionheartp/Hyprland)."
         "For the Game session: RPM Fusion (Steam, not free software) and Terra (gamescope-session only)." = "Pre hernú reláciu: RPM Fusion (Steam, nie je slobodný softvér) a Terra (iba gamescope-session)."
         "no UEFI (old BIOS)" = "bez UEFI (starý BIOS)"
-        "This is a virtual machine: LatteOS will draw without a graphics card, slowly. Fine for trying the installation, not for judging the desktop." = "Toto je virtuálny počítač: LatteOS bude kresliť bez grafickej karty, pomaly. Na skúšku inštalácie stačí, na posúdenie plochy nie."
+        "This is a virtual machine: without a graphics card the GOO desktop cannot show, so after login LatteOS SAFE opens. Fine for trying the installation, not for judging the desktop." = "Toto je virtuálny počítač: bez grafickej karty sa plocha GOO neukáže, po prihlásení sa otvorí LatteOS SAFE. Na skúšku inštalácie stačí, na posúdenie plochy nie."
         // ./install's parts, shown by the installer as they come (@step)
         "Installing Fedora's packages" = "Inštalujem balíky Fedory"
         "Linux 7.3 and Mesa 26.3 for this graphics card" = "Linux 7.3 a Mesa 26.3 pre túto grafickú kartu"

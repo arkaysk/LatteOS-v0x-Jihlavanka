@@ -181,7 +181,7 @@ ShellRoot {
                             Label { x: 18; width: 220; text: I18n.tr(parent.modelData.k); color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
                             Label { x: 240; width: parent.width - 260; text: parent.modelData.v; elide: Text.ElideRight; anchors.verticalCenter: parent.verticalCenter } } }
                     Text2 { visible: shell.virtual; color: Theme.gold
-                            text: I18n.tr("This is a virtual machine: LatteOS will draw without a graphics card, slowly. Fine for trying the installation, not for judging the desktop.") }
+                            text: I18n.tr("This is a virtual machine: without a graphics card the GOO desktop cannot show, so after login LatteOS SAFE opens. Fine for trying the installation, not for judging the desktop.") }
                     Text2 { visible: shell.oldAmd; color: Theme.gold
                             text: I18n.tr("This graphics card needs Linux 7.3 and Mesa 26.3, which LatteOS brings until Fedora has them. That Linux is not signed: with Secure Boot on it will not start.") } }
 

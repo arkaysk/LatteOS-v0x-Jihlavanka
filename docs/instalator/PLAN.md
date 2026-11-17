@@ -190,12 +190,14 @@ slobodná licencia, do COPR nesmie) a založiť ho iba na pokyn (je verejný).
      oddelené „·“, varovanie vo virtuálnom stroji. Všetko opravené 16. 11. večer, overiť v ďalšom behu od snímky.
    **17. 11. — druhý beh vo VM: inštalácia prešla celá** (súčasti bez AI, ~80 min), reštart → prihlasovacia
    obrazovka LatteOS → prihlásenie spustí pleamar-wm a Goo. Zistené:
-   - **Bez grafického ovládača (llvmpipe; VM bez 3D aj s virgl) pleamar-wm obraz na monitor nedá**
-     („the monitor does not take the buffer“: buffer pre monitor kreslený na CPU jadro neprijme), beží ďalej na čiernej
-     obrazovke a latte-boot ho vyhlási za zdravý. Opravené v `latte-session`: keď žiadny monitor neprijme obraz do 20 s,
-     pleamar-wm sa ukončí a relácia ide do SAFE (labwc kreslí aj bez karty) — vo VM overené, SAFE sa ukáže.
-     Plochu GOO teda vo VM vidieť nejde; skúška plochy až na skutočnej karte (latte-lab).
-   - Na šírke 1280 sa na prihlasovacej obrazovke prekrýva „Slovenčina“ s tlačidlom vypnutia.
+   - **Vo VM sa plocha GOO neukáže:** pleamar-wm kreslí na llvmpipe a `add_planar_framebuffer` (pleamar-wm
+     `session.rs:157`) na virtio-gpu vráti EINVAL („the monitor does not take the buffer“) — vo `virtio-vga` aj vo
+     `virtio-vga-gl` (virgl), oboje skončilo na llvmpipe (aj s `PLEAMAR_BACKEND=gl`). pleamar-wm potom bežal na čiernej
+     obrazovke a latte-boot ho vyhlásil za zdravý. Opravené v `latte-session`: keď to do 20 s nahlási každý monitor,
+     pleamar-wm sa ukončí a relácia ide do SAFE (labwc) — vo VM v zázname: „SAFE: desktop-crash … no monitor takes its
+     picture“, beží labwc, „healthy“ sa už nehlási. Sprievodca to vo VM vopred hovorí. Plochu skúšať na skutočnej karte.
+   - Štart latte-boot vo VM nie je stály: `eglinfo` raz prešiel, raz prekročil 10 s → SAFE už pri štarte (`no-gl`).
+   - Na šírke 1280 sa na prihlasovacej obrazovke bez animácie prekrývala „Slovenčina“ s tlačidlom vypnutia — opravené.
 
 ## 6. Neskôr: Atomic, všetko v jednom obraze (používateľ 3. 11.)
 
