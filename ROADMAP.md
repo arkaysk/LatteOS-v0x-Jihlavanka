@@ -1,5 +1,5 @@
 vytvorene 22.10.2026
-naposledy upravene 13.11.2026
+naposledy upravene 18.11.2026
 # LatteOS:0.5 Jihlavanka Build
 
 Nasleduju kategorie. a ich opis. Jednotlive doplnkove napady sa budu doplnat ako bod pod kategorie (napr 1.01. [x] doplnkova idea k Kernel). Podkategorie budu zase čislene (1A) [x]` `[~]` `[ ] značky na hotovo, čiastočne, nezačate. 
@@ -3518,6 +3518,13 @@ tvorivé skilly (Komiks) a konektory ComfyUI, Blender, Krita.
   vlastníka servera s odkazom `/owner#claim=…` — LensAI im dá skilly, MCP (latte-mcp cez HTTP na 127.0.0.1), kľúče a lokálny model cez API;
   vo forku iba: meno, prihlásenie miestneho vlastníka bez hesla, téma LatteOS, slovenčina. **Schválené 17. 11. (používateľ): uspávanie webov
   aj tento postup — ďalej ako prvé prihlásenie bez hesla, potom uspávanie webov s obrázkom.**
+
+**10B.62** [ ] **Plán LensAI: najlepšia cesta ku každej súčasti** (používateľ 18. 11.) — `lensAIplan.md` v koreni repa: všetky hotové
+aj plánované časti LensAI a ku každej navrhnutá cesta (návrhy, nie rozhodnutia). Podklad: porovnanie s Multi-AI Chat Desktop,
+Panelize a Odysseus (18. 11.) a výskum. LensAI môže mať vlastnú licenciu nezávislú od LatteOS (používateľ 18. 11.). Navrhnuté
+poradie: llama.cpp router + `--fit` + voľná VRAM; uspávanie webov Frozen → Discarded; lenivé nástroje v `latte-mcp`; limity Claude
+zo statusline Claude Code; klient ACP pre agentov; skilly v `.agents/skills/`; MTP modely; odhad rýchlosti (llmfit/Odysseus);
+index rozhovorov SQLite FTS5 + sqlite-vec s e5-sk; slovenský Parakeet/Canary (KInIT) na prepis reči.
 
 ### 10C. [ ] Heidelberg
 
