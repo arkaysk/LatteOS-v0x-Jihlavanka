@@ -28,7 +28,7 @@ ShellRoot {
     readonly property string version: "0.4.01"
     function fold() { folded = !folded }
     // Agent Chats (ROADMAP 10B.60): its own web app on this computer, a tab of LensAI with a profile of its own
-    readonly property var teamTab: ({ id: "agentchats", name: "Agent Chats", web: "http://127.0.0.1:4310/" })
+    readonly property var teamTab: ({ id: "agentgram", name: "agentgram", web: "http://localhost:5173/" })      // the fork of agentes-chat (the user, 18. 11.: agentgram)
     function openSection(id) {
         page = "lensai"; section = id
         if (id === "cli") { svc.ask(["services"]); mcpq.running = true }
@@ -319,9 +319,9 @@ ShellRoot {
     property bool teamUp: false
     property bool teamKnown: false
     property int teamTries: 0
-    Process { id: teamq; command: ["curl", "-sf", "--max-time", "2", "-o", "/dev/null", "http://127.0.0.1:4310/"]
+    Process { id: teamq; command: ["curl", "-sf", "--max-time", "2", "-o", "/dev/null", "http://localhost:5173/"]
               onExited: code => { shell.teamUp = code === 0; shell.teamKnown = true } }
-    Process { id: teamStart; command: ["systemctl", "--user", "start", "agentes-server", "latte-mcp"]; onExited: { shell.teamTries = 20; teamWait.start() } }
+    Process { id: teamStart; command: ["systemctl", "--user", "start", "agentgram", "latte-mcp"]; onExited: { shell.teamTries = 20; teamWait.start() } }
     Timer { id: teamWait; interval: 1000; repeat: true
             onTriggered: { if (shell.teamUp || shell.teamTries <= 0) { stop(); return } shell.teamTries -= 1; if (!teamq.running) teamq.running = true } }
     // what waits for the person: an AI's request (the counter), an agent in a terminal that asks
@@ -523,7 +523,7 @@ ShellRoot {
                      : l.indexOf("model:") === 0 ? I18n.tr("Model {n} deleted", { n: l.slice(6) }) : l
         onUndone: { list.ask(["chats"]); localq.ask(["recommend"]); localModels.ask(["models", "measured"]); modelq.ask(["models"]) }
         heading: shell.page === "lensai" ? I18n.tr("Settings") : shell.page === "web" ? (shell.tabbed.find(t => t.id === shell.tab) || { name: "" }).name : shell.page === "home" ? I18n.tr("Overview") : shell.page === "all" ? I18n.tr("Conversations") : shell.page === "agents" ? I18n.tr("Agents") : shell.page === "local" ? I18n.tr("Local LLMs")
-                 : shell.page === "team" ? "Agent Chats" : shell.page === "skills" ? I18n.tr("Skills") : shell.page === "connectors" ? I18n.tr("Connectors") : shell.page === "about" ? I18n.tr("About LensAI") : shell.page === "projects" ? I18n.tr("Projects") : (shell.chat ? shell.chat.title : I18n.tr("Conversations"))
+                 : shell.page === "team" ? "agentgram" : shell.page === "skills" ? I18n.tr("Skills") : shell.page === "connectors" ? I18n.tr("Connectors") : shell.page === "about" ? I18n.tr("About LensAI") : shell.page === "projects" ? I18n.tr("Projects") : (shell.chat ? shell.chat.title : I18n.tr("Conversations"))
         implicitWidth: 1120; implicitHeight: 760
         sideWidth: shell.folded ? 64 : 250
         Behavior on sideWidth { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
@@ -562,7 +562,7 @@ ShellRoot {
                 Nav { width: parent.width; text: I18n.tr("Overview"); icon: "layout-dashboard"; on: shell.page === "home"; badge: shell.waitingCount; onPressed: shell.go("home") }
                 Nav { width: parent.width; text: I18n.tr("Conversations"); icon: "messages"; on: shell.page === "all" || shell.page === "chats"; onPressed: shell.go("all") }
                 Nav { width: parent.width; text: I18n.tr("Projects"); icon: "folders"; on: shell.page === "projects"; onPressed: shell.go("projects") }
-                Nav { width: parent.width; text: "Agent Chats"; icon: "users-group"; on: shell.page === "team"; onPressed: shell.go("team") }
+                Nav { width: parent.width; text: "agentgram"; icon: "users-group"; on: shell.page === "team"; onPressed: shell.go("team") }
                 Nav { width: parent.width; text: I18n.tr("Agents"); icon: "robot"; on: shell.page === "agents"; badge: shell.askingAgents.length; onPressed: shell.go("agents") }
                 Nav { width: parent.width; text: I18n.tr("Skills"); icon: "puzzle"; on: shell.page === "skills"; onPressed: shell.go("skills") }
                 Nav { width: parent.width; text: I18n.tr("Connectors"); icon: "plug-connected"; on: shell.page === "connectors"; onPressed: shell.go("connectors") }
@@ -1044,7 +1044,7 @@ ShellRoot {
                                 Label { width: parent.width - 20; elide: Text.ElideRight; font.pixelSize: 12
                                         text: (modelData.agent || "") + " · " + String(modelData.folder || "").replace(Quickshell.env("HOME"), "~") } } }
                         Quiet { visible: !wmAgents.list.some(a => a.state === "working"); text: I18n.tr("No agent at work in a terminal.") }
-                        Pill { implicitHeight: 30; icon: "users-group"; text: "Agent Chats"; onPressed: shell.go("team") } }
+                        Pill { implicitHeight: 30; icon: "users-group"; text: "agentgram"; onPressed: shell.go("team") } }
                     // ── this computer: its own models ──
                     Card { width: home.third; title: I18n.tr("This computer"); icon: "cpu"
                         Label { text: I18n.tr("{n} models on this computer", { n: (localModels.data || []).length }); font.pixelSize: 13 }
@@ -1373,7 +1373,7 @@ ShellRoot {
                 Glyph { x: 18; name: "users-group"; font.pixelSize: 20; color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
                 Label { x: 52; width: parent.width - 52 - teamSk.width - 32; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13; anchors.verticalCenter: parent.verticalCenter
                         text: I18n.tr("The skills of the agents in Agent Chats (a comic, a video…) are kept by Agent Chats itself.") }
-                Pill { id: teamSk; anchors.right: parent.right; anchors.rightMargin: 16; anchors.verticalCenter: parent.verticalCenter; implicitHeight: 32; icon: "users-group"; text: "Agent Chats"; onPressed: shell.go("team") } }
+                Pill { id: teamSk; anchors.right: parent.right; anchors.rightMargin: 16; anchors.verticalCenter: parent.verticalCenter; implicitHeight: 32; icon: "users-group"; text: "agentgram"; onPressed: shell.go("team") } }
         }
 
         // ── About: version, what is new, help, whose work it stands on (the user, 18. 11.) ──────────────────────
@@ -1396,7 +1396,7 @@ ShellRoot {
                 { name: "whisper.cpp", what: I18n.tr("turns speech into text"), license: "MIT", url: "https://github.com/ggml-org/whisper.cpp" },
                 { name: "Omarchy", what: I18n.tr("the services' limits, the agents' panel, help with crashes"), license: "MIT", url: "https://github.com/basecamp/omarchy" },
                 { name: "Ollama", what: I18n.tr("the rule for how much memory a model needs"), license: "MIT", url: "https://github.com/ollama/ollama" },
-                { name: "agentes.chat", what: "Agent Chats", license: "AGPL-3.0", url: "https://github.com/agentes-chat/agentes-chat" },
+                { name: "agentes.chat", what: "agentgram", license: "AGPL-3.0", url: "https://github.com/agentes-chat/agentes-chat" },
                 { name: "Model Context Protocol", what: I18n.tr("one set of tools for every AI (latte-mcp)"), license: "MIT", url: "https://github.com/modelcontextprotocol/python-sdk" },
                 { name: "Agent Skills", what: I18n.tr("the format of the skills"), license: "Apache-2.0", url: "https://agentskills.io" },
                 { name: "Quickshell", what: I18n.tr("the window and its pages"), license: "LGPL-3.0", url: "https://github.com/quickshell-mirror/quickshell" },

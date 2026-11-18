@@ -2559,6 +2559,12 @@ rozmazané — v pleamar-wm 0.6.9 je za panelom ostré (1D.42). Upraviť text, k
 bola pri Klávesnici upraviteľná sada skratiek — skratky sa dali meniť alebo načítať celú sadu podľa zvyku z Linuxu, macOS či Windowsu.
 Vo v0.5 je iba zoznam (1D.34, `system/pleamarwm/keys.conf`). Preniesť z v0.3 (vetva v0.3 v gite) na `keys.conf` pleamar-wm.
 
+**8D.05** [ ] **Mapa znakov** (používateľ 18. 11.: cez Moonlight na Linuxe nefungujú skratky, nedá sa napísať ani zavináč) — jednoduchý
+nástroj ako mapa znakov vo Windows: mriežka znakov, klik skopíruje; **vpredu najčastejšie znaky Linuxu a písania** (@ # $ % & ~ | \\ / ` ^
+{ } [ ] < > € ° § „ “ ‚ ‘ – — … ×), potom bloky Unicode, hľadanie podľa mena. Najprv prevziať: GNOME Characters (`gnome-characters`,
+GPL-2.0+, Fedora), gucharmap (GPL-3.0+, najbližšie Windows mape) alebo KCharSelect (KDE, GPL); prípadne vlastné okno v pleamare
+so sekciou „Časté“ a vložením do okna, kde človek písal. Aj v LensGoo (napísať „@“ → skopírovať).
+
 ### 9A. [~] Vzhľad a témy
 Téma (šálka, farby z tapety), Keramika/Hliník/Onyx/Steam, ikony, vizuálne podoby podľa `inspo/`.
 Zdroje: `apps/common/Theme.qml`, `bin/latte-wall`, `bin/latte-walls`, `inspo/`, `docs/goo/PRAVIDLA.md`

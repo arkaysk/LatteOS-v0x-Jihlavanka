@@ -551,3 +551,7 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
   (mení F14 v `lensAIplan2.md`: už nie až pri prvom zapnutí). Zdroj vo vetve `agent-chats` repozitára LatteOS, použiteľný aj samostatne.
   Pozor: TRADEMARKS.md agentes.chat chce pri verejnom forku vlastné meno; „agentes“ v mene upraveného produktu len s ich písomným
   súhlasom — žiadosť pripravená v `patches/issues/agentes-chat-name.md` (neposlaná). ROADMAP 10B.77.
+- **Fork sa volá agentgram** (18. 11., používateľ): namiesto „agentes-chat (LOS version)“ (pre podmienky ochrannej známky). Slovo
+  v logu je „agentgram“, značka (ikonka) ostáva tá istá. Pozor: TRADEMARKS.md agentes.chat dovoľuje ich logo, symbol a ikony
+  v cudzom mene iba s písomným súhlasom — pred verejným pushnutím treba vlastnú ikonku alebo ich súhlas. Pôvodný agentes-chat
+  v LensAI nahradený agentgramom (služby agentes-server a agentes-runner vypnuté, dáta v ~/.agentes ostali). ROADMAP 10B.77.
