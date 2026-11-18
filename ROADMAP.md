@@ -2563,7 +2563,7 @@ Vo v0.5 je iba zoznam (1D.34, `system/pleamarwm/keys.conf`). Preniesť z v0.3 (v
 nástroj ako mapa znakov vo Windows: mriežka znakov, klik skopíruje; **vpredu najčastejšie znaky Linuxu a písania** (@ # $ % & ~ | \\ / ` ^
 { } [ ] < > € ° § „ “ ‚ ‘ – — … ×), potom bloky Unicode, hľadanie podľa mena. Najprv prevziať: GNOME Characters (`gnome-characters`,
 GPL-2.0+, Fedora), gucharmap (GPL-3.0+, najbližšie Windows mape) alebo KCharSelect (KDE, GPL); prípadne vlastné okno v pleamare
-so sekciou „Časté“ a vložením do okna, kde človek písal. Aj v LensGoo (napísať „@“ → skopírovať).
+so sekciou „Časté“ a vložením do okna, kde človek písal. Aj v LensGoo (napísať „@“ → skopírovať). **18. 11.:** na latte-lab nainštalovaný gucharmap 18.0 (GPL-3.0+; `dnf install gucharmap`), v `FILES` ako voliteľný; chýba sekcia „Časté“ (vlastné okno) a skratka v LensGoo.
 
 ### 9A. [~] Vzhľad a témy
 Téma (šálka, farby z tapety), Keramika/Hliník/Onyx/Steam, ikony, vizuálne podoby podľa `inspo/`.
@@ -3650,7 +3650,7 @@ spadlo spojenie aj Moonlight). Výstup fp32 bol v /tmp a reštart ho zmazal; ost
 (`systemd-run --user --scope -p MemoryMax=… -p MemorySwapMax=0`), výstupy na /data, alebo na hlavnom PC. `latte-ai` neúplný model
 (bez kódovača) preskočí.
 
-**10B.77** [~] 18. 11. **Fork agentes-chat (LOS version)** (krok 10 syntézy; používateľ 18. 11.: pôvodné meno „agentes-chat (LOS version)“, súčasť
+**10B.77** [~] 18. 11. **Fork agentgram** (pôvodne „agentes-chat (LOS version)“, premenovaný 18. 11. večer) (krok 10 syntézy; používateľ 18. 11.: pôvodné meno „agentes-chat (LOS version)“, súčasť
 LatteOS, inštaluje sa s ním, ak AI nie je vypnutá; zdroj vo vetve `agent-chats` repozitára LatteOS, použiteľný aj samostatne). **Etapa 0 hotová:**
 `~/src/agentes-chat` s celou históriou (10 362 commitov, `.git` 194 MB), remote `upstream` = agentes-chat, `latteos` = náš repozitár, vetva
 `agent-chats`; `bun install` (2,2 GB node_modules) a vývojový server vedľa pôvodného (API 127.0.0.1:3000, web [::1]:5173, databáza PGlite
@@ -3664,6 +3664,12 @@ projekt s podprojektmi nejde pod iný), `project_state` (active/paused/done; arc
 ikona typu, značka pozastavený/hotový; nastavenia kanála a nový kanál — „Podprojekt kanála“, typ, stav (`ProjectFields.tsx`). Overené cez API
 (magna_moravia → kniha-oci-vlka, postavy; komiks pozastavený). Pohľad v prehliadači: ruky agenta do Chromia nesmú (pravidlá Rúk) —
 skontroluje používateľ. Chýbajú slovenské texty (F11).
+  **Stav 18. 11. 21:40 — tu pokračovať:** fork sa volá **agentgram** (slovo v logu a názov stránky; ikonka zatiaľ pôvodná — pred
+zverejnením vlastná alebo súhlas). LensAI › agentgram otvára fork (`localhost:5173`, služba `~/.config/systemd/user/agentgram.service`,
+vývojový server so stropom 6 GB); pôvodný agentes-chat vypnutý (dáta v ~/.agentes ostali). Vlastník vo vývojovej databáze je účet
+používateľa (adresa a heslo v čate 18. 11., nie v gite). Vetva `agent-chats` lokálne (3 commity), nepushnutá. **Ďalej:** pozrieť web
+v prehliadači (ruky povolené), etapa 2 (F5–F6: priečinok kanála a pieskovisko agenta), slovenčina (F11), vlastná ikonka, zostavená
+verzia namiesto vývojového servera, inštalácia s LatteOS.
 
 ### 10C. [ ] Heidelberg
 
