@@ -3575,6 +3575,10 @@ pred → po (napr. 864 premenovaných fotiek), export do `.md` a tlačidlo **Zma
 najviac 10 000 položiek na záznam; zmazanie histórie nemaže to, čo vie vrátiť Ctrl+Z. **Hotové 18. 11.:** denník, export, zmazanie,
 karta na stránke Agenti; zapisujú „Urob to“ a nastavenia zmenené AI (`latte-skill do`). **Chýba:** zápisy Chapolery a DualBrew (AI
 úlohy so zoznamom súborov), Späť pri zázname, rozhovor Pomocníka cez ACP (krok 5).
+  **Zmena 18. 11. (používateľ):** hore na stránke Agenti je **Pomocník** — jeden rozhovor všetkých drobných „Urob to“, úlohy oddelené
+čiarou, pri každej „Čo sa zmenilo“, ktoré otvorí **vedľajšie okno** `goo/journal.plm` (`latte-journal [AT]`, šablóna okno-vedlajsie):
+iba zmeny, rolovateľné (okno nad tisíckami riadkov), Exportovať .md do Dokumentov, Zmazať históriu (dvakrát), Zavrieť; „Všetky zmeny“
+otvorí celý denník. Pole dole dá úlohu agentovi (`latte-ai do`). Okná `org.latteos.*` patria k „oknám LatteOS“ pre ruky agenta.
 
 ### 10C. [ ] Heidelberg
 

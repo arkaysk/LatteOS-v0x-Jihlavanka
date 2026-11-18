@@ -1,0 +1,117 @@
+// What the AI changed (ROADMAP 10B.69): a secondary window from templates/okno-vedlajsie, opened beside a task in
+// LensAI's Agents (bin/latte-journal [AT]). Only the changes, the whole list before → after, scrolled; exported to
+// Markdown; the history cleared on purpose (pressed twice). The list is a window over thousands of lines: the logic
+// sends the slice that is on screen (pleamar's recipe "A list of thousands").
+language 0.9
+import "lang/sk.plm"
+import "pleamar:ui"
+
+scene Journal {
+    surface { size: 760, 560; kind: window; title: "What the AI changed"; app_id: "org.latteos.journal"; keyboard: on_demand }
+    permissions {
+        run: "cat", "latte-ai", "xdg-open"
+        services: "env"
+    }
+
+    let W = screen.width
+    let H = screen.height
+    // the colours of the windows' cup, from the logic (goo/lib/cup.luau)
+    repeat k in 0..10 { fact c.$k.r = 0.5 }
+    repeat k in 0..10 { fact c.$k.g = 0.5 }
+    repeat k in 0..10 { fact c.$k.b = 0.5 }
+    let ground = rgb(c.0.r, c.0.g, c.0.b)
+    let rowc = rgb(c.2.r, c.2.g, c.2.b)
+    let raised = rgb(c.3.r, c.3.g, c.3.b)
+    let line = rgb(c.4.r, c.4.g, c.4.b)
+    let cream = rgb(c.5.r, c.5.g, c.5.b)
+    let dim = rgb(c.6.r, c.6.g, c.6.b)
+    let faint = rgb(c.7.r, c.7.g, c.7.b)
+    let gold = rgb(c.8.r, c.8.g, c.8.b)
+    let coffee = rgb(c.9.r, c.9.g, c.9.b)
+    fact light = false
+    let ink_gold = if(light, #fffaf1, #17110d)
+    let red = #e5484d
+
+    text o_title = "What the AI changed"
+    text said = ""                             // at the foot: where it was exported, or what went wrong
+    text empty = "Nothing is written here yet."
+    fact armed = false                         // Clear history pressed once: the second press clears
+    fact total = 0                             // lines in the whole list
+    fact first = 0                             // where the slice on screen starts
+    fact any = false                           // something to export or clear
+    // a line: an entry's head (kind 0: what was done, and who, where, when) or one of its items (kind 1: before → after)
+    model rows max 24 { a: text; b: text; kind: number; pair: bool }
+    event slid ->
+    event export ->
+    event clear ->
+    event cancel
+    on cancel { quit }
+    on key Escape { emit cancel }
+
+    body { color: ground; box { from: 0, 0; size: W, H } }
+
+    // ── the header: its name, ✕, the coffee line under it; it carries the window ──────────────────────────────────
+    let hd = 56
+    zone box header { from: 0, 0; size: W, hd; label: "Move the window"; role: region }
+    on press header { carry }
+    text o_title { at: 20, hd / 2; anchor: left center; width: W - 90; lines: 1; size: 15; weight: 700; color: cream; family: "Inter" }
+    zone box close_hit { from: W - 46, 11; size: 34, 34; corner: 10; cursor: pointer; label: "Close"; role: button }
+    box { from: W - 46, 11; size: 34, 34; corner: 10; color: red; opacity: close_hit.hover }
+    text "" { at: W - 29, 28; anchor: center; size: 17; color: cream; family: "tabler-icons" }
+    on press close_hit { emit cancel }
+    body {
+        gradient: 0, hd - 1 to W, hd - 1, coffee, coffee, coffee, ground
+        box { from: 0, hd - 2; size: W, 2 }
+    }
+
+    // ── the changes: a card, the list scrolled inside it ──────────────────────────────────────────────────────────
+    let rw = W - 40
+    let by = hd + 14
+    let lh = H - by - 80
+    let step = 28
+    box { from: 20, by; size: rw, lh; corner: 12; color: rowc }
+    text empty { at: W / 2, by + lh / 2; anchor: center; width: rw - 60; size: 13; color: dim; family: "Inter"; show: total == 0 }
+    column list {
+        at: 28, by + 8
+        view: rw - 16, lh - 16
+        step: step
+        content: total * step
+        for r in rows from first {
+            group {
+                size: rw - 16, step
+                move: 0, first * step
+                // an entry's head: a line above it (not over the first), what was done in bold, who and when at the right
+                box { from: 4, 2; size: rw - 24, 1; color: line; show: r.kind == 0 and r.index > 0 }
+                text r.a { at: 8, step / 2 + 2; anchor: left center; width: rw * 0.55; lines: 1; size: 13.5; weight: 700; color: cream; family: "Inter"; show: r.kind == 0 }
+                text r.b { at: rw - 28, step / 2 + 2; anchor: right center; width: rw * 0.4; align: right; lines: 1; size: 12; color: faint; family: "Inter"; show: r.kind == 0 }
+                // an item: before → after, or the one thing done
+                text r.a { at: 24, step / 2; anchor: left center; width: (rw - 80) / 2; lines: 1; size: 12; color: dim; family: "JetBrains Mono"; show: r.kind == 1 }
+                text "→" { at: 24 + (rw - 80) / 2 + 10, step / 2; anchor: center; size: 12; color: gold; family: "Inter"; show: r.kind == 1 and r.pair }
+                text r.b { at: 44 + (rw - 80) / 2, step / 2; anchor: left center; width: (rw - 80) / 2; lines: 1; size: 12; color: cream; family: "JetBrains Mono"; show: r.kind == 1 }
+                // where it was done and the task, under the head
+                text r.a { at: 8, step / 2; anchor: left center; width: rw - 40; lines: 1; size: 12; color: faint; family: "Inter"; show: r.kind == 2 }
+            }
+        }
+    }
+    on change floor(list.scroll / step) { emit slid(list.scroll) }
+
+    // ── the foot: what happened, Export · Clear history · Close over a line ───────────────────────────────────────
+    box { from: 0, H - 64; size: W, 1; color: line }
+    text said { at: 20, H - 31; anchor: left center; width: W - 470; lines: 1; size: 12; color: dim; family: "Inter" }
+    Button("Export .md", W - 444, H - 46, export, width: 120, gold_on: true, enabled: any)
+    Button("Clear history", W - 316, H - 46, clear, width: 196, enabled: any, shown: not armed)
+    Button("Really? Press once more", W - 316, H - 46, clear, width: 196, danger: true, shown: armed)
+    Button("Close", W - 112, H - 46, cancel)
+
+    // ── the pieces (the template's) ───────────────────────────────────────────────────────────────────────────────
+    component Button(caption: text, x: number, y: number, press: event, width: number = 96, gold_on: bool = false, enabled: bool = true, shown: bool = true, danger: bool = false) {
+        group {
+            show: shown
+            zone box hit { from: x, y; size: width, 30; corner: 8; cursor: pointer; active: enabled; label: "{caption}"; role: button }
+            box { from: x, y; size: width, 30; corner: 8; color: if(gold_on, gold, raised); opacity: if(enabled, 100%, 45%) }
+            box { from: x, y; size: width, 30; corner: 8; color: if(danger, red, if(hit.hover > 0.5, gold, line)); stroke: 1; opacity: if(enabled, 100%, 45%) }
+            text caption { at: x + width / 2, y + 15; anchor: center; size: 13; weight: if(gold_on, 600, 500); color: if(danger, red, if(gold_on, ink_gold, cream)); family: "Inter"; opacity: if(enabled, 100%, 45%) }
+            on press hit { emit press }
+        }
+    }
+}

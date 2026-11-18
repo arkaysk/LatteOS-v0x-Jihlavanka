@@ -1,0 +1,6 @@
+#!/bin/sh
+# latte-journal [AT]: the window What the AI changed (goo/journal.plm, ROADMAP 10B.69) — all of it, or the one entry
+# written at AT (latte-ai journal); opened beside a task in LensAI's Agents. Each call is a window of its own.
+scene="${LATTE_SHARE:-/usr/share/latteos}/goo/journal.plm"
+[ -f "$scene" ] || scene="$(dirname "$(realpath "$0")")/../goo/journal.plm"       # from the repository
+LATTE_JOURNAL_AT="${1:-}" exec pleamar --scene "$scene" --no-hud --answer-as "journal-$$"

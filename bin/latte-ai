@@ -108,7 +108,9 @@ No API key: the official tool of a service answers, with the account the user is
   latte-ai journal [N]      what the AI changed, the newest first (N entries, 200): [{"at", "app", "ai", "task", "did",
                             "where", "items": [[before, after] | [what]], "more"}]; an entry shows its first 20 items
   latte-ai journal add JSON   one entry, written by the app in which the AI did it
-  latte-ai journal export FILE [DAYS]   the whole journal (or its last days) as Markdown, every item
+  latte-ai journal full [AT]   every entry whole (or the one written at AT), for the window of the changes
+  latte-ai journal export FILE|auto [DAYS|AT]   as Markdown, every item: all, the last days, or one entry; auto: into
+                            Documents as LensAI-DATE.md; says {"path"}
   latte-ai journal clear    forgets it, on the person's word (what Ctrl+Z can take back stays)
 
 The conversations are kept in ~/.local/state/latteos/ai/chats/ID.json, one file each. What the user wants every AI
@@ -1214,7 +1216,7 @@ HANDS = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/
 GATE = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "pleamar-wm", "gate.rules")
 # LatteOS's own windows, as pleamar-wm's rules see them ("APP TITLE", lowercase): its apps (`//@ pragma AppId
 # latteos-…`), its scenes (pleamar: Goo, DualBrew…), the panels (the shell's surfaces) and its own programs (latte-…)
-OS_WINDOWS = ["latteos-*", "pleamar*", "panel", "latte-*"]
+OS_WINDOWS = ["latteos-*", "org.latteos.*", "pleamar*", "panel", "latte-*"]      # org.latteos.*: its windows made with pleamar (Properties, What the AI changed…)
 GATE_BEGIN, GATE_END = "# LatteOS: the agent's hands (LensAI › Settings › Hands) — begin", "# LatteOS: the agent's hands — end"
 
 
@@ -1816,10 +1818,21 @@ def journal_main(a):
         print(json.dumps([dict(e, items=(e.get("items") or [])[:20], more=len(e.get("items") or []) - 20 + e.get("more", 0))
                           if len(e.get("items") or []) > 20 else e for e in journal_read()[:int(a[0]) if a else 200]], ensure_ascii=False))
         return 0
-    if a[:1] == ["export"] and len(a) in (2, 3) and (len(a) == 2 or a[2].isdigit()):
+    if a[:1] == ["full"] and len(a) <= 2:
+        # every item, for the window of the changes (goo/journal.plm): all, or the one entry of that moment
+        print(json.dumps([e for e in journal_read() if len(a) == 1 or e.get("at") == a[1]], ensure_ascii=False))
+        return 0
+    if a[:1] == ["export"] and len(a) in (2, 3):
+        # FILE, or "auto": the Documents folder, LensAI-DATE.md; then all, the last DAYS, or the one entry AT
         path = os.path.expanduser(a[1])
+        if a[1] == "auto":
+            docs = subprocess.run(["xdg-user-dir", "DOCUMENTS"], capture_output=True, text=True).stdout.strip() if shutil.which("xdg-user-dir") else ""
+            path = os.path.join(docs if os.path.isdir(docs) else os.path.expanduser("~"), "LensAI-" + datetime.datetime.now().strftime("%Y-%m-%d-%H%M%S") + ".md")
+        which = journal_read(int(a[2]) if len(a) == 3 and a[2].isdigit() else 0)
+        if len(a) == 3 and not a[2].isdigit():
+            which = [e for e in which if e.get("at") == a[2]]
         with open(path, "w") as f:
-            f.write(journal_md(journal_read(int(a[2]) if len(a) == 3 else 0)))
+            f.write(journal_md(which))
         print(json.dumps({"path": path}))
         return 0
     if a == ["clear"]:

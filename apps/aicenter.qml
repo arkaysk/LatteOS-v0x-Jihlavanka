@@ -192,18 +192,12 @@ ShellRoot {
     property var agents: ({ services: [], stats: {}, doers: [], ideas: [] })
     // the helpers (Omarchy's toggles and Setup › Defaults): who does the work, and what can be turned off
     Ask { id: helpersq; onDone: shell.helpers = data || shell.helpers }
-    // what the AI changed (latte-ai journal, ROADMAP 10B.69): read on the agents' page, exported whole, cleared on purpose
+    // what the AI changed (latte-ai journal, ROADMAP 10B.69): the helper's conversation on the agents' page
     property var journal: []
-    property var journalOpen: ({})
-    property bool clearArmed: false
-    property string exported: ""
     Ask { id: journalq; onDone: shell.journal = data || [] }
     // while the agents' page is open: at once, and every half minute what came since (an app may write any time)
     Timer { interval: 30000; repeat: true; triggeredOnStart: true; running: shell.page === "agents"; onTriggered: journalq.ask(["journal"]) }
-    Process { id: journalOut; stdout: StdioCollector { onStreamFinished: { try { shell.exported = JSON.parse(this.text).path; Qt.openUrlExternally("file://" + shell.exported) } catch (e) {} } }
-              command: ["sh", "-c", "d=\"$(xdg-user-dir DOCUMENTS 2>/dev/null)\"; [ -d \"$d\" ] || d=\"$HOME\"; exec latte-ai journal export \"$d/LensAI-$(date +%F-%H%M).md\""] }
-    Process { id: journalClear; command: ["latte-ai", "journal", "clear"]; onExited: { shell.clearArmed = false; journalq.ask(["journal"]) } }
-    Timer { id: unarm; interval: 5000; onTriggered: shell.clearArmed = false }
+
     property var helpers: ({ ai: true, agent: "", agents: [], helper: "local", local: "", haiku: [], switches: [], muted: [] })
     Process { id: helperSet; onExited: helpersq.ask(["helpers"]) }
     function setHelper(argv) { helperSet.command = argv; helperSet.running = true }
@@ -1040,44 +1034,42 @@ ShellRoot {
             visible: shell.page === "agents"
             contentHeight: agentCol.implicitHeight + 48; clip: true; boundsBehavior: Flickable.StopAtBounds
             Column { id: agentCol; x: 28; y: 24; width: Math.min(parent.width - 56, 760); spacing: 14
-                // ── what the AI changed, the newest first: each with its whole list before → after, to find a wrong one
-                // (the user, 18. 11.); exported to Markdown, cleared only on purpose (pressed twice) ──
-                Rectangle { width: agentCol.width; height: jCol.implicitHeight + 32; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
-                    Column { id: jCol; x: 18; y: 16; width: parent.width - 36; spacing: 10
-                        Item { width: parent.width; height: 34
-                            Row { spacing: 10; anchors.verticalCenter: parent.verticalCenter
-                                Glyph { name: "history"; color: Theme.gold; font.pixelSize: 20; anchors.verticalCenter: parent.verticalCenter }
-                                Label { text: I18n.tr("What the AI changed"); font.pixelSize: 16; font.weight: 800; anchors.verticalCenter: parent.verticalCenter } }
-                            Row { anchors.right: parent.right; spacing: 8; anchors.verticalCenter: parent.verticalCenter
-                                Pill { implicitHeight: 32; icon: "file-text"; text: I18n.tr("Export .md"); enabled: shell.journal.length > 0; opacity: enabled ? 1 : 0.5
-                                       busy: journalOut.running; onPressed: journalOut.running = true }
-                                Pill { implicitHeight: 32; icon: "trash"; danger: true; enabled: shell.journal.length > 0; opacity: enabled ? 1 : 0.5
-                                       text: shell.clearArmed ? I18n.tr("Really? Press once more") : I18n.tr("Clear history")
-                                       onPressed: { if (shell.clearArmed) journalClear.running = true; else { shell.clearArmed = true; unarm.restart() } } } } }
-                        Label { visible: shell.exported !== ""; width: parent.width; elide: Text.ElideMiddle; color: Theme.dim; font.pixelSize: 12
-                                text: I18n.tr("Exported to {p}", { p: shell.exported.replace(Quickshell.env("HOME"), "~") }) }
-                        Label { visible: shell.journal.length === 0; width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
-                                text: I18n.tr("Nothing yet. Whatever an AI changes for you (files renamed or moved, a setting) is written here with the whole list, kept for six months.") }
-                        Repeater { model: shell.journal.slice(0, 50)
-                            Column { id: je; required property var modelData; required property int index; width: jCol.width; spacing: 4
-                                readonly property bool open: !!shell.journalOpen[index]
-                                readonly property var items: modelData.items || []
-                                Rectangle { width: parent.width; height: 44; radius: 10; color: jeHit.containsMouse ? Theme.raised : "transparent"
-                                    Glyph { x: 8; name: je.items.length ? (je.open ? "chevron-down" : "chevron-right") : "point"; font.pixelSize: 14; color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
-                                    Column { x: 30; width: parent.width - 30 - jeWhen.width - 16; anchors.verticalCenter: parent.verticalCenter; spacing: 1
-                                        Label { width: parent.width; elide: Text.ElideRight; font.weight: 700; font.pixelSize: 14
-                                                text: (je.modelData.did || "") + (je.items.length ? " · " + I18n.tr("{n} items", { n: je.items.length + (je.modelData.more || 0) }) : "") }
-                                        Label { width: parent.width; elide: Text.ElideMiddle; color: Theme.dim; font.pixelSize: 12
-                                                text: [je.modelData.app, je.modelData.ai, je.modelData.where ? String(je.modelData.where).replace(Quickshell.env("HOME"), "~") : "", je.modelData.task || ""].filter(x => x).join(" · ") } }
-                                    Label { id: jeWhen; anchors.right: parent.right; anchors.rightMargin: 8; anchors.verticalCenter: parent.verticalCenter; color: Theme.faint; font.pixelSize: 12
-                                            text: String(je.modelData.at || "").replace("T", " ").slice(0, 16) }
-                                    MouseArea { id: jeHit; anchors.fill: parent; hoverEnabled: true; enabled: je.items.length > 0; cursorShape: Qt.PointingHandCursor
-                                                onClicked: { const o = Object.assign({}, shell.journalOpen); o[je.index] = !je.open; shell.journalOpen = o } } }
-                                Repeater { model: je.open ? je.items : []
-                                    Label { required property var modelData; x: 30; width: je.width - 30; elide: Text.ElideMiddle; font.pixelSize: 12; color: Theme.cream; font.family: "monospace"
-                                            text: typeof modelData === "string" ? modelData : Array.prototype.join.call(modelData, "  →  ") } }      // a list from JSON is not a JS Array here
-                                Label { visible: je.open && (je.modelData.more || 0) > 0; x: 30; color: Theme.dim; font.pixelSize: 12
-                                        text: I18n.tr("…and {n} more: the export has them all", { n: je.modelData.more || 0 }) } } } } }
+                // ── the helper: one endless conversation of every small "Do it" (Chapolera, DualBrew, LensGoo, the AI cursor),
+                // the oldest at the top, each task set off by a line; beside each, its changes in a window of their own
+                // (goo/journal.plm, the user 18. 11.). The agent's own replies come with ACP (ROADMAP 10B.69) ──
+                Rectangle { width: agentCol.width; height: 420; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
+                    Item { x: 18; y: 12; width: parent.width - 36; height: 36
+                        Row { spacing: 10; anchors.verticalCenter: parent.verticalCenter
+                            Glyph { name: "messages"; color: Theme.gold; font.pixelSize: 20; anchors.verticalCenter: parent.verticalCenter }
+                            Label { text: I18n.tr("Helper"); font.pixelSize: 16; font.weight: 800; anchors.verticalCenter: parent.verticalCenter } }
+                        Pill { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; implicitHeight: 32; icon: "history"; text: I18n.tr("All changes")
+                               onPressed: Quickshell.execDetached(["latte-journal"]) } }
+                    ListView { id: helperTalk; x: 18; y: 56; width: parent.width - 36; height: parent.height - 56 - 64; clip: true; spacing: 10
+                               boundsBehavior: Flickable.StopAtBounds
+                               model: shell.journal.slice().reverse()
+                               onCountChanged: Qt.callLater(positionViewAtEnd)
+                        delegate: Column { id: hm; required property var modelData; required property int index; width: helperTalk.width; spacing: 6
+                            readonly property int n: (modelData.items || []).length + (modelData.more || 0)
+                            Rectangle { width: parent.width; height: 1; color: Theme.line; visible: hm.index > 0 }
+                            // what was asked: the person's words at the right, as in a conversation
+                            Rectangle { visible: !!hm.modelData.task; anchors.right: parent.right; width: Math.min(parent.width * 0.75, hmTask.implicitWidth + 24); height: hmTask.implicitHeight + 16; radius: 12; color: Theme.raised
+                                Label { id: hmTask; x: 12; y: 8; width: Math.min(helperTalk.width * 0.75 - 24, implicitWidth); wrapMode: Text.WordWrap; text: hm.modelData.task || "" } }
+                            // what the AI did: who, where, when, and its changes in their window
+                            Item { width: parent.width; height: Math.max(hmDid.implicitHeight, 32)
+                                Column { id: hmDid; width: parent.width - hmShow.width - 12; spacing: 2; anchors.verticalCenter: parent.verticalCenter
+                                    Label { width: parent.width; wrapMode: Text.WordWrap; font.weight: 700; font.pixelSize: 14
+                                            text: (hm.modelData.did || "") + (hm.n ? " · " + I18n.tr("{n} items", { n: hm.n }) : "") }
+                                    Label { width: parent.width; elide: Text.ElideMiddle; color: Theme.dim; font.pixelSize: 12
+                                            text: [hm.modelData.app, hm.modelData.ai, hm.modelData.where ? String(hm.modelData.where).replace(Quickshell.env("HOME"), "~") : "",
+                                                   String(hm.modelData.at || "").replace("T", " ").slice(0, 16)].filter(x => x).join(" · ") } }
+                                Pill { id: hmShow; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; implicitHeight: 30; icon: "list"; text: I18n.tr("What changed")
+                                       visible: hm.n > 0; onPressed: Quickshell.execDetached(["latte-journal", hm.modelData.at]) } } } }
+                    Label { visible: shell.journal.length === 0; x: 18; y: 70; width: parent.width - 36; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
+                            text: I18n.tr("Nothing yet. Small tasks for the AI from every app (sorting photos, renaming files, a setting) come here, one under another; what each changed opens beside it.") }
+                    // a task of one's own, for the agent chosen below (latte-ai do: a plan first, nothing changed before your yes)
+                    Field { id: helperLine; x: 18; y: parent.height - 52; width: parent.width - 36; icon: "sparkles"; hint: I18n.tr("A task for your agent…")
+                            onAccepted: if (text.trim() !== "") { shell.doIt(text.trim(), ""); text = ""; journalSoon.restart() } }
+                    Timer { id: journalSoon; interval: 1500; onTriggered: journalq.ask(["journal"]) } }
                 // what the counts add up to, one line at a time, as Omarchy's hero has it
                 Rectangle { width: parent.width; height: 96; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
                     Glyph { x: 22; anchors.verticalCenter: parent.verticalCenter; name: "robot"; font.pixelSize: 40; color: Theme.gold }

@@ -49,6 +49,7 @@
 /usr/bin/latte-settings                                 <- bin/latte-settings
 /usr/bin/latte-desktop                                  <- bin/latte-desktop
 /usr/bin/latte-properties                               <- bin/latte-properties
+/usr/bin/latte-journal                                  <- bin/latte-journal
 /usr/bin/latte-linked                                   <- bin/latte-linked
 /usr/bin/latte-goowidgets                               <- bin/latte-goowidgets
 /usr/bin/latte-calc                                      <- bin/latte-calc
@@ -110,6 +111,8 @@
 /usr/share/latteos/goo/goo.plm                          <- goo/goo.plm
 /usr/share/latteos/goo/props.plm                        <- goo/props.plm
 /usr/share/latteos/goo/props.luau                       <- goo/props.luau
+/usr/share/latteos/goo/journal.plm                      <- goo/journal.plm
+/usr/share/latteos/goo/journal.luau                     <- goo/journal.luau
 /usr/share/latteos/goo/linked.plm                      <- goo/linked.plm
 /usr/share/latteos/goo/linked.luau                     <- goo/linked.luau
 /usr/share/latteos/goo/widgets.plm                    <- goo/widgets.plm

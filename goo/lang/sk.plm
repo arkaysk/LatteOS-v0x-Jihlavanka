@@ -3084,5 +3084,13 @@ library Slovak {
         "Where: {w}" = "Kde: {w}"
         "…and {n} more" = "…a ďalších {n}"
         "Handed to the agent" = "Odovzdané agentovi"
+        "Nothing is written here yet." = "Zatiaľ tu nič nie je zapísané."
+        "It could not be exported." = "Nepodarilo sa exportovať."
+        "The history is cleared." = "História je zmazaná."
+        "Helper" = "Pomocník"
+        "All changes" = "Všetky zmeny"
+        "What changed" = "Čo sa zmenilo"
+        "A task for your agent…" = "Úloha pre tvojho agenta…"
+        "Nothing yet. Small tasks for the AI from every app (sorting photos, renaming files, a setting) come here, one under another; what each changed opens beside it." = "Zatiaľ nič. Drobné úlohy pre AI zo všetkých aplikácií (triedenie fotiek, premenovanie súborov, nastavenie) sa zapíšu sem pod seba; čo každá zmenila, otvoríš vedľa nej."
     }
 }
