@@ -194,6 +194,16 @@ def serve(lazy=False, port=0):
 
     @server.tool()
     @logged
+    def search_chats(words: str, ctx: Context) -> list | dict:
+        """Finds the user's conversations with every AI that say these words — LensAI's, their Claude Code sessions, the
+        Helper's tasks — the best first, each with the place that says them (accents and endings do not matter).
+        The user allows it in LensAI first, as for `conversations`."""
+        no = allowed(ctx, "conversations", words)
+        if no: return no
+        return told(["latte-ai", "search", words], timeout=300)
+
+    @server.tool()
+    @logged
     def providers() -> list | dict:
         """Which AI can answer on this computer now (the services signed in, keys, the model that runs here), with
         the models of each; `local` true means the answer is made on this machine and nothing leaves it."""

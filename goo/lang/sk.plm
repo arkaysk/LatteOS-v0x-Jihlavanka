@@ -3123,5 +3123,7 @@ library Slovak {
         "What every AI working here should know about this project." = "Čo má vedieť každá AI, ktorá tu pracuje, o tomto projekte."
         "Rules" = "Pravidlá"
         "The project {p} allows only: {a}" = "Projekt {p} dovoľuje iba: {a}"
+        "Said in the conversations" = "Povedané v rozhovoroch"
+        "No conversation says that." = "Žiadny rozhovor to nehovorí."
     }
 }

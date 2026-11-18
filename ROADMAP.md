@@ -3609,6 +3609,13 @@ LensAI › **Projekty**: nový projekt (meno, typ, kde žije, priečinok cez Pre
 kanály forku Agent Chats. Oprava popri tom: `tests/test_session.sh` po minúte posielal skutočnú výzvu „Choose your agent“ na plochu
 (`latte-session` → `latte-ai invite` po zmazaní náhrad testu) — teraz `LATTE_TEST=1`.
 
+**10B.73** [~] 18. 11. **Index rozhovorov** (krok 7 syntézy, vzor memex-chats MIT): `latte-ai search SLOVÁ` hľadá v rozhovoroch LensAI
+(aj LensGoo a LensShore), v reláciách Claude Code v termináloch a v úlohách Pomocníka — SQLite FTS5 bez diakritiky a podľa začiatku slova,
+najlepšie miesto každého rozhovoru (`index.db`, číta sa od miesta, kde sa skončilo: prvé zostavenie ~2 min pri 1,1 GB relácií, potom
+0,1–0,3 s). Nástroj `search_chats` v latte-mcp (s povolením ako `conversations`). LensAI › Rozhovory: po Enter „Povedané v rozhovoroch“
+s úryvkom, klik otvorí rozhovor / reláciu / Pomocníka. **Chýba:** vektory významu (e5-sk-small, stiahnuté do /data/ai/models/embed),
+importy ChatGPT/Gemini, relácie Codexu.
+
 ### 10C. [ ] Heidelberg
 
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví

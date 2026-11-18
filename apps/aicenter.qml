@@ -201,6 +201,10 @@ ShellRoot {
     readonly property bool helpBusy: helped.some(t => t.state === "running")
     Ask { id: helperq; onDone: shell.helped = data || [] }
     Process { id: helpSay }
+    // the words of every conversation (latte-ai search, ROADMAP 10B.73): asked a moment after the last key
+    property var hits: []
+    Ask { id: hitsq; onDone: shell.hits = data || [] }
+    Timer { id: hitsSoon; interval: 350; onTriggered: { if (shell.find.trim().length < 2) shell.hits = []; else hitsq.ask(["search", shell.find.trim()]) } }
     // the projects (latte-ai projects, ROADMAP 10B.72): folders with .latte/projekt.toml, each with its subprojects
     property var projects: []
     property string helpDir: ""                // a task of the Helper goes into this project's folder
@@ -522,7 +526,7 @@ ShellRoot {
         Behavior on sideWidth { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
         ground: shell.glassy ? "transparent" : Theme.ground
         searchHint: I18n.tr("Find a conversation…")
-        onSearched: text => { shell.find = text; if (text !== "" && shell.page !== "all") shell.page = "all" }
+        onSearched: text => { shell.find = text; if (text !== "" && shell.page !== "all") shell.page = "all"; hitsSoon.restart() }
         tools: [
             Pill { implicitHeight: 34; icon: "external-link"; visible: shell.page === "team"; text: I18n.tr("Open in the browser"); onPressed: Qt.openUrlExternally(shell.teamTab.web) },
             Pill { implicitHeight: 34; icon: "plus"; text: I18n.tr("New conversation"); strong: true; visible: shell.page === "all" || shell.page === "chats"
@@ -668,7 +672,7 @@ ShellRoot {
             // in its tab, the team's in Agent Chats (LensAI reads neither)
             Label { width: allPage.room; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
                     text: I18n.tr("Here: what you asked in LensAI, LensGoo and LensShore, and your Claude Code sessions in terminals. A service's web page keeps its own conversations in its tab, the team keeps theirs in Agent Chats.") }
-            Label { visible: shell.shown.length === 0; width: allPage.room; wrapMode: Text.WordWrap; color: Theme.dim
+            Label { visible: shell.shown.length === 0 && shell.find === ""; width: allPage.room; wrapMode: Text.WordWrap; color: Theme.dim
                     text: I18n.tr("No conversation yet. LensGoo's AI tab (Win+C) keeps its conversations here too.") }
             Repeater { model: shell.groups
                 Column { id: grp; required property var modelData; width: allPage.room; spacing: 6
@@ -683,6 +687,26 @@ ShellRoot {
                             Label { anchors.right: parent.right; anchors.rightMargin: 16; width: 300; horizontalAlignment: Text.AlignRight; elide: Text.ElideLeft; anchors.verticalCenter: parent.verticalCenter; color: Theme.dim; font.pixelSize: 12
                                     text: [shell.places[cr.modelData.from] || cr.modelData.from || "", shell.modelName(cr.modelData.provider, cr.modelData.model), shell.when(cr.modelData.updated)].filter(x => x !== "").join("  ·  ") }
                             MouseArea { id: crHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: shell.choose(cr.modelData.id) } } } } }
+            // ── what was said, wherever: the words looked for in every conversation, the place that says them ──
+            Row { spacing: 10; height: 30; visible: shell.find !== "" && shell.hits.length > 0
+                Glyph { name: "search"; font.pixelSize: 16; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
+                Label { text: I18n.tr("Said in the conversations"); font.pixelSize: 16; font.weight: 700; anchors.verticalCenter: parent.verticalCenter }
+                Label { text: shell.hits.length; color: Theme.dim; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter } }
+            Label { visible: shell.find.trim().length > 1 && shell.hits.length === 0 && !hitsq.running; width: allPage.room; color: Theme.dim; font.pixelSize: 13
+                    text: I18n.tr("No conversation says that.") }
+            Repeater { model: shell.find === "" ? [] : shell.hits
+                Rectangle { id: ht; required property var modelData; width: allPage.room; height: htCol.implicitHeight + 20; radius: 14; color: htHit.containsMouse ? Theme.raised : Theme.card
+                    Column { id: htCol; x: 16; y: 10; width: parent.width - 32; spacing: 3
+                        Row { spacing: 8; width: parent.width
+                            Glyph { name: ht.modelData.source === "lensai" ? "messages" : ht.modelData.source === "helper" ? "robot" : "terminal-2"; font.pixelSize: 14; color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
+                            Label { width: parent.width - 200; elide: Text.ElideRight; font.weight: 700; text: ht.modelData.title || "—"; anchors.verticalCenter: parent.verticalCenter }
+                            Label { width: 170; horizontalAlignment: Text.AlignRight; color: Theme.faint; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter; text: shell.when(ht.modelData.at) } }
+                        // the place, the words found shown as they were found (« »)
+                        Label { width: parent.width; wrapMode: Text.WordWrap; maximumLineCount: 2; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 13; textFormat: Text.StyledText
+                                text: ht.modelData.snippet.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/«/g, "<b><font color='" + Theme.gold + "'>").replace(/»/g, "</font></b>") } }
+                    MouseArea { id: htHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                onClicked: ht.modelData.source === "lensai" ? shell.choose(ht.modelData.ref) : ht.modelData.source === "helper" ? shell.go("agents")
+                                           : shell.resume({ id: ht.modelData.ref, folder: ht.modelData.folder }) } } }
             // the person's Claude Code sessions in terminals (latte-ai sessions): read only here, gone on with in a terminal
             Row { spacing: 10; height: 30; visible: shell.sessions.length > 0 && shell.find === ""
                 Glyph { name: "terminal-2"; font.pixelSize: 16; color: Theme.coffee; anchors.verticalCenter: parent.verticalCenter }

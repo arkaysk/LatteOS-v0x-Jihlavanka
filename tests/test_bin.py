@@ -245,6 +245,27 @@ with tempfile.TemporaryDirectory() as d:
     os.makedirs(os.path.join(d, "MagnaMoravia", "Kniha1", "kapitoly"))
     assert ai.project_of(os.path.join(d, "MagnaMoravia", "Kniha1", "kapitoly"))["name"] == "Kniha 1"
 
+# the index of every conversation: a LensAI chat and a Claude Code transcript found by words without their accents,
+# a transcript read on from where it was read, the harness's tags left out
+with tempfile.TemporaryDirectory() as d:
+    room, helper, index = ai.ROOM, ai.HELPER, ai.INDEX
+    ai.ROOM, ai.HELPER, ai.INDEX = d, os.path.join(d, "helper"), os.path.join(d, "index.db")
+    os.makedirs(os.path.join(d, "chats")); os.makedirs(os.path.join(d, "claude", "projects", "p"))
+    os.environ["CLAUDE_CONFIG_DIR"] = os.path.join(d, "claude")
+    json.dump({"title": "Station", "messages": [{"role": "user", "content": "What is the \u010d\u00ednska station made of?", "at": "2026-11-18T16:42:35"}]},
+              open(os.path.join(d, "chats", "abc123abc123.json"), "w"))
+    t = os.path.join(d, "claude", "projects", "p", "s1.jsonl")
+    open(t, "w").write(json.dumps({"type": "user", "cwd": "/w", "timestamp": "2026-11-18T10:00:00Z", "message": {"content": "Mend the sandbox"}}) + "\n")
+    got = ai.search("cinska stati")
+    assert [(h["source"], h["ref"]) for h in got] == [("lensai", "abc123abc123")] and "«" in got[0]["snippet"], got
+    open(t, "a").write(json.dumps({"type": "assistant", "message": {"content": [{"type": "text", "text": "<system-reminder>x</system-reminder>"},
+                                                                                 {"type": "text", "text": "The sandbox is mended"}]}}) + "\n")
+    got = ai.search("mended sandb")
+    assert got and got[0]["source"] == "claude" and got[0]["folder"] == "/w" and got[0]["title"] == "Mend the sandbox", got
+    assert ai.search("system reminder") == []
+    ai.ROOM, ai.HELPER, ai.INDEX = room, helper, index
+    del os.environ["CLAUDE_CONFIG_DIR"]
+
 mcp = load("latte-mcp")
 # the lazy tools' search: the words find the tool, a word no tool has finds none
 found = mcp.score("volume of the sound", [{"name": "skills", "description": "What LatteOS can change: the volume, the brightness"},
