@@ -3651,6 +3651,13 @@ LatteOS, inštaluje sa s ním, ak AI nie je vypnutá; zdroj vo vetve `agent-chat
 v `.data/`, služba `agent-chats-dev` so stropom 6 GB) — pôvodný na 4310 nedotknutý. **Ďalej:** F1–F3 (podkanály, stav, typ), potom F5–F8, F11.
 Meno: TRADEMARKS.md chce pri verejnom forku vlastné meno — žiadosť v `patches/issues/agentes-chat-name.md`, vetvu nepushnúť verejne pred
 súhlasom alebo zmenou mena.
+  **Etapa 1 (F1–F3), 18. 11., vetva `agent-chats` lokálne (2 commity):** `channels.parent_id` (jedna úroveň: podprojekt nemá vlastné,
+projekt s podprojektmi nejde pod iný), `project_state` (active/paused/done; archivovaný = `archived_at`), `project_type` (code, drawing, book,
+3d, music, comic, other; null = obyčajný kanál); migrácia 0305 iba pridáva (pôvodná aplikácia vidí jeden zoznam). Engine, API, klient; testy
+`latteos-projects.test.ts` + kanálové testy prešli; typecheck a biome čisté. Web: bočný panel — podprojekty pod projektom, zbaľovanie šípkou,
+ikona typu, značka pozastavený/hotový; nastavenia kanála a nový kanál — „Podprojekt kanála“, typ, stav (`ProjectFields.tsx`). Overené cez API
+(magna_moravia → kniha-oci-vlka, postavy; komiks pozastavený). Pohľad v prehliadači: ruky agenta do Chromia nesmú (pravidlá Rúk) —
+skontroluje používateľ. Chýbajú slovenské texty (F11).
 
 ### 10C. [ ] Heidelberg
 
