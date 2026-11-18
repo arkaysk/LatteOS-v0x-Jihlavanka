@@ -1378,6 +1378,10 @@ export interface Channel {
   createdByUserId?: string | null;
   /** Its sidebar category (ADR 0080); null or absent: on top, with none. */
   categoryId?: string | null;
+  /** LatteOS: the project it is a subproject of (F1), where it stands (F2) and what kind (F3). */
+  parentId?: string | null;
+  projectState?: ProjectState;
+  projectType?: ProjectType | null;
   /** Order inside its category, from 0. */
   position?: number;
   /**
@@ -1418,7 +1422,17 @@ export interface ChannelInput {
   visibility?: "public" | "private";
   /** Private only: limits it to people holding one of these roles (ADR 0125); empty: invite only. */
   audienceRoleIds?: string[];
+  /** LatteOS: a subproject of this channel (F1); null: its own. */
+  parentId?: string | null;
+  /** LatteOS: where the project stands (F2). */
+  projectState?: ProjectState;
+  /** LatteOS: what kind of project (F3); null: a plain channel. */
+  projectType?: ProjectType | null;
 }
+
+/** LatteOS: a channel as a project (F2, F3). */
+export type ProjectState = "active" | "paused" | "done";
+export type ProjectType = "code" | "drawing" | "book" | "3d" | "music" | "comic" | "other";
 
 /** A `#channel` link's card (`chat.card`): what the channel is and who is in it. */
 /** A pasted message link's pill (`GET …/messages/{id}/card`): where the message is and who wrote it, never its text. */

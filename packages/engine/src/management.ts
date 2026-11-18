@@ -14,9 +14,9 @@ import {
   channelRoleIds,
   dropRoleLeavers,
   managesChannel,
-  placesAgentsIn,
   type ProjectState,
   type ProjectType,
+  placesAgentsIn,
   readableChannelIds,
   requireProjectParent,
 } from "./channels";

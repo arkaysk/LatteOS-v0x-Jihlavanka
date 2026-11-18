@@ -15146,3 +15146,37 @@ html:not([data-pointer]) .rh-set__face-edit:focus-visible {
 .ac-workline--waiting .handed-line__state {
   color: var(--warn);
 }
+
+/* LatteOS (lensAIplan2.md F1-F3): a project's subprojects stand under its row, a step in; its chevron folds them; a
+   paused or done project shows it after its name and rests quieter. */
+.sidebar__item--sub {
+  padding-inline-start: calc(var(--space-4, 16px) + 12px);
+}
+.sidebar__project-fold {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 16px;
+  block-size: 16px;
+  margin-inline-start: -18px;
+  margin-inline-end: 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+.sidebar__project-fold:hover {
+  color: var(--ink);
+}
+.sidebar__project-state {
+  margin-inline-start: auto;
+  color: var(--ink-muted);
+}
+.sidebar__item[data-project-state="paused"] > .sidebar__item-label,
+.sidebar__item[data-project-state="done"] > .sidebar__item-label {
+  opacity: 0.6;
+}
+.sidebar[data-rail="true"] .sidebar__project-fold,
+.sidebar[data-rail="true"] .sidebar__project-state {
+  display: none;
+}

@@ -1090,7 +1090,18 @@ function CreateAgentTile({ onOpen }: { onOpen: () => void }) {
 }
 
 /** The fixed sections, a channel category as `category:<id>` (ADR 0080) and a group of agents as `group:<id>` (ADR 0083). */
-type SectionId = "channels" | "agents" | "people" | `category:${string}` | `group:${string}`;
+type SectionId = "channels" | "agents" | "people" | `category:${string}` | `group:${string}` | `project:${string}`;
+
+/** LatteOS: a project's kind as its row's icon (F3); a plain channel keeps the channel's. */
+const PROJECT_ICONS = {
+  code: "code",
+  drawing: "pen",
+  book: "book",
+  "3d": "layers",
+  music: "sound",
+  comic: "image",
+  other: "channel",
+} as const;
 
 /**
  * Which sidebar categories are closed, remembered in this browser for each person in each workspace. One closed by
@@ -1308,8 +1319,11 @@ function SidebarChannels({
   // A channel whose category isn't loaded yet (or is gone) shows with the ones with none. So nothing drags until
   // the categories load: a drop would take the channel out of its category.
   const categoryOf = (c: Channel) => (c.categoryId && known.has(c.categoryId) ? c.categoryId : null);
-  const pinnedChannels = pinned.flatMap((id) => channels.filter((c) => c.id === id && c.isMember));
-  const unpinned = channels.filter((c) => !pinnedChannels.includes(c));
+  // LatteOS (F1): a subproject goes under its project's row, wherever that one is, and only there
+  const isSub = (c: Channel) => !!c.parentId && channels.some((p) => p.id === c.parentId);
+  const subsOf = (id: string) => channels.filter((c) => c.parentId === id);
+  const pinnedChannels = pinned.flatMap((id) => channels.filter((c) => c.id === id && c.isMember && !isSub(c)));
+  const unpinned = channels.filter((c) => !pinnedChannels.includes(c) && !isSub(c));
   const loose = unpinned.filter((c) => categoryOf(c) === null);
   const inCategory = (id: string) => unpinned.filter((c) => categoryOf(c) === id);
   // A category shows while it holds a channel I can see; who manages channels keeps the empty ones to drop channels in.
@@ -1499,7 +1513,19 @@ function SidebarChannels({
   };
 
   // A pinned row stays put: it doesn't drag, and nothing drops on it.
+  // LatteOS (F1): a project with subprojects, its row and then theirs (folded with its chevron, remembered here)
   const row = (c: Channel, top = false) => {
+    const subs = subsOf(c.id);
+    if (subs.length === 0) return oneRow(c, top, false);
+    const open = sections.isOpen(`project:${c.id}`);
+    return (
+      <Fragment key={c.id}>
+        {oneRow(c, top, false, open)}
+        {open && subs.map((s) => oneRow(s, false, true))}
+      </Fragment>
+    );
+  };
+  const oneRow = (c: Channel, top: boolean, sub: boolean, expanded?: boolean) => {
     // Discord's marks: something new lights the row (a pill on its left edge, the name in full ink) with how many
     // messages wait, in a quiet count; only a mention of me gets the red one. Muted, it rests dim whatever comes, but a
     // mention still shows.
@@ -1510,9 +1536,10 @@ function SidebarChannels({
         key={c.id}
         to="/org/$orgId/c/$channelId"
         params={{ orgId, channelId: c.id }}
-        className="sidebar__item"
+        className={sub ? "sidebar__item sidebar__item--sub" : "sidebar__item"}
         title={`#${c.name}`}
         data-kind="channel"
+        data-project-state={c.projectType ? c.projectState : undefined}
         data-unread={unread}
         data-muted={c.muted || undefined}
         {...(top
@@ -1530,11 +1557,35 @@ function SidebarChannels({
         onClick={() => markOpen(c.id)}
         {...channelMenu(c)}
       >
-        <Icon name="channel" className="sidebar__channel-icon" />
+        {expanded !== undefined && (
+          <button
+            type="button"
+            className="sidebar__project-fold"
+            aria-label={t(expanded ? "shell.sidebarMenu.hideSubprojects" : "shell.sidebarMenu.showSubprojects")}
+            aria-expanded={expanded}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              sections.toggle(`project:${c.id}`);
+            }}
+          >
+            <Icon name={expanded ? "chevronDown" : "chevronRight"} />
+          </button>
+        )}
+        <Icon name={c.projectType ? PROJECT_ICONS[c.projectType] : "channel"} className="sidebar__channel-icon" />
         <span className="sidebar__channel-abbr" aria-hidden="true">
           {channelInitials(c.name)}
         </span>
         <span className="sidebar__item-label">{c.name}</span>
+        {c.projectType && c.projectState !== "active" && (
+          <Icon
+            name={c.projectState === "done" ? "check" : "pause"}
+            className="sidebar__project-state"
+            aria-label={t(
+              c.projectState === "done" ? "shell.sidebarMenu.projectDone" : "shell.sidebarMenu.projectPaused",
+            )}
+          />
+        )}
         {mentions > 0 ? (
           <UnreadCount count={mentions} mentions />
         ) : unread ? (

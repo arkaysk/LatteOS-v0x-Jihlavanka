@@ -18,10 +18,16 @@ test("a subproject goes under its project, one level deep, and the list says so"
   expect(got("kniha-1")).toMatchObject({ parentId: magna.id, projectType: null });
   expect(got("general")?.parentId).toBeNull();
   // one level: nothing under a subproject, and a project with subprojects goes under no one
-  await expect(createChannel(f.db, f.owner.id, f.org.id, { name: "kapitola", parentId: kniha.id })).rejects.toThrow(ValidationError);
+  await expect(createChannel(f.db, f.owner.id, f.org.id, { name: "kapitola", parentId: kniha.id })).rejects.toThrow(
+    ValidationError,
+  );
   const other = await createChannel(f.db, f.owner.id, f.org.id, { name: "other" });
-  await expect(updateChannel(f.db, f.owner.id, f.org.id, magna.id, { parentId: other.id })).rejects.toThrow(ValidationError);
-  await expect(updateChannel(f.db, f.owner.id, f.org.id, other.id, { parentId: other.id })).rejects.toThrow(ValidationError);
+  await expect(updateChannel(f.db, f.owner.id, f.org.id, magna.id, { parentId: other.id })).rejects.toThrow(
+    ValidationError,
+  );
+  await expect(updateChannel(f.db, f.owner.id, f.org.id, other.id, { parentId: other.id })).rejects.toThrow(
+    ValidationError,
+  );
 });
 
 test("a project's state and kind change, and a subproject leaves its project", async () => {

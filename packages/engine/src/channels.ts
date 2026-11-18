@@ -187,10 +187,14 @@ export async function requireProjectParent(db: Executor, orgId: string, parentId
     .select({ id: channels.id, parentId: channels.parentId, kind: channels.kind })
     .from(channels)
     .where(and(eq(channels.id, parentId), eq(channels.orgId, orgId), isNull(channels.archivedAt)));
-  if (!parent || parent.kind !== "channel") throw new NotFoundError("Project channel not found");
+  if (parent?.kind !== "channel") throw new NotFoundError("Project channel not found");
   if (parent.parentId) throw new ValidationError("A subproject can't have subprojects of its own");
   if (childId) {
-    const [child] = await db.select({ id: channels.id }).from(channels).where(and(eq(channels.parentId, childId), isNull(channels.archivedAt))).limit(1);
+    const [child] = await db
+      .select({ id: channels.id })
+      .from(channels)
+      .where(and(eq(channels.parentId, childId), isNull(channels.archivedAt)))
+      .limit(1);
     if (child) throw new ValidationError("A project with subprojects can't become a subproject");
   }
 }

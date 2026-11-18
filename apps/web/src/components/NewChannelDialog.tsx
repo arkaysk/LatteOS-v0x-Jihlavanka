@@ -1,4 +1,4 @@
-import { keys, type OrgRole, useChannels, useRoles } from "@agenteschat/client";
+import { keys, type OrgRole, type ProjectType, useChannels, useRoles } from "@agenteschat/client";
 import {
   accessInput,
   accessValid,
@@ -32,6 +32,7 @@ import { usePersonalView } from "@/hooks/usePersonalView";
 import { CategorySelect } from "./ChannelCategoryDialogs";
 import { memberOf, PeoplePicker, type PickKey } from "./MemberPicker";
 import { useOrg } from "./org-context";
+import { ProjectFields } from "./ProjectFields";
 import { RoleChecklist } from "./roles/RoleChecklist";
 
 const ACCESS_MODES: ChannelAccessMode[] = ["public", "roles", "private"];
@@ -266,6 +267,11 @@ export function NewChannelDialog({
     roleIds?.length ? { mode: "roles", roleIds } : { mode: "public", roleIds: [] },
   );
   const [categoryId, setCategoryId] = useState<string | null>(category);
+  // LatteOS (F1, F3): a subproject of a project, and what kind of project it is
+  const [project, setProject] = useState<{ parentId: string | null; projectType: ProjectType | null }>({
+    parentId: null,
+    projectType: null,
+  });
   const [selected, setSelected] = useState<Set<PickKey>>(new Set());
   const [touched, setTouched] = useState(false);
   const create = useMutation({
@@ -275,6 +281,8 @@ export function NewChannelDialog({
         topic: topic.trim() || undefined,
         ...accessInput(access),
         ...(categoryId ? { categoryId } : {}),
+        ...(project.parentId ? { parentId: project.parentId } : {}),
+        ...(project.projectType ? { projectType: project.projectType } : {}),
       });
       for (const key of selected) await api.chat.addMember(org.id, channel.id, memberOf(key));
       return channel;
@@ -355,6 +363,11 @@ export function NewChannelDialog({
             >
               <CategorySelect value={categoryId} onChange={setCategoryId} canCreate={can(org, "manage_channels")} />
             </Field>
+            <ProjectFields
+              parentId={project.parentId}
+              projectType={project.projectType}
+              onChange={(next) => setProject((p) => ({ ...p, ...next }))}
+            />
             {!(solo && access.mode === "public") && (
               <ChannelAccessChoice value={access} onChange={setAccess} idPrefix="ch" showError={touched} />
             )}

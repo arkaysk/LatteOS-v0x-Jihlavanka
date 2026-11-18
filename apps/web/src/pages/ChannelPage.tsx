@@ -366,6 +366,7 @@ import { OpensAgent } from "@/components/OpensAgent";
 import { useOrg } from "@/components/org-context";
 import { AuthorStatus } from "@/components/Presence";
 import { ProfileTrigger } from "@/components/ProfileCard";
+import { ProjectFields } from "@/components/ProjectFields";
 import { ReachLines } from "@/components/ReachLines";
 import { MessageReactions, useEmojiLabels } from "@/components/Reactions";
 import {
@@ -5524,6 +5525,19 @@ function ChannelDetails({
                   <Field label={t("channelCategories.category")} id="channel-edit-category">
                     <CategorySelect value={channel.categoryId ?? null} onChange={moveTo} canCreate={editable} />
                   </Field>
+                  <ProjectFields
+                    channel={channel}
+                    parentId={channel.parentId ?? null}
+                    projectType={channel.projectType ?? null}
+                    projectState={channel.projectState ?? "active"}
+                    disabled={!editable}
+                    onChange={(next) =>
+                      update.mutate(next, {
+                        onSuccess: () => setSaved(true),
+                        onError: (e) => toast.show(errorText(t, e), "error"),
+                      })
+                    }
+                  />
                 </DialogBody>
               )}
               {section === "permissions" && (

@@ -36,7 +36,15 @@ export type ChannelKind = Exclude<(typeof channelKindEnum.enumValues)[number], "
  * what kind of work it is; null type: a plain channel, not a project.
  */
 export const channelProjectStateEnum = pgEnum("channel_project_state", ["active", "paused", "done"]);
-export const channelProjectTypeEnum = pgEnum("channel_project_type", ["code", "drawing", "book", "3d", "music", "comic", "other"]);
+export const channelProjectTypeEnum = pgEnum("channel_project_type", [
+  "code",
+  "drawing",
+  "book",
+  "3d",
+  "music",
+  "comic",
+  "other",
+]);
 
 /**
  * A named group of channels in the sidebar, the same for everyone in the organization. Deleting one leaves its

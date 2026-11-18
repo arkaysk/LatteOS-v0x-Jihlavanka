@@ -2324,6 +2324,10 @@ export const en = {
       newMessage: "New message",
       addMembers: "Add people or agents",
       channelSettings: "Channel settings",
+      showSubprojects: "Show subprojects",
+      hideSubprojects: "Hide subprojects",
+      projectPaused: "Paused",
+      projectDone: "Done",
       agentSettings: "{{name}} settings",
     },
     sidebarSetup: {
@@ -4473,6 +4477,25 @@ export const en = {
     groupMany: "{{name}}'s change proposal for {{count}} agents",
     edit: "Edit",
     open: "Open in Proposals",
+  },
+  // LatteOS (lensAIplan2.md F1-F3): a channel as a project
+  project: {
+    parent: "Subproject of",
+    noParent: "None: a channel of its own",
+    hasSubprojects: "It has subprojects of its own",
+    type: "Project",
+    notAProject: "Not a project",
+    state: "State",
+    types: {
+      code: "Code",
+      drawing: "Drawing",
+      book: "Book",
+      "3d": "3D",
+      music: "Music",
+      comic: "Comic",
+      other: "Other",
+    },
+    states: { active: "Active", paused: "Paused", done: "Done" },
   },
   newChannel: {
     open: "Create channel",
