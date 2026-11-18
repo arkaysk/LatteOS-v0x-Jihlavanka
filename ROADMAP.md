@@ -3528,6 +3528,15 @@ index rozhovorov SQLite FTS5 + sqlite-vec s e5-sk; slovenský Parakeet/Canary (K
 `lensAIplan2.md` (18. 11.): audit trhu pre 14 súčastí — hotový projekt, knižnica a vlastná implementácia, licencie,
 verdikty a 15 zabudnutých funkcií.
 
+**10B.63** [x] 18. 11. **O LensAI a verzia** (používateľ 18. 11.): položka „O LensAI“ (verzia, čo je nové, Znova ukázať tipy,
+poďakovanie vzorom, licencia, zdrojový kód) ako spoločný `apps/common/AboutPage.qml` pre všetky aplikácie; verzia LensAI pri mene
+a v názve okna. Predtým v0.3.01, teraz **v0.4.01**. Chýba: About v ostatných aplikáciách.
+
+**10B.64** [x] 18. 11. **llama.cpp router** (krok 1 zo syntézy `lensAIplan2.md`): `latte-ai` spúšťa `llama-server` bez `-m`
+s predvoľbami `~/.local/state/latteos/ai/models.ini` (sekcia na model z nastavení Lokálne LLM), najviac 2 modely naraz, 1 GB
+rezerva VRAM, spánok po 5 min nečinnosti; vrstvy na GPU určí `--fit` z voľnej pamäte, ak ich používateľ nezadal. Návrat k už
+načítanému modelu 2,8 s namiesto nového štartu; pomocník (malý model) už nevyhodí hlavný model. Chýba: voľba času spánku v UI.
+
 ### 10C. [ ] Heidelberg
 
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví

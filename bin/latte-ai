@@ -108,9 +108,9 @@ No API key: the official tool of a service answers, with the account the user is
 
 The conversations are kept in ~/.local/state/latteos/ai/chats/ID.json, one file each. What the user wants every AI
 to know or keep to (LensAI › Instructions) is ~/.config/latteos/ai-instructions.txt; it goes with every question.
-The AI on this computer is llama.cpp's llama-server with a model file (.gguf), found under ~/.local/share/latteos/ai
-or /data/ai (llama/*/llama-server, models/*.gguf). It starts the first time it is asked and stays, on 127.0.0.1 only;
-`latte-ai stop` ends it.
+The AI on this computer is llama.cpp's llama-server in its router mode with the model files (.gguf) found under
+~/.local/share/latteos/ai or /data/ai (llama/*/llama-server, models/*.gguf), each model a process of its own, loaded and
+let go without a restart. It starts the first time it is asked and stays, on 127.0.0.1 only; `latte-ai stop` ends it.
 """
 import datetime
 import glob
@@ -732,37 +732,87 @@ def local_call(path, body=None, timeout=5):
     return json.load(urllib.request.urlopen(req, timeout=timeout))
 
 
-def local_start(model):
-    """llama-server with this model, on this computer only; one that runs another model is ended first."""
-    mmproj = local_mmproj(model)
+def local_name(model):
+    """The name a model goes by in the router's presets: its file's name without .gguf."""
+    return os.path.basename(model)[:-5]
+
+
+ROUTER_PRESET = os.path.join(ROOM, "models.ini")
+
+
+def local_preset():
+    """llama.cpp's router presets (INI): a section for each model here, loaded as LensAI › Local LLMs says. The layers on
+    the graphics card are left to llama.cpp's --fit unless the user set them: it counts them from the memory free when the
+    model loads, so a game that holds the card leaves the model fewer instead of a crash. True when the file changed."""
+    own = local_settings().get("models") or {}
+    keys = {"ctx": "ctx-size", "threads": "threads", "batch": "batch-size", "ubatch": "ubatch-size", "parallel": "parallel"}
+    # ponytail: idle 5 min, then the model's memory goes back (llama.cpp's sleep); a setting when someone asks for it
+    out = ["[*]", "jinja = true", "sleep-idle-seconds = 300", ""]
+    for m in local_models_all():
+        s, mine, mm = model_settings(m["id"]), own.get(os.path.basename(m["id"]), {}), local_mmproj(m["id"])
+        out += ["[%s]" % local_name(m["id"]), "model = " + m["id"]] + ["%s = %s" % (keys[k], s[k]) for k in keys]
+        if not local_settings().get("gpu"):
+            out.append("n-gpu-layers = 0")
+        elif "ngl" in mine:
+            out.append("n-gpu-layers = %d" % s["ngl"])
+        out += (["mmproj = " + mm] if mm else []) + (["mlock = true"] if s["mlock"] else []) + ([] if s["mmap"] else ["no-mmap = true"]) + [""]
+    text = "\n".join(out)
     try:
-        props = local_call("/props")
-        # a server that runs this model but without its eyes is restarted when the eyes exist
-        if props.get("model_path") == model and (not mmproj or (props.get("modalities") or {}).get("vision")):
-            return True
-    except (OSError, ValueError):
-        pass
-    subprocess.run(["pkill", "-f", "llama-server.*--port %d" % LOCAL_PORT])
-    os.makedirs(ROOM, exist_ok=True)
-    # the processor: on graphics cards like latte-lab's the small models run faster there (inspo/ai-na-ploche.md)
-    s = model_settings(model)                                 # the user's choice in LensAI › Local LLMs
-    try:
-        proc = subprocess.Popen([local_server(), "-m", model, "-c", str(s["ctx"]), "-t", str(s["threads"]), "-ngl", str(s["ngl"]),
-                          "-b", str(s["batch"]), "-ub", str(s["ubatch"]), "-np", str(s["parallel"]),
-                          "--host", "127.0.0.1", "--port", str(LOCAL_PORT), "--jinja"] + (["--mmproj", mmproj] if mmproj else [])
-                         + (["--mlock"] if s["mlock"] else []) + ([] if s["mmap"] else ["--no-mmap"]),
-                         stdout=open(os.path.join(ROOM, "llama-server.log"), "w"), stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)
+        with open(ROUTER_PRESET) as f:
+            if f.read() == text:
+                return False
     except OSError:
-        return False
-    for _ in range(240):
+        pass
+    os.makedirs(ROOM, exist_ok=True)
+    with open(ROUTER_PRESET, "w") as f:
+        f.write(text)
+    return True
+
+
+def local_start(model):
+    """The model loaded in llama.cpp's router (llama-server without -m, on this computer only): one server, each model in a
+    process of its own, loaded and let go without a restart; two at most (the one asked and a helper), the older let go
+    first, and a margin of the graphics card's memory kept free. Started the first time it is asked, and again when the
+    models or their settings changed."""
+    import time
+    name, changed = local_name(model), local_preset()
+    try:
+        known = [m["id"] for m in local_call("/models")["data"]]
+    except (OSError, ValueError, KeyError):
+        known = None
+    if known is None or changed or name not in known:
+        subprocess.run(["pkill", "-f", "llama-server.*--port %d" % LOCAL_PORT])
         try:
-            local_call("/health")
+            proc = subprocess.Popen([local_server(), "--models-preset", ROUTER_PRESET, "--models-max", "2", "--models-memory-margin", "1024",
+                                     "--host", "127.0.0.1", "--port", str(LOCAL_PORT)],
+                                    stdout=open(os.path.join(ROOM, "llama-server.log"), "w"), stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
+                                    start_new_session=True)
+        except OSError:
+            return False
+        for _ in range(240):                                   # it measures every model first: a second or so each
+            try:
+                local_call("/health")
+                break
+            except (OSError, ValueError):
+                if proc.poll() is not None:
+                    return False
+                time.sleep(0.25)
+        else:
+            return False
+    try:
+        local_call("/models/load", {"model": name})
+    except (OSError, ValueError):
+        pass                                                   # already loaded or loading: the state below says
+    for _ in range(480):                                       # a big model from a slow disk takes its time
+        try:
+            state = next((m["status"] for m in local_call("/models")["data"] if m["id"] == name), {})
+        except (OSError, ValueError, KeyError):
+            return False
+        if state.get("value") == "loaded":
             return True
-        except (OSError, ValueError):
-            import time
-            if proc.poll() is not None:
-                return False         # the server ended (bad file, no memory): no reason to wait the rest
-            time.sleep(0.5)          # a model takes a moment to load
+        if state.get("value") == "unloaded" and state.get("failed"):
+            return False                                       # a bad file, no memory: no reason to wait the rest
+        time.sleep(0.25)
     return False
 
 
@@ -937,7 +987,7 @@ def local_ask(messages, model, effort, files, room):
             talk[-1]["content"] += attached(room, f)
     if seen:
         talk[-1]["content"] = [{"type": "text", "text": talk[-1]["content"]}] + seen
-    body = {"messages": talk, "temperature": 0.5, "max_tokens": 1024, "repeat_penalty": 1.15, "chat_template_kwargs": {"enable_thinking": effort == "think"}}
+    body = {"model": local_name(model), "messages": talk, "temperature": 0.5, "max_tokens": 1024, "repeat_penalty": 1.15, "chat_template_kwargs": {"enable_thinking": effort == "think"}}
     # tools only for a model whose template knows them, and their answers kept short: its window is small
     if gguf(model).get("tools"):
         text, used = converse("http://127.0.0.1:%d/v1" % LOCAL_PORT, {}, body, PROVIDERS["local"]["name"], most=3000)
@@ -2228,7 +2278,7 @@ def quick(prompt, who):
     m = quick_model()
     if not m or not local_start(m["id"]):
         return None
-    return chat_completion("http://127.0.0.1:%d/v1" % LOCAL_PORT, {}, {"messages": [{"role": "user", "content": prompt}], "temperature": 0,
+    return chat_completion("http://127.0.0.1:%d/v1" % LOCAL_PORT, {}, {"model": local_name(m["id"]), "messages": [{"role": "user", "content": prompt}], "temperature": 0,
                                                                         "max_tokens": 256, "chat_template_kwargs": {"enable_thinking": False}})[0]
 
 

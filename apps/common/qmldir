@@ -22,3 +22,4 @@ Pegboard Pegboard.qml
 Lens Lens.qml
 DatePick DatePick.qml
 TimePick TimePick.qml
+AboutPage AboutPage.qml

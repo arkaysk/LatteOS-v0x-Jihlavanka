@@ -2,7 +2,7 @@
 //@ pragma EnableQtWebEngineQuick
 // LensAI: every conversation with every AI in one list, and the services themselves — which are there,
 // which one is signed in, signing in and out. bin/latte-ai keeps the conversations (the same ones LensGoo's AI
-// tab writes) and knows the services; this window shows them.   latte-app aicenter [lensai | local | tab SERVICE | CHAT]
+// tab writes) and knows the services; this window shows them.   latte-app aicenter [lensai | local | tab SERVICE | about | CHAT]
 //
 // An AI is reached in one of three ways, each with its mark after a name (the colours of the graphs, Theme.heat): green
 // its own page in a tab (web), gold its official tool in a terminal (CLI), red a key of one's own (API). Settings has a
@@ -23,6 +23,8 @@ ShellRoot {
     // the side folds to its icons, about a fifth of its width, only when the person folds it, and stays as they left it
     // on every page (the user, 17. 11.: not by itself)
     property bool folded: false
+    // LensAI's own version, shown by its name and on About (the user, 18. 11.: v0.3.01 before, this one v0.4.01)
+    readonly property string version: "0.4.01"
     function fold() { folded = !folded }
     // Agent Chats (ROADMAP 10B.60): its own web app on this computer, a tab of LensAI with a profile of its own
     readonly property var teamTab: ({ id: "agentchats", name: "Agent Chats", web: "http://127.0.0.1:4310/" })
@@ -312,6 +314,7 @@ ShellRoot {
     FileView { id: tipFile; path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/latteos/lensai-tip-off"; printErrors: false
                onLoaded: shell.tipOff = true }
     function hideTip() { tipOff = true; Quickshell.execDetached(["sh", "-c", "mkdir -p \"$(dirname \"$1\")\" && : > \"$1\"", "sh", tipFile.path]) }
+    function showTips() { tipOff = false; Quickshell.execDetached(["rm", "-f", tipFile.path]) }
     function doable(text) { return /```(bash|sh|shell|zsh|console)\n/.test(text || "") }
     // what an AI asked to change on this computer and waits for the person's word on (bin/latte-skill): the counter
     property var asks: []
@@ -372,7 +375,7 @@ ShellRoot {
     Component.onCompleted: {
         fresh.running = true
         list.ask(["chats"]); who.ask(["providers", "all"]); svc.ask(["services"]); keyq.ask(["keys"]); helpersq.ask(["helpers"])      // helpers: whether the AI is on
-        if (["all", "chats", "agents", "helpers", "local", "lensai", "team", "skills", "connectors"].indexOf(words[0]) >= 0) page = words[0] === "helpers" ? "agents" : words[0]      // helpers: a part of the agents' page now
+        if (["all", "chats", "agents", "helpers", "local", "lensai", "team", "skills", "connectors", "about"].indexOf(words[0]) >= 0) page = words[0] === "helpers" ? "agents" : words[0]      // helpers: a part of the agents' page now
         const part = ({ services: "cli", models: "cli", keys: "api", instructions: "instructions", lensai: words[1] || "web" })[words[0]]      // what were pages of their own are parts of the settings
         if (part) openSection(part)
         if (words[0] === "tab" && words[1]) { page = "web"; tab = words[1]; tabBeside = words[2] || "" }      // latte-app aicenter tab claude [chatgpt]: its own page, another beside
@@ -476,7 +479,7 @@ ShellRoot {
 
     AppWindow {
         id: win
-        title: I18n.tr("LensAI")
+        title: I18n.tr("LensAI") + " v" + shell.version
         // what is deleted here can be taken back here (ROADMAP 10B.48): a conversation comes back from the Trash, a
         // model from beside the models, where it waits until this window is done
         undoName: "lensai"
@@ -484,7 +487,7 @@ ShellRoot {
                      : l.indexOf("model:") === 0 ? I18n.tr("Model {n} deleted", { n: l.slice(6) }) : l
         onUndone: { list.ask(["chats"]); localq.ask(["recommend"]); localModels.ask(["models", "measured"]); modelq.ask(["models"]) }
         heading: shell.page === "lensai" ? I18n.tr("Settings") : shell.page === "web" ? (shell.tabbed.find(t => t.id === shell.tab) || { name: "" }).name : shell.page === "home" ? I18n.tr("Overview") : shell.page === "all" ? I18n.tr("Conversations") : shell.page === "agents" ? I18n.tr("Agents") : shell.page === "local" ? I18n.tr("Local LLMs")
-                 : shell.page === "team" ? "Agent Chats" : shell.page === "skills" ? I18n.tr("Skills") : shell.page === "connectors" ? I18n.tr("Connectors") : (shell.chat ? shell.chat.title : I18n.tr("Conversations"))
+                 : shell.page === "team" ? "Agent Chats" : shell.page === "skills" ? I18n.tr("Skills") : shell.page === "connectors" ? I18n.tr("Connectors") : shell.page === "about" ? I18n.tr("About LensAI") : (shell.chat ? shell.chat.title : I18n.tr("Conversations"))
         implicitWidth: 1120; implicitHeight: 760
         sideWidth: shell.folded ? 64 : 250
         Behavior on sideWidth { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
@@ -512,7 +515,8 @@ ShellRoot {
                 Item { width: parent.width; height: 40
                     Row { x: 6; spacing: 10; anchors.verticalCenter: parent.verticalCenter; visible: !shell.folded
                         Glyph { name: "sparkles"; font.pixelSize: 24; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
-                        Label { text: I18n.tr("LensAI"); font.pixelSize: 17; font.weight: 700; anchors.verticalCenter: parent.verticalCenter } }
+                        Label { text: I18n.tr("LensAI"); font.pixelSize: 17; font.weight: 700; anchors.verticalCenter: parent.verticalCenter }
+                        Label { text: "v" + shell.version; font.pixelSize: 11; color: Theme.faint; anchors.verticalCenter: parent.verticalCenter; anchors.verticalCenterOffset: 2 } }
                     Rectangle { width: 36; height: 36; radius: 10; anchors.verticalCenter: parent.verticalCenter
                                 x: shell.folded ? (parent.width - width) / 2 : parent.width - width
                                 color: foldHit.containsMouse ? Theme.card : "transparent"
@@ -528,6 +532,7 @@ ShellRoot {
                 Nav { width: parent.width; text: I18n.tr("Local LLMs"); icon: "cpu"; on: shell.page === "local"; onPressed: shell.go("local") }
                 Nav { width: parent.width; text: I18n.tr("Settings"); icon: "settings"; on: shell.page === "lensai"; onPressed: shell.openSection(shell.section) }
                 Nav { width: parent.width; text: I18n.tr("AI Cursor (coming in 2027)"); icon: "pointer"; off: true }      // ROADMAP 10B.34
+                Nav { width: parent.width; text: I18n.tr("About LensAI"); icon: "info-circle"; on: shell.page === "about"; onPressed: shell.go("about") }
                 Item { width: 1; height: 8 }
                 Rectangle { width: parent.width; height: 1; color: Theme.line; opacity: 0.6 }
                 Item { width: 1; height: 6 }
@@ -1173,6 +1178,32 @@ ShellRoot {
                 Label { x: 52; width: parent.width - 52 - teamSk.width - 32; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13; anchors.verticalCenter: parent.verticalCenter
                         text: I18n.tr("The skills of the agents in Agent Chats (a comic, a video…) are kept by Agent Chats itself.") }
                 Pill { id: teamSk; anchors.right: parent.right; anchors.rightMargin: 16; anchors.verticalCenter: parent.verticalCenter; implicitHeight: 32; icon: "users-group"; text: "Agent Chats"; onPressed: shell.go("team") } }
+        }
+
+        // ── About: version, what is new, help, whose work it stands on (the user, 18. 11.) ──────────────────────
+        AboutPage {
+            visible: shell.page === "about"
+            name: I18n.tr("LensAI"); version: shell.version; icon: "sparkles"
+            blurb: I18n.tr("Every AI in one place: conversations with every service, the models on this computer, the agents at work and what they ask of you.")
+            notes: [I18n.tr("About LensAI: the version, what is new, help and thanks."),
+                    I18n.tr("The version stands by LensAI's name."),
+                    I18n.tr("Local models: going back to a model already loaded takes seconds, not a new start, and a helper no longer pushes out the model you talk to."),
+                    I18n.tr("Local models use as much of the graphics card as is free when they load, so a running game leaves them less instead of a crash."),
+                    I18n.tr("A local model idle for five minutes gives its memory back.")]
+            hasTips: true; onTipsAgain: shell.showTips()
+            license: I18n.tr("GNU General Public License, version 3 or later")
+            source: "https://github.com/arkaysk/LatteOS-v0x-Jihlavanka"
+            thanks: [
+                { name: "llama.cpp", what: I18n.tr("runs the models on this computer"), license: "MIT", url: "https://github.com/ggml-org/llama.cpp" },
+                { name: "whisper.cpp", what: I18n.tr("turns speech into text"), license: "MIT", url: "https://github.com/ggml-org/whisper.cpp" },
+                { name: "Omarchy", what: I18n.tr("the services' limits, the agents' panel, help with crashes"), license: "MIT", url: "https://github.com/basecamp/omarchy" },
+                { name: "Ollama", what: I18n.tr("the rule for how much memory a model needs"), license: "MIT", url: "https://github.com/ollama/ollama" },
+                { name: "agentes.chat", what: "Agent Chats", license: "AGPL-3.0", url: "https://github.com/agentes-chat/agentes-chat" },
+                { name: "Model Context Protocol", what: I18n.tr("one set of tools for every AI (latte-mcp)"), license: "MIT", url: "https://github.com/modelcontextprotocol/python-sdk" },
+                { name: "Agent Skills", what: I18n.tr("the format of the skills"), license: "Apache-2.0", url: "https://agentskills.io" },
+                { name: "Quickshell", what: I18n.tr("the window and its pages"), license: "LGPL-3.0", url: "https://github.com/quickshell-mirror/quickshell" },
+                { name: "Lobe Icons", what: I18n.tr("the services' logos"), license: "MIT", url: "https://github.com/lobehub/lobe-icons" },
+                { name: "Tabler Icons", what: I18n.tr("the icons"), license: "MIT", url: "https://github.com/tabler/tabler-icons" }]
         }
 
         // ── the connectors: the MCP servers each official tool is given, and LatteOS's own (bin/latte-mcp) ──────────
