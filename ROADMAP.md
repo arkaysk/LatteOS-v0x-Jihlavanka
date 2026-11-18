@@ -3525,6 +3525,8 @@ Panelize a Odysseus (18. 11.) a výskum. LensAI môže mať vlastnú licenciu ne
 poradie: llama.cpp router + `--fit` + voľná VRAM; uspávanie webov Frozen → Discarded; lenivé nástroje v `latte-mcp`; limity Claude
 zo statusline Claude Code; klient ACP pre agentov; skilly v `.agents/skills/`; MTP modely; odhad rýchlosti (llmfit/Odysseus);
 index rozhovorov SQLite FTS5 + sqlite-vec s e5-sk; slovenský Parakeet/Canary (KInIT) na prepis reči.
+`lensAIplan2.md` (18. 11.): audit trhu pre 14 súčastí — hotový projekt, knižnica a vlastná implementácia, licencie,
+verdikty a 15 zabudnutých funkcií.
 
 ### 10C. [ ] Heidelberg
 

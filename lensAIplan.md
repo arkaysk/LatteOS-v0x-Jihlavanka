@@ -15,6 +15,8 @@ používateľ, rozhodnutia sa zapisujú do `ROADMAP.md` (10B) a `docs/goo/ROZHOD
   sa dá prevziať priamo. Kód s AGPL (Odysseus, agentes-chat) sa dá prevziať, ak bude LensAI (alebo tá jej časť) pod AGPL,
   inak iba prepísať nápad. Autorov zapísať do `TRETIE-STRANY.md`.
 
+- **Čím to spraviť** (hotové projekty, knižnice, licencie, verdikty) je v `lensAIplan2.md` (audit trhu 18. 11.).
+
 **Stav:** ✅ hotové · 🔶 rozpracované · 📋 plánované · ⏸ pozastavené · 👁 sledovať
 
 ---
