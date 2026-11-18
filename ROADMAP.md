@@ -3586,6 +3586,16 @@ QML: `apps/common/ScrollGrip.qml` vo všetkých 37 zoznamoch aplikácií (`Scrol
 zmenila“ posuvník (`drag`/`press` na dráhe), koliesko 3 riadky, PgUp/PgDn/Home/End. Overené: ťah na koniec 864 položiek jedným pohybom.
 Chýba: posuvník v ostatných scénach pleamaru (Goo, Vlastnosti) — spoločná súčasť do `goo/lib`.
 
+**10B.71** [~] 18. 11. **Agent cez ACP v Pomocníkovi** (krok 5 syntézy; používateľ 18. 11.: drobné úlohy v rozhovore na stránke Agenti):
+`crates/latte-acp` (oficiálne Rust SDK `agent-client-protocol` 5.4, Apache-2.0) spustí agenta v pieskovisku, dá mu `latte-mcp`, prepne ho do
+režimu „default“ (adaptér Claude Code začína v „auto“, kde by úpravy schválil sám) a každý krok, ktorý pýta povolenie, ide do LensAI
+(`latte-skill allow agent … --once`, „Čaká na teba“). Rozhovor pokračuje (`latte-ai helper say`, pol hodiny ticha = koniec), na konci zápis
+do denníka. `latte-ai do` ide cez ACP, keď je adaptér (Claude: `claude-agent-acp` z npm, nainštalovaný na latte-lab; Codex `codex-acp`;
+Gemini `--acp`), inak terminál ako doteraz. Pomocník ukazuje úlohu, slová agenta, nástroje, Povolené/Zamietnuté a pole „Odpovedz agentovi…“
+s „Nová úloha“. **Overené 18. 11.:** Claude Code v pieskovisku cez ACP — čítanie bez otázky, zápis `c.txt` čakal na povolenie, po
+Zamietnuť súbor nevznikol a agent to povedal. **Chýba:** inštalácia adaptérov z LensAI (Nastavenia › CLI), Gemini na latte-lab nemá kľúč
+(nevyskúšané), diff zmien v okne zmien, zápisy Chapolery a DualBrew cez Pomocníka.
+
 ### 10C. [ ] Heidelberg
 
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví

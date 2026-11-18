@@ -105,6 +105,10 @@ No API key: the official tool of a service answers, with the account the user is
   latte-ai chat ID          one conversation whole: {"id", "title", "provider", "model", "messages": [{"role", "content",
                             "provider", "model", "at"}], "usage"}
   latte-ai forget ID        throws one away, and what was attached to it
+  latte-ai helper           the Helper's conversation, the oldest first: [{"at", "agent", "app", "task", "dir", "state":
+                            running|done|error, "steps": [{"kind": text|tool|plan|ask, "text", "answer"}], "n" (items changed),
+                            "log"}]; a task through ACP (latte-acp) with its steps, other journal entries without
+  latte-ai helper say LOG TEXT | end LOG   the person goes on with a task that waits (state "waiting"), or ends it
   latte-ai journal [N]      what the AI changed, the newest first (N entries, 200): [{"at", "app", "ai", "task", "did",
                             "where", "items": [[before, after] | [what]], "more"}]; an entry shows its first 20 items
   latte-ai journal add JSON   one entry, written by the app in which the AI did it
@@ -1683,13 +1687,19 @@ DOERS = {
     "gemini": {"name": "Gemini", "tool": "gemini", "argv": lambda task: ["gemini", "--approval-mode", "default", "-i", task]},
 }
 LANGUAGES = {"sk": "Slovak", "cs": "Czech", "en": "English", "de": "German", "hu": "Hungarian", "pl": "Polish", "uk": "Ukrainian"}
+# through ACP every step that changes something is shown to the person to allow (latte-acp): the agent need not stop to ask
+ACP_FIRST = "Use the latteos skill. Answer in %s. Each change you make is shown to me to allow first. The task: "
 DO_FIRST = ("Use the latteos skill. Look first, then make a plan and ask me before you change anything. "
             "Answer in %s. The task: ")
 
 
-def first_words():
+def language():
     code = (os.environ.get("LC_ALL") or os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or "en").split("_")[0].split(".")[0]
-    return DO_FIRST % LANGUAGES.get(code, "the language of the locale " + code)
+    return LANGUAGES.get(code, "the language of the locale " + code)
+
+
+def first_words():
+    return DO_FIRST % language()
 IDEAS = [N("Make room on my disk: what fills it, and what can go?"), N("Why is my computer slow right now?"),
          N("Set up my second monitor"), N("Set up my printer"), N("Change the wallpaper with the time of day"),
          N("Explain what started with my computer today, and what I can turn off")]
@@ -1705,6 +1715,92 @@ def doers():
         chosen = ""
     there = [i for i, d in DOERS.items() if shutil.which(d["tool"], path=SEARCH)]
     return sorted(there, key=lambda i: i != chosen)
+
+
+# the agents through ACP: its adapter (Apache-2.0, agentclientprotocol), or the tool itself
+ACP = {"claude": ["claude-agent-acp"], "chatgpt": ["codex-acp"], "gemini": ["gemini", "--acp"]}
+# the sign-in an ACP agent is told to use: Gemini's own setting (an API key, Google's sign-in…); others need none
+ACP_AUTH = {"gemini": lambda: (read_json("~/.gemini/settings.json").get("security", {}).get("auth", {}) or {}).get("selectedType", "")}
+HELPER = os.path.join(ROOM, "helper")      # a task's lines (latte-acp), one file each: the Helper's conversation
+
+
+def read_json(path):
+    try:
+        with open(os.path.expanduser(path)) as f:
+            got = json.load(f)
+            return got if isinstance(got, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def helper(most=60):
+    """The Helper's conversation, the oldest first: every task an agent did through ACP, with its words, its steps and
+    what it asked, and every other entry of the journal (a "Do it" in a terminal, a setting an AI changed)."""
+    out, seen = [], set()
+    entries = journal_read()
+    by_log = {e.get("log"): e for e in entries if e.get("log")}
+    for path in sorted(glob.glob(os.path.join(HELPER, "*.jsonl")))[-most:]:
+        t = {"log": path, "steps": [], "state": "running"}
+        try:
+            with open(path) as f:
+                lines = f.read().splitlines()
+        except OSError:
+            continue
+        words = ""
+        for line in lines:
+            try:
+                d = json.loads(line)
+            except ValueError:
+                continue
+            if d.get("t") == "start":
+                t.update(agent=d.get("agent", ""), task=d.get("task", ""), dir=d.get("dir", ""))
+            elif d.get("t") == "update":
+                u = d.get("u") or {}
+                kind = u.get("sessionUpdate")
+                if kind == "agent_message_chunk":
+                    words += (u.get("content") or {}).get("text", "")
+                    continue
+                if words:
+                    t["steps"].append({"kind": "text", "text": words})
+                    words = ""
+                if kind == "tool_call":
+                    t["steps"].append({"kind": "tool", "text": u.get("title", "")})
+                elif kind == "plan":
+                    t["steps"].append({"kind": "plan", "text": "\n".join(e.get("content", "") for e in u.get("entries") or [])})
+            elif d.get("t") == "ask":
+                if words:
+                    t["steps"].append({"kind": "text", "text": words})
+                    words = ""
+                t["steps"].append({"kind": "ask", "text": d.get("title", ""), "answer": d.get("answer", "")})
+            elif d.get("t") == "turn":
+                if words:
+                    t["steps"].append({"kind": "text", "text": words})
+                    words = ""
+                t["state"] = "waiting"                         # its answer is done: the person may go on
+            elif d.get("t") == "you":
+                t["steps"].append({"kind": "you", "text": d.get("text", "")})
+                t["state"] = "running"
+            elif d.get("t") == "end":
+                t["state"] = "error" if d.get("error") else "done"
+                if d.get("error"):
+                    t["error"] = d["error"]
+        if words:
+            t["steps"].append({"kind": "text", "text": words})
+        # the task said as it was given, without what LatteOS puts before it
+        t["task"] = t.get("task", "").split("The task:", 1)[-1].strip()
+        e = by_log.get(path)
+        if e:
+            t.update(at=e.get("at", ""), n=len(e.get("items") or []) + e.get("more", 0))
+            seen.add(path)
+        else:
+            stamp = os.path.basename(path)[:15]
+            t["at"] = "%s-%s-%sT%s:%s:%s" % (stamp[0:4], stamp[4:6], stamp[6:8], stamp[9:11], stamp[11:13], stamp[13:15])
+        out.append(t)
+    for e in entries:
+        if not e.get("log"):
+            out.append({"at": e.get("at", ""), "agent": e.get("ai", ""), "app": e.get("app", ""), "task": e.get("task", ""),
+                        "dir": e.get("where", ""), "did": e.get("did", ""), "n": len(e.get("items") or []) + e.get("more", 0), "state": "done", "steps": []})
+    return sorted(out, key=lambda t: t.get("at", ""))[-most:]
 
 
 # what each agent keeps of its own (its sign-in, its sessions, its updates): the only places outside the task's folder it
@@ -1741,9 +1837,20 @@ def do(task, who="", where=""):
         return {"ok": False, "agent": who, "sandbox": False}
     # ponytail: every agent here is a service's; one with a local model gets no network unless allowed (latte-skill allow net)
     net = True
+    here = where if os.path.isdir(where) else os.path.expanduser("~")
+    # through ACP when its adapter is here (crates/latte-acp): the work shows in LensAI's Helper, each step it asks for
+    # is the person's (ROADMAP 10B.71); else its own tool in a terminal, as before
+    acp = [shutil.which(x, path=SEARCH) or x for x in ACP.get(who, [])]
+    if task.strip() and acp and shutil.which(acp[0], path=SEARCH) and shutil.which("latte-acp", path=SEARCH):
+        os.makedirs(HELPER, exist_ok=True)
+        log = os.path.join(HELPER, datetime.datetime.now().strftime("%Y%m%d-%H%M%S-%f") + ".jsonl")
+        env = dict(os.environ, PATH=SEARCH, LATTE_ACP_LOG=log, LATTE_ACP_IN=log + ".in", LATTE_APP_NAME=os.environ.get("LATTE_APP_NAME") or "LensAI",
+                   LATTE_ACP_AUTH=ACP_AUTH.get(who, lambda: "")())
+        subprocess.Popen([shutil.which("latte-acp", path=SEARCH), here, name, ACP_FIRST % language() + task, "--"] + sandbox(who, where, net) + acp,
+                         start_new_session=True, stdin=subprocess.DEVNULL, stdout=open(log, "w"), stderr=subprocess.DEVNULL, cwd=here, env=env)
+        return {"ok": True, "agent": who, "log": log}
     argv = DOERS[who]["argv"](first_words() + task) if task.strip() else DOERS[who]["argv"]("")[:-1]
     argv[0] = shutil.which(argv[0], path=SEARCH) or argv[0]
-    here = where if os.path.isdir(where) else os.path.expanduser("~")
     journal_add({"app": os.environ.get("LATTE_APP_NAME") or "LensAI", "ai": name, "task": task, "did": T("Handed to the agent"), "where": here})
     subprocess.Popen(["foot", "--title", name, "--working-directory", here, "--"] + sandbox(who, where, net) + argv,
                      start_new_session=True, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
@@ -2689,6 +2796,17 @@ def main(a):
         return 0 if r["ok"] else 1
     if a[:1] == ["journal"]:
         return journal_main(a[1:])
+    if a == ["helper"]:
+        print(json.dumps(helper(), ensure_ascii=False))
+        return 0
+    if a[:1] == ["helper"] and len(a) in (3, 4) and a[1] in ("say", "end"):
+        # the person's next words to a task that waits for them, or its end; only a log of the Helper's own
+        log = os.path.realpath(a[2])
+        if os.path.dirname(log) != os.path.realpath(HELPER) or not log.endswith(".jsonl") or (a[1] == "say") != (len(a) == 4):
+            return 2
+        with open(log + ".in", "a") as f:
+            f.write((" ".join(a[3].split()) if a[1] == "say" else "\u0004") + "\n")
+        return 0
     if a == ["running"]:
         print(json.dumps(running(), ensure_ascii=False))
         return 0

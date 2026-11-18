@@ -192,11 +192,16 @@ ShellRoot {
     property var agents: ({ services: [], stats: {}, doers: [], ideas: [] })
     // the helpers (Omarchy's toggles and Setup › Defaults): who does the work, and what can be turned off
     Ask { id: helpersq; onDone: shell.helpers = data || shell.helpers }
-    // what the AI changed (latte-ai journal, ROADMAP 10B.69): the helper's conversation on the agents' page
-    property var journal: []
-    Ask { id: journalq; onDone: shell.journal = data || [] }
+    // the Helper on the agents' page (ROADMAP 10B.69, 10B.71): while a task works every two seconds, else every half minute
+    // the Helper's conversation (latte-ai helper): tasks through ACP with their steps, and the journal's other entries
+    property var helped: []
+    readonly property var helpLast: helped.length ? helped[helped.length - 1] : null
+    readonly property bool helpWaits: !!helpLast && helpLast.state === "waiting" && !!helpLast.log
+    readonly property bool helpBusy: helped.some(t => t.state === "running")
+    Ask { id: helperq; onDone: shell.helped = data || [] }
+    Process { id: helpSay }
     // while the agents' page is open: at once, and every half minute what came since (an app may write any time)
-    Timer { interval: 30000; repeat: true; triggeredOnStart: true; running: shell.page === "agents"; onTriggered: journalq.ask(["journal"]) }
+    Timer { interval: shell.helpBusy ? 2000 : 30000; repeat: true; triggeredOnStart: true; running: shell.page === "agents"; onTriggered: helperq.ask(["helper"]) }
 
     property var helpers: ({ ai: true, agent: "", agents: [], helper: "local", local: "", haiku: [], switches: [], muted: [] })
     Process { id: helperSet; onExited: helpersq.ask(["helpers"]) }
@@ -1036,7 +1041,7 @@ ShellRoot {
             Column { id: agentCol; x: 28; y: 24; width: Math.min(parent.width - 56, 760); spacing: 14
                 // ── the helper: one endless conversation of every small "Do it" (Chapolera, DualBrew, LensGoo, the AI cursor),
                 // the oldest at the top, each task set off by a line; beside each, its changes in a window of their own
-                // (goo/journal.plm, the user 18. 11.). The agent's own replies come with ACP (ROADMAP 10B.69) ──
+                // (goo/journal.plm, the user 18. 11.). A task through ACP shows the agent's words and steps (ROADMAP 10B.71) ──
                 Rectangle { width: agentCol.width; height: 420; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
                     Item { x: 18; y: 12; width: parent.width - 36; height: 36
                         Row { spacing: 10; anchors.verticalCenter: parent.verticalCenter
@@ -1046,30 +1051,53 @@ ShellRoot {
                                onPressed: Quickshell.execDetached(["latte-journal"]) } }
                     ListView { ScrollGrip {} id: helperTalk; x: 18; y: 56; width: parent.width - 36; height: parent.height - 56 - 64; clip: true; spacing: 10
                                boundsBehavior: Flickable.StopAtBounds
-                               model: shell.journal.slice().reverse()
+                               model: shell.helped
                                onCountChanged: Qt.callLater(positionViewAtEnd)
-                        delegate: Column { id: hm; required property var modelData; required property int index; width: helperTalk.width; spacing: 6
-                            readonly property int n: (modelData.items || []).length + (modelData.more || 0)
+                        delegate: Column { id: hm; required property var modelData; required property int index; width: helperTalk.width - 16; spacing: 6
+                            onHeightChanged: if (hm.index === helperTalk.count - 1) Qt.callLater(helperTalk.positionViewAtEnd)
                             Rectangle { width: parent.width; height: 1; color: Theme.line; visible: hm.index > 0 }
-                            // what was asked: the person's words at the right, as in a conversation
-                            Rectangle { visible: !!hm.modelData.task; anchors.right: parent.right; width: Math.min(parent.width * 0.75, hmTask.implicitWidth + 24); height: hmTask.implicitHeight + 16; radius: 12; color: Theme.raised
-                                Label { id: hmTask; x: 12; y: 8; width: Math.min(helperTalk.width * 0.75 - 24, implicitWidth); wrapMode: Text.WordWrap; text: hm.modelData.task || "" } }
-                            // what the AI did: who, where, when, and its changes in their window
-                            Item { width: parent.width; height: Math.max(hmDid.implicitHeight, 32)
-                                Column { id: hmDid; width: parent.width - hmShow.width - 12; spacing: 2; anchors.verticalCenter: parent.verticalCenter
-                                    Label { width: parent.width; wrapMode: Text.WordWrap; font.weight: 700; font.pixelSize: 14
-                                            text: (hm.modelData.did || "") + (hm.n ? " · " + I18n.tr("{n} items", { n: hm.n }) : "") }
-                                    Label { width: parent.width; elide: Text.ElideMiddle; color: Theme.dim; font.pixelSize: 12
-                                            text: [hm.modelData.app, hm.modelData.ai, hm.modelData.where ? String(hm.modelData.where).replace(Quickshell.env("HOME"), "~") : "",
-                                                   String(hm.modelData.at || "").replace("T", " ").slice(0, 16)].filter(x => x).join(" · ") } }
-                                Pill { id: hmShow; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; implicitHeight: 30; icon: "list"; text: I18n.tr("What changed")
-                                       visible: hm.n > 0; onPressed: Quickshell.execDetached(["latte-journal", hm.modelData.at]) } } } }
-                    Label { visible: shell.journal.length === 0; x: 18; y: 70; width: parent.width - 36; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
+                            // the task: the person's words at the right, as in a conversation
+                            Item { width: parent.width; height: hmTaskBox.visible ? hmTaskBox.height : 0
+                                Rectangle { id: hmTaskBox; visible: !!hm.modelData.task; anchors.right: parent.right; width: Math.min(parent.width * 0.75, hmTask.implicitWidth + 24); height: hmTask.implicitHeight + 16; radius: 12; color: Theme.raised
+                                    Label { id: hmTask; x: 12; y: 8; width: Math.min(hm.width * 0.75 - 24, implicitWidth); wrapMode: Text.WordWrap; text: hm.modelData.task || "" } } }
+                            // who, where, when, and its changes in their window
+                            Item { width: parent.width; height: 30
+                                Label { width: parent.width - hmShow.width - 12; elide: Text.ElideMiddle; color: Theme.dim; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter
+                                        text: [hm.modelData.agent, hm.modelData.app, hm.modelData.dir ? String(hm.modelData.dir).replace(Quickshell.env("HOME"), "~") : "",
+                                               String(hm.modelData.at || "").replace("T", " ").slice(0, 16)].filter(x => x).join(" · ") }
+                                Pill { id: hmShow; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; implicitHeight: 28; icon: "list"; text: I18n.tr("What changed")
+                                       visible: (hm.modelData.n || 0) > 0; onPressed: Quickshell.execDetached(["latte-journal", hm.modelData.at]) } }
+                            // a journal entry without a conversation (a "Do it" in a terminal, a setting): what was done
+                            Label { visible: !!hm.modelData.did && !(hm.modelData.steps || []).length; width: parent.width; wrapMode: Text.WordWrap; font.weight: 700; font.pixelSize: 14
+                                    text: (hm.modelData.did || "") + ((hm.modelData.n || 0) ? " · " + I18n.tr("{n} items", { n: hm.modelData.n }) : "") }
+                            // the agent's work, step by step: its words, the tools it used, what it asked and what was said
+                            Repeater { model: hm.modelData.steps || []
+                                Item { id: st; required property var modelData; width: hm.width
+                                    readonly property string kind: modelData.kind
+                                    height: kind === "text" || kind === "plan" ? stText.height : kind === "you" ? stYouBox.height : 22
+                                    TextEdit { id: stText; visible: st.kind === "text" || st.kind === "plan"; width: parent.width; readOnly: true; selectByMouse: true; wrapMode: Text.Wrap
+                                               textFormat: TextEdit.MarkdownText; text: visible ? st.modelData.text : ""; color: Theme.cream; font.family: Theme.font; font.pixelSize: 14; selectionColor: Theme.coffee }
+                                    Rectangle { id: stYouBox; visible: st.kind === "you"; anchors.right: parent.right; width: Math.min(parent.width * 0.75, stYou.implicitWidth + 24); height: stYou.implicitHeight + 16; radius: 12; color: Theme.raised
+                                        Label { id: stYou; x: 12; y: 8; width: Math.min(hm.width * 0.75 - 24, implicitWidth); wrapMode: Text.WordWrap; text: st.kind === "you" ? st.modelData.text : "" } }
+                                    Row { visible: st.kind === "tool" || st.kind === "ask"; spacing: 8; height: 22
+                                        Glyph { name: st.kind === "ask" ? (st.modelData.answer === "yes" ? "check" : "x") : "tool"; font.pixelSize: 13; anchors.verticalCenter: parent.verticalCenter
+                                                color: st.kind === "ask" ? (st.modelData.answer === "yes" ? Theme.ok : Theme.red) : Theme.faint }
+                                        Label { anchors.verticalCenter: parent.verticalCenter; font.pixelSize: 12; color: st.kind === "ask" ? Theme.cream : Theme.dim; elide: Text.ElideRight; width: Math.min(implicitWidth, hm.width - 30)
+                                                text: st.kind === "ask" ? I18n.tr(st.modelData.answer === "yes" ? "Allowed: {s}" : "Refused: {s}", { s: st.modelData.text }) : (st.modelData.text || "") } } } }
+                            Waiting { visible: hm.modelData.state === "running"; text: I18n.tr("Working…") }
+                            Label { visible: hm.modelData.state === "error"; width: parent.width; wrapMode: Text.WordWrap; color: Theme.red; font.pixelSize: 12; text: hm.modelData.error || "" } } }
+                    Label { visible: shell.helped.length === 0; x: 18; y: 70; width: parent.width - 36; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
                             text: I18n.tr("Nothing yet. Small tasks for the AI from every app (sorting photos, renaming files, a setting) come here, one under another; what each changed opens beside it.") }
-                    // a task of one's own, for the agent chosen below (latte-ai do: a plan first, nothing changed before your yes)
-                    Field { id: helperLine; x: 18; y: parent.height - 52; width: parent.width - 36; icon: "sparkles"; hint: I18n.tr("A task for your agent…")
-                            onAccepted: if (text.trim() !== "") { shell.doIt(text.trim(), ""); text = ""; journalSoon.restart() } }
-                    Timer { id: journalSoon; interval: 1500; onTriggered: journalq.ask(["journal"]) } }
+                    // the agent's answer done: the line goes on with it; "New task" ends it, and the line starts another (latte-ai do)
+                    Field { id: helperLine; x: 18; y: parent.height - 52; width: parent.width - 36 - (newTask.visible ? newTask.width + 8 : 0); icon: "sparkles"
+                            hint: shell.helpWaits ? I18n.tr("Answer the agent…") : I18n.tr("A task for your agent…")
+                            onAccepted: { const t = text.trim(); if (t === "") return
+                                          if (shell.helpWaits) { helpSay.command = ["latte-ai", "helper", "say", shell.helpLast.log, t]; helpSay.running = true }
+                                          else shell.doIt(t, "")
+                                          text = ""; journalSoon.restart() } }
+                    Pill { id: newTask; visible: shell.helpWaits; anchors.right: parent.right; anchors.rightMargin: 18; y: parent.height - 50; implicitHeight: 36; icon: "plus"; text: I18n.tr("New task")
+                           onPressed: { Quickshell.execDetached(["latte-ai", "helper", "end", shell.helpLast.log]); journalSoon.restart() } }
+                    Timer { id: journalSoon; interval: 1500; onTriggered: helperq.ask(["helper"]) } }
                 // what the counts add up to, one line at a time, as Omarchy's hero has it
                 Rectangle { width: parent.width; height: 96; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
                     Glyph { x: 22; anchors.verticalCenter: parent.verticalCenter; name: "robot"; font.pixelSize: 40; color: Theme.gold }

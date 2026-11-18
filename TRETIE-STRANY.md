@@ -103,3 +103,14 @@ inštaláciami; pri distribúcii sa kontroluje konkrétny Fedora build.
 - **OurAirports** (public domain, ourairports.com) — kódy IATA letísk pre „time in JFK“, ten istý súbor.
 - **Open-Meteo** (CC BY 4.0, open-meteo.com, nekomerčné použitie bez kľúča) — predpoveď pre „weather in …“ v `bin/latte-calc` (rovnako ju už používa `bin/latte-sky`); jediná vec Kalkulačky, ktorá potrebuje sieť.
 - **Transitous** (transitous.org, MOTIS; komunitná otvorená smerovacia služba verejnej dopravy, iba open-source a nekomerčné použitie, údaje majú vlastné licencie: transitous.org/sources) — spoje v `bin/latte-calc` („from Bratislava to Vienna“); sieť je potrebná. Podmienky a pokrytie: ROADMAP 6B.49.
+
+## LensAI: agenti, nástroje a pieskovisko (ROADMAP 10B.66–10B.71)
+
+- **agent-client-protocol** (Rust SDK, Apache-2.0, github.com/agentclientprotocol/rust-sdk) — protokol ACP v `crates/latte-acp`;
+  klient napísaný podľa jeho príkladu `yolo_one_shot_client` (ten všetko povolí, náš sa pýta).
+- **claude-agent-acp** (Apache-2.0, github.com/agentclientprotocol/claude-agent-acp) — adaptér Claude Code pre ACP; samostatný
+  program, inštaluje sa cez npm, LatteOS ho iba spúšťa.
+- **swarmclawai/mcp-gateway** (MIT) — vzor lenivých nástrojov (`mcp_tool_search`): `latte-mcp --lazy` ho píše nanovo (BM25).
+- **bubblewrap** (LGPL-2.0-or-later, github.com/containers/bubblewrap) — pieskovisko agentov (`latte-ai do`); systémový program.
+- Vzory správania bez prevzatého kódu: Qt WebEngine lifecycle example (uspávanie webov), Vivaldi Memory Saver a Ferdium
+  (Apache-2.0; kto spí skôr), GNOME AdwAboutDialog a KDE KAboutData (poradie častí stránky O aplikácii), Windows 11 (posuvník).
