@@ -608,7 +608,7 @@ ShellRoot {
                 Rectangle { id: ak; required property var modelData; property bool armed: false; width: parent.width; height: akCol.implicitHeight + 28; radius: 18; color: Theme.raised; border.width: 2; border.color: Theme.gold
                     MouseArea { anchors.fill: parent }
                     Column { id: akCol; x: 18; y: 14; width: parent.width - 36 - akBtns.width - 12; spacing: 4
-                        Label { text: I18n.tr("{who} asks to change this computer", { who: ak.modelData.by }); color: Theme.gold; font.pixelSize: 12; font.weight: 700 }
+                        Label { text: I18n.tr((ak.modelData.args || {}).detail === undefined ? "{who} asks to change this computer" : "{who} asks for your permission", { who: ak.modelData.by }); color: Theme.gold; font.pixelSize: 12; font.weight: 700 }
                         Label { width: parent.width; wrapMode: Text.WordWrap; text: ak.modelData.label; font.pixelSize: 16; font.weight: 800 }
                         Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
                                 text: ak.modelData.what + (ak.modelData.to ? ": " + (ak.modelData.from ? ak.modelData.from + " → " : "") + ak.modelData.to : "") }     // a read (latte-skill allow) has no "to"
@@ -962,7 +962,7 @@ ShellRoot {
                         Repeater { model: shell.asks
                             Column { required property var modelData; width: parent.width; spacing: 6
                                 Label { width: parent.width; wrapMode: Text.WordWrap; font.pixelSize: 13; font.weight: 600; text: modelData.label }
-                                Label { width: parent.width; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 11; text: I18n.tr("{who} asks to change this computer", { who: modelData.by }) }
+                                Label { width: parent.width; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 11; text: I18n.tr((modelData.args || {}).detail === undefined ? "{who} asks to change this computer" : "{who} asks for your permission", { who: modelData.by }) }
                                 Row { spacing: 8
                                     Pill { implicitHeight: 30; icon: "x"; text: I18n.tr("Refuse"); onPressed: shell.answer(parent.parent.modelData.req, "no") }
                                     Pill { implicitHeight: 30; icon: "check"; strong: true; text: I18n.tr("Allow"); visible: !parent.parent.modelData.risky; onPressed: shell.answer(parent.parent.modelData.req, "yes") } } } }
@@ -1190,7 +1190,8 @@ ShellRoot {
                     I18n.tr("Local models: going back to a model already loaded takes seconds, not a new start, and a helper no longer pushes out the model you talk to."),
                     I18n.tr("Local models use as much of the graphics card as is free when they load, so a running game leaves them less instead of a crash."),
                     I18n.tr("A local model idle for five minutes gives its memory back."),
-                    I18n.tr("The services' pages sleep: the two you use most stay awake, another one is paused after five minutes out of sight and gives its memory back after fifteen. Chosen again, it loads where it was.")]
+                    I18n.tr("The services' pages sleep: the two you use most stay awake, another one is paused after five minutes out of sight and gives its memory back after fifteen. Chosen again, it loads where it was."),
+                    I18n.tr("Agents run in a sandbox: they write only in the task's folder, and the internet is theirs only once you allow it, until you log out. What you allow lasts for the session.")]
             hasTips: true; onTipsAgain: shell.showTips()
             license: I18n.tr("GNU General Public License, version 3 or later")
             source: "https://github.com/arkaysk/LatteOS-v0x-Jihlavanka"

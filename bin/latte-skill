@@ -12,8 +12,8 @@ command, so that every AI reaches the same ones through bin/latte-mcp.
   latte-skill ask ID JSON --by WHO the change asked for by an AI: LensAI shows it and the person allows or refuses it
                                    there; allowed, it is done. {"ok", "answer": "yes" | "no" | "timeout" | "invalid"}
   latte-skill allow ID TEXT --by WHO   what an AI wants to read or send (bin/latte-mcp: conversations, conversation,
-                                   windows, ask), asked in LensAI as a change is; nothing is done here.
-                                   {"ok", "answer": "yes" | "no" | "timeout" | "invalid"}
+                                   windows, ask; bin/latte-ai do: net), asked in LensAI as a change is, once a session:
+                                   allowed, not asked again until logout. {"ok", "answer": "yes" | "no" | "timeout" | "invalid"}
   latte-skill asks                 what waits for the person now: [{"req", "by", "label", "what", "from", "to", "at"}]
   latte-skill answer REQ yes|no    the person's word (LensAI's buttons)
   latte-skill do ID JSON [--by WHO]   does it at once: for what the person asked for themselves
@@ -37,6 +37,11 @@ GOO = os.path.join(os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.loc
 HYPRCTL = None
 ASKS = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "latteos", "asks")
 WAIT = 120                      # how long an AI's request waits for the person
+# where the session keeps its own (gone at logout), read-only to an agent in its sandbox (bin/latte-ai do): the person's
+# answers, so that an agent cannot answer its own request, and what was allowed for this session (the user, 18. 11.)
+RUN = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/run/user/%d" % os.getuid(), "latteos")
+ANSWERS = os.path.join(RUN, "answers")
+GRANTS = os.path.join(RUN, "ai-grants.json")
 PROFILES = {"power-saver": "Power saver", "balanced": "Balanced", "performance": "Performance"}
 
 
@@ -291,7 +296,7 @@ def pending():
             continue
         if r.get("at", 0) < time.time() - WAIT - 10:          # nobody waits for it any more
             os.remove(path)
-        elif "answer" not in r:
+        elif not os.path.exists(os.path.join(ANSWERS, r["req"])):
             found.append(r)
     return found
 
@@ -309,13 +314,34 @@ def keep(r):
 READS = {"conversations": "Read the list of your conversations with every AI",
          "conversation": "Read one of your conversations whole",
          "windows": "See the titles of the open windows",
-         "ask": "Send a question to another AI, on your account"}
+         "ask": "Send a question to another AI, on your account",
+         "net": "Use the internet"}
+
+
+def grants():
+    try:
+        with open(GRANTS) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
 
 
 def allow(ident, detail, by):
+    """Asked once a session (the user, 18. 11.: a permission lasts for the session unless said otherwise): once allowed,
+    the same AI is not asked again for the same thing until the person logs out."""
     if ident not in READS:
         return {"ok": False, "answer": "invalid"}
+    key = by + "|" + ident
+    if key in grants():
+        journal(by, ident, {"detail": detail[:400]}, "allowed for the session")
+        return {"ok": True, "answer": "yes", "session": True}
     answer = wait({"label": T(READS[ident]), "what": detail[:400], "from": None, "to": None}, by, ident, {"detail": detail[:400]})
+    if answer == "yes":
+        g = dict(grants(), **{key: time.time()})
+        os.makedirs(RUN, exist_ok=True)
+        with open(GRANTS + ".%d.new" % os.getpid(), "w") as f:
+            json.dump(g, f)
+        os.replace(GRANTS + ".%d.new" % os.getpid(), GRANTS)
     return {"ok": answer == "yes", "answer": answer}
 
 
@@ -335,20 +361,21 @@ def wait(said, by, ident, a):
     journal(by, ident, a, "asked")
     # LensAI shows it (already open, this starts no second one); the person answers there
     subprocess.Popen(["latte-app", "aicenter"], start_new_session=True, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    answer, end = "timeout", time.time() + WAIT
+    answer, end, heard = "timeout", time.time() + WAIT, os.path.join(ANSWERS, os.path.basename(path)[:-5])
     while time.time() < end:
         time.sleep(0.5)
         try:
-            with open(path) as f:
-                answer = json.load(f).get("answer", "timeout")
-        except (OSError, ValueError):
+            with open(heard) as f:
+                answer = f.read().strip()
             break
-        if answer != "timeout":
-            break
-    try:
-        os.remove(path)
-    except OSError:
-        pass
+        except OSError:
+            if not os.path.exists(path):
+                break
+    for f in (path, heard):
+        try:
+            os.remove(f)
+        except OSError:
+            pass
     journal(by, ident, a, "allowed" if answer == "yes" else "refused" if answer == "no" else "not answered")
     return answer
 
@@ -376,7 +403,9 @@ def main(a):
         r = next((r for r in pending() if r["req"] == a[1]), None)
         if not r:
             return 1
-        keep(dict(r, answer=a[2]))
+        os.makedirs(ANSWERS, exist_ok=True)
+        with open(os.path.join(ANSWERS, a[1]), "w") as f:
+            f.write(a[2])
         return 0
     if len(a) == 3 and a[0] == "allow":
         r = allow(a[1], a[2], by or "AI")

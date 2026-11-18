@@ -1683,18 +1683,57 @@ def doers():
     return sorted(there, key=lambda i: i != chosen)
 
 
+# what each agent keeps of its own (its sign-in, its sessions, its updates): the only places outside the task's folder it
+# may write in its sandbox
+AGENT_STATE = {"claude": ["~/.claude", "~/.claude.json", "~/.claude.json.backup", "~/.local/share/claude", "~/.local/state/claude", "~/.cache/claude"],
+               "chatgpt": ["~/.codex"], "gemini": ["~/.gemini"]}
+
+
+def sandbox(who, work, net):
+    """The agent in bubblewrap (as Flatpak and Claude Code's own sandbox-runtime run things; the policy is LatteOS's):
+    the whole system to read, to write only the task's folder, the agent's own state and LatteOS's (its requests to the
+    person, ~/.local/state/latteos), a /tmp of its own, and no network unless it was allowed. The person's answers and
+    what they allowed are in the session's runtime folder, read-only here: an agent cannot allow itself anything."""
+    rw = [p for p in map(os.path.expanduser, AGENT_STATE.get(who, []) + ["~/.local/state/latteos"]) if os.path.exists(p)]
+    rw += [work] if work and os.path.isdir(work) else []
+    out = [shutil.which("bwrap"), "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--tmpfs", "/tmp", "--die-with-parent"]
+    for p in rw:
+        out += ["--bind", p, p]
+    # ponytail: the network is all or nothing (bubblewrap); only the agent's own service would need a proxy (srt's way)
+    return out + ([] if net else ["--unshare-net"]) + ["--"]
+
+
 def do(task, who="", where=""):
-    """Starts the agent on the task in a terminal; who: one of DOERS, else the chosen one."""
+    """Starts the agent on the task in a terminal, in its sandbox; who: one of DOERS, else the chosen one. The internet
+    only when the person allows it, once a session (the user, 18. 11.): every agent here reaches its service by it."""
     can = doers()
     who = who if who in can else (can[0] if can else "")
     if not who:
         return {"ok": False, "agent": ""}
+    name = DOERS[who]["name"]
+    if not shutil.which("bwrap"):
+        notify(T("{n} was not started").replace("{n}", name), T("Its sandbox (bubblewrap) is not installed."))
+        return {"ok": False, "agent": who, "sandbox": False}
+    try:
+        net = json.loads(subprocess.run(["latte-skill", "allow", "net", T("{n} reaches its service over the internet. Allowed until you log out.").replace("{n}", name),
+                                         "--by", name], capture_output=True, text=True, timeout=150, env=dict(os.environ, PATH=SEARCH)).stdout or "{}").get("ok")
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        net = False
+    if not net:
+        notify(T("{n} was not started").replace("{n}", name), T("Without the internet it cannot reach its service."))
+        return {"ok": False, "agent": who, "net": False}
     argv = DOERS[who]["argv"](first_words() + task) if task.strip() else DOERS[who]["argv"]("")[:-1]
     argv[0] = shutil.which(argv[0], path=SEARCH) or argv[0]
-    subprocess.Popen(["foot", "--title", DOERS[who]["name"], "--working-directory", where if os.path.isdir(where) else os.path.expanduser("~"), "--"] + argv,
+    here = where if os.path.isdir(where) else os.path.expanduser("~")
+    subprocess.Popen(["foot", "--title", name, "--working-directory", here, "--"] + sandbox(who, where, net) + argv,
                      start_new_session=True, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                      env=dict(os.environ, PATH=SEARCH))
     return {"ok": True, "agent": who}
+
+
+def notify(title, body):
+    if shutil.which("notify-send"):
+        subprocess.Popen(["notify-send", "-a", "LensAI", title, body], start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 # the agents' programs as they run: by the name of the program, or of the script node or python runs

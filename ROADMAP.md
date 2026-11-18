@@ -3543,6 +3543,15 @@ ostávajú bdelé, iná po 5 min mimo pohľadu Frozen, po 15 min Discarded; jej 
 pod „Otváram…“, kým sa znova načíta. Namerané (8 webov, skrátené časy): 3 778 MB → 1 215 MB PSS; prebudenie Mistralu overené
 kliknutím, prihlásenie ostalo. Chýba: časy v Nastaveniach › Web, výnimka „nikdy neuspať“ pri službe.
 
+**10B.66** [x] 18. 11. **Pieskovisko agentov a povolenia na reláciu** (krok 3 syntézy; používateľ 18. 11.: internet „zapnúť na
+požiadanie“, povolenie predvolene platí iba pre reláciu): „Urob to“ (`latte-ai do`) spúšťa agenta v **bubblewrap** — celý systém
+iba na čítanie, zápis iba do priečinka úlohy (`--in`), do vlastného stavu agenta (`~/.claude`…) a `~/.local/state/latteos`, vlastný
+`/tmp`; internet až po povolení v LensAI. `latte-skill allow` si povolenie pamätá do odhlásenia (`$XDG_RUNTIME_DIR/latteos/ai-grants.json`);
+odpovede osoby sú tiež tam (`answers/`), mimo dosahu pieskoviska, takže agent si nemôže sám povoliť. Overené: Claude Code v pieskovisku
+zapísal do priečinka úlohy, do `~` dostal EROFS; zápis odpovede z pieskoviska EROFS; druhé povolenie v relácii 0,2 s bez otázky.
+Chýba: sieť iba k službe agenta (proxy), D-Bus je naďalej otvorený, trvalé „Vždy“ a zoznam povolení v Nastaveniach; súbor politiky
+`ai-policy.json` (zámok projektu) s krokom 6.
+
 ### 10C. [ ] Heidelberg
 
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví

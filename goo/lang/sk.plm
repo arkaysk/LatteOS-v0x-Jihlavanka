@@ -3066,5 +3066,12 @@ library Slovak {
         "Local models use as much of the graphics card as is free when they load, so a running game leaves them less instead of a crash." = "Lokálne modely použijú z grafickej karty toľko, koľko je pri načítaní voľné, takže spustená hra im nechá menej namiesto pádu."
         "A local model idle for five minutes gives its memory back." = "Lokálny model nečinný päť minút vráti svoju pamäť."
         "The services' pages sleep: the two you use most stay awake, another one is paused after five minutes out of sight and gives its memory back after fifteen. Chosen again, it loads where it was." = "Stránky služieb spia: dve najpoužívanejšie ostávajú bdelé, ostatné sa po piatich minútach mimo pohľadu pozastavia a po pätnástich vrátia pamäť. Keď ich znova vyberieš, načítajú sa tam, kde boli."
+        "Use the internet" = "Používať internet"
+        "{n} was not started" = "{n} sa nespustil"
+        "Its sandbox (bubblewrap) is not installed." = "Jeho pieskovisko (bubblewrap) nie je nainštalované."
+        "{n} reaches its service over the internet. Allowed until you log out." = "{n} sa k svojej službe dostane cez internet. Povolené do odhlásenia."
+        "Without the internet it cannot reach its service." = "Bez internetu sa k svojej službe nedostane."
+        "Agents run in a sandbox: they write only in the task's folder, and the internet is theirs only once you allow it, until you log out. What you allow lasts for the session." = "Agenti bežia v pieskovisku: zapisujú iba do priečinka úlohy a internet dostanú, až keď ho povolíš, do odhlásenia. Čo povolíš, platí počas relácie."
+        "{who} asks for your permission" = "{who} žiada o tvoje povolenie"
     }
 }
