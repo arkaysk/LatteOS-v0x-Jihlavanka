@@ -3595,6 +3595,10 @@ Gemini `--acp`), inak terminál ako doteraz. Pomocník ukazuje úlohu, slová ag
 s „Nová úloha“. **Overené 18. 11.:** Claude Code v pieskovisku cez ACP — čítanie bez otázky, zápis `c.txt` čakal na povolenie, po
 Zamietnuť súbor nevznikol a agent to povedal. **Chýba:** inštalácia adaptérov z LensAI (Nastavenia › CLI), Gemini na latte-lab nemá kľúč
 (nevyskúšané), diff zmien v okne zmien, zápisy Chapolery a DualBrew cez Pomocníka.
+  **Oprava 18. 11. (používateľ: súbor na ploche trikrát povolený a nevznikol):** pieskovisko držalo domov iba na čítanie a zápis dovolilo
+iba do priečinka úlohy; keďže teraz každú zmenu povoľuje človek (ACP), domov je zapisovateľný okrem `SEALED` (~/.ssh, ~/.gnupg,
+~/.bashrc, ~/.profile, ~/.config/autostart, ~/.config/systemd, ~/.config/pleamar, ~/.config/latteos, kľúčenky, ~/.local/bin…);
+odpovede a povolenia v `$XDG_RUNTIME_DIR/latteos` ostávajú agentovi iba na čítanie. Overené: zápis na Plochu áno, ~/.bashrc a odpovede nie.
 
 ### 10C. [ ] Heidelberg
 

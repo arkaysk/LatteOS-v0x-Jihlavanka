@@ -1803,22 +1803,26 @@ def helper(most=60):
     return sorted(out, key=lambda t: t.get("at", ""))[-most:]
 
 
-# what each agent keeps of its own (its sign-in, its sessions, its updates): the only places outside the task's folder it
-# may write in its sandbox
-AGENT_STATE = {"claude": ["~/.claude", "~/.claude.json", "~/.claude.json.backup", "~/.local/share/claude", "~/.local/state/claude", "~/.cache/claude"],
-               "chatgpt": ["~/.codex"], "gemini": ["~/.gemini"]}
+# what an agent never writes, even where the person's files are: what runs at the next login or holds a secret, and
+# LatteOS's own rules — a change there could outlive the task without the person seeing it
+SEALED = ["~/.ssh", "~/.gnupg", "~/.bashrc", "~/.bash_profile", "~/.profile", "~/.zshrc", "~/.config/autostart", "~/.config/systemd",
+          "~/.config/environment.d", "~/.config/pleamar", "~/.config/latteos", "~/.local/share/keyrings", "~/.local/share/applications",
+          "~/.local/bin"]
 
 
 def sandbox(who, work, net):
     """The agent in bubblewrap (as Flatpak and Claude Code's own sandbox-runtime run things; the policy is LatteOS's):
-    the whole system to read, to write only the task's folder, the agent's own state and LatteOS's (its requests to the
-    person, ~/.local/state/latteos), a /tmp of its own, and no network unless it was allowed. The person's answers and
-    what they allowed are in the session's runtime folder, read-only here: an agent cannot allow itself anything."""
-    rw = [p for p in map(os.path.expanduser, AGENT_STATE.get(who, []) + ["~/.local/state/latteos"]) if os.path.exists(p)]
-    rw += [work] if work and os.path.isdir(work) else []
-    out = [shutil.which("bwrap"), "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--tmpfs", "/tmp", "--die-with-parent"]
-    for p in rw:
-        out += ["--bind", p, p]
+    the system to read; the person's home to write, since every change is asked in LensAI first (the user, 18. 11.: a file
+    on the desktop allowed three times and still refused was the read-only home), except what is SEALED; a /tmp of its
+    own; no network unless it was allowed. The person's answers and what they allowed are in the session's runtime
+    folder, read-only here: an agent cannot allow itself anything."""
+    home = os.path.expanduser("~")
+    out = [shutil.which("bwrap"), "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--tmpfs", "/tmp", "--die-with-parent",
+           "--bind", home, home]
+    for p in [p for p in map(os.path.expanduser, SEALED) if os.path.exists(p)]:
+        out += ["--ro-bind", p, p]
+    if work and os.path.isdir(work) and not os.path.realpath(work).startswith(home + os.sep):
+        out += ["--bind", work, work]          # a task's folder elsewhere (a disk of its own)
     # ponytail: the network is all or nothing (bubblewrap); only the agent's own service would need a proxy (srt's way)
     return out + ([] if net else ["--unshare-net"]) + ["--"]
 
