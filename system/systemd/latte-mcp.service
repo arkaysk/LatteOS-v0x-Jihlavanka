@@ -1,0 +1,11 @@
+# LatteOS's tools for the agents (bin/latte-mcp) over HTTP on 127.0.0.1:8791, with the token of
+# ~/.config/latteos/mcp-token: for Agent Chats, started with it from LensAI (ROADMAP 10B.68)
+[Unit]
+Description=LatteOS MCP over HTTP
+PartOf=latte-session.target
+After=latte-session.target
+
+[Service]
+ExecStart=/usr/bin/latte-mcp http
+Restart=on-failure
+RestartSec=2

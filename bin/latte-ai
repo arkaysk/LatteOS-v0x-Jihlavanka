@@ -785,6 +785,10 @@ def local_start(model):
         known = None
     if known is None or changed or name not in known:
         subprocess.run(["pkill", "-f", "llama-server.*--port %d" % LOCAL_PORT])
+        for _ in range(40):                                    # the old one lets go of the port first, or the new one cannot take it
+            if subprocess.run(["pgrep", "-f", "llama-server.*--port %d" % LOCAL_PORT], capture_output=True).returncode:
+                break
+            time.sleep(0.25)
         try:
             proc = subprocess.Popen([local_server(), "--models-preset", ROUTER_PRESET, "--models-max", "2", "--models-memory-margin", "1024",
                                      "--host", "127.0.0.1", "--port", str(LOCAL_PORT)],
@@ -861,7 +865,7 @@ TOOLS_WORD = ("\n\nYou have tools of this computer. What they can tell (what a s
 ROUNDS = 6                      # how many times one answer may go for tools
 
 
-def tools_open(who):
+def tools_open(who, lazy=False):
     """(the tools, call(name, args) → text, close) or None: without python3-mcp or latte-mcp, and for an AI that
     another AI asked (LATTE_NO_TOOLS: it answers, it does not ask on)."""
     if os.environ.get("LATTE_NO_TOOLS") or turned_off() or not shutil.which("latte-mcp", path=SEARCH):
@@ -876,7 +880,7 @@ def tools_open(who):
 
     async def life():               # the session lives in a thread of its own until the answer is done
         try:
-            server = StdioServerParameters(command=shutil.which("latte-mcp", path=SEARCH), env=dict(os.environ, PATH=SEARCH))
+            server = StdioServerParameters(command=shutil.which("latte-mcp", path=SEARCH), args=["--lazy"] if lazy else [], env=dict(os.environ, PATH=SEARCH))
             async with stdio_client(server, errlog=open(os.devnull, "w")) as (r, w):
                 async with ClientSession(r, w, client_info=types.Implementation(name=who, version="1")) as s:
                     await s.initialize()
@@ -902,14 +906,24 @@ def tools_open(who):
     return box["tools"], call, lambda: loop.call_soon_threadsafe(box["done"].set)
 
 
-def converse(url, head, body, who, timeout=600, most=12000):
-    """chat_completion, and whenever the model asks for tools, the tools and the question again: (text, tokens)."""
+def converse(url, head, body, who, timeout=600, most=12000, window=0):
+    """chat_completion, and whenever the model asks for tools, the tools and the question again: (text, tokens).
+    `window`: a model's context; when every tool's form would take more than an eighth of it, the tools come behind
+    three (latte-mcp --lazy, ~260 tokens). Measured 18. 11.: Qwen3.5 4B finds and calls a tool that way, the 2B does
+    not — so the whole set while it fits (9 tools, ~920 tokens)."""
     import urllib.error
     opened = tools_open(who)
     if not opened:
         return chat_completion(url, head, body, timeout)[:2]
     tools, call, close = opened
     offer = [{"type": "function", "function": {"name": t.name, "description": t.description or "", "parameters": t.inputSchema}} for t in tools]
+    if window and len(json.dumps(offer)) / 4 > window / 8:
+        close()
+        opened = tools_open(who, lazy=True)
+        if not opened:
+            return chat_completion(url, head, body, timeout)[:2]
+        tools, call, close = opened
+        offer = [{"type": "function", "function": {"name": t.name, "description": t.description or "", "parameters": t.inputSchema}} for t in tools]
     talk, total, text = list(body["messages"]), 0, ""
     if talk and talk[0]["role"] == "system":       # a small model answers around a tool unless it is told it has them
         talk[0] = dict(talk[0], content=talk[0]["content"] + TOOLS_WORD)
@@ -993,7 +1007,7 @@ def local_ask(messages, model, effort, files, room):
     body = {"model": local_name(model), "messages": talk, "temperature": 0.5, "max_tokens": 1024, "repeat_penalty": 1.15, "chat_template_kwargs": {"enable_thinking": effort == "think"}}
     # tools only for a model whose template knows them, and their answers kept short: its window is small
     if gguf(model).get("tools"):
-        text, used = converse("http://127.0.0.1:%d/v1" % LOCAL_PORT, {}, body, PROVIDERS["local"]["name"], most=3000)
+        text, used = converse("http://127.0.0.1:%d/v1" % LOCAL_PORT, {}, body, PROVIDERS["local"]["name"], most=3000, window=model_settings(model)["ctx"])
     else:
         text, used = chat_completion("http://127.0.0.1:%d/v1" % LOCAL_PORT, {}, body)[:2]
     return text, True, {"context": used, "window": model_settings(model)["ctx"], "tokens": used, "cost": 0}

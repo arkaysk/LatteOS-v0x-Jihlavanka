@@ -3559,6 +3559,15 @@ textom, raz za odpoveď (`latte-skill allow … --once`, bez pamäti na reláciu
 jedna otázka, Claude odpovedal bez webu. Zoznam správ končí nad voľbou AI (predtým ju prekrýval). Chýba: web pre Gemini/Codex/Grok
 v Rozhovoroch, web pre lokálne LLM (SearXNG) s povolením na reláciu.
 
+**10B.68** [x] 18. 11. **latte-mcp: lenivé nástroje, záznam, HTTP** (krok 4 syntézy): `latte-mcp --lazy` dá namiesto všetkých foriem tri
+nástroje (`find_tools` BM25 podľa vzoru swarmclawai/mcp-gateway, `describe_tool`, `call_tool`): ~260 tokenov namiesto ~920. Lokálny model
+ich dostane sám, keď by formy zabrali viac ako osminu jeho okna (namerané: Qwen3.5 4B cez ne nástroj nájde a zavolá, 2B nie — preto pri 9
+nástrojoch ešte celá sada). Každé volanie do žurnálu (`journalctl -t latte-mcp`: kto, čo, výsledok). `latte-mcp http` na 127.0.0.1:8791
+s tokenom `~/.config/latteos/mcp-token` (0600; bez neho 401), služba `latte-mcp.service` štartuje s Agent Chats; adresu a kopírovanie
+tokenu ukazujú Konektory. Oprava: brána webu vracala štruktúrovaný výstup a Claude Code ho bral ako „chybu povolenia“ — teraz čistý text,
+overené (vyhľadanie prebehlo). Router po zmene nastavení čaká, kým starý pustí port. Chýba: profily nástrojov (Domácnosť, Súbory, Kód,
+Tvorba), ďalšie servery za latte-mcp a ich spúšťanie až pri prvom volaní (s krokom 8), pripojenie v Agent Chats ručne.
+
 ### 10C. [ ] Heidelberg
 
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví

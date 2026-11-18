@@ -775,6 +775,7 @@
 /usr/lib/systemd/user/latte-idle.service                <- system/systemd/latte-idle.service
 /usr/lib/systemd/user/latte-guardcorgi.service           <- system/systemd/latte-guardcorgi.service
 /usr/lib/systemd/user/latte-focus.service                <- system/systemd/latte-focus.service
+/usr/lib/systemd/user/latte-mcp.service                  <- system/systemd/latte-mcp.service
 /usr/lib/systemd/user/latte-netwatch.service             <- system/systemd/latte-netwatch.service
 /usr/lib/systemd/user/latte-netwatch.timer               <- system/systemd/latte-netwatch.timer
 /usr/lib/systemd/user/latte-calwatch.service            <- system/systemd/latte-calwatch.service

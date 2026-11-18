@@ -3,6 +3,10 @@
 It knows nothing itself: each tool is a thin cover over a command that is there already (latte-ai, pleamar-wm).
 
   latte-mcp                 serves on stdio: what an agent's tool (Claude Code, Codex, Gemini CLI) starts
+  latte-mcp --lazy          the same, behind three tools (find_tools, describe_tool, call_tool): a model with a small
+                            window gets ~300 tokens of tools instead of every schema, and opens what it needs
+  latte-mcp http [PORT]     the same over HTTP on 127.0.0.1 (8791), for Agent Chats: a request needs the token of
+                            ~/.config/latteos/mcp-token (Authorization: Bearer …), made the first time, readable by the user alone
   latte-mcp gate            serves one tool, `approve`: Claude Code's --permission-prompt-tool in LensAI's conversations,
                             where it may look on the web only when the person allows it there (bin/latte-ai claude)
   latte-mcp install|remove  writes it into, or takes it out of, the agents installed here, for this user
@@ -14,7 +18,7 @@ It reads: the conversations kept in LensAI, who can answer and what is left of t
 windows open. And it changes what bin/latte-skill names (the Wi-Fi, the volume, the brightness…), each change only
 after the person allowed it in LensAI: the confirmation is LatteOS's, never the agent's own.
 `ask` puts one question to another AI (latte-ai send): the one asked gets no tools and cannot ask on.
-With the AI turned off (Settings › AI) it serves nothing.
+With the AI turned off (Settings › AI) it serves nothing. Every call is written to the journal: journalctl -t latte-mcp.
 """
 import json
 import os
@@ -55,13 +59,50 @@ def told(argv, lines=False, timeout=30, **env):
         return {"error": "%s: %s" % (argv[0], e)}
 
 
+CALLER = {}       # who calls, when a tool is reached through call_tool (--lazy): its own Context is not that request's
+
+
+def caller(ctx):
+    try:
+        return CALLER.get("name") or ctx.session.client_params.clientInfo.name
+    except (AttributeError, ValueError):
+        return "AI"
+
+
+def logged(f):
+    """Each call into the journal, with who, what and whether it answered or failed (ROADMAP 10B.68: for GuardCorgi
+    and for what was done when)."""
+    import functools
+    import syslog
+
+    @functools.wraps(f)
+    def call(*a, **k):
+        out = f(*a, **k)
+        bad = isinstance(out, dict) and "error" in out
+        syslog.openlog("latte-mcp")
+        syslog.syslog("%s %s %s %s" % (caller(k.get("ctx")), f.__name__, json.dumps({x: y for x, y in k.items() if x != "ctx"}, ensure_ascii=False)[:300],
+                                       "failed" if bad else "answered"))
+        return out
+    return call
+
+
+def score(query, tools):
+    """The tools best for the words, by BM25 over each one's name and description (the search of swarmclawai/mcp-gateway's
+    mcp_tool_search, MIT, written anew): [(score, tool)], the best first, those that share no word left out."""
+    import math
+    import re
+    words = lambda t: re.findall(r"[a-z0-9]+", t.lower())
+    docs = [words(t["name"].replace("_", " ") + " " + t["description"]) for t in tools]
+    avg, q = sum(map(len, docs)) / max(1, len(docs)), set(words(query))
+    idf = {w: math.log(1 + (len(docs) - sum(w in d for d in docs) + 0.5) / (sum(w in d for d in docs) + 0.5)) for w in q}
+    found = [(sum(idf[w] * d.count(w) * 2.2 / (d.count(w) + 1.2 * (0.25 + 0.75 * len(d) / avg)) for w in q), t) for t, d in zip(tools, docs)]
+    return sorted([f for f in found if f[0] > 0], key=lambda f: -f[0])
+
+
 def allowed(ctx, what, detail):
     """The person's word in LensAI before an AI reads their conversations or windows or asks another AI (user 17. 11.):
     None when allowed, else what to answer the agent."""
-    try:
-        who = ctx.session.client_params.clientInfo.name
-    except AttributeError:
-        who = "AI"
+    who = caller(ctx)
     r = told(["latte-skill", "allow", what, detail, "--by", who], timeout=150)
     return None if isinstance(r, dict) and r.get("answer") == "yes" else {"error": "the user did not allow it", **(r if isinstance(r, dict) else {})}
 
@@ -123,13 +164,14 @@ def servers():
     return sorted(found.values(), key=lambda s: s["name"].lower())
 
 
-def serve():
+def serve(lazy=False, port=0):
     from mcp.server.fastmcp import Context, FastMCP
     server = FastMCP(NAME, instructions="LatteOS, the desktop this runs on: the user's conversations with every AI kept in LensAI, "
                                         "who can answer here, the agents at work and the windows open; and the small changes of `skills`, "
                                         "each done only after the user allowed it in LensAI.")
 
     @server.tool()
+    @logged
     def conversations(ctx: Context) -> list | dict:
         """The user's conversations with every AI, kept in LensAI, the newest first: id, title, provider, model, when
         it was last written to, how many messages, and where it began (from: lensai, lensgoo, lensshore).
@@ -140,6 +182,7 @@ def serve():
         return [c for c in found if not c.get("machine")] if isinstance(found, list) else found
 
     @server.tool()
+    @logged
     def conversation(id: str, ctx: Context) -> dict:
         """One conversation whole, by its id from `conversations`: its messages with who said each and when.
         The user allows it in LensAI first."""
@@ -150,6 +193,7 @@ def serve():
         return told(["latte-ai", "chat", id]) or {"error": "no such conversation"}
 
     @server.tool()
+    @logged
     def providers() -> list | dict:
         """Which AI can answer on this computer now (the services signed in, keys, the model that runs here), with
         the models of each; `local` true means the answer is made on this machine and nothing leaves it."""
@@ -157,18 +201,21 @@ def serve():
         return [{k: p[k] for k in ("id", "name", "local", "models")} for p in found] if isinstance(found, list) else found
 
     @server.tool()
+    @logged
     def usage() -> dict:
         """What each AI service tells of the account: the plan, the limits (the share used, 0 to 1, and when each
         starts again), and the tokens Claude Code used this week and today."""
         return told(["latte-ai", "agents"])
 
     @server.tool()
+    @logged
     def agents_at_work() -> list | dict:
         """The AI agents in this desktop's terminals: which one, in which folder, and whether it works, is ready, or
         asks the person something."""
         return told(["pleamar-wm", "agents", "--json"], lines=True)
 
     @server.tool()
+    @logged
     def windows(ctx: Context) -> dict:
         """The windows open on the desktop: program, title, where each is. Their contents are not read.
         The user allows it in LensAI first."""
@@ -180,6 +227,7 @@ def serve():
         return {"error": (done.stderr.strip() if done else "") or "the windows cannot be told here"}
 
     @server.tool()
+    @logged
     def skills() -> dict:
         """What LatteOS can change on this computer for the user (the Wi-Fi, Bluetooth, the volume, the brightness,
         the night light, the power mode, a network or a device to connect), how to ask for each (`use`), and what
@@ -187,18 +235,17 @@ def serve():
         return told(["latte-skill", "list"])
 
     @server.tool()
+    @logged
     def do_skill(skill: str, args: dict, ctx: Context) -> dict:
         """Asks the user to allow one change from `skills`, e.g. skill "volume", args {"level": 30}. LatteOS shows
         the user what would change, from what to what, and waits up to two minutes: answer "yes" means it was done
         (ok says whether it worked), "no" that the user refused, "timeout" that nobody answered, "invalid" that the
         skill or its argument is not one of `skills`. Do not ask again for what was refused."""
-        try:
-            who = ctx.session.client_params.clientInfo.name
-        except AttributeError:
-            who = "AI"
+        who = caller(ctx)
         return told(["latte-skill", "ask", skill, json.dumps(args), "--by", who], timeout=150)
 
     @server.tool()
+    @logged
     def ask(provider: str, model: str, question: str, ctx: Context) -> dict:
         """Asks another AI of `providers` (its id, and the id of one of its models) one question and gives its answer:
         a second opinion, or what that one knows or does better. One question, no conversation. It uses up the
@@ -211,7 +258,73 @@ def serve():
         r = told(["latte-ai", "send", "new", provider, model, question, "--from", "ask"], timeout=310, LATTE_NO_TOOLS="1")
         return {k: r[k] for k in ("answer", "ok") if k in r} if isinstance(r, dict) and "answer" in r else r
 
-    server.run()
+    if lazy:
+        server = lazily(server)
+    if not port:
+        server.run()
+        return
+    # over HTTP, on this computer only, and only with the token: any program of the user's could reach the port
+    import secrets
+    import uvicorn
+    path = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "mcp-token")
+    if not os.path.exists(path):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "w") as f:
+            f.write(secrets.token_urlsafe(32))
+    with open(path) as f:
+        token = f.read().strip()
+    app = server.streamable_http_app()
+
+    async def guarded(scope, receive, send):
+        if scope["type"] == "http" and not secrets.compare_digest(dict(scope["headers"]).get(b"authorization", b""), b"Bearer " + token.encode()):
+            await send({"type": "http.response.start", "status": 401, "headers": [(b"content-type", b"text/plain")]})
+            await send({"type": "http.response.body", "body": b"latte-mcp: the token of ~/.config/latteos/mcp-token is needed"})
+            return
+        await app(scope, receive, send)
+    uvicorn.run(guarded, host="127.0.0.1", port=port, log_level="warning")
+
+
+def lazily(full):
+    """The tools behind three: an AI with a small window finds the one it needs by words, reads its form, and calls it
+    (the "MCP gateway" pattern, lensAIplan.md 5.1)."""
+    from mcp.server.fastmcp import Context, FastMCP
+    front = FastMCP(NAME, instructions=full.instructions + " Find a tool by words with find_tools, read its form with "
+                                                            "describe_tool, then call it with call_tool.")
+
+    async def every():
+        return {t.name: t for t in await full.list_tools()}
+
+    @front.tool()
+    async def find_tools(words: str) -> list:
+        """The tools of LatteOS for these words (English works best), at most five, each with what it does. With no
+        match, every tool's name."""
+        tools = await every()
+        hit = score(words, [{"name": n, "description": t.description or ""} for n, t in tools.items()])[:5]
+        return [{"name": t["name"], "does": t["description"].split(". ")[0]} for _, t in hit] or [{"name": n} for n in tools]
+
+    @front.tool()
+    async def describe_tool(name: str) -> dict:
+        """What a tool does and the arguments it takes (a JSON schema), by its name from find_tools."""
+        t = (await every()).get(name)
+        return {"name": name, "description": t.description, "arguments": t.inputSchema} if t else {"error": "no tool " + name}
+
+    @front.tool(structured_output=False)
+    async def call_tool(name: str, ctx: Context, arguments: dict | None = None) -> str:
+        """Calls a tool by its name, with its arguments as describe_tool gives them; answers what the tool answers."""
+        if name not in await every():
+            return json.dumps({"error": "no tool " + name})
+        CALLER["name"] = caller(ctx)
+        try:
+            out = await full.call_tool(name, arguments or {})
+        except Exception as e:                      # a wrong argument: said to the model, which may try again
+            return json.dumps({"error": str(e)})
+        finally:
+            CALLER.clear()
+        if isinstance(out, tuple):
+            out = out[0]
+        return "\n".join(getattr(c, "text", "") for c in out) if isinstance(out, (list, tuple)) else json.dumps(out, ensure_ascii=False)
+
+    return front
 
 
 GATE = {"WebSearch": "query", "WebFetch": "url"}      # what the person is shown under "Look on the web": the search, or the page
@@ -224,7 +337,8 @@ def gate():
     from mcp.server.fastmcp import FastMCP
     server, said = FastMCP(NAME + "-gate"), {}
 
-    @server.tool()
+    # plain text: with structured output Claude Code finds no "behavior" in it and calls the answer invalid (18. 11.)
+    @server.tool(structured_output=False)
     def approve(tool_name: str, input: dict, tool_use_id: str = "") -> str:
         """LatteOS asks the person whether this tool may run. Not for the model to call."""
         if tool_name not in GATE:
@@ -240,11 +354,11 @@ def gate():
 
 
 def main(a):
-    if not a:
+    if a in ([], ["--lazy"]) or (a[:1] == ["http"] and len(a) <= 2 and all(x.isdigit() for x in a[1:])):
         if turned_off():
             print("latte-mcp: the AI of LatteOS is turned off (Settings › AI)", file=sys.stderr)
             return 1
-        serve()
+        serve(lazy=a == ["--lazy"], port=int(a[1]) if len(a) == 2 else 8791 if a == ["http"] else 0)
         return 0
     if a == ["gate"]:
         gate()

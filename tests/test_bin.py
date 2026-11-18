@@ -216,6 +216,13 @@ with tempfile.TemporaryDirectory() as d:
     assert not ai.switched_on("calendar-ai") and os.path.isfile(os.path.join(d, "toggles", "calendar-ai-off"))
     ai.switch("calendar-ai", "on")
     assert ai.switched_on("calendar-ai")
+mcp = load("latte-mcp")
+# the lazy tools' search: the words find the tool, a word no tool has finds none
+found = mcp.score("volume of the sound", [{"name": "skills", "description": "What LatteOS can change: the volume, the brightness"},
+                                          {"name": "providers", "description": "Which AI can answer on this computer"}])
+assert [t["name"] for _, t in found] == ["skills"], found
+assert mcp.score("zzz", [{"name": "skills", "description": "the volume"}]) == []
+
 apps = load("latte-apps")
 with tempfile.TemporaryDirectory() as d:
     f = os.path.join(d, "org.example.App.desktop")

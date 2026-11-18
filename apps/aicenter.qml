@@ -286,7 +286,7 @@ ShellRoot {
     property int teamTries: 0
     Process { id: teamq; command: ["curl", "-sf", "--max-time", "2", "-o", "/dev/null", "http://127.0.0.1:4310/"]
               onExited: code => { shell.teamUp = code === 0; shell.teamKnown = true } }
-    Process { id: teamStart; command: ["systemctl", "--user", "start", "agentes-server"]; onExited: { shell.teamTries = 20; teamWait.start() } }
+    Process { id: teamStart; command: ["systemctl", "--user", "start", "agentes-server", "latte-mcp"]; onExited: { shell.teamTries = 20; teamWait.start() } }
     Timer { id: teamWait; interval: 1000; repeat: true
             onTriggered: { if (shell.teamUp || shell.teamTries <= 0) { stop(); return } shell.teamTries -= 1; if (!teamq.running) teamq.running = true } }
     // what waits for the person: an AI's request (the counter), an agent in a terminal that asks
@@ -1223,7 +1223,13 @@ ShellRoot {
                         Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 12
                                 text: I18n.tr("Claude Code, Codex and Gemini can then read your conversations kept here, what is left of the limits, and the agents at work, and ask to change small things (the volume, the Wi-Fi…). Nothing is changed before you allow it here.") }
                         Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 12; visible: shell.mcp.agents.length > 0
-                                text: shell.mcp.agents.filter(a => a.installed).map(a => a.name + (a.has ? " ✓" : " –")).join("   ") } }
+                                text: shell.mcp.agents.filter(a => a.installed).map(a => a.name + (a.has ? " ✓" : " –")).join("   ") }
+                        // the same over HTTP, for Agent Chats (Connectors › Custom MCP): its address and the token it needs
+                        FileView { id: mcpToken; printErrors: false; watchChanges: true
+                                   path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/latteos/mcp-token" }
+                        Row { spacing: 10; visible: mcpToken.text().trim() !== ""
+                            Label { color: Theme.dim; font.pixelSize: 12; text: I18n.tr("For Agent Chats: {u}, header Authorization: Bearer and the token", { u: "http://127.0.0.1:8791/mcp" }); anchors.verticalCenter: parent.verticalCenter }
+                            CopyButton { copy: "Bearer " + mcpToken.text().trim(); anchors.verticalCenter: parent.verticalCenter } } }
                     Toggle { on: shell.mcpOn; anchors.right: parent.right; anchors.rightMargin: 18; y: 18; opacity: mcpSet.running ? 0.5 : 1
                              onFlipped: if (!mcpSet.running) { mcpSet.command = ["latte-mcp", shell.mcpOn ? "remove" : "install"]; mcpSet.running = true } } }
             Label { text: I18n.tr("ALL CONNECTORS"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
