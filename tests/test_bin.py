@@ -182,7 +182,7 @@ ai = load("latte-ai")
 assert ai.as_prompt([{"role": "user", "content": "Hi"}]) == "Hi" and ai.as_prompt([]) == ""
 p = ai.as_prompt([{"role": "user", "content": "A"}, {"role": "assistant", "content": "B"}, {"role": "user", "content": "C"}])
 assert "User: A\nAssistant: B" in p and p.endswith("C"), p
-assert ai.claude("q", "haiku")[:3] == ["claude", "-p", "q"] and ai.claude("q", "haiku")[-2:] == ["--tools", ""]      # the question first: --tools takes all that follows
+assert ai.claude("q", "haiku")[:3] == ["claude", "-p", "q"] and ai.claude("q", "haiku")[-2:] == ["--tools", "WebSearch,WebFetch"]      # the question first: --tools takes all that follows
 with tempfile.TemporaryDirectory() as d:
     config, os.environ["XDG_CONFIG_HOME"] = os.environ.get("XDG_CONFIG_HOME"), d
     os.makedirs(os.path.join(d, "latteos"))

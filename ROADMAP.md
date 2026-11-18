@@ -3552,6 +3552,13 @@ zapísal do priečinka úlohy, do `~` dostal EROFS; zápis odpovede z pieskovisk
 Chýba: sieť iba k službe agenta (proxy), D-Bus je naďalej otvorený, trvalé „Vždy“ a zoznam povolení v Nastaveniach; súbor politiky
 `ai-policy.json` (zámok projektu) s krokom 6.
 
+**10B.67** [x] 18. 11. **Web iba na požiadanie a oprava rozhovoru** (používateľ 18. 11.: AI služby má internet predvolene, na web ide iba na
+požiadanie; povolenie na reláciu platí pre lokálne LLM): agent služby v pieskovisku má sieť bez otázky. V Rozhovoroch dostane Claude
+`WebSearch`/`WebFetch` a Claude Code sa pýta cez `latte-mcp gate` (`--permission-prompt-tool`); v LensAI „Pozrieť sa na web“ s hľadaným
+textom, raz za odpoveď (`latte-skill allow … --once`, bez pamäti na reláciu); odmietnutie platí pre celú odpoveď. Overené odmietnutím:
+jedna otázka, Claude odpovedal bez webu. Zoznam správ končí nad voľbou AI (predtým ju prekrýval). Chýba: web pre Gemini/Codex/Grok
+v Rozhovoroch, web pre lokálne LLM (SearXNG) s povolením na reláciu.
+
 ### 10C. [ ] Heidelberg
 
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví

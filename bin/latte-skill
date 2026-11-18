@@ -11,7 +11,7 @@ command, so that every AI reaches the same ones through bin/latte-mcp.
                                    --now JSON after `row` or `do`: what `list` said a moment ago, not read anew (LensShore)
   latte-skill ask ID JSON --by WHO the change asked for by an AI: LensAI shows it and the person allows or refuses it
                                    there; allowed, it is done. {"ok", "answer": "yes" | "no" | "timeout" | "invalid"}
-  latte-skill allow ID TEXT --by WHO   what an AI wants to read or send (bin/latte-mcp: conversations, conversation,
+  latte-skill allow ID TEXT --by WHO [--once]   what an AI wants to read or send (bin/latte-mcp: conversations, conversation,
                                    windows, ask; bin/latte-ai do: net), asked in LensAI as a change is, once a session:
                                    allowed, not asked again until logout. {"ok", "answer": "yes" | "no" | "timeout" | "invalid"}
   latte-skill asks                 what waits for the person now: [{"req", "by", "label", "what", "from", "to", "at"}]
@@ -315,7 +315,8 @@ READS = {"conversations": "Read the list of your conversations with every AI",
          "conversation": "Read one of your conversations whole",
          "windows": "See the titles of the open windows",
          "ask": "Send a question to another AI, on your account",
-         "net": "Use the internet"}
+         "net": "Use the internet",
+         "web": "Look on the web"}
 
 
 def grants():
@@ -326,17 +327,18 @@ def grants():
         return {}
 
 
-def allow(ident, detail, by):
+def allow(ident, detail, by, once=False):
     """Asked once a session (the user, 18. 11.: a permission lasts for the session unless said otherwise): once allowed,
-    the same AI is not asked again for the same thing until the person logs out."""
+    the same AI is not asked again for the same thing until the person logs out. `once`: asked every time (a service's
+    AI looking on the web: only on request)."""
     if ident not in READS:
         return {"ok": False, "answer": "invalid"}
     key = by + "|" + ident
-    if key in grants():
+    if not once and key in grants():
         journal(by, ident, {"detail": detail[:400]}, "allowed for the session")
         return {"ok": True, "answer": "yes", "session": True}
     answer = wait({"label": T(READS[ident]), "what": detail[:400], "from": None, "to": None}, by, ident, {"detail": detail[:400]})
-    if answer == "yes":
+    if answer == "yes" and not once:
         g = dict(grants(), **{key: time.time()})
         os.makedirs(RUN, exist_ok=True)
         with open(GRANTS + ".%d.new" % os.getpid(), "w") as f:
@@ -407,8 +409,10 @@ def main(a):
         with open(os.path.join(ANSWERS, a[1]), "w") as f:
             f.write(a[2])
         return 0
+    once = "--once" in a
+    a = [w for w in a if w != "--once"]
     if len(a) == 3 and a[0] == "allow":
-        r = allow(a[1], a[2], by or "AI")
+        r = allow(a[1], a[2], by or "AI", once)
         print(json.dumps(r))
         return 0 if r["ok"] else 1
     if len(a) == 3 and a[0] in ("row", "do", "ask"):

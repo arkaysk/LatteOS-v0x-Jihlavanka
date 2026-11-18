@@ -173,14 +173,17 @@ MACHINE = ("chapolera", "ask")        # programs that ask for their own work: th
 
 
 def claude(prompt, model, effort="", files=()):
-    # No tools: it answers, it does not act on the computer — but reading, where something is attached: the files lie
-    # in the folder it runs in, and it reads only there. The conversation is not kept among the user's own, and what
+    # No tools that act on the computer: reading, where something is attached (the files lie in the folder it runs in,
+    # and it reads only there), and the web when the person allows it. The conversation is not kept among the user's own, and what
     # the user set up for their own work with the tool (hooks, instructions) stays out of the answers.
     if files:
         prompt += "\n\nAttached, in this folder: " + ", ".join(files)
     return ["claude", "-p", prompt, "--system-prompt", SYSTEM, "--output-format", "stream-json", "--verbose"] + (["--include-partial-messages"] if STREAM else []) + ["--no-session-persistence",
             "--setting-sources", "project", "--restricted", "--strict-mcp-config"] + (["--model", model] if model else []) + (["--effort", effort] if effort else []) \
-        + (["--allowedTools", "Read(./**)", "--tools", "Read"] if files else ["--tools", ""])
+        + (["--allowedTools", "Read(./**)", "--tools", "Read"] if files else ["--tools", ""] if os.environ.get("LATTE_NO_TOOLS") else
+           # the web only on request: Claude Code asks bin/latte-mcp's gate, the person answers in LensAI (the user, 18. 11.)
+           ["--mcp-config", json.dumps({"mcpServers": {"gate": {"command": "latte-mcp", "args": ["gate"]}}}),
+            "--permission-prompt-tool", "mcp__gate__approve", "--tools", "WebSearch,WebFetch"])
 
 
 def claude_read(out):
@@ -1704,8 +1707,9 @@ def sandbox(who, work, net):
 
 
 def do(task, who="", where=""):
-    """Starts the agent on the task in a terminal, in its sandbox; who: one of DOERS, else the chosen one. The internet
-    only when the person allows it, once a session (the user, 18. 11.): every agent here reaches its service by it."""
+    """Starts the agent on the task in a terminal, in its sandbox; who: one of DOERS, else the chosen one. A service's
+    agent has the internet (its service is there); it looks on the web only when it asks and the person allows it, as its
+    own tool asks (the user, 18. 11.)."""
     can = doers()
     who = who if who in can else (can[0] if can else "")
     if not who:
@@ -1714,14 +1718,8 @@ def do(task, who="", where=""):
     if not shutil.which("bwrap"):
         notify(T("{n} was not started").replace("{n}", name), T("Its sandbox (bubblewrap) is not installed."))
         return {"ok": False, "agent": who, "sandbox": False}
-    try:
-        net = json.loads(subprocess.run(["latte-skill", "allow", "net", T("{n} reaches its service over the internet. Allowed until you log out.").replace("{n}", name),
-                                         "--by", name], capture_output=True, text=True, timeout=150, env=dict(os.environ, PATH=SEARCH)).stdout or "{}").get("ok")
-    except (OSError, ValueError, subprocess.TimeoutExpired):
-        net = False
-    if not net:
-        notify(T("{n} was not started").replace("{n}", name), T("Without the internet it cannot reach its service."))
-        return {"ok": False, "agent": who, "net": False}
+    # ponytail: every agent here is a service's; one with a local model gets no network unless allowed (latte-skill allow net)
+    net = True
     argv = DOERS[who]["argv"](first_words() + task) if task.strip() else DOERS[who]["argv"]("")[:-1]
     argv[0] = shutil.which(argv[0], path=SEARCH) or argv[0]
     here = where if os.path.isdir(where) else os.path.expanduser("~")

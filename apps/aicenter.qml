@@ -676,7 +676,8 @@ ShellRoot {
             Rectangle { anchors.fill: parent; anchors.margins: 8; radius: 16; color: shell.look.page; opacity: shell.glassy ? [1, 0.95, 0.9, 0.85, 0.8][Theme.glassLevel] : 1 }
             ListView {
                 id: talk
-                anchors.fill: parent; anchors.bottomMargin: 130
+                // it ends above what stands over the field (who answers, the attached files), never under them
+                anchors.fill: parent; anchors.bottomMargin: parent.height - box.y + 8 + (whoPill.visible ? 42 : 0) + (shell.files.length ? 36 : 0)
                 clip: true; spacing: 14; topMargin: 24; bottomMargin: 16
                 model: shell.chat ? shell.chat.messages : []
                 onCountChanged: Qt.callLater(positionViewAtEnd)
@@ -1191,7 +1192,7 @@ ShellRoot {
                     I18n.tr("Local models use as much of the graphics card as is free when they load, so a running game leaves them less instead of a crash."),
                     I18n.tr("A local model idle for five minutes gives its memory back."),
                     I18n.tr("The services' pages sleep: the two you use most stay awake, another one is paused after five minutes out of sight and gives its memory back after fifteen. Chosen again, it loads where it was."),
-                    I18n.tr("Agents run in a sandbox: they write only in the task's folder, and the internet is theirs only once you allow it, until you log out. What you allow lasts for the session.")]
+                    I18n.tr("Agents run in a sandbox: they write only in the task's folder. An AI of a service looks on the web only when you allow it; what you allow a local one lasts until you log out.")]
             hasTips: true; onTipsAgain: shell.showTips()
             license: I18n.tr("GNU General Public License, version 3 or later")
             source: "https://github.com/arkaysk/LatteOS-v0x-Jihlavanka"

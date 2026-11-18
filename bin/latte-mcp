@@ -3,6 +3,8 @@
 It knows nothing itself: each tool is a thin cover over a command that is there already (latte-ai, pleamar-wm).
 
   latte-mcp                 serves on stdio: what an agent's tool (Claude Code, Codex, Gemini CLI) starts
+  latte-mcp gate            serves one tool, `approve`: Claude Code's --permission-prompt-tool in LensAI's conversations,
+                            where it may look on the web only when the person allows it there (bin/latte-ai claude)
   latte-mcp install|remove  writes it into, or takes it out of, the agents installed here, for this user
   latte-mcp status          {"ai", "agents": [{"id", "name", "installed", "has"}]}: which agents have it
   latte-mcp servers         every MCP server the agents are given (their user settings), by name: [{"name", "how" (the
@@ -212,12 +214,40 @@ def serve():
     server.run()
 
 
+GATE = {"WebSearch": "query", "WebFetch": "url"}      # what the person is shown under "Look on the web": the search, or the page
+
+
+def gate():
+    """Claude Code asks here before it uses a tool it was given but not allowed (its --permission-prompt-tool): the web,
+    in a conversation of LensAI. The person answers in LensAI; once yes, the rest of this answer may look further
+    (the user, 18. 11.: an AI of a service looks on the web only on request)."""
+    from mcp.server.fastmcp import FastMCP
+    server, said = FastMCP(NAME + "-gate"), {}
+
+    @server.tool()
+    def approve(tool_name: str, input: dict, tool_use_id: str = "") -> str:
+        """LatteOS asks the person whether this tool may run. Not for the model to call."""
+        if tool_name not in GATE:
+            return json.dumps({"behavior": "deny", "message": "only the web may be asked for here"})
+        if not said:                                       # asked once an answer: a no stays a no too
+            r = told(["latte-skill", "allow", "web", str(input.get(GATE[tool_name], ""))[:300], "--by", "Claude", "--once"], timeout=150)
+            said["yes" if isinstance(r, dict) and r.get("ok") else "no"] = True
+        if "yes" in said:
+            return json.dumps({"behavior": "allow", "updatedInput": input})
+        return json.dumps({"behavior": "deny", "message": "the user did not allow looking on the web; answer from what you know and say so"})
+
+    server.run()
+
+
 def main(a):
     if not a:
         if turned_off():
             print("latte-mcp: the AI of LatteOS is turned off (Settings › AI)", file=sys.stderr)
             return 1
         serve()
+        return 0
+    if a == ["gate"]:
+        gate()
         return 0
     if a == ["status"]:
         print(json.dumps(status()))

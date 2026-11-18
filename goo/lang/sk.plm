@@ -3069,9 +3069,8 @@ library Slovak {
         "Use the internet" = "Používať internet"
         "{n} was not started" = "{n} sa nespustil"
         "Its sandbox (bubblewrap) is not installed." = "Jeho pieskovisko (bubblewrap) nie je nainštalované."
-        "{n} reaches its service over the internet. Allowed until you log out." = "{n} sa k svojej službe dostane cez internet. Povolené do odhlásenia."
-        "Without the internet it cannot reach its service." = "Bez internetu sa k svojej službe nedostane."
-        "Agents run in a sandbox: they write only in the task's folder, and the internet is theirs only once you allow it, until you log out. What you allow lasts for the session." = "Agenti bežia v pieskovisku: zapisujú iba do priečinka úlohy a internet dostanú, až keď ho povolíš, do odhlásenia. Čo povolíš, platí počas relácie."
+        "Agents run in a sandbox: they write only in the task's folder. An AI of a service looks on the web only when you allow it; what you allow a local one lasts until you log out." = "Agenti bežia v pieskovisku: zapisujú iba do priečinka úlohy. AI služby sa pozrie na web, iba keď to povolíš; čo povolíš lokálnej AI, platí do odhlásenia."
         "{who} asks for your permission" = "{who} žiada o tvoje povolenie"
+        "Look on the web" = "Pozrieť sa na web"
     }
 }
