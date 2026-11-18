@@ -431,3 +431,103 @@ Nájdené pri prieskume u konkurencie; v ROADMAP 10B ich zatiaľ nevidím.
 - Oprávnenia: [sandbox-runtime](https://github.com/anthropic-experimental/sandbox-runtime)
 - Spotreba: [CodexBar](https://github.com/steipete/CodexBar), [ccusage](https://github.com/ryoppippi/ccusage),
   [Claude Code statusline](https://code.claude.com/docs/en/statusline)
+
+---
+
+## Fork Agent Chats — požiadavky a návrh riešení (18. 11.)
+
+Doplnené 18. 11. podľa rozhovoru s používateľom. Zistenia sú z **kódu agentes.chat** (`github.com/agentes-chat/agentes-chat`,
+commit `2be878a` z 18. 11. 2026, AGPL-3.0) a jeho ADR v `docs/adr/`. Návrhy riešení sú návrhy, nie rozhodnutia.
+
+### Požiadavky používateľa
+
+1. **Všetky projekty na jednom mieste**, nie roztrúsené, podobne ako projekty v Claude: projekt = priečinok s viacerými
+   četmi, ktoré zdieľajú pamäť.
+2. **Kanál = projekt**, pod ním **podkanál = podprojekt**, v podkanáli jednotlivé **čety** (napr. #knihy-magna-moravia
+   → ##kniha-1 → postavy, časť 1, kapitola 17, betaread).
+3. **Stav projektu** prepínateľný ikonou (aktívny, pozastavený, hotový, archivovaný) a **typ projektu** označený ikonou
+   (kód, kreslenie, kniha, 3D, hudba, komiks).
+4. **Pamäť vo vrstvách:** globálna (nad všetkým) → pamäť projektu (primárna) → pamäť podprojektu (sekundárna). Platia všetky
+   naraz.
+5. **Projekty majú skutočné priečinky** so súbormi a artefaktmi, nielen záznam.
+6. **Prístup agenta:** agent v ##kniha-1 pracuje v `Kniha1/`, smie siahnuť do nadradeného `MagnaMoravia/` (šablóny,
+   worldbuilding), ale nie vyššie.
+7. **Projekt má pridelených agentov, ich AI, skilly, schopnosti a povahu**; iné projekty iné napojenia (napr. komiks →
+   ComfyUI text2image).
+8. **Zámok projektu / súkromný režim:** projekt vylúčený z pamäti a z dosahu iných AI, napr. bez ChatGPT, iba Grok
+   a lokálna AI.
+9. **Vzdialený človek** sa pripojí na projekt aj s pôvodnou, neforkovanou aplikáciou a pracuje s pridelenými botmi.
+10. **Vývoj LatteOS priamo v Agent Chats** bez VS Code, s GitHubom.
+
+### Čo agentes.chat už má (z kódu)
+
+| Oblasť | Stav v agentes.chat | Kde |
+|---|---|---|
+| Kanály | iba záznam v Postgrese (`channels`: meno, téma, viditeľnosť, `category_id`, `position`, `archived_at`) | `packages/db/src/schema/chat.ts` |
+| Skupiny kanálov | **kategórie** v bočnom paneli, **jedna úroveň**, zbaľovanie každý sám; vnorenie nie je | ADR 0080 |
+| Čety | vlákna v kanáli | `packages/engine/src/threads.ts` |
+| Pamäť | tabuľka `context_items` s rozsahom `thread`, `channel`, `org`, `agent`, `entity`; viditeľnosť sa dedí od kanálov (najprísnejšia); zhrnutia kanálov už vznikajú; povýšenie „Make it the team's“ | `packages/db/src/schema/context.ts`, `context/summaries.ts` |
+| Kontext organizácie | text o organizácii ide do systémového pokynu každého agenta pracovného priestoru | `organizations.context` |
+| Súbory | Drive v zväzku `files`, bucket S3/MinIO alebo v Postgrese; nie strom priečinkov | `SELF_HOSTING.md` |
+| Priečinky agentov | `~/agentes/<workspace>` na agenta, ďalšie povolené na úrovni pracovného priestoru; blokovanie je „pravidlo, nie bariéra“ (agenti bežia pod účtom používateľa) | docs `computers` |
+| Práca na kóde | **misie** s vlastným git worktree a vetvou `agentes/<agent>/…`, súbory `.agentes/mission.md`, zlúčenie/nasadenie iba so schválením | ADR 0029, 0044 |
+| GitHub | GitHub App = identita pracovného priestoru (bot `<slug>[bot]`, podpis agenta, spoluautor), úzke tokeny na repo, push cez git proxy, agentov počítač token nemá; bez aplikácie účet cez OAuth/token | ADR 0024, 0116, 0156 |
+| Výber agenta | @zmienka, inak smerovač (Jev → malý model → plán → pravidlá); agent v kanáli s `autoReply` | docs `who-answers`, `channel_members` |
+| Oprávnenia | výnimky na kanál (kto vidí, píše, volá agentov) | ADR 0134 |
+| Viac serverov | desktop aj mobil držia pracovné priestory z viacerých serverov naraz | ADR 0154 |
+| Ľudia zvonku | „outside collaborators“ — člen bez platenej stoličky; hostia (vidia iba kde ich dajú) sú plánovaní | ADR 0191, 0085 |
+| Federácia serverov | **nie je** — dva servery spolu priamo nekomunikujú | — |
+| Fórum | odstránené 4. 11. 2026 | ADR 0022 |
+
+### Návrh riešení vo forku
+
+**Zásada kompatibility:** iba **pridané** stĺpce, tabuľky a koncové body; existujúce API sa nemení. Pôvodná aplikácia
+potom funguje (podkanály vidí ako plochý zoznam, stav a typ ignoruje) a všetko, čo beží na serveri (pamäť, dedenie,
+prístupy), platí aj pre ľudí s pôvodnou aplikáciou.
+
+| # | Požiadavka | Riešenie vo forku | Rozsah |
+|---|---|---|---|
+| F1 | Podprojekty | `channels.parent_id` (jedna úroveň: projekt → podprojekt); bočný panel odsadí podkanály pod projekt a zbalí ich; kategórie ostávajú ako „police“ (Tvorba, LatteOS, Domov) | malý |
+| F2 | Stav | `channels.status` = `active / paused / done / archived` (archived = existujúci `archived_at`); ikona na prepínanie v hlavičke a v bočnom paneli; filter „iba aktívne“ | malý |
+| F3 | Typ | `channels.project_type` = `code / drawing / book / 3d / music / comic / other`; ikona pred menom; typ určuje predvolených agentov a konektory (F7) | malý |
+| F4 | Vrstvy pamäte | nové rozsahy nad existujúcim `context_items`: načítanie vo vlákne v poradí **vlákno → podprojekt → projekt → organizácia → agent**; pri rozpore (rovnaký `subjectKey`) vyhráva bližšia úroveň; povýšenie „do podprojektu / do projektu / tímu“ rozšírením existujúceho povýšenia; stránka **Pamäť projektu** na kontrolu a mazanie | stredný |
+| F5 | Priečinky | `channels.folder` = cesta na počítači (napr. `~/Projekty/MagnaMoravia/Kniha1`); podkanál dedí priečinok rodiča; Drive súbory kanála sa voliteľne zrkadlia do `folder/_drive/`; pamäť projektu sa voliteľne exportuje do `folder/pamat.md`; kódový projekt = repo (misie z neho robia worktree ako dnes); knižný projekt = trezor Obsidianu (wiki už vie import) | stredný |
+| F6 | Prístup k priečinkom | agent v podkanáli: **vlastný priečinok čítanie+zápis, priečinok rodiča iba čítanie, súrodenci a všetko vyššie nič**; zmena v rodičovi = návrh na schválenie; vynútiť **sandboxom** (srt / bubblewrap: bind rw podprojekt, ro projekt), nie iba pravidlom | stredný |
+| F7 | Agenti a konektory projektu | agenti sú členmi kanála už dnes; doplniť **dedenie** členstva a aplikácií z projektu do podprojektu a **profil konektorov na kanál** (komiks → ComfyUI MCP, kniha → bez obrázkov); povaha a skilly ostávajú pri agentovi (existuje) | malý |
+| F8 | Zámok projektu | `channel_locks`: povolené AI (napr. `grok`, `local`), povolení agenti, `memory = separate | none`, sieť (zoznam domén); smerovač a výber modelu agenta odmietnu nepovolenú AI; pamäť zamknutého projektu sa nepovyšuje ani nehľadá zvonku; súbor zámku mimo priečinka projektu; v LensAI rovnaký zámok cez `latte-ai` a `latte-mcp` | stredný |
+| F9 | Vzdialený človek | bez zmeny: člen alebo **outside collaborator** na tvojom serveri (domáci server dosiahnuteľný zvonku); desktop/mobil drží viac serverov naraz; neskôr hostia (vidia iba pridelené projekty) | žiadny |
+| F10 | Vývoj LatteOS | GitHub App na repo `LatteOS-v0x-Jihlavanka`; misie na vlastných vetvách, do `v0.5-pleamarwm-jihlavanka` iba cez schválený pull request; revízia diffov v okne LensAI (alebo Orca); kanály podľa ROADMAP (#lensai, #goo, #system…), vlákno = jedna položka ROADMAP | žiadny / malý |
+| F11 | Vlastné v forku (licencia) | meno a logo forku vlastné (ochranné známky agentes.chat), „Based on agentes.chat by AGENTESCHAT, LLC“ v NOTICE, zdroj forku verejný (AGPL), slovenčina, téma LatteOS, prihlásenie miestneho vlastníka bez hesla | — |
+
+### Ako spolu komunikujú dva rôzne servery agentes.chat
+
+**Priamo nijako — federácia serverov neexistuje.** Možnosti dnes:
+1. **Človek, nie server, je most.** Kamarát sa pridá do tvojho pracovného priestoru ako člen alebo outside collaborator
+   (ADR 0191). Jeho desktop alebo mobil drží naraz jeho server aj tvoj (ADR 0154), s neprečítanými správami z oboch.
+   Pracuje s tvojimi botmi na tvojom serveri.
+2. **Agenti sa dajú preniesť kópiou** (import „Bring your agents“: pokyny, skilly, rutiny, pamäť), ale potom žijú
+   oddelene.
+3. **Most cez MCP:** agentes.chat vystavuje MCP endpoint, cez ktorý ho môžu riadiť iné nástroje. Agent na serveri A
+   by mohol mať server B ako konektor (MCP podľa URL, s tokenom) a cez neho klásť otázky agentom B. Funguje to na úrovni
+   nástrojov, nie ako zdieľaný kanál.
+4. **Fork, neskôr:** „zdieľaný kanál“ medzi dvoma servermi (ako Slack Connect) = zrkadlenie správ jedného kanála cez
+   podpísané webhooky alebo cez Matrix. Veľký zásah a mimo kompatibility s originálom → až keď bude naozaj treba.
+
+**Odporúčanie:** jeden server (tvoj domáci) pre tvoje projekty a ľudia sa naň pripájajú. Most cez MCP iba keď chce
+spolupracovať niekto s vlastným serverom a vlastnými agentmi.
+
+### Poradie
+
+1. Nainštalovať pôvodný agentes.chat na domáci server, vyskúšať kategórie, misie a GitHub App na LatteOS (bez forku).
+2. F1–F3 (podprojekty, stav, typ) — malé a viditeľné.
+3. F5–F6 (priečinky + sandbox) — bez nich nemá zmysel pracovať na súboroch.
+4. F4 (vrstvy pamäte) a F7 (konektory projektu).
+5. F8 (zámok projektu) spolu s rovnakým zámkom v LensAI.
+6. Most cez MCP iba podľa potreby.
+
+### Otvorené
+
+- Meno forku.
+- Webová aplikácia v okne LensAI, alebo vlastný QML klient nad API forku.
+- Či majú podprojekty mať vlastných členov (ľudí), alebo vždy dediť od projektu.
+- Či sa Drive súbory majú zrkadliť do priečinka, alebo ostať iba v úložisku servera.
