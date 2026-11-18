@@ -3130,5 +3130,7 @@ library Slovak {
         "Changed in memory" = "Zmenené v pamäti"
         "Forgotten" = "Zabudnuté"
         "Moved in memory" = "Presunuté v pamäti"
+        "Read aloud" = "Prečítať nahlas"
+        "Stop reading" = "Prestať čítať"
     }
 }

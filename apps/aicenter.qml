@@ -202,6 +202,7 @@ ShellRoot {
     Ask { id: helperq; onDone: shell.helped = data || [] }
     Process { id: helpSay }
     // the words of every conversation (latte-ai search, ROADMAP 10B.73): asked a moment after the last key
+    property int reading: -1                   // the answer being read aloud (its index), -1 none
     property var hits: []
     Ask { id: hitsq; onDone: shell.hits = data || [] }
     Timer { id: hitsSoon; interval: 350; onTriggered: { if (shell.find.trim().length < 2) shell.hits = []; else hitsq.ask(["search", shell.find.trim()]) } }
@@ -757,6 +758,10 @@ ShellRoot {
                         Pill { visible: !msg.mine && msg.index > 0 && shell.doable(msg.modelData.content); implicitHeight: 28; icon: "robot"; strong: true; text: I18n.tr("Do it")
                                onPressed: shell.doIt(talk.model[msg.index - 1].content, "") }
                         Act { visible: !msg.mine; what: I18n.tr("Copy"); onGo: Quickshell.clipboardText = msg.modelData.content }
+                        // read aloud in Lili's voice (latte-ai say, ROADMAP 10B.76); pressed again while it reads, it stops
+                        Act { visible: !msg.mine; what: shell.reading === msg.index ? I18n.tr("Stop reading") : I18n.tr("Read aloud")
+                              onGo: { const on = shell.reading === msg.index; shell.reading = on ? -1 : msg.index
+                                      Quickshell.execDetached(["latte-ai", "say", on ? "stop" : msg.modelData.content]) } }
                         Act { visible: !msg.mine && msg.index === talk.count - 1; what: I18n.tr("Again"); onGo: shell.again() }
                         Act { visible: msg.mine && msg.last; what: I18n.tr("Change"); onGo: { line.text = msg.modelData.content; shell.editing = true } } } }
                 // the answer while it comes

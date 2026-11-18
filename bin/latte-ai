@@ -120,6 +120,7 @@ No API key: the official tool of a service answers, with the account the user is
   latte-ai project set DIR state|type|storage|name|remote|memory VALUE · set DIR ai ID…   a project's setting; ai: the
                             only agents allowed in it (none: all)
   latte-ai project forget DIR   off the list (the folder stays) · latte-ai project DIR: the project a folder is in
+  latte-ai say TEXT | stop  reads it aloud in Lili's voice (sherpa-onnx, Piper; Markdown marks and code left out), or stops
   latte-ai helper say LOG TEXT | end LOG   the person goes on with a task that waits (state "waiting"), or ends it
   latte-ai journal [N]      what the AI changed, the newest first (N entries, 200): [{"at", "app", "ai", "task", "did",
                             "where", "items": [[before, after] | [what]], "more"}]; an entry shows its first 20 items
@@ -1288,6 +1289,71 @@ def hands_write(s):
         f.write("\n".join(keep + [GATE_BEGIN] + hands_rules(s) + [GATE_END]) + "\n")
 
 
+def sherpa(kind):
+    """sherpa-onnx (Apache-2.0) and its model here: "asr" Parakeet TDT (KInIT's Slovak one when it is made, else NVIDIA's
+    v3 of 25 languages; 5 s of speech in ~1 s on the processor), "tts" Piper's Slovak voice Lili. The voice needs the
+    1.x build: from 2.0 sherpa-onnx has no espeak-ng, which a Piper voice reads its words with."""
+    for d in LOCAL_DIRS:
+        builds = sorted(glob.glob(os.path.join(d, "sherpa-onnx", "sherpa-onnx-v*-linux-x64-shared")))
+        if kind == "tts":
+            builds = [b for b in builds if "-v1." in b]
+        if not builds:
+            continue
+        if kind == "asr":
+            for m in ("parakeet-tdt-0.6b-v3-sk-int8", "sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8"):
+                m = os.path.join(d, "models", "asr", m)
+                if os.path.exists(os.path.join(m, "tokens.txt")):
+                    return builds[-1], m
+        else:
+            m = os.path.join(d, "models", "tts", "vits-piper-sk_SK-lili-medium")
+            if os.path.exists(os.path.join(m, "tokens.txt")):
+                return builds[-1], m
+    return None, None
+
+
+def asr(wav):
+    """What was said in a recording: Parakeet through sherpa-onnx; None when it is not here."""
+    build, m = sherpa("asr")
+    if not build:
+        return None
+    pick = lambda name: next(iter(sorted(glob.glob(os.path.join(m, name)))), "")
+    out = subprocess.run([os.path.join(build, "bin", "sherpa-onnx-offline"), "--num-threads=%d" % max(2, min(4, (os.cpu_count() or 4) // 2)),
+                          "--encoder=" + pick("encoder*.onnx"), "--decoder=" + pick("decoder*.onnx"), "--joiner=" + pick("joiner*.onnx"),
+                          "--tokens=" + os.path.join(m, "tokens.txt"), "--model-type=nemo_transducer", wav],
+                         capture_output=True, text=True, timeout=120, env=dict(os.environ, LD_LIBRARY_PATH=os.path.join(build, "lib")))
+    found = re.findall(r'"text": "((?:[^"\\]|\\.)*)"', out.stdout + out.stderr)
+    return json.loads('"%s"' % found[-1]) if found else None
+
+
+SPEAKING = os.path.join(ROOM, "say.pid")
+
+
+def say(text):
+    """Read aloud in Lili's voice (Piper, the dataset CC0): the words to a sound file, then pw-play; one at a time — a new
+    one, or `say stop`, ends what is being read."""
+    import signal
+    try:
+        os.killpg(int(open(SPEAKING).read()), signal.SIGTERM)
+    except (OSError, ValueError):
+        pass
+    if text == "":
+        return {"ok": True}
+    build, m = sherpa("tts")
+    if not build:
+        return {"ok": False, "error": "the voice is not here (sherpa-onnx 1.x and Piper's Lili, /data/ai)"}
+    wav = os.path.join(ROOM, "say.wav")
+    tool = [os.path.join(build, "bin", "sherpa-onnx-offline-tts"), "--num-threads=4", "--vits-model=" + os.path.join(m, "sk_SK-lili-medium.onnx"),
+            "--vits-tokens=" + os.path.join(m, "tokens.txt"), "--vits-data-dir=" + os.path.join(m, "espeak-ng-data"), "--output-filename=" + wav]
+    # what a person hears: no Markdown marks, no code blocks
+    words = re.sub(r"```.*?```", " ", text, flags=re.S)
+    words = re.sub(r"[*_#`>|]+", " ", words)
+    p = subprocess.Popen(["sh", "-c", 'lib="$1"; out="$2"; shift 2; LD_LIBRARY_PATH="$lib" "$@" >/dev/null 2>&1 && exec pw-play "$out"',
+                          "sh", os.path.join(build, "lib"), wav] + tool + [" ".join(words.split())[:4000]],
+                         start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    open(SPEAKING, "w").write(str(p.pid))
+    return {"ok": True}
+
+
 def listen(what):
     wav, pid = os.path.join(ROOM, "listen.wav"), os.path.join(ROOM, "listen.pid")
     os.makedirs(ROOM, exist_ok=True)
@@ -1313,9 +1379,12 @@ def listen(what):
         pass
     if not os.path.exists(wav) or os.path.getsize(wav) < 8000:   # under a quarter of a second: nothing was heard
         return {"text": "", "ok": False, "error": "nothing was heard"}
+    heard = asr(wav)                                          # Parakeet first: as good, five times sooner
+    if heard is not None:
+        return {"text": heard, "ok": True}
     cli, model = whisper()
     if not cli:
-        return {"text": "", "ok": False, "error": "whisper.cpp is not here"}
+        return {"text": "", "ok": False, "error": "neither sherpa-onnx nor whisper.cpp is here"}
     lang = (os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or "en")[:2]
     out = subprocess.run([cli, "-m", model, "-l", lang, "-t", str(max(2, (os.cpu_count() or 4) // 2)), "-nt", "-np", "-f", wav],
                          capture_output=True, text=True, timeout=120).stdout
@@ -2990,6 +3059,9 @@ def main(a):
         st[a[2]] = {"scope": a[3], "apps": a[4:] if a[3] == "apps" else st[a[2]]["apps"]}
         hands_write(st)
         print(json.dumps(st))
+        return 0
+    if a[:1] == ["say"] and len(a) == 2:
+        print(json.dumps(say("" if a[1] == "stop" else a[1]), ensure_ascii=False))
         return 0
     if len(a) == 2 and a[0] == "listen" and a[1] in ("start", "stop"):
         print(json.dumps(listen(a[1]), ensure_ascii=False))

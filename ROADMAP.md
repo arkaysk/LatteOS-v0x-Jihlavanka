@@ -3632,6 +3632,13 @@ Basic Memory sa spustí pri prvom volaní (vlastné vlákno), predvolene projekt
 Overené: zápis a hľadanie poznámky cez latte-mcp, zápis v denníku. **Chýba:** vektory významu Basic Memory cez e5-sk (llama.cpp, po prevode),
 pamäť projektov `agentes/…`, `ai-instructions.txt` ako poznámka pamäte.
 
+**10B.76** [~] 18. 11. **Hlas: Parakeet a Lili** (krok 9 syntézy): `latte-ai listen` prepisuje cez sherpa-onnx a Parakeet TDT (najprv slovenský
+KInIT po prevode, inak NVIDIA v3), whisper ostáva ako záloha. Namerané na tej istej 5 s vete: Parakeet v3 7,6 s s načítaním (1,1 s prepis;
+„To vidiem. … Bratislave slnečná … 12 stupň“), whisper large turbo na Vulkane 26,4 s („Dobý deň. … v Bratislave slnečno … 12 stupnú“).
+`latte-ai say TEXT|stop` číta nahlas hlasom Lili (sherpa-onnx 1.13.8, bez značiek Markdownu a kódu); v LensAI pri každej odpovedi
+„Prečítať nahlas“ / „Prestať čítať“. **Chýba:** prevod KInIT Parakeet sk (beží), VAD (Silero: koniec reči sám), stále načítaný model
+(dnes ~4 s načítanie pri každom prepise), „Prestať čítať“ sa po dočítaní samo nevráti.
+
 ### 10C. [ ] Heidelberg
 
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví
