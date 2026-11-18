@@ -4,7 +4,7 @@ import { cx } from "../cx";
 import { ditherUrl } from "../sky/dither";
 
 /** The domain in the expanded logo: a brand name, never translated. */
-const TLD = ".chat";
+
 
 /** The mark is the agent from the engine: body at (2, 2), side 28, and its eyes. */
 const BODY = bodyPath(2, 2, 28);
@@ -72,7 +72,7 @@ export interface LogoProps {
   style?: CSSProperties;
 }
 
-/** "agentes" logo: mark + wordmark in Funnel Display light (".chat" in Doto). Accessible name "agentes" (or "agentes.chat" expanded). */
+/** LatteOS: "agentgram", the fork of agentes.chat (the user, 18. 11.): the mark + the wordmark in Funnel Display light. */
 export function Logo({ variant = "main", mono, size = 24, className, style }: LogoProps) {
   const expanded = variant === "expanded";
   return (
@@ -80,16 +80,15 @@ export function Logo({ variant = "main", mono, size = 24, className, style }: Lo
       className={cx("ac-logo", mono && "ac-logo--mono", className)}
       style={{ fontSize: size, ...style }}
       role="img"
-      aria-label={expanded ? "agentes.chat" : "agentes"}
+      aria-label="agentgram"
     >
       <LogoMark />
       {expanded ? (
         <span className="ac-logo__word" aria-hidden="true">
-          <span>agentes</span>
-          <span className="ac-logo__chat">{TLD}</span>
+          <span>agentgram</span>
         </span>
       ) : (
-        <span aria-hidden="true">agentes</span>
+        <span aria-hidden="true">agentgram</span>
       )}
     </span>
   );
