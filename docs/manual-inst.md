@@ -88,3 +88,16 @@ Na latte-lab to spravil Claude; na inom počítači to treba spustiť ručne (ne
   `basic-memory project default lensai`; v `~/.basic-memory/config.json` `auto_update: false`, `cloud_promo_opt_out: true`.
 - Modely a programy do `/data/ai` (ROADMAP 10B.74): sherpa-onnx 2.0.1 a 1.13.8, Parakeet v3 int8, KInIT Parakeet sk,
   Silero VAD, Piper Lili, sqlite-vec, e5-sk-small (+ jeho prevod do GGUF, 10B.75).
+
+## 18. 11. 2026 — slovenský Parakeet do ONNX int8: iba na hlavnom PC
+
+Na latte-lab sa prevod nerobí (zamrzol pri ňom; používateľ 18. 11.). Na hlavnom PC (Linux, viac RAM), v prázdnom priečinku:
+- stiahnuť `https://huggingface.co/kinit/parakeet-tdt-0.6b-v3-sk/resolve/main/parakeet-tdt-0.6b-v3-sk.nemo` a uložiť ako
+  `parakeet-tdt-0.6b-v3.nemo`; vedľa `export_onnx.py` a o priečinok vyššie `generate_bpe_vocab.py` zo
+  `github.com/k2-fsa/sherpa-onnx/tree/master/scripts/nemo` (parakeet-tdt-0.6b-v3);
+- `uv run --no-project --python 3.12 --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple
+  --index-strategy unsafe-best-match --with torch --with "nemo_toolkit[asr]" --with kaldi-native-fbank --with onnx==1.23.2
+  --with onnxruntime==1.31.1 --with soundfile --with librosa python export_onnx.py`;
+- z výsledku skopírovať na latte-lab do `/data/ai/models/asr/parakeet-tdt-0.6b-v3-sk-int8/` súbory `encoder.int8.onnx`
+  (aj jeho `*.weights`, ak vznikne), `decoder.int8.onnx`, `joiner.int8.onnx`, `tokens.txt`. `latte-ai` ho potom použije sám
+  (bez `encoder*.onnx` ho preskočí). Dekodér, joiner a tokens sú tam už z 18. 11.
