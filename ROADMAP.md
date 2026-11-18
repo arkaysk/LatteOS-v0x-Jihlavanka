@@ -3616,6 +3616,11 @@ najlepšie miesto každého rozhovoru (`index.db`, číta sa od miesta, kde sa s
 s úryvkom, klik otvorí rozhovor / reláciu / Pomocníka. **Chýba:** vektory významu (e5-sk-small, stiahnuté do /data/ai/models/embed),
 importy ChatGPT/Gemini, relácie Codexu.
 
+**10B.74** [x] 18. 11. **Stiahnuté pre ďalšie kroky** (na latte-lab, `/data/ai`): sherpa-onnx 2.0.1 (rozpoznávanie reči, VAD) a 1.13.8
+(syntéza — od 2.0 nemá espeak-ng, ktorý hlas Piper potrebuje), Parakeet TDT 0.6B v3 int8, KInIT Parakeet TDT sk (.nemo, na prevod do ONNX),
+Silero VAD, Piper sk_SK Lili, sqlite-vec 0.1.9, e5-sk-small; `codex-acp` 2.7.0 a Basic Memory (`uv tool`) do `~/.local`. Overené: Lili
+povie slovenskú vetu za 2 s, Parakeet v3 ju prepíše („Ahoj, toto je Latte Oles, nesie Studa“ — základný model, slovenský KInIT čaká na prevod).
+
 ### 10C. [ ] Heidelberg
 
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví
