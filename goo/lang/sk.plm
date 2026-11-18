@@ -3073,5 +3073,16 @@ library Slovak {
         "{who} asks for your permission" = "{who} žiada o tvoje povolenie"
         "Look on the web" = "Pozrieť sa na web"
         "For Agent Chats: {u}, header Authorization: Bearer and the token" = "Pre Agent Chats: {u}, hlavička Authorization: Bearer a token"
+        "What the AI changed" = "Čo AI zmenila"
+        "Export .md" = "Exportovať .md"
+        "Clear history" = "Zmazať históriu"
+        "Exported to {p}" = "Exportované do {p}"
+        "Nothing yet. Whatever an AI changes for you (files renamed or moved, a setting) is written here with the whole list, kept for six months." = "Zatiaľ nič. Čokoľvek AI pre teba zmení (premenované či presunuté súbory, nastavenie), sa sem zapíše s celým zoznamom a ostane šesť mesiacov."
+        "…and {n} more: the export has them all" = "…a ďalších {n}: export ich má všetky"
+        "Exported {d}" = "Exportované {d}"
+        "Task: {t}" = "Úloha: {t}"
+        "Where: {w}" = "Kde: {w}"
+        "…and {n} more" = "…a ďalších {n}"
+        "Handed to the agent" = "Odovzdané agentovi"
     }
 }

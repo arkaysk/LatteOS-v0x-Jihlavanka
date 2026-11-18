@@ -275,6 +275,10 @@ def do(ident, a, by="", now=None, undo=""):
     how = SKILLS[ident][4](v)
     ok = how() if callable(how) else out(how)[1] == 0
     journal(by, ident, a, "done" if ok else "failed")
+    if ok and by and by != "person":
+        subprocess.run(["latte-ai", "journal", "add", json.dumps({"app": "LatteOS", "ai": by, "did": said["label"],
+                                                                  "items": [[str(said.get("from") or ""), str(said.get("to") or "")]] if said.get("to") else []},
+                                                                 ensure_ascii=False)], capture_output=True)
     try:
         back = BACK[ident](now) if ok and undo and ident in BACK else None
     except KeyError:                # what it was before is not known

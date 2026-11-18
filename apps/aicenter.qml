@@ -192,6 +192,18 @@ ShellRoot {
     property var agents: ({ services: [], stats: {}, doers: [], ideas: [] })
     // the helpers (Omarchy's toggles and Setup › Defaults): who does the work, and what can be turned off
     Ask { id: helpersq; onDone: shell.helpers = data || shell.helpers }
+    // what the AI changed (latte-ai journal, ROADMAP 10B.69): read on the agents' page, exported whole, cleared on purpose
+    property var journal: []
+    property var journalOpen: ({})
+    property bool clearArmed: false
+    property string exported: ""
+    Ask { id: journalq; onDone: shell.journal = data || [] }
+    // while the agents' page is open: at once, and every half minute what came since (an app may write any time)
+    Timer { interval: 30000; repeat: true; triggeredOnStart: true; running: shell.page === "agents"; onTriggered: journalq.ask(["journal"]) }
+    Process { id: journalOut; stdout: StdioCollector { onStreamFinished: { try { shell.exported = JSON.parse(this.text).path; Qt.openUrlExternally("file://" + shell.exported) } catch (e) {} } }
+              command: ["sh", "-c", "d=\"$(xdg-user-dir DOCUMENTS 2>/dev/null)\"; [ -d \"$d\" ] || d=\"$HOME\"; exec latte-ai journal export \"$d/LensAI-$(date +%F-%H%M).md\""] }
+    Process { id: journalClear; command: ["latte-ai", "journal", "clear"]; onExited: { shell.clearArmed = false; journalq.ask(["journal"]) } }
+    Timer { id: unarm; interval: 5000; onTriggered: shell.clearArmed = false }
     property var helpers: ({ ai: true, agent: "", agents: [], helper: "local", local: "", haiku: [], switches: [], muted: [] })
     Process { id: helperSet; onExited: helpersq.ask(["helpers"]) }
     function setHelper(argv) { helperSet.command = argv; helperSet.running = true }
@@ -1028,6 +1040,44 @@ ShellRoot {
             visible: shell.page === "agents"
             contentHeight: agentCol.implicitHeight + 48; clip: true; boundsBehavior: Flickable.StopAtBounds
             Column { id: agentCol; x: 28; y: 24; width: Math.min(parent.width - 56, 760); spacing: 14
+                // ── what the AI changed, the newest first: each with its whole list before → after, to find a wrong one
+                // (the user, 18. 11.); exported to Markdown, cleared only on purpose (pressed twice) ──
+                Rectangle { width: agentCol.width; height: jCol.implicitHeight + 32; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
+                    Column { id: jCol; x: 18; y: 16; width: parent.width - 36; spacing: 10
+                        Item { width: parent.width; height: 34
+                            Row { spacing: 10; anchors.verticalCenter: parent.verticalCenter
+                                Glyph { name: "history"; color: Theme.gold; font.pixelSize: 20; anchors.verticalCenter: parent.verticalCenter }
+                                Label { text: I18n.tr("What the AI changed"); font.pixelSize: 16; font.weight: 800; anchors.verticalCenter: parent.verticalCenter } }
+                            Row { anchors.right: parent.right; spacing: 8; anchors.verticalCenter: parent.verticalCenter
+                                Pill { implicitHeight: 32; icon: "file-text"; text: I18n.tr("Export .md"); enabled: shell.journal.length > 0; opacity: enabled ? 1 : 0.5
+                                       busy: journalOut.running; onPressed: journalOut.running = true }
+                                Pill { implicitHeight: 32; icon: "trash"; danger: true; enabled: shell.journal.length > 0; opacity: enabled ? 1 : 0.5
+                                       text: shell.clearArmed ? I18n.tr("Really? Press once more") : I18n.tr("Clear history")
+                                       onPressed: { if (shell.clearArmed) journalClear.running = true; else { shell.clearArmed = true; unarm.restart() } } } } }
+                        Label { visible: shell.exported !== ""; width: parent.width; elide: Text.ElideMiddle; color: Theme.dim; font.pixelSize: 12
+                                text: I18n.tr("Exported to {p}", { p: shell.exported.replace(Quickshell.env("HOME"), "~") }) }
+                        Label { visible: shell.journal.length === 0; width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
+                                text: I18n.tr("Nothing yet. Whatever an AI changes for you (files renamed or moved, a setting) is written here with the whole list, kept for six months.") }
+                        Repeater { model: shell.journal.slice(0, 50)
+                            Column { id: je; required property var modelData; required property int index; width: jCol.width; spacing: 4
+                                readonly property bool open: !!shell.journalOpen[index]
+                                readonly property var items: modelData.items || []
+                                Rectangle { width: parent.width; height: 44; radius: 10; color: jeHit.containsMouse ? Theme.raised : "transparent"
+                                    Glyph { x: 8; name: je.items.length ? (je.open ? "chevron-down" : "chevron-right") : "point"; font.pixelSize: 14; color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
+                                    Column { x: 30; width: parent.width - 30 - jeWhen.width - 16; anchors.verticalCenter: parent.verticalCenter; spacing: 1
+                                        Label { width: parent.width; elide: Text.ElideRight; font.weight: 700; font.pixelSize: 14
+                                                text: (je.modelData.did || "") + (je.items.length ? " · " + I18n.tr("{n} items", { n: je.items.length + (je.modelData.more || 0) }) : "") }
+                                        Label { width: parent.width; elide: Text.ElideMiddle; color: Theme.dim; font.pixelSize: 12
+                                                text: [je.modelData.app, je.modelData.ai, je.modelData.where ? String(je.modelData.where).replace(Quickshell.env("HOME"), "~") : "", je.modelData.task || ""].filter(x => x).join(" · ") } }
+                                    Label { id: jeWhen; anchors.right: parent.right; anchors.rightMargin: 8; anchors.verticalCenter: parent.verticalCenter; color: Theme.faint; font.pixelSize: 12
+                                            text: String(je.modelData.at || "").replace("T", " ").slice(0, 16) }
+                                    MouseArea { id: jeHit; anchors.fill: parent; hoverEnabled: true; enabled: je.items.length > 0; cursorShape: Qt.PointingHandCursor
+                                                onClicked: { const o = Object.assign({}, shell.journalOpen); o[je.index] = !je.open; shell.journalOpen = o } } }
+                                Repeater { model: je.open ? je.items : []
+                                    Label { required property var modelData; x: 30; width: je.width - 30; elide: Text.ElideMiddle; font.pixelSize: 12; color: Theme.cream; font.family: "monospace"
+                                            text: typeof modelData === "string" ? modelData : Array.prototype.join.call(modelData, "  →  ") } }      // a list from JSON is not a JS Array here
+                                Label { visible: je.open && (je.modelData.more || 0) > 0; x: 30; color: Theme.dim; font.pixelSize: 12
+                                        text: I18n.tr("…and {n} more: the export has them all", { n: je.modelData.more || 0 }) } } } } }
                 // what the counts add up to, one line at a time, as Omarchy's hero has it
                 Rectangle { width: parent.width; height: 96; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
                     Glyph { x: 22; anchors.verticalCenter: parent.verticalCenter; name: "robot"; font.pixelSize: 40; color: Theme.gold }

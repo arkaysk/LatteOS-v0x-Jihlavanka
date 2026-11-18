@@ -3568,6 +3568,14 @@ tokenu ukazujú Konektory. Oprava: brána webu vracala štruktúrovaný výstup 
 overené (vyhľadanie prebehlo). Router po zmene nastavení čaká, kým starý pustí port. Chýba: profily nástrojov (Domácnosť, Súbory, Kód,
 Tvorba), ďalšie servery za latte-mcp a ich spúšťanie až pri prvom volaní (s krokom 8), pripojenie v Agent Chats ručne.
 
+**10B.69** [~] 18. 11. **Denník „Čo AI zmenila“ a Pomocník na stránke Agenti** (používateľ 18. 11.): hore na stránke Agenti nekonečný
+rozhovor s agentom pre drobné úlohy (Chapolera, DualBrew, LensGoo, AI kurzor), pod ním všetko, čo AI zmenila, s celým zoznamom
+pred → po (napr. 864 premenovaných fotiek), export do `.md` a tlačidlo **Zmazať históriu** (zámerne, dvakrát). Denník `latte-ai journal`
+(`~/.local/state/latteos/ai/journal/RRRR-MM.jsonl`): mesiac na súbor, najviac 6 mesiacov a 20 MB spolu (najstarší mesiac ide prvý),
+najviac 10 000 položiek na záznam; zmazanie histórie nemaže to, čo vie vrátiť Ctrl+Z. **Hotové 18. 11.:** denník, export, zmazanie,
+karta na stránke Agenti; zapisujú „Urob to“ a nastavenia zmenené AI (`latte-skill do`). **Chýba:** zápisy Chapolery a DualBrew (AI
+úlohy so zoznamom súborov), Späť pri zázname, rozhovor Pomocníka cez ACP (krok 5).
+
 ### 10C. [ ] Heidelberg
 
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví

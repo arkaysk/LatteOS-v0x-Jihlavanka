@@ -216,6 +216,21 @@ with tempfile.TemporaryDirectory() as d:
     assert not ai.switched_on("calendar-ai") and os.path.isfile(os.path.join(d, "toggles", "calendar-ai-off"))
     ai.switch("calendar-ai", "on")
     assert ai.switched_on("calendar-ai")
+# the journal of what the AI changed: written, read newest first, as Markdown whole, a month too many or too big goes
+with tempfile.TemporaryDirectory() as d:
+    ai.JOURNAL = d
+    for m in ("2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06"):
+        open(os.path.join(d, m + ".jsonl"), "w").write(json.dumps({"at": m + "-01T00:00:00", "did": "old"}) + "\n")
+    ai.journal_add({"app": "DualBrew", "ai": "Claude", "did": "Renamed", "items": [["dc%d.jpg" % i, "fotka %d.jpg" % i] for i in range(3)]})
+    assert not os.path.exists(os.path.join(d, "2026-01.jsonl")) and len(os.listdir(d)) == 6      # six months at most
+    got = ai.journal_read()
+    assert got[0]["did"] == "Renamed" and got[0]["items"][2] == ["dc2.jpg", "fotka 2.jpg"], got[0]
+    assert "`dc1.jpg` → `fotka 1.jpg`" in ai.journal_md(got)
+    ai.JOURNAL_BYTES = 10
+    ai.journal_add({"did": "small"})
+    assert len(os.listdir(d)) == 1                    # too big in all: the oldest months go, this one stays
+    ai.JOURNAL_BYTES = 20 << 20
+
 mcp = load("latte-mcp")
 # the lazy tools' search: the words find the tool, a word no tool has finds none
 found = mcp.score("volume of the sound", [{"name": "skills", "description": "What LatteOS can change: the volume, the brightness"},

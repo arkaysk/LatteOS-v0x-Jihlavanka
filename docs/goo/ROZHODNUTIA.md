@@ -536,3 +536,7 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
   vypnúť, aby nezaberal RAM. `lensAIplan2.md` (Syntéza D2, F4, F14).
 - **Licencia GPL-3.0+ je v poriadku** (18. 11., používateľ): LatteOS je GPL-3.0+, kód GPL-3.0+ (napr. Serena) sa dá
   prevziať; LensAI smie mať samostatne inú licenciu, vtedy iba ako samostatný proces.
+- **Pomocník a denník „Čo AI zmenila“ na stránke Agenti** (18. 11., používateľ): agent pre drobné úlohy (Chapolera, DualBrew, AI kurzor)
+  je súčasťou stránky Agenti; hore nekonečný rozhovor, k nemu denník každej zmeny AI s celým zoznamom, export do `.md` a zámerné
+  „Zmazať históriu“. Denník najviac 6 mesiacov a 20 MB. AI služby majú internet predvolene, na web idú iba na požiadanie; povolenie na
+  reláciu platí pre lokálne LLM. ROADMAP 10B.67, 10B.69.
