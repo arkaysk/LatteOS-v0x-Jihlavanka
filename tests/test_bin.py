@@ -268,6 +268,9 @@ with tempfile.TemporaryDirectory() as d:
     ai.embedder = embedder
     del os.environ["CLAUDE_CONFIG_DIR"]
 
+# folder names from channels and projects: no accents, words joined (the user, 18. 11.)
+assert ai.slug("Magna Moravia") == "magna_moravia" and ai.slug("Kniha o\u010di vlka") == "kniha_oci_vlka" and ai.slug("  ") == "project"
+
 mcp = load("latte-mcp")
 # the lazy tools' search: the words find the tool, a word no tool has finds none
 found = mcp.score("volume of the sound", [{"name": "skills", "description": "What LatteOS can change: the volume, the brightness"},

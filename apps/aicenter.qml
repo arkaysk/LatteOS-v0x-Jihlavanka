@@ -220,6 +220,8 @@ ShellRoot {
     readonly property var projStates: ["active", "paused", "done", "archived"]
     readonly property var projStateGlyph: ({ active: "player-play", paused: "player-pause", done: "circle-check", archived: "package" })
     readonly property var projStorageGlyph: ({ offline: "lock", github: "brand-github", forgejo: "home" })
+    // a folder's name as latte-ai makes it (slug): shown before it is made
+    function slug(n) { return n.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") }
     function taskIn(p) { helpDir = p.path; helpDirName = p.name; go("agents") }
     FolderDialog { id: newWhere; onAccepted: shell.newIn = decodeURIComponent(String(selectedFolder).replace(/^file:\/\//, "")) }
     // while the agents' page is open: at once, and every half minute what came since (an app may write any time)
@@ -1288,10 +1290,10 @@ ShellRoot {
                                    text: I18n.tr(({ offline: "Offline: this computer only", github: "Online: GitHub", forgejo: "Online: Forgejo at home" })[modelData]); onPressed: shell.newStorage = modelData } } }
                     Row { spacing: 10; width: parent.width
                         Label { anchors.verticalCenter: parent.verticalCenter; color: Theme.dim; font.pixelSize: 13; elide: Text.ElideMiddle; width: parent.width - npWhere.width - npMake.width - 20
-                                text: I18n.tr("In {p}", { p: (shell.newIn + "/" + (npName.text.trim() || "…")).replace(Quickshell.env("HOME"), "~") }) }
+                                text: I18n.tr("In {p}", { p: (shell.newIn + "/" + (shell.slug(npName.text) || "…")).replace(Quickshell.env("HOME"), "~") }) }
                         Pill { id: npWhere; implicitHeight: 34; icon: "folders"; text: I18n.tr("Browse…"); onPressed: newWhere.open() }
                         Pill { id: npMake; implicitHeight: 34; icon: "plus"; strong: true; text: I18n.tr("Make it"); enabled: npName.text.trim() !== ""; opacity: enabled ? 1 : 0.5
-                               onPressed: { shell.projDo(["project", "new", shell.newIn + "/" + npName.text.trim().replace(/\//g, "-"), npName.text.trim(), shell.newType, shell.newStorage]); npName.text = "" } } } } }
+                               onPressed: { shell.projDo(["project", "new", "--in", shell.newIn, npName.text.trim(), shell.newType, shell.newStorage]); npName.text = "" } } } } }
             Label { visible: shell.projects.length === 0 && !projq.running; width: prPage.room; color: Theme.dim; text: I18n.tr("No project yet.") }
             Repeater { model: shell.projects
                 Rectangle { id: pj; required property var modelData; width: prPage.room; height: pjCol.implicitHeight + 28; radius: 16; color: Theme.card

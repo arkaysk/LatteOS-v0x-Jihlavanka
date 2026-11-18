@@ -3629,7 +3629,7 @@ PODPROJEKT`): Basic Memory 1.0 (AGPL-3.0, samostatný program) s projektom `lens
 čitateľné aj ručne). V latte-mcp dva nástroje namiesto jeho dvanástich (~6 300 tokenov foriem): `memory_tools` a `memory(tool, arguments)`;
 Basic Memory sa spustí pri prvom volaní (vlastné vlákno), predvolene projekt `lensai`; zápis, úprava, zmazanie a presun idú do denníka
 „Čo AI zmenila“, zmazanie, presun a správa projektov sa pýtajú v LensAI. LensAI › Agenti › Pomocník: tlačidlo **Pamäť** otvorí priečinok.
-Overené: zápis a hľadanie poznámky cez latte-mcp, zápis v denníku. **Chýba:** vektory významu Basic Memory cez e5-sk (llama.cpp, po prevode),
+Overené: zápis a hľadanie poznámky cez latte-mcp, zápis v denníku. Mená priečinkov z mien kanálov a projektov (`slug`: „Magna Moravia“ → `magna_moravia`, „Kniha oči vlka“ → `kniha_oci_vlka`); `latte-ai memory-folder [KANÁL [PODKANÁL]]`; nový projekt v LensAI dostane priečinok tak isto. **Chýba:** vektory významu Basic Memory cez e5-sk (llama.cpp, po prevode),
 pamäť projektov `agentes/…`, `ai-instructions.txt` ako poznámka pamäte.
 
 **10B.76** [~] 18. 11. **Hlas: Parakeet a Lili** (krok 9 syntézy): `latte-ai listen` prepisuje cez sherpa-onnx a Parakeet TDT (najprv slovenský

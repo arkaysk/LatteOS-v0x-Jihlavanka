@@ -543,3 +543,6 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 - **Priečinky AI a ich mená** (18. 11., používateľ): mená priečinkov nikdy po slovensky. Nadradený priečinok dát AI je `latteAI`:
   v ňom `lensai/` (celková pamäť LensAI; LensAI ho vie priamo otvoriť) a `agentes/` (pamäť Agent Chats oddelene), v ňom priečinky
   projektov a v nich priečinky podprojektov. Prevod e5-sk-small do GGUF cez skript llama.cpp v dočasnom prostredí povolený. ROADMAP 10B.75.
+- **Mená priečinkov z mien kanálov** (18. 11., používateľ): kanál Agent Chats „Magna Moravia“ má priečinok `magna_moravia`, podkanál
+  „Kniha oči vlka“ `kniha_oci_vlka` v ňom — bez diakritiky, malými písmenami, slová spojené `_`; v `latteAI/agentes` je teda priečinok
+  pre každý hlavný kanál. Rovnako sa pomenúva priečinok nového projektu. ROADMAP 10B.75.
