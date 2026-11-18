@@ -3644,6 +3644,14 @@ spadlo spojenie aj Moonlight). Výstup fp32 bol v /tmp a reštart ho zmazal; ost
 (`systemd-run --user --scope -p MemoryMax=… -p MemorySwapMax=0`), výstupy na /data, alebo na hlavnom PC. `latte-ai` neúplný model
 (bez kódovača) preskočí.
 
+**10B.77** [~] 18. 11. **Fork agentes-chat (LOS version)** (krok 10 syntézy; používateľ 18. 11.: pôvodné meno „agentes-chat (LOS version)“, súčasť
+LatteOS, inštaluje sa s ním, ak AI nie je vypnutá; zdroj vo vetve `agent-chats` repozitára LatteOS, použiteľný aj samostatne). **Etapa 0 hotová:**
+`~/src/agentes-chat` s celou históriou (10 362 commitov, `.git` 194 MB), remote `upstream` = agentes-chat, `latteos` = náš repozitár, vetva
+`agent-chats`; `bun install` (2,2 GB node_modules) a vývojový server vedľa pôvodného (API 127.0.0.1:3000, web [::1]:5173, databáza PGlite
+v `.data/`, služba `agent-chats-dev` so stropom 6 GB) — pôvodný na 4310 nedotknutý. **Ďalej:** F1–F3 (podkanály, stav, typ), potom F5–F8, F11.
+Meno: TRADEMARKS.md chce pri verejnom forku vlastné meno — žiadosť v `patches/issues/agentes-chat-name.md`, vetvu nepushnúť verejne pred
+súhlasom alebo zmenou mena.
+
 ### 10C. [ ] Heidelberg
 
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví

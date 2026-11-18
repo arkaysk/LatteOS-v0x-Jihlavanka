@@ -546,3 +546,8 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 - **Mená priečinkov z mien kanálov** (18. 11., používateľ): kanál Agent Chats „Magna Moravia“ má priečinok `magna_moravia`, podkanál
   „Kniha oči vlka“ `kniha_oci_vlka` v ňom — bez diakritiky, malými písmenami, slová spojené `_`; v `latteAI/agentes` je teda priečinok
   pre každý hlavný kanál. Rovnako sa pomenúva priečinok nového projektu. ROADMAP 10B.75.
+- **Fork agentes-chat: meno a inštalácia** (18. 11., používateľ): v LatteOS sa volá pôvodným menom **agentes-chat (LOS version)**
+  (ruší „Agent Chats (Latte edition)“ zo 17. 11.); je priamo súčasťou LatteOS a **inštaluje sa spolu s ním**, ak AI nie je vypnutá
+  (mení F14 v `lensAIplan2.md`: už nie až pri prvom zapnutí). Zdroj vo vetve `agent-chats` repozitára LatteOS, použiteľný aj samostatne.
+  Pozor: TRADEMARKS.md agentes.chat chce pri verejnom forku vlastné meno; „agentes“ v mene upraveného produktu len s ich písomným
+  súhlasom — žiadosť pripravená v `patches/issues/agentes-chat-name.md` (neposlaná). ROADMAP 10B.77.
