@@ -3125,5 +3125,10 @@ library Slovak {
         "The project {p} allows only: {a}" = "Projekt {p} dovoľuje iba: {a}"
         "Said in the conversations" = "Povedané v rozhovoroch"
         "No conversation says that." = "Žiadny rozhovor to nehovorí."
+        "Change what the AI remembers" = "Zmeniť, čo si AI pamätá"
+        "Remembered" = "Zapamätané"
+        "Changed in memory" = "Zmenené v pamäti"
+        "Forgotten" = "Zabudnuté"
+        "Moved in memory" = "Presunuté v pamäti"
     }
 }

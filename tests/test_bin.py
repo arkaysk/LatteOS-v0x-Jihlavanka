@@ -249,6 +249,7 @@ with tempfile.TemporaryDirectory() as d:
 # a transcript read on from where it was read, the harness's tags left out
 with tempfile.TemporaryDirectory() as d:
     room, helper, index = ai.ROOM, ai.HELPER, ai.INDEX
+    embedder, ai.embedder = ai.embedder, lambda: None       # words only here: no model of meanings, nothing started behind
     ai.ROOM, ai.HELPER, ai.INDEX = d, os.path.join(d, "helper"), os.path.join(d, "index.db")
     os.makedirs(os.path.join(d, "chats")); os.makedirs(os.path.join(d, "claude", "projects", "p"))
     os.environ["CLAUDE_CONFIG_DIR"] = os.path.join(d, "claude")
@@ -264,6 +265,7 @@ with tempfile.TemporaryDirectory() as d:
     assert got and got[0]["source"] == "claude" and got[0]["folder"] == "/w" and got[0]["title"] == "Mend the sandbox", got
     assert ai.search("system reminder") == []
     ai.ROOM, ai.HELPER, ai.INDEX = room, helper, index
+    ai.embedder = embedder
     del os.environ["CLAUDE_CONFIG_DIR"]
 
 mcp = load("latte-mcp")

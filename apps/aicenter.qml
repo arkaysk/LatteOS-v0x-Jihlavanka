@@ -209,7 +209,7 @@ ShellRoot {
     property var projects: []
     property string helpDir: ""                // a task of the Helper goes into this project's folder
     property string helpDirName: ""
-    property string newIn: Quickshell.env("HOME") + "/Projekty"     // where a new project's folder is made
+    property string newIn: Quickshell.env("HOME") + "/Projects"     // where a new project's folder is made; folder names never Slovak (the user, 18. 11.)
     property string newType: "other"
     property string newStorage: "offline"
     Ask { id: projq; onDone: shell.projects = data || [] }
@@ -1090,8 +1090,12 @@ ShellRoot {
                         Row { spacing: 10; anchors.verticalCenter: parent.verticalCenter
                             Glyph { name: "messages"; color: Theme.gold; font.pixelSize: 20; anchors.verticalCenter: parent.verticalCenter }
                             Label { text: I18n.tr("Helper"); font.pixelSize: 16; font.weight: 800; anchors.verticalCenter: parent.verticalCenter } }
-                        Pill { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; implicitHeight: 32; icon: "history"; text: I18n.tr("All changes")
-                               onPressed: Quickshell.execDetached(["latte-journal"]) } }
+                        Row { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; spacing: 8
+                            // what the AI remembers: Markdown notes of the person's, read and changed by hand too (latte-mcp memory)
+                            Pill { implicitHeight: 32; icon: "book-2"; text: I18n.tr("Memory")
+                                   onPressed: Quickshell.execDetached(["sh", "-c", "mkdir -p \"$1\" && exec latte-app files \"$1\"", "sh",
+                                                                      (Quickshell.env("XDG_DATA_HOME") || Quickshell.env("HOME") + "/.local/share") + "/latteAI/lensai"]) }
+                            Pill { implicitHeight: 32; icon: "history"; text: I18n.tr("All changes"); onPressed: Quickshell.execDetached(["latte-journal"]) } } }
                     ListView { ScrollGrip {} id: helperTalk; x: 18; y: 56; width: parent.width - 36; height: parent.height - 56 - 64; clip: true; spacing: 10
                                boundsBehavior: Flickable.StopAtBounds
                                model: shell.helped
@@ -1112,7 +1116,7 @@ ShellRoot {
                                        visible: (hm.modelData.n || 0) > 0; onPressed: Quickshell.execDetached(["latte-journal", hm.modelData.at]) } }
                             // a journal entry without a conversation (a "Do it" in a terminal, a setting): what was done
                             Label { visible: !!hm.modelData.did && !(hm.modelData.steps || []).length; width: parent.width; wrapMode: Text.WordWrap; font.weight: 700; font.pixelSize: 14
-                                    text: (hm.modelData.did || "") + ((hm.modelData.n || 0) ? " · " + I18n.tr("{n} items", { n: hm.modelData.n }) : "") }
+                                    text: I18n.tr(hm.modelData.did || "") + ((hm.modelData.n || 0) ? " · " + I18n.tr("{n} items", { n: hm.modelData.n }) : "") }
                             // the agent's work, step by step: its words, the tools it used, what it asked and what was said
                             Repeater { model: hm.modelData.steps || []
                                 Item { id: st; required property var modelData; width: hm.width

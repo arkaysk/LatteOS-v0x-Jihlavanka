@@ -75,13 +75,26 @@ def logged(f):
     import functools
     import syslog
 
-    @functools.wraps(f)
-    def call(*a, **k):
-        out = f(*a, **k)
-        bad = isinstance(out, dict) and "error" in out
+    import inspect
+
+    def note(k, out):
+        bad = (isinstance(out, dict) and "error" in out) or (isinstance(out, str) and out.startswith('{"error"'))
         syslog.openlog("latte-mcp")
         syslog.syslog("%s %s %s %s" % (caller(k.get("ctx")), f.__name__, json.dumps({x: y for x, y in k.items() if x != "ctx"}, ensure_ascii=False)[:300],
                                        "failed" if bad else "answered"))
+
+    if inspect.iscoroutinefunction(f):
+        @functools.wraps(f)
+        async def acall(*a, **k):
+            out = await f(*a, **k)
+            note(k, out)
+            return out
+        return acall
+
+    @functools.wraps(f)
+    def call(*a, **k):
+        out = f(*a, **k)
+        note(k, out)
         return out
     return call
 
@@ -268,6 +281,45 @@ def serve(lazy=False, port=0):
         r = told(["latte-ai", "send", "new", provider, model, question, "--from", "ask"], timeout=310, LATTE_NO_TOOLS="1")
         return {k: r[k] for k in ("answer", "ok") if k in r} if isinstance(r, dict) and "answer" in r else r
 
+    # ── what the AI remembers (ROADMAP 10B.75, lensAIplan2.md 8): Basic Memory (AGPL-3.0, a program of its own), its notes
+    # Markdown files in ~/.local/share/latteAI/lensai that the person reads and changes too; started at the first call.
+    # Its twelve tools are ~6 300 tokens of forms, so they come behind two: what there is, and one to call
+    @server.tool()
+    @logged
+    async def memory_tools() -> list:
+        """What the AI's memory can do (its notes about the user, their work and what was agreed): each of its tools
+        with what it does and its arguments. Then call one with `memory`."""
+        s = await memory_session()
+        if not s:
+            return [{"error": "the memory is not there (Basic Memory is not installed)"}]
+        return [{"name": t.name, "does": t.description, "arguments": t.inputSchema} for t in (await s.list_tools()).tools]
+
+    @server.tool(structured_output=False)
+    @logged
+    async def memory(tool: str, arguments: dict, ctx: Context) -> str:
+        """Calls one tool of the AI's memory (from memory_tools), e.g. tool "bm_search" {"query": "…"}, or "bm_write"
+        to keep a note. What is written is shown to the user in LensAI; deleting or moving a note they allow first."""
+        s = await memory_session()
+        if not s:
+            return json.dumps({"error": "the memory is not there (Basic Memory is not installed)"})
+        if tool in ("bm_delete", "bm_move", "bm_project"):
+            no = allowed(ctx, "memory", "%s %s" % (tool, json.dumps(arguments, ensure_ascii=False)[:300]))
+            if no:
+                return json.dumps(no)
+        # LensAI's own memory unless the call names another (Agent Chats' projects have theirs, latteAI/agentes/…)
+        forms = {t.name: t.inputSchema for t in (await s.list_tools()).tools}
+        if tool not in forms:
+            return json.dumps({"error": "no memory tool " + tool + ": see memory_tools"})
+        if "project" in (forms[tool].get("properties") or {}) and not arguments.get("project") and not arguments.get("projects") and not arguments.get("all_projects"):
+            arguments = dict(arguments, project="lensai")
+        r = await s.call_tool(tool, arguments)
+        out = "\n".join(getattr(c, "text", "") for c in r.content)
+        if tool in ("bm_write", "bm_edit", "bm_delete", "bm_move") and not r.isError:
+            what = arguments.get("title") or arguments.get("identifier") or arguments.get("path") or ""
+            told(["latte-ai", "journal", "add", json.dumps({"app": "LensAI", "ai": caller(ctx), "did": {"bm_write": "Remembered", "bm_edit": "Changed in memory",
+                  "bm_delete": "Forgotten", "bm_move": "Moved in memory"}[tool], "where": MEMORY, "items": [[str(what)]]}, ensure_ascii=False)])
+        return out
+
     if lazy:
         server = lazily(server)
     if not port:
@@ -292,6 +344,57 @@ def serve(lazy=False, port=0):
             return
         await app(scope, receive, send)
     uvicorn.run(guarded, host="127.0.0.1", port=port, log_level="warning")
+
+
+MEMORY = os.path.join(os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share"), "latteAI", "lensai")
+BM = {}
+
+
+async def memory_session():
+    """Basic Memory's MCP session, started the first time it is asked for and kept while this server runs — in a thread
+    and event loop of its own: a stdio client's task scope cannot outlive the one request that opened it."""
+    if "s" not in BM:
+        tool = shutil.which("basic-memory", path=SEARCH)
+        if not tool:
+            return None
+        import asyncio
+        import threading
+        from mcp import ClientSession, StdioServerParameters
+        from mcp.client.stdio import stdio_client
+        loop, ready = asyncio.new_event_loop(), threading.Event()
+
+        async def life():
+            try:
+                async with stdio_client(StdioServerParameters(command=tool, args=["mcp", "--project", "lensai"]), errlog=open(os.devnull, "w")) as (r, w):
+                    async with ClientSession(r, w) as s:
+                        await s.initialize()
+                        BM["s"] = s
+                        ready.set()
+                        await asyncio.Event().wait()
+            finally:
+                ready.set()
+        threading.Thread(target=lambda: loop.run_until_complete(life()), daemon=True).start()
+        await asyncio.get_running_loop().run_in_executor(None, ready.wait, 60)
+        BM["loop"] = loop
+        if "s" not in BM:
+            return None
+    return Remote(BM["s"], BM["loop"])
+
+
+class Remote:
+    """The session as seen from this server's loop: each call made in the session's own loop and awaited here."""
+    def __init__(self, s, loop):
+        self.s, self.loop = s, loop
+
+    async def _on(self, coro):
+        import asyncio
+        return await asyncio.wrap_future(asyncio.run_coroutine_threadsafe(coro, self.loop))
+
+    async def list_tools(self):
+        return await self._on(self.s.list_tools())
+
+    async def call_tool(self, name, args):
+        return await self._on(self.s.call_tool(name, args))
 
 
 def lazily(full):

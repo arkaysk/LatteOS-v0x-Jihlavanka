@@ -540,3 +540,6 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
   je súčasťou stránky Agenti; hore nekonečný rozhovor, k nemu denník každej zmeny AI s celým zoznamom, export do `.md` a zámerné
   „Zmazať históriu“. Denník najviac 6 mesiacov a 20 MB. AI služby majú internet predvolene, na web idú iba na požiadanie; povolenie na
   reláciu platí pre lokálne LLM. ROADMAP 10B.67, 10B.69.
+- **Priečinky AI a ich mená** (18. 11., používateľ): mená priečinkov nikdy po slovensky. Nadradený priečinok dát AI je `latteAI`:
+  v ňom `lensai/` (celková pamäť LensAI; LensAI ho vie priamo otvoriť) a `agentes/` (pamäť Agent Chats oddelene), v ňom priečinky
+  projektov a v nich priečinky podprojektov. Prevod e5-sk-small do GGUF cez skript llama.cpp v dočasnom prostredí povolený. ROADMAP 10B.75.

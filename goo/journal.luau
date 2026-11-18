@@ -29,7 +29,7 @@ local function load()
         for _, e in ipairs(ok and type(list) == "table" and list or {}) do
             local items = e.items or {}
             local n = #items + (e.more or 0)
-            lines[#lines + 1] = { a = (e.did or "") .. (n > 0 and (" · " .. sub(tr("{n} items"), { n = n })) or ""),
+            lines[#lines + 1] = { a = tr(e.did or "") .. (n > 0 and (" · " .. sub(tr("{n} items"), { n = n })) or ""),
                                   b = table.concat({ e.app or "", e.ai or "", clock(e.at) }, " · "), kind = 0, pair = false }
             local where = {}
             if e.where and e.where ~= "" then where[#where + 1] = e.where end

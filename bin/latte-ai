@@ -108,7 +108,9 @@ No API key: the official tool of a service answers, with the account the user is
   latte-ai helper           the Helper's conversation, the oldest first: [{"at", "agent", "app", "task", "dir", "state":
                             running|done|error, "steps": [{"kind": text|tool|plan|ask, "text", "answer"}], "n" (items changed),
                             "log"}]; a task through ACP (latte-acp) with its steps, other journal entries without
-  latte-ai search WORDS [N]   every conversation that says them (LensAI's, Claude Code's sessions, the Helper's tasks),
+  latte-ai index            the index of the conversations whole, with each line's meaning (e5-sk-small through the router);
+                            a search starts it behind when lines have no meaning yet
+  latte-ai search WORDS [N]   every conversation that says them, or means them (LensAI's, Claude Code's sessions, the Helper's tasks),
                             the best first, without accents, words by their beginning: [{"source", "ref", "title",
                             "folder", "at", "snippet"}]; the index (~/.local/state/latteos/ai/index.db) is read on first
   latte-ai projects         every project, each with its subprojects: [{"path", "name", "type", "state", "storage",
@@ -772,6 +774,10 @@ def local_preset():
     keys = {"ctx": "ctx-size", "threads": "threads", "batch": "batch-size", "ubatch": "ubatch-size", "parallel": "parallel"}
     # ponytail: idle 5 min, then the model's memory goes back (llama.cpp's sleep); a setting when someone asks for it
     out = ["[*]", "jinja = true", "sleep-idle-seconds = 300", ""]
+    if embedder():
+        # the meanings of the conversations' words (the index): small, on the processor, never in the chat's way
+        out += ["[%s]" % local_name(embedder()), "model = " + embedder(), "embedding = true", "pooling = mean", "ctx-size = 512",
+                "batch-size = 512", "ubatch-size = 512", "n-gpu-layers = 0", ""]
     for m in local_models_all():
         s, mine, mm = model_settings(m["id"]), own.get(os.path.basename(m["id"]), {}), local_mmproj(m["id"])
         out += ["[%s]" % local_name(m["id"]), "model = " + m["id"]] + ["%s = %s" % (keys[k], s[k]) for k in keys]
@@ -795,7 +801,8 @@ def local_preset():
 
 def local_start(model):
     """The model loaded in llama.cpp's router (llama-server without -m, on this computer only): one server, each model in a
-    process of its own, loaded and let go without a restart; two at most (the one asked and a helper), the older let go
+    process of its own, loaded and let go without a restart; three at most (the one asked, a helper, the small model of
+    meanings the index uses), the older let go
     first, and a margin of the graphics card's memory kept free. Started the first time it is asked, and again when the
     models or their settings changed."""
     import time
@@ -811,7 +818,7 @@ def local_start(model):
                 break
             time.sleep(0.25)
         try:
-            proc = subprocess.Popen([local_server(), "--models-preset", ROUTER_PRESET, "--models-max", "2", "--models-memory-margin", "1024",
+            proc = subprocess.Popen([local_server(), "--models-preset", ROUTER_PRESET, "--models-max", "3", "--models-memory-margin", "1024",
                                      "--host", "127.0.0.1", "--port", str(LOCAL_PORT)],
                                     stdout=open(os.path.join(ROOM, "llama-server.log"), "w"), stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
                                     start_new_session=True)
@@ -1734,6 +1741,54 @@ def doers():
 INDEX = os.path.join(ROOM, "index.db")
 
 
+def embedder():
+    """The model that turns a text into its meaning (e5-sk-small, MIT, Slovak; made GGUF for llama.cpp, ROADMAP 10B.75)."""
+    for d in LOCAL_DIRS:
+        found = sorted(glob.glob(os.path.join(d, "models", "embed", "e5-sk*.gguf")))
+        if found:
+            return found[-1]
+    return None
+
+
+def embed(texts):
+    """Each text's meaning, a unit vector (numpy), from the router; None when there is no model or it does not answer.
+    e5 wants "query: " before what is looked for and "passage: " before what is looked in."""
+    import numpy
+    m = embedder()
+    if not m or not local_server() or not local_start(m):
+        return None
+    try:
+        got = local_call("/v1/embeddings", {"model": local_name(m), "input": texts}, timeout=300)["data"]
+    except (OSError, ValueError, KeyError):
+        return None
+    v = numpy.array([x["embedding"] for x in sorted(got, key=lambda x: x["index"])], dtype=numpy.float32)
+    return v / numpy.maximum(numpy.linalg.norm(v, axis=1, keepdims=True), 1e-9)
+
+
+def forget_said(db, key):
+    """A conversation's lines out of the index, with their meanings (a line's number may be given again later)."""
+    db.execute("delete from vecs where id in (select rowid from said where key = ?)", (key,))
+    db.execute("delete from said where key = ?", (key,))
+
+
+def index_meanings(most=100000):
+    """The meanings of the lines that have none yet, 32 at a time: what `latte-ai index` does in the background."""
+    db = index_open()
+    index_update(db)
+    left = db.execute("select rowid, text from said where rowid not in (select id from vecs) limit ?", (most,)).fetchall()
+    for i in range(0, len(left), 32):
+        part = left[i:i + 32]
+        # 512 tokens at most a line (the model's length); code takes more tokens a letter than words, so a shorter cut once more
+        v = embed(["passage: " + t[:800] for _, t in part])
+        if v is None:
+            v = embed(["passage: " + t[:300] for _, t in part])
+        if v is None:
+            break
+        db.executemany("insert or replace into vecs values (?, ?)", [(rid, v[k].tobytes()) for k, (rid, _) in enumerate(part)])
+        db.commit()
+    db.close()
+
+
 def index_open():
     import sqlite3
     os.makedirs(ROOM, exist_ok=True)
@@ -1741,6 +1796,7 @@ def index_open():
     db.execute("create table if not exists docs (key text primary key, source text, ref text, title text, folder text, at text, size integer)")
     db.execute("create virtual table if not exists said using fts5 (key unindexed, role unindexed, at unindexed, text, "
                "tokenize = 'unicode61 remove_diacritics 2')")
+    db.execute("create table if not exists vecs (id integer primary key, v blob)")    # a line's meaning, 384 floats
     return db
 
 
@@ -1758,7 +1814,7 @@ def index_update(db):
             continue
         if c.get("machine"):
             continue
-        db.execute("delete from said where key = ?", (key,))
+        forget_said(db, key)
         for m in c.get("messages") or []:
             if isinstance(m.get("content"), str) and m["content"].strip():
                 db.execute("insert into said values (?, ?, ?, ?)", (key, m.get("role", ""), m.get("at", ""), m["content"]))
@@ -1770,7 +1826,7 @@ def index_update(db):
         key, size = ("helper:" if helper_log else "claude:") + path, os.path.getsize(path)
         start, title = known.get(key, (0, ""))
         if start > size:                                   # a file written anew: from its beginning
-            db.execute("delete from said where key = ?", (key,))
+            forget_said(db, key)
             start = 0
         if start == size:
             continue
@@ -1824,8 +1880,32 @@ def search(words, most=20):
     best = {}
     for key, snip in db.execute("select key, snippet(said, 3, '«', '»', '…', 14) from said where said match ? order by rank limit 400", (query,)):
         best.setdefault(key, snip)
+    # and by meaning (e5-sk): the lines nearest to the question, a conversation by its nearest line; both lists joined by
+    # Reciprocal Rank Fusion (as memex-chats joins them), so a conversation found both ways comes first
+    score = {k: 1 / (60 + i) for i, k in enumerate(best)}
+    have = db.execute("select count(*) from vecs").fetchone()[0]
+    if have:
+        import numpy
+        q = embed(["query: " + words])
+        if q is not None:
+            ids, blobs = zip(*db.execute("select id, v from vecs").fetchall())
+            near = numpy.frombuffer(b"".join(blobs), dtype=numpy.float32).reshape(len(ids), -1) @ q[0]
+            seen = []
+            for j in numpy.argsort(-near)[:200]:
+                if near[j] < 0.82:                         # e5's scores lie close together: below this, not the same thing
+                    break
+                row = db.execute("select key, text from said where rowid = ?", (int(ids[j]),)).fetchone()
+                # a line of a few words ("do it", "go on") is near to everything: it says nothing of its own
+                if row and len(row[1]) >= 40 and row[0] not in seen:
+                    seen.append(row[0])
+                    best.setdefault(row[0], " ".join(row[1].split())[:160] + "…")
+            for i, k in enumerate(seen[:most]):
+                score[k] = score.get(k, 0) + 1 / (60 + i)
+    if db.execute("select count(*) from said").fetchone()[0] > have and embedder():
+        subprocess.Popen([os.path.abspath(__file__), "index"], start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)   # the rest, behind
     out = []
-    for key, snip in list(best.items())[:most]:
+    for key in sorted(best, key=lambda k: -score.get(k, 0))[:most]:
+        snip = best[key]
         d = db.execute("select source, ref, title, folder, at from docs where key = ?", (key,)).fetchone()
         if d:
             out.append({"source": d[0], "ref": key.split(":", 1)[1] if d[0] == "helper" else d[1], "title": d[2], "folder": d[3], "at": d[4],
@@ -3012,6 +3092,16 @@ def main(a):
         return 0 if r["ok"] else 1
     if a[:1] == ["journal"]:
         return journal_main(a[1:])
+    if a == ["index"]:
+        # the index whole, meanings too; one at a time (a second one leaves at once)
+        import fcntl
+        lock = open(INDEX + ".lock", "w")
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            return 0
+        index_meanings()
+        return 0
     if a[:1] == ["search"] and len(a) in (2, 3) and (len(a) == 2 or a[2].isdigit()):
         print(json.dumps(search(a[1], int(a[2]) if len(a) == 3 else 20), ensure_ascii=False))
         return 0

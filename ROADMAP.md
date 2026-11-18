@@ -3613,13 +3613,24 @@ kanály forku Agent Chats. Oprava popri tom: `tests/test_session.sh` po minúte 
 (aj LensGoo a LensShore), v reláciách Claude Code v termináloch a v úlohách Pomocníka — SQLite FTS5 bez diakritiky a podľa začiatku slova,
 najlepšie miesto každého rozhovoru (`index.db`, číta sa od miesta, kde sa skončilo: prvé zostavenie ~2 min pri 1,1 GB relácií, potom
 0,1–0,3 s). Nástroj `search_chats` v latte-mcp (s povolením ako `conversations`). LensAI › Rozhovory: po Enter „Povedané v rozhovoroch“
-s úryvkom, klik otvorí rozhovor / reláciu / Pomocníka. **Chýba:** vektory významu (e5-sk-small, stiahnuté do /data/ai/models/embed),
-importy ChatGPT/Gemini, relácie Codexu.
+s úryvkom, klik otvorí rozhovor / reláciu / Pomocníka. **Význam (18. 11.):** e5-sk-small prevedený do GGUF (skript llama.cpp, kópia
+s konfiguráciou XLM-R bez posunu pozícií a s tokenizerom z `tokenizer.json`; overené proti pôvodnému modelu: kosínus 0,999), v routeri
+ako tretí model (iba procesor, `embedding`, `pooling mean`); `latte-ai index` dopočíta význam každého riadku (4 765 riadkov za ~2 min,
+riadok najviac 800 znakov), hľadanie spojí slová a význam cez Reciprocal Rank Fusion („orbitálne laboratórium Číny“ nájde rozhovor
+o Tiangongu bez spoločného slova; ~0,3 s). **Chýba:** importy ChatGPT/Gemini, relácie Codexu, sqlite-vec (pri tisícoch riadkov stačí numpy).
 
 **10B.74** [x] 18. 11. **Stiahnuté pre ďalšie kroky** (na latte-lab, `/data/ai`): sherpa-onnx 2.0.1 (rozpoznávanie reči, VAD) a 1.13.8
 (syntéza — od 2.0 nemá espeak-ng, ktorý hlas Piper potrebuje), Parakeet TDT 0.6B v3 int8, KInIT Parakeet TDT sk (.nemo, na prevod do ONNX),
 Silero VAD, Piper sk_SK Lili, sqlite-vec 0.1.9, e5-sk-small; `codex-acp` 2.7.0 a Basic Memory (`uv tool`) do `~/.local`. Overené: Lili
 povie slovenskú vetu za 2 s, Parakeet v3 ju prepíše („Ahoj, toto je Latte Oles, nesie Studa“ — základný model, slovenský KInIT čaká na prevod).
+
+**10B.75** [~] 18. 11. **Pamäť AI** (krok 8 syntézy; používateľ 18. 11.: priečinky anglicky, nadradený `latteAI` → `lensai/`, `agentes/PROJEKT/
+PODPROJEKT`): Basic Memory 1.0 (AGPL-3.0, samostatný program) s projektom `lensai` v `~/.local/share/latteAI/lensai` (poznámky v Markdowne,
+čitateľné aj ručne). V latte-mcp dva nástroje namiesto jeho dvanástich (~6 300 tokenov foriem): `memory_tools` a `memory(tool, arguments)`;
+Basic Memory sa spustí pri prvom volaní (vlastné vlákno), predvolene projekt `lensai`; zápis, úprava, zmazanie a presun idú do denníka
+„Čo AI zmenila“, zmazanie, presun a správa projektov sa pýtajú v LensAI. LensAI › Agenti › Pomocník: tlačidlo **Pamäť** otvorí priečinok.
+Overené: zápis a hľadanie poznámky cez latte-mcp, zápis v denníku. **Chýba:** vektory významu Basic Memory cez e5-sk (llama.cpp, po prevode),
+pamäť projektov `agentes/…`, `ai-instructions.txt` ako poznámka pamäte.
 
 ### 10C. [ ] Heidelberg
 

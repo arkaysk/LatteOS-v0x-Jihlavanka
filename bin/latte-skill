@@ -321,7 +321,8 @@ READS = {"conversations": "Read the list of your conversations with every AI",
          "ask": "Send a question to another AI, on your account",
          "net": "Use the internet",
          "web": "Look on the web",
-         "agent": "Let the agent do this step"}
+         "agent": "Let the agent do this step",
+         "memory": "Change what the AI remembers"}
 
 
 def grants():

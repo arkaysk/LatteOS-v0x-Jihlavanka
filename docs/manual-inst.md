@@ -78,3 +78,13 @@ nevyhnutne potrebuje. **Riziko** (používateľ prijal 21. 10.): doplnok použí
   (návrat: `sudo cp -a /usr/share/latteos/goo.pred-gooengine2/. /usr/share/latteos/goo/` a
   `systemctl --user restart latte-goo`).
 
+
+## 18. 11. 2026 — LensAI: čo je na latte-lab nainštalované mimo `FILES` (pre ďalší počítač)
+
+Na latte-lab to spravil Claude; na inom počítači to treba spustiť ručne (neskôr Nastavenia › CLI / LensAI):
+- `npm install -g --prefix ~/.local @agentclientprotocol/claude-agent-acp@0.108.0` — Claude Code cez ACP (Pomocník).
+- `npm install -g --prefix ~/.local @agentclientprotocol/codex-acp@2.7.0` — Codex cez ACP.
+- `uv tool install basic-memory`, potom `basic-memory project add lensai ~/.local/share/latteAI/lensai`,
+  `basic-memory project default lensai`; v `~/.basic-memory/config.json` `auto_update: false`, `cloud_promo_opt_out: true`.
+- Modely a programy do `/data/ai` (ROADMAP 10B.74): sherpa-onnx 2.0.1 a 1.13.8, Parakeet v3 int8, KInIT Parakeet sk,
+  Silero VAD, Piper Lili, sqlite-vec, e5-sk-small (+ jeho prevod do GGUF, 10B.75).
