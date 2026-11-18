@@ -3092,5 +3092,6 @@ library Slovak {
         "What changed" = "Čo sa zmenilo"
         "A task for your agent…" = "Úloha pre tvojho agenta…"
         "Nothing yet. Small tasks for the AI from every app (sorting photos, renaming files, a setting) come here, one under another; what each changed opens beside it." = "Zatiaľ nič. Drobné úlohy pre AI zo všetkých aplikácií (triedenie fotiek, premenovanie súborov, nastavenie) sa zapíšu sem pod seba; čo každá zmenila, otvoríš vedľa nej."
+        "Scroll" = "Posúvanie"
     }
 }
