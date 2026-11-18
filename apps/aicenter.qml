@@ -1189,7 +1189,8 @@ ShellRoot {
                     I18n.tr("The version stands by LensAI's name."),
                     I18n.tr("Local models: going back to a model already loaded takes seconds, not a new start, and a helper no longer pushes out the model you talk to."),
                     I18n.tr("Local models use as much of the graphics card as is free when they load, so a running game leaves them less instead of a crash."),
-                    I18n.tr("A local model idle for five minutes gives its memory back.")]
+                    I18n.tr("A local model idle for five minutes gives its memory back."),
+                    I18n.tr("The services' pages sleep: the two you use most stay awake, another one is paused after five minutes out of sight and gives its memory back after fifteen. Chosen again, it loads where it was.")]
             hasTips: true; onTipsAgain: shell.showTips()
             license: I18n.tr("GNU General Public License, version 3 or later")
             source: "https://github.com/arkaysk/LatteOS-v0x-Jihlavanka"

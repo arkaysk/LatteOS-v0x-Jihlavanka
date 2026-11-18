@@ -6,6 +6,7 @@
 import QtQuick
 import QtWebEngine
 import Quickshell
+import Quickshell.Io
 import "../common"
 
 Item {
@@ -38,6 +39,33 @@ Item {
     property var warm: []
     Timer { interval: 1500; repeat: true; running: tabs.warm.some(id => tabs.has(id) < 0 && tabs.services.some(s => s.id === id))
             onTriggered: { const id = tabs.warm.find(x => tabs.has(x) < 0 && tabs.services.some(s => s.id === x)); if (id) opened.append({ service: id }) } }
+    // ── sleep (ROADMAP 10B.65, approved 17. 11.): Qt WebEngine's lifecycle in two steps, as its lifecycle example does it,
+    // with the rule of Vivaldi's Memory Saver and Ferdium's hibernation — the less a service is used, the sooner it sleeps.
+    // The two used most this week stay awake (their news still comes); another, out of sight 5 min, is frozen (its
+    // scripts stop, it comes back at once), after 15 min discarded (its memory goes back; it loads again when it is
+    // chosen, its last picture shown meanwhile)
+    readonly property int keepAwake: 2
+    readonly property int freezeAfter: 5 * 60000
+    readonly property int discardAfter: 15 * 60000
+    // when each service was opened, the last seven days: { claude: [ms, …] }, kept for the next time
+    property var use: ({})
+    FileView { id: useFile; printErrors: false; blockLoading: true
+               path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/latteos/ai/tabs-use.json"
+               onLoaded: { try { tabs.use = JSON.parse(text()) } catch (e) { tabs.use = ({}) } } }
+    function used(id) {
+        const week = Date.now() - 7 * 86400000, u = Object.assign({}, use)
+        u[id] = (u[id] || []).filter(t => t > week).concat([Date.now()]).slice(-200)
+        use = u; useFile.setText(JSON.stringify(u))
+    }
+    function awake() {         // the services that never sleep: the most opened this week, the latest first on a tie
+        const week = Date.now() - 7 * 86400000, n = id => (use[id] || []).filter(t => t > week).length,
+              last = id => (use[id] || []).slice(-1)[0] || 0
+        return services.map(x => x.id).sort((a, b) => n(b) - n(a) || last(b) - last(a)).slice(0, keepAwake)
+    }
+    property var pictures: ({})       // the last picture of each discarded page, shown while it loads again
+    Timer { interval: 30000; repeat: true; running: opened.count > 0
+            onTriggered: { const keep = tabs.awake(), now = Date.now()
+                           for (let i = 0; i < views.count; i++) { const v = views.itemAt(i); if (v) v.rest(keep, now) } } }
     // the small window a page asks for, until the page in it closes it (or the person does)
     Component {
         id: popup
@@ -53,6 +81,7 @@ Item {
         }
     }
     Repeater {
+        id: views
         model: opened
         WebEngineView {
             id: view
@@ -88,7 +117,21 @@ Item {
                                      if (r.status === WebEngineView.LoadSucceededStatus || r.status === WebEngineView.LoadFailedStatus) tabs.show(view.modelData) }
             function heard() { if (settled && !visible) tabs.mark(modelData, true) }
             onLoadProgressChanged: if (loadProgress >= 80) tabs.show(modelData)
-            onVisibleChanged: if (visible) { tabs.mark(modelData, false); tabs.progress = Qt.binding(() => view.loadProgress) }
+            onVisibleChanged: { hidden = visible ? 0 : Date.now()
+                                if (visible) { tabs.used(modelData); lifecycleState = WebEngineView.LifecycleState.Active
+                                               tabs.mark(modelData, false); tabs.progress = Qt.binding(() => view.loadProgress) } }
+            property real hidden: Date.now()          // since when it is out of sight (0: seen now)
+            // its picture, taken while it is seen (one out of sight draws nothing): what stands in its place if it is discarded
+            Timer { interval: 20000; repeat: true; running: view.visible && view.settled; triggeredOnStart: true
+                    onTriggered: view.grabToImage(r => { const p = Object.assign({}, tabs.pictures); p[view.modelData] = r.url; tabs.pictures = p }) }
+            function rest(keep, now) {
+                if (visible || hidden === 0 || keep.indexOf(modelData) >= 0) return
+                if (now - hidden > tabs.discardAfter && lifecycleState !== WebEngineView.LifecycleState.Discarded) {
+                    const n = Object.assign({}, tabs.shown); delete n[modelData]; tabs.shown = n      // the cover again until it is back
+                    lifecycleState = WebEngineView.LifecycleState.Discarded
+                } else if (now - hidden > tabs.freezeAfter && lifecycleState === WebEngineView.LifecycleState.Active)
+                    lifecycleState = WebEngineView.LifecycleState.Frozen
+            }
         }
     }
     // until a tab's page first shows something, the tab says what it is doing: a first visit takes seconds (over the
@@ -98,6 +141,7 @@ Item {
     function show(id) { if (shown[id]) return; const n = Object.assign({}, shown); n[id] = true; shown = n }
     Rectangle { width: tabs.split ? tabs.width / 2 - 1 : tabs.width; height: tabs.height; z: 1; color: Theme.card
         visible: tabs.current !== "" && !tabs.shown[tabs.current]
+        Image { anchors.fill: parent; source: tabs.pictures[tabs.current] || ""; visible: source != ""; opacity: 0.55; fillMode: Image.PreserveAspectCrop }
         Waiting { anchors.centerIn: parent; text: I18n.tr("Opening {n}…", { n: (tabs.services.find(s => s.id === tabs.current) || {}).name || tabs.current }) }
         DotBar { anchors.horizontalCenter: parent.horizontalCenter; y: parent.height / 2 + 64; width: 220; height: 8; segments: 24; tint: Theme.gold; value: tabs.progress / 100 } }
 }

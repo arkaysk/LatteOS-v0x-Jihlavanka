@@ -3537,6 +3537,12 @@ s predvoľbami `~/.local/state/latteos/ai/models.ini` (sekcia na model z nastave
 rezerva VRAM, spánok po 5 min nečinnosti; vrstvy na GPU určí `--fit` z voľnej pamäte, ak ich používateľ nezadal. Návrat k už
 načítanému modelu 2,8 s namiesto nového štartu; pomocník (malý model) už nevyhodí hlavný model. Chýba: voľba času spánku v UI.
 
+**10B.65** [x] 18. 11. **Uspávanie webov** (schválené 17. 11., krok 2 syntézy): Qt WebEngine `lifecycleState` v dvoch stupňoch
+podľa príkladu Qt a pravidla Vivaldi Memory Saver / Ferdium: dve služby najčastejšie otvárané za 7 dní (`~/.local/state/latteos/ai/tabs-use.json`)
+ostávajú bdelé, iná po 5 min mimo pohľadu Frozen, po 15 min Discarded; jej posledný obrázok (snímaný každých 20 s, kým je vidieť) stojí
+pod „Otváram…“, kým sa znova načíta. Namerané (8 webov, skrátené časy): 3 778 MB → 1 215 MB PSS; prebudenie Mistralu overené
+kliknutím, prihlásenie ostalo. Chýba: časy v Nastaveniach › Web, výnimka „nikdy neuspať“ pri službe.
+
 ### 10C. [ ] Heidelberg
 
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví
