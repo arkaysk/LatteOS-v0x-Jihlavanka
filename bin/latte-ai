@@ -1304,7 +1304,8 @@ def sherpa(kind):
         if kind == "asr":
             for m in ("parakeet-tdt-0.6b-v3-sk-int8", "sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8"):
                 m = os.path.join(d, "models", "asr", m)
-                if os.path.exists(os.path.join(m, "tokens.txt")):
+                # whole only: a model half made (its encoder missing) is passed over for the next one
+                if os.path.exists(os.path.join(m, "tokens.txt")) and glob.glob(os.path.join(m, "encoder*.onnx")):
                     return builds[-1], m
         else:
             m = os.path.join(d, "models", "tts", "vits-piper-sk_SK-lili-medium")

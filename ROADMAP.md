@@ -3638,6 +3638,11 @@ KInIT po prevode, inak NVIDIA v3), whisper ostáva ako záloha. Namerané na tej
 `latte-ai say TEXT|stop` číta nahlas hlasom Lili (sherpa-onnx 1.13.8, bez značiek Markdownu a kódu); v LensAI pri každej odpovedi
 „Prečítať nahlas“ / „Prestať čítať“. **Chýba:** prevod KInIT Parakeet sk (beží), VAD (Silero: koniec reči sám), stále načítaný model
 (dnes ~4 s načítanie pri každom prepise), „Prestať čítať“ sa po dočítaní samo nevráti.
+  **18. 11. večer — pád latte-lab:** prevod KInIT Parakeet sk do ONNX (NeMo, dočasné prostredie) vyšiel, ale kvantovanie kódovača na int8
+zabralo celú pamäť (15 GB, z toho ~7 GB relácia): prvý pokus zabil OOM killer, druhý zamrazil počítač (~20:38, reštart 20:46,
+spadlo spojenie aj Moonlight). Výstup fp32 bol v /tmp a reštart ho zmazal; ostali dekodér a joiner int8. Znova iba s pevným stropom pamäte
+(`systemd-run --user --scope -p MemoryMax=… -p MemorySwapMax=0`), výstupy na /data, alebo na hlavnom PC. `latte-ai` neúplný model
+(bez kódovača) preskočí.
 
 ### 10C. [ ] Heidelberg
 
