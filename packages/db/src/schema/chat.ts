@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   boolean,
   check,
   foreignKey,
@@ -29,6 +30,13 @@ export const channelVisibilityEnum = pgEnum("channel_visibility", ["public", "pr
 export const channelKindEnum = pgEnum("channel_kind", ["channel", "dm", "forum", "task", "file"]);
 /** The kinds a channel has: no row is `forum` since migration 0216. */
 export type ChannelKind = Exclude<(typeof channelKindEnum.enumValues)[number], "forum">;
+
+/**
+ * LatteOS: a channel as a project (lensAIplan2.md F2, F3). Its state (an archived project is an archived channel), and
+ * what kind of work it is; null type: a plain channel, not a project.
+ */
+export const channelProjectStateEnum = pgEnum("channel_project_state", ["active", "paused", "done"]);
+export const channelProjectTypeEnum = pgEnum("channel_project_type", ["code", "drawing", "book", "3d", "music", "comic", "other"]);
 
 /**
  * A named group of channels in the sidebar, the same for everyone in the organization. Deleting one leaves its
@@ -83,6 +91,16 @@ export const channels = pgTable(
     categoryId: uuid().references(() => channelCategories.id, { onDelete: "set null" }),
     /** Order inside its category (or among the channels with none), from 0. */
     position: integer().notNull().default(0),
+    /**
+     * LatteOS (F1): the project this channel is a subproject of — one level only, a subproject has none of its own and a
+     * project with subprojects is no one's; null: a channel of its own. The sidebar shows it under its project; an app
+     * that does not know it sees one list as before.
+     */
+    parentId: uuid().references((): AnyPgColumn => channels.id, { onDelete: "set null" }),
+    /** LatteOS (F2): where the project stands; archived is `archivedAt`. */
+    projectState: channelProjectStateEnum().notNull().default("active"),
+    /** LatteOS (F3): what kind of work; null: a plain channel. */
+    projectType: channelProjectTypeEnum(),
   },
   (t) => [unique().on(t.orgId, t.name), unique().on(t.orgId, t.id), unique().on(t.orgId, t.dmKey)],
 );

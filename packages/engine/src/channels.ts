@@ -174,6 +174,27 @@ export async function announceChannelLeavers(
   if (leavers.length > 0) await publishChannelsChanged(pubsub, orgId);
 }
 
+export type ProjectType = "code" | "drawing" | "book" | "3d" | "music" | "comic" | "other";
+export type ProjectState = "active" | "paused" | "done";
+
+/**
+ * LatteOS (F1): a channel may be a subproject of a project, one level deep: the parent is a live channel of the same
+ * organization that is not a subproject itself, and a project that has subprojects goes under no one.
+ */
+export async function requireProjectParent(db: Executor, orgId: string, parentId: string, childId: string | null) {
+  if (childId && parentId === childId) throw new ValidationError("A channel can't be its own project");
+  const [parent] = await db
+    .select({ id: channels.id, parentId: channels.parentId, kind: channels.kind })
+    .from(channels)
+    .where(and(eq(channels.id, parentId), eq(channels.orgId, orgId), isNull(channels.archivedAt)));
+  if (!parent || parent.kind !== "channel") throw new NotFoundError("Project channel not found");
+  if (parent.parentId) throw new ValidationError("A subproject can't have subprojects of its own");
+  if (childId) {
+    const [child] = await db.select({ id: channels.id }).from(channels).where(and(eq(channels.parentId, childId), isNull(channels.archivedAt))).limit(1);
+    if (child) throw new ValidationError("A project with subprojects can't become a subproject");
+  }
+}
+
 export async function createChannel(
   db: Database,
   actorId: string,
@@ -185,10 +206,16 @@ export async function createChannel(
     /** Private only: people holding one of these roles also see it and may join (ADR 0125). */
     audienceRoleIds?: string[];
     categoryId?: string | null;
+    /** LatteOS: a subproject of this channel (F1). */
+    parentId?: string | null;
+    /** LatteOS: what kind of project (F3); none: a plain channel. */
+    projectType?: ProjectType | null;
   },
   options: { pubsub?: PubSub } = {},
 ): Promise<Channel> {
   await requirePermission(db, actorId, orgId, "create_channels");
+  const parentId = input.parentId ?? null;
+  if (parentId) await requireProjectParent(db, orgId, parentId, null);
   // Whoever may create a channel may put it in an existing category (arranging categories is for admins).
   const categoryId = input.categoryId ?? null;
   if (categoryId) await requireCategoryInOrg(db, orgId, categoryId);
@@ -212,6 +239,8 @@ export async function createChannel(
           createdByUserId: actorId,
           categoryId,
           position: await endOfCategory(tx, orgId, categoryId),
+          parentId,
+          projectType: input.projectType ?? null,
         })
         .returning();
       if (!channel) throw new Error("channel insert returned nothing");
@@ -260,6 +289,10 @@ export interface ChannelListItem {
   categoryId: string | null;
   /** Order inside its category. */
   position: number;
+  /** LatteOS: the project it is a subproject of (F1), its state (F2) and kind (F3); null type: a plain channel. */
+  parentId: string | null;
+  projectState: ProjectState;
+  projectType: ProjectType | null;
   isMember: boolean;
   /** Listed only because I'm an administrator (ADR 0151): the apps keep it off the sidebar until opened or joined. */
   seenAsAdmin: boolean;
@@ -298,6 +331,9 @@ interface ChannelListRow {
   created_at: Date | string;
   category_id: string | null;
   position: number | string;
+  parent_id: string | null;
+  project_state: ProjectState;
+  project_type: ProjectType | null;
   is_member: boolean;
   seen_as_admin: boolean;
   unread_count: number | string | null;
@@ -343,7 +379,7 @@ export async function listChannels(db: Database, userId: string, orgId: string):
     and u.meta->>'mediaAfter' is null`;
   const rows = rowsOf<ChannelListRow>(
     await db.execute(sql`select c.id, c.org_id, c.name, c.topic, c.visibility, c.audience_role_ids, c.created_by_user_id, c.created_at,
-        c.category_id, c.position,
+        c.category_id, c.position, c.parent_id, c.project_state, c.project_type,
         (cm.id is not null) as is_member,
         (cm.id is null and c.visibility <> 'public' and not ${channelAudienceSql("c", sql`${userId}`)}) as seen_as_admin,
         coalesce(un.n, 0) as unread_count, coalesce(un.m, 0) as mention_count,
@@ -398,6 +434,9 @@ export async function listChannels(db: Database, userId: string, orgId: string):
       createdAt: asDate(r.created_at),
       categoryId: r.category_id,
       position: Number(r.position),
+      parentId: r.parent_id,
+      projectState: r.project_state,
+      projectType: r.project_type,
       isMember: r.is_member === true,
       seenAsAdmin: r.seen_as_admin === true,
       unreadCount: Number(r.unread_count ?? 0),

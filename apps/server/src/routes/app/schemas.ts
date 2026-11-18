@@ -688,6 +688,17 @@ export const Channel = z
       .optional()
       .openapi({ description: "Its sidebar category; null: on top, with none." }),
     position: z.number().int().optional().openapi({ description: "Order inside its category, from 0." }),
+    parentId: z.uuid().nullable().optional().openapi({
+      description: "LatteOS: the project this channel is a subproject of (one level); null: a channel of its own.",
+    }),
+    projectState: z.enum(["active", "paused", "done"]).optional().openapi({
+      description: "LatteOS: where the project stands; an archived project is an archived channel.",
+    }),
+    projectType: z
+      .enum(["code", "drawing", "book", "3d", "music", "comic", "other"])
+      .nullable()
+      .optional()
+      .openapi({ description: "LatteOS: what kind of project; null: a plain channel." }),
     unreadCount: z.number().int().optional().openapi({
       description:
         "Channel list only: messages since you last read it (since you joined, if never), not yours; a thread reply counts only in a thread you follow; an agent's sticker or GIF after its own reply never (ADR 0091). At most 100; 0 when you're not a member.",

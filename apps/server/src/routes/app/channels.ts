@@ -266,6 +266,9 @@ export function channelRoutes(deps: AppDeps) {
               description:
                 "Private only: people holding one of these roles (departments) also see it and may join (ADR 0125); empty: invite only.",
             }),
+            parentId: z.uuid().nullable().optional().openapi({ description: "LatteOS: make it a subproject of this channel; null: its own." }),
+            projectState: z.enum(["active", "paused", "done"]).optional(),
+            projectType: z.enum(["code", "drawing", "book", "3d", "music", "comic", "other"]).nullable().optional(),
           }),
         ),
       },
@@ -286,6 +289,9 @@ export function channelRoutes(deps: AppDeps) {
           createdAt: r.createdAt.toISOString(),
           categoryId: r.categoryId,
           position: r.position,
+          parentId: r.parentId,
+          projectState: r.projectState,
+          projectType: r.projectType,
         },
         200,
       );

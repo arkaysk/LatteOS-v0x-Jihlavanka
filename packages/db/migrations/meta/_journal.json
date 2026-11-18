@@ -2101,6 +2101,13 @@
       "when": 1795028809526,
       "tag": "0304_claude_auth_percent",
       "breakpoints": true
+    },
+    {
+      "idx": 302,
+      "version": "7",
+      "when": 1795032368699,
+      "tag": "0305_latteos_channel_projects",
+      "breakpoints": true
     }
   ]
 }
