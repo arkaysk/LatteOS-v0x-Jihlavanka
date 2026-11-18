@@ -74,7 +74,7 @@ scene Journal {
     column list {
         at: 28, by + 8
         view: rw - 16, lh - 16
-        step: step
+        step: 3 * step              // a notch of the wheel: three lines
         content: total * step
         for r in rows from first {
             group {
@@ -94,6 +94,23 @@ scene Journal {
         }
     }
     on change floor(list.scroll / step) { emit slid(list.scroll) }
+
+    // ── its scroll bar, as Windows 11 has it: thin until the pointer is near, then wide enough to take. Its thumb is as
+    // long as the share of the list that shows; dragging it, or pressing the track, goes straight there — a list of
+    // thousands is crossed in one move. PgUp/PgDn a page, Home/End the ends, a notch of the wheel three lines ─────────
+    let vh = lh - 16
+    let full = total * step
+    let most = max(0, full - vh)
+    let th = clamp(vh * vh / max(vh, full), 36, vh)
+    zone box track { from: 20 + rw - 18, by + 8; size: 16, vh; cursor: pointer; label: "Scroll"; role: region; active: most > 0 }
+    box { from: 20 + rw - 6 - 6 * track.hover, by + 8; size: 2 + 6 * track.hover, vh; corner: 4; color: line; opacity: 60% * track.hover; show: most > 0 }
+    box { from: 20 + rw - 6 - 6 * track.hover, by + 8 + (vh - th) * clamp(list.scroll / max(1, most), 0, 1); size: 2 + 6 * track.hover, th; corner: 4; color: if(track.pressed > 0.5, gold, dim); opacity: 55% + 45% * track.hover; show: most > 0 }
+    on press track { list.scroll: clamp((local.y - by - 8 - th / 2) / max(1, vh - th), 0, 1) * most }
+    on drag track { list.scroll: clamp((local.y - by - 8 - th / 2) / max(1, vh - th), 0, 1) * most }
+    on key Page_Down { list.scroll: min(most, list.scroll + vh - step) }
+    on key Page_Up { list.scroll: max(0, list.scroll - vh + step) }
+    on key End { list.scroll: most }
+    on key Home { list.scroll: 0 }
 
     // ── the foot: what happened, Export · Clear history · Close over a line ───────────────────────────────────────
     box { from: 0, H - 64; size: W, 1; color: line }

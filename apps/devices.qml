@@ -542,7 +542,7 @@ ShellRoot {
                             Label { width: parent.width; text: parent.parent.under; color: Theme.dim; font.pixelSize: 11; elide: Text.ElideRight; visible: text !== "" } }
                         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: parent.pressed() }
                     }
-                    Flickable { anchors.fill: parent; anchors.margins: 12; clip: true; contentHeight: mapCol.height + 20; boundsBehavior: Flickable.StopAtBounds
+                    Flickable { ScrollGrip {} anchors.fill: parent; anchors.margins: 12; clip: true; contentHeight: mapCol.height + 20; boundsBehavior: Flickable.StopAtBounds
                         Column { id: mapCol; width: parent.width; spacing: 0
                             Node { anchors.horizontalCenter: parent.horizontalCenter; icon: "world"; title: I18n.tr("Internet") }
                             Repeater { model: map.way
@@ -578,7 +578,7 @@ ShellRoot {
                         Repeater { model: parent.parent.abilities
                             Pill { required property string modelData; implicitHeight: 30; icon: shell.caps[modelData].icon; text: I18n.tr(shell.caps[modelData].name)
                                    strong: shell.capFilter === modelData; onPressed: shell.capFilter = shell.capFilter === modelData ? "" : modelData } } }
-                    ListView {
+                    ListView { ScrollGrip {}
                         x: 28; y: capRow2.height + 12; width: parent.width - 56; height: parent.height - y - 16; clip: true; spacing: 6
                         model: parent.everyone.filter(d => shell.capFilter === "" || (d.caps || []).indexOf(shell.capFilter) >= 0)
                         delegate: Rectangle { id: row; required property var modelData; width: ListView.view.width; height: 58; radius: 14

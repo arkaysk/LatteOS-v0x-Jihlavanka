@@ -818,7 +818,7 @@ ShellRoot {
                         onAccepted: panel.reachAddress(text)
                         Keys.onEscapePressed: { panel.typing = false; keys.forceActiveFocus() }
                         onActiveFocusChanged: if (!activeFocus) panel.typing = false } }
-        Flickable { id: crumbs; x: 18; y: 12; width: parent.width - 36 - freeText.implicitWidth - 12; height: 32; contentWidth: Math.max(way.width, width); clip: true; boundsBehavior: Flickable.StopAtBounds
+        Flickable { ScrollGrip {} id: crumbs; x: 18; y: 12; width: parent.width - 36 - freeText.implicitWidth - 12; height: 32; contentWidth: Math.max(way.width, width); clip: true; boundsBehavior: Flickable.StopAtBounds
             visible: !panel.typing
             onContentWidthChanged: contentX = Math.max(0, contentWidth - width)
             // the bare room beside the way: a press there writes the address
@@ -870,7 +870,7 @@ ShellRoot {
             Label { anchors.centerIn: parent; visible: panel.path.startsWith("/") && !panel.source && panel.count === 0 && files.status === FolderListModel.Ready; text: I18n.tr("This folder is empty."); color: Theme.faint }
             // Disks and devices: every disk as KDE's Partition Manager shows it — a band of its partitions as wide as each
             // is, room no partition takes, and below a line for each with how full its file system really is
-            Flickable { visible: panel.path === "disks:" && !panel.source; anchors.fill: parent; anchors.margins: 10; clip: true
+            Flickable { ScrollGrip {} visible: panel.path === "disks:" && !panel.source; anchors.fill: parent; anchors.margins: 10; clip: true
                         contentHeight: diskCol.height + 20; boundsBehavior: Flickable.StopAtBounds
                 onVisibleChanged: if (visible) disker.running = true
                 Component.onCompleted: if (visible) disker.running = true
@@ -919,7 +919,7 @@ ShellRoot {
                         Pill { icon: "world-www"; text: "KDE Partition Manager"; onPressed: Quickshell.execDetached(["xdg-open", "https://apps.kde.org/sk/partitionmanager/"]) }
                         Pill { icon: "world-www"; text: "GParted"; onPressed: Quickshell.execDetached(["xdg-open", "https://gparted.org/"]) } } } }
             // This computer, as GNOME Files has it: the folders, the system, the other drives, the network; each with a quiet heading
-            Flickable { visible: panel.path === "computer:" && !panel.source; anchors.fill: parent; anchors.margins: 6; contentHeight: sections.height; clip: true; boundsBehavior: Flickable.StopAtBounds
+            Flickable { ScrollGrip {} visible: panel.path === "computer:" && !panel.source; anchors.fill: parent; anchors.margins: 6; contentHeight: sections.height; clip: true; boundsBehavior: Flickable.StopAtBounds
                 Column { id: sections; width: parent.width; spacing: 10
                     Repeater { model: [{ head: QT_TR_NOOP("Preferred folders"), kinds: ["home", "desktop", "documents", "download", "pictures", "music", "videos"], root: false },
                                        { head: QT_TR_NOOP("System"), kinds: ["disk"], root: true },
@@ -1048,7 +1048,7 @@ ShellRoot {
                                 font.family: Theme.mono; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8; anchors.verticalCenter: parent.verticalCenter }
                         MouseArea { id: headHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; enabled: parent.modelData.by !== "attr"; onClicked: panel.sort(parent.modelData.by) } } }
                 Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.line } }
-            ListView { id: list; visible: shell.view === "details" && panel.path.startsWith("/") && !panel.source && panel.peek === ""; y: 28; width: parent.width; height: parent.height - 28; model: shown; clip: true; boundsBehavior: Flickable.StopAtBounds
+            ListView { ScrollGrip {} id: list; visible: shell.view === "details" && panel.path.startsWith("/") && !panel.source && panel.peek === ""; y: 28; width: parent.width; height: parent.height - 28; model: shown; clip: true; boundsBehavior: Flickable.StopAtBounds
                 MouseArea { z: -1; width: list.width; height: Math.max(list.height, list.contentHeight); preventStealing: true; acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.BackButton | Qt.ForwardButton
                     onPressed: (m) => panel.groundPressed(m, mapToItem(ground, m.x, m.y))
                     onPositionChanged: (m) => panel.bandMove(mapToItem(ground, m.x, m.y))
@@ -1188,7 +1188,7 @@ ShellRoot {
                     ctx.closePath()
                 }
             }
-            GridView { id: grid; visible: shell.view !== "details" && shell.view !== "photos" && panel.path.startsWith("/") && !panel.source && panel.peek === ""; anchors.fill: parent; model: shown; clip: true
+            GridView { ScrollGrip {} id: grid; visible: shell.view !== "details" && shell.view !== "photos" && panel.path.startsWith("/") && !panel.source && panel.peek === ""; anchors.fill: parent; model: shown; clip: true
                 readonly property bool wide: shell.view === "small" || shell.view === "tiles"     // the icon left, the name beside it
                 readonly property real icon: shell.view === "small" ? 20 : (shell.view === "tiles" ? 48 : panel.iconSize)
                 cellWidth: shell.view === "small" ? 250 : (shell.view === "tiles" ? 300 : panel.iconSize + 60)
@@ -1284,7 +1284,7 @@ ShellRoot {
                     // what the picture is, the coffee at the foot says
                     Label { anchors.verticalCenter: parent.verticalCenter; color: Theme.dim; font.pixelSize: 12; text: pics.count === 0 ? "" : (photos.at + 1) + " / " + pics.count } }
                 Timer { id: slides; interval: 4000; repeat: true; running: false; onTriggered: photos.step(1) }
-                ListView { id: strip; visible: !photos.bare; anchors.bottom: parent.bottom; width: parent.width; height: 96; orientation: ListView.Horizontal; spacing: 6; clip: true
+                ListView { ScrollGrip {} id: strip; visible: !photos.bare; anchors.bottom: parent.bottom; width: parent.width; height: 96; orientation: ListView.Horizontal; spacing: 6; clip: true
                            model: pics; boundsBehavior: Flickable.StopAtBounds
                     delegate: Rectangle { id: thumb; required property string filePath; required property int index
                         width: 120; height: 92; radius: 8; color: Theme.card; border.width: photos.at === index ? 3 : 0; border.color: Theme.gold
@@ -1299,7 +1299,7 @@ ShellRoot {
                 MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }
                 Label { anchors.centerIn: parent; visible: panel.found !== null && panel.found.length === 0; color: Theme.faint
                         text: finder.running ? I18n.tr("Looking…") : I18n.tr("Nothing found.") }
-                ListView { id: foundList; anchors.fill: parent; anchors.margins: 4; clip: true; boundsBehavior: Flickable.StopAtBounds; model: panel.found || []
+                ListView { ScrollGrip {} id: foundList; anchors.fill: parent; anchors.margins: 4; clip: true; boundsBehavior: Flickable.StopAtBounds; model: panel.found || []
                     delegate: Rectangle { id: hit; required property var modelData; width: foundList.width; height: 40; radius: 8
                         readonly property string name: modelData.path.split("/").pop()
                         color: hitHover.hovered ? Qt.rgba(Theme.cream.r, Theme.cream.g, Theme.cream.b, 0.05) : "transparent"
@@ -1335,7 +1335,7 @@ ShellRoot {
                                  if (look.paged && panel.peek !== "") { lookStill.running = false; lookStill.command = ["latte-files", "look", panel.peek, look.still]; lookStill.running = true } }
                 Image { visible: look.paged && look.took > 0; anchors.fill: parent; anchors.margins: 8; anchors.bottomMargin: 70; fillMode: Image.PreserveAspectFit; asynchronous: true; cache: false
                         source: look.paged && look.took > 0 ? "file://" + look.still : "" }
-                Flickable { visible: look.texty; anchors.fill: parent; anchors.margins: 8; anchors.bottomMargin: 70; contentHeight: lookBody.implicitHeight; clip: true
+                Flickable { ScrollGrip {} visible: look.texty; anchors.fill: parent; anchors.margins: 8; anchors.bottomMargin: 70; contentHeight: lookBody.implicitHeight; clip: true
                     Text { id: lookBody; width: parent.width; wrapMode: Text.WrapAnywhere; color: Theme.cream; font.family: "JetBrains Mono"; font.pixelSize: 12 } }
                 Column { visible: !look.picture && !look.texty && !(look.paged && look.took > 0); anchors.centerIn: parent; spacing: 12
                     Image { width: 128; height: 128; anchors.horizontalCenter: parent.horizontalCenter; source: panel.peek !== "" ? FileIcons.of(look.name, panel.peek, false) : ""; sourceSize.width: 256; sourceSize.height: 256 }
@@ -1377,7 +1377,7 @@ ShellRoot {
         ]
         side: [
             // the side scrolls when it holds more than the window is tall (the tree, many drives)
-            Flickable { anchors.fill: parent; contentHeight: sideCol.height + 28; clip: true; boundsBehavior: Flickable.StopAtBounds
+            Flickable { ScrollGrip {} anchors.fill: parent; contentHeight: sideCol.height + 28; clip: true; boundsBehavior: Flickable.StopAtBounds
             Column { id: sideCol; x: 14; y: 14; spacing: 4
                 Row { x: 6; spacing: 10; height: 40
                     Glyph { name: "folders"; color: Theme.gold; font.pixelSize: 22; anchors.verticalCenter: parent.verticalCenter }
@@ -1391,7 +1391,7 @@ ShellRoot {
                 // the folder tree: a press on the arrow opens a folder, on the name goes there
                 Column { visible: prefs.kept.side_tree === true; spacing: 0
                     Label { x: 8; height: 30; verticalAlignment: Text.AlignBottom; text: I18n.tr("FOLDERS"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
-                    Flickable { width: 222; height: Math.min(treeCol.height, 300); contentHeight: treeCol.height; clip: true; boundsBehavior: Flickable.StopAtBounds
+                    Flickable { ScrollGrip {} width: 222; height: Math.min(treeCol.height, 300); contentHeight: treeCol.height; clip: true; boundsBehavior: Flickable.StopAtBounds
                         Column { id: treeCol; width: 222
                             Repeater { model: shell.tree
                                 Rectangle { id: tn; required property var modelData; required property int index; width: 222; height: 28; radius: 8
@@ -1651,7 +1651,7 @@ ShellRoot {
                     Glyph { name: "settings"; font.pixelSize: 20; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
                     Label { text: I18n.tr("DualBrew settings"); font.pixelSize: 17; font.weight: 700; anchors.verticalCenter: parent.verticalCenter } }
                 Pill { anchors.right: parent.right; anchors.rightMargin: 14; y: 10; implicitHeight: 32; icon: "x"; onPressed: { shell.settingsOpen = false; keys.forceActiveFocus() } }
-                Flickable { x: 20; y: 56; width: parent.width - 40; height: parent.height - 70; contentHeight: partsFlow.height; clip: true; boundsBehavior: Flickable.StopAtBounds
+                Flickable { ScrollGrip {} x: 20; y: 56; width: parent.width - 40; height: parent.height - 70; contentHeight: partsFlow.height; clip: true; boundsBehavior: Flickable.StopAtBounds
                     Flow { id: partsFlow; width: parent.width; spacing: 18
                         Repeater { model: shell.settingsOpen ? shell.settingsParts : []
                             Column { required property var modelData; width: Math.max(280, (partsFlow.width - 36) / 3); spacing: 4
@@ -1679,7 +1679,7 @@ ShellRoot {
                     Pill { implicitHeight: 30; icon: "x"; onPressed: { shell.listerFor = ""; keys.forceActiveFocus() } } }
                 Image { visible: parent.picture; anchors.fill: parent; anchors.margins: 16; anchors.topMargin: 56; fillMode: Image.PreserveAspectFit; asynchronous: true
                         source: parent.picture && shell.listerFor !== "" ? "file://" + shell.listerFor : "" }
-                Flickable { id: listerFlick; visible: !parent.picture; x: 16; y: 56; width: parent.width - 32; height: parent.height - 72; contentHeight: listerText.implicitHeight; contentWidth: width; clip: true
+                Flickable { ScrollGrip {} id: listerFlick; visible: !parent.picture; x: 16; y: 56; width: parent.width - 32; height: parent.height - 72; contentHeight: listerText.implicitHeight; contentWidth: width; clip: true
                     boundsBehavior: Flickable.StopAtBounds
                     TextEdit { id: listerText; width: parent.width; readOnly: true; selectByMouse: true; wrapMode: shell.listerHex ? TextEdit.NoWrap : TextEdit.WrapAnywhere
                                color: Theme.cream; selectionColor: Theme.coffee; font.family: Theme.mono; font.pixelSize: 12 } } }
@@ -1730,7 +1730,7 @@ ShellRoot {
                                 Glyph { anchors.right: parent.right; anchors.rightMargin: 8; name: "plus"; font.pixelSize: 15; anchors.verticalCenter: parent.verticalCenter
                                     MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor; onClicked: renStart.value++ } } } }
                         Rectangle { width: parent.width; height: 1; color: Theme.line }
-                        Flickable { width: parent.width; height: Math.min(planCol.height, 300); contentHeight: planCol.height; clip: true; boundsBehavior: Flickable.StopAtBounds
+                        Flickable { ScrollGrip {} width: parent.width; height: Math.min(planCol.height, 300); contentHeight: planCol.height; clip: true; boundsBehavior: Flickable.StopAtBounds
                             Column { id: planCol; width: parent.width; spacing: 2
                                 Repeater { model: shell.renPlan
                                     Row { required property var modelData; spacing: 10; width: planCol.width

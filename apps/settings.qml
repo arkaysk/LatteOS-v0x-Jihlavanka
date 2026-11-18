@@ -701,7 +701,7 @@ ShellRoot {
                     Label { text: who.data ? (who.data.name || who.data.user) : ""; font.weight: 700; width: parent.width; elide: Text.ElideRight }
                     Label { text: who.data ? who.data.user + "@" + (machine.data ? machine.data.computer.host : "") : ""; color: Theme.dim; font.pixelSize: 11; width: parent.width; elide: Text.ElideRight } }
                 MouseArea { id: meHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: shell.go("me") } },
-            Flickable { anchors.fill: parent; anchors.bottomMargin: 80; contentHeight: menu.height + 28; clip: true; boundsBehavior: Flickable.StopAtBounds
+            Flickable { ScrollGrip {} anchors.fill: parent; anchors.bottomMargin: 80; contentHeight: menu.height + 28; clip: true; boundsBehavior: Flickable.StopAtBounds
                 Column { id: menu; x: 14; y: 14; spacing: 4; width: parent.width - 28
                     Row { x: 6; spacing: 10; height: 40
                         Glyph { name: "settings"; font.pixelSize: 24; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
@@ -1390,7 +1390,7 @@ ShellRoot {
                         // cells that are on view (a few hundred apps are no weight)
                         Column { visible: shell.lensOpen === ls.index; width: parent.width; spacing: 8
                             Field { id: pick; width: 320; icon: "search"; hint: I18n.tr("Find an app…") }
-                            GridView { id: grid; width: parent.width; clip: true; boundsBehavior: Flickable.StopAtBounds; cacheBuffer: 200
+                            GridView { ScrollGrip {} id: grid; width: parent.width; clip: true; boundsBehavior: Flickable.StopAtBounds; cacheBuffer: 200
                                 readonly property int cols: Math.max(1, Math.floor(width / 210))
                                 cellWidth: width / cols; cellHeight: 52
                                 height: Math.min(440, Math.ceil(count / cols) * 52)

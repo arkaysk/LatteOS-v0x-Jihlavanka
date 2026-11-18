@@ -368,7 +368,7 @@ ShellRoot {
                                 TapHandler { acceptedButtons: Qt.LeftButton; onDoubleTapped: if (parent.modelData.writable && parent.modelData.kind === "event") shell.edit(parent.modelData) }
                                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { shell.draft = null; shell.asking = false; shell.picked = parent.modelData } } } } } } }
             Rectangle { y: wholes.y + wholes.height + 8; width: parent.width; height: 1; color: Theme.line }
-            Flickable {
+            Flickable { ScrollGrip {}
                 id: hours
                 y: wholes.y + wholes.height + 9; width: parent.width; height: parent.height - y
                 contentHeight: 24 * shell.hourH + 8; clip: true; boundsBehavior: Flickable.StopAtBounds
@@ -434,7 +434,7 @@ ShellRoot {
             Row { id: found; visible: shell.query !== ""; x: 22; y: 14; spacing: 10; height: 40
                 Pill { implicitHeight: 32; icon: "x"; text: I18n.tr("Clear the search"); onPressed: shell.query = "" } }
             Label { visible: shell.agenda.length === 0; anchors.centerIn: parent; text: shell.query !== "" ? I18n.tr("Nothing found") : I18n.tr("Nothing planned"); color: Theme.faint; font.pixelSize: 16 }
-            ListView { x: 22; y: found.visible ? found.height + 14 : 10; width: parent.width - 44; height: parent.height - y; spacing: 14; clip: true; model: shell.agenda; boundsBehavior: Flickable.StopAtBounds
+            ListView { ScrollGrip {} x: 22; y: found.visible ? found.height + 14 : 10; width: parent.width - 44; height: parent.height - y; spacing: 14; clip: true; model: shell.agenda; boundsBehavior: Flickable.StopAtBounds
                 delegate: Column { id: dayBlock; required property var modelData; width: ListView.view.width; spacing: 4
                     readonly property bool today: modelData.date === shell.iso(new Date())
                     Row { spacing: 10
@@ -579,7 +579,7 @@ ShellRoot {
                     Pill { icon: "x"; text: I18n.tr("Close"); onPressed: { shell.picked = null; shell.asking = false } } }
             }
             // the event being written: what, when, where, a note, its colour, and for a new one its calendar
-            Flickable {
+            Flickable { ScrollGrip {}
                 visible: shell.draft !== null
                 anchors.fill: parent; anchors.leftMargin: 1; contentHeight: form.height + 40; clip: true; boundsBehavior: Flickable.StopAtBounds
                 Column {

@@ -172,7 +172,7 @@ ShellRoot {
                 Pill { icon: "arrow-right"; strong: true; text: shell.page === "summary" ? I18n.tr("Install") : I18n.tr("Next")
                        onPressed: shell.page === "summary" ? shell.install() : shell.next() } } ]
 
-        Flickable { anchors.fill: parent; contentHeight: pageCol.implicitHeight + 60; clip: true; boundsBehavior: Flickable.StopAtBounds
+        Flickable { ScrollGrip {} anchors.fill: parent; contentHeight: pageCol.implicitHeight + 60; clip: true; boundsBehavior: Flickable.StopAtBounds
             Column { id: pageCol; x: 40; y: 30; width: Math.min(parent.width - 80, 820); spacing: 16
 
                 // ── Welcome ──
@@ -273,7 +273,7 @@ ShellRoot {
 
                 // what ./install said, for when it goes wrong
                 Rectangle { visible: shell.page === "install" && shell.log !== ""; width: parent.width; height: 160; radius: 14; color: Theme.card; clip: true
-                    Flickable { anchors.fill: parent; anchors.margins: 12; contentHeight: logText.implicitHeight; contentY: Math.max(0, contentHeight - height)
+                    Flickable { ScrollGrip {} anchors.fill: parent; anchors.margins: 12; contentHeight: logText.implicitHeight; contentY: Math.max(0, contentHeight - height)
                         Text { id: logText; width: parent.width; text: shell.log; color: Theme.dim; font.family: "monospace"; font.pixelSize: 11; wrapMode: Text.WrapAnywhere } } }
             }
         }

@@ -38,7 +38,7 @@ ShellRoot {
             Repeater { model: shell.families
                 Nav { required property var modelData; width: parent.width; height: 36; text: I18n.tr(modelData.name); icon: modelData.icon
                       on: shell.family === modelData.id; onPressed: shell.family = modelData.id } } }
-        GridView {
+        GridView { ScrollGrip {}
             id: grid
             anchors.fill: parent; anchors.margins: 18; clip: true
             cellWidth: width / Math.max(1, Math.floor(width / 220)); cellHeight: 186

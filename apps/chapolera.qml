@@ -1543,7 +1543,7 @@ ShellRoot {
                     // the folders stand on both sides of the pile, the biggest first, left then right
                     Repeater {
                         model: 2
-                        delegate: Flickable {
+                        delegate: Flickable { ScrollGrip {}
                             id: side
                             required property int index
                             readonly property var mine: shell.cards.filter((card, position) => position % 2 === side.index)

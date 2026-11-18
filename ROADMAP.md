@@ -3580,6 +3580,12 @@ karta na stránke Agenti; zapisujú „Urob to“ a nastavenia zmenené AI (`lat
 iba zmeny, rolovateľné (okno nad tisíckami riadkov), Exportovať .md do Dokumentov, Zmazať históriu (dvakrát), Zavrieť; „Všetky zmeny“
 otvorí celý denník. Pole dole dá úlohu agentovi (`latte-ai do`). Okná `org.latteos.*` patria k „oknám LatteOS“ pre ruky agenta.
 
+**10B.70** [x] 18. 11. **Posuvník vo všetkých zoznamoch** (používateľ 18. 11.: rolovanie dlhých zoznamov rozumnejšie, všeobecne): ako vo
+Windows 11 — tenký, pod kurzorom širší, palec dlhý podľa toho, koľko z obsahu vidno; ťahaním alebo kliknutím do dráhy ide zoznam rovno tam.
+QML: `apps/common/ScrollGrip.qml` vo všetkých 37 zoznamoch aplikácií (`Scroll`, ListView, Flickable, GridView). pleamar: v okne „Čo AI
+zmenila“ posuvník (`drag`/`press` na dráhe), koliesko 3 riadky, PgUp/PgDn/Home/End. Overené: ťah na koniec 864 položiek jedným pohybom.
+Chýba: posuvník v ostatných scénach pleamaru (Goo, Vlastnosti) — spoločná súčasť do `goo/lib`.
+
 ### 10C. [ ] Heidelberg
 
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví

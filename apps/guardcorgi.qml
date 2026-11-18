@@ -159,7 +159,7 @@ ShellRoot {
         Rectangle {
             visible: shell.page === "log"
             anchors.fill: parent; anchors.margins: 22; radius: 14; color: "#120d0a"; border.width: 1; border.color: Theme.line
-            ListView {
+            ListView { ScrollGrip {}
                 id: lines
                 anchors.fill: parent; anchors.margins: 14; clip: true; spacing: 2
                 model: logq.data

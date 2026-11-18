@@ -515,7 +515,7 @@ ShellRoot {
         ]
         side: [
             // it scrolls: folded, the rings stand one under another and may not fit the window's height
-            Flickable { anchors.fill: parent; anchors.bottomMargin: 36; contentHeight: sideCol.implicitHeight + 28; clip: true; boundsBehavior: Flickable.StopAtBounds
+            Flickable { ScrollGrip {} anchors.fill: parent; anchors.bottomMargin: 36; contentHeight: sideCol.implicitHeight + 28; clip: true; boundsBehavior: Flickable.StopAtBounds
             Column { id: sideCol; x: shell.folded ? 8 : 14; y: 14; spacing: 4; width: win.sideWidth - 2 * x
                 // its name, and the button that folds the side to its icons or opens it again
                 Item { width: parent.width; height: 40
@@ -680,7 +680,7 @@ ShellRoot {
             anchors.fill: parent
             visible: shell.page === "chats"
             Rectangle { anchors.fill: parent; anchors.margins: 8; radius: 16; color: shell.look.page; opacity: shell.glassy ? [1, 0.95, 0.9, 0.85, 0.8][Theme.glassLevel] : 1 }
-            ListView {
+            ListView { ScrollGrip {}
                 id: talk
                 // it ends above what stands over the field (who answers, the attached files), never under them
                 anchors.fill: parent; anchors.bottomMargin: parent.height - box.y + 8 + (whoPill.visible ? 42 : 0) + (shell.files.length ? 36 : 0)
@@ -898,7 +898,7 @@ ShellRoot {
 
         // ── the overview (the user, 17. 11.): one field, what waits for the person and where, what runs, this computer, what
         // is used and the latest. The lens is gone (not needed, 17. 11.); the rings are in the side ──────────────────────
-        Flickable {
+        Flickable { ScrollGrip {}
             id: home
             anchors.fill: parent
             visible: shell.page === "home"
@@ -1029,7 +1029,7 @@ ShellRoot {
         }
 
         // ── the agents: every subscription on one page, limits first (Omarchy's agents panel, MIT) ──────────────
-        Flickable {
+        Flickable { ScrollGrip {}
             anchors.fill: parent
             visible: shell.page === "agents"
             contentHeight: agentCol.implicitHeight + 48; clip: true; boundsBehavior: Flickable.StopAtBounds
@@ -1044,7 +1044,7 @@ ShellRoot {
                             Label { text: I18n.tr("Helper"); font.pixelSize: 16; font.weight: 800; anchors.verticalCenter: parent.verticalCenter } }
                         Pill { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; implicitHeight: 32; icon: "history"; text: I18n.tr("All changes")
                                onPressed: Quickshell.execDetached(["latte-journal"]) } }
-                    ListView { id: helperTalk; x: 18; y: 56; width: parent.width - 36; height: parent.height - 56 - 64; clip: true; spacing: 10
+                    ListView { ScrollGrip {} id: helperTalk; x: 18; y: 56; width: parent.width - 36; height: parent.height - 56 - 64; clip: true; spacing: 10
                                boundsBehavior: Flickable.StopAtBounds
                                model: shell.journal.slice().reverse()
                                onCountChanged: Qt.callLater(positionViewAtEnd)
@@ -1339,7 +1339,7 @@ ShellRoot {
                                onPressed: { localPage.sort = modelData.id; if (localPage.query !== "") hfFound.ask(["search", localPage.query, modelData.id]) } } } }
                 // the list: LatteOS's picks while nothing is searched (LM Studio's Staff Picks), else what was found
                 Label { id: listHead; x: 22; y: 50; text: localPage.query === "" ? I18n.tr("LatteOS picks for this computer") : I18n.tr("{n} models", { n: localPage.listed.length }); color: Theme.dim; font.pixelSize: 12; font.weight: 700 }
-                ListView {
+                ListView { ScrollGrip {}
                     id: found
                     x: 16; y: 72; width: Math.min(440, parent.width * 0.42); height: parent.height - 80; clip: true; spacing: 6
                     model: localPage.listed
@@ -1363,7 +1363,7 @@ ShellRoot {
                 // the chosen model: its head, its download options, its card
                 Rectangle { x: found.x + found.width + 14; y: 50; width: parent.width - x - 22; height: parent.height - 58; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
                     Label { visible: !localPage.picked; anchors.centerIn: parent; color: Theme.faint; text: I18n.tr("Choose a model on the left") }
-                    Flickable { visible: !!localPage.picked; anchors.fill: parent; anchors.margins: 20; clip: true; contentHeight: detail.implicitHeight; boundsBehavior: Flickable.StopAtBounds
+                    Flickable { ScrollGrip {} visible: !!localPage.picked; anchors.fill: parent; anchors.margins: 20; clip: true; contentHeight: detail.implicitHeight; boundsBehavior: Flickable.StopAtBounds
                         Column { id: detail; width: parent.width; spacing: 12
                             Row { spacing: 12
                                 Rectangle { width: 46; height: 46; radius: 23; color: localPage.picked ? Qt.hsla((localPage.picked.author.charCodeAt(0) * 37 % 360) / 360, 0.45, 0.45, 1) : "transparent"
@@ -1789,7 +1789,7 @@ ShellRoot {
                 Label { width: rulePage.room; wrapMode: Text.WordWrap; color: Theme.dim
                         text: I18n.tr("What you write here goes with every question, to every AI, in LensGoo too: who you are, what you know, how you want to be answered. For example: “I am new to Linux, explain simply. Answer in Slovak.”") }
                 Rectangle { width: rulePage.room; height: 260; radius: 16; color: Theme.card; border.width: 1; border.color: ruleText.activeFocus ? Theme.gold : Theme.line
-                    Flickable { anchors.fill: parent; anchors.margins: 14; clip: true; contentHeight: ruleText.implicitHeight; boundsBehavior: Flickable.StopAtBounds
+                    Flickable { ScrollGrip {} anchors.fill: parent; anchors.margins: 14; clip: true; contentHeight: ruleText.implicitHeight; boundsBehavior: Flickable.StopAtBounds
                         TextEdit { id: ruleText; width: parent.width; wrapMode: Text.Wrap; color: Theme.cream; font.family: Theme.font; font.pixelSize: 14; selectByMouse: true; selectionColor: Theme.coffee } } }
                 Row { spacing: 10
                     Pill { icon: "check"; strong: true; text: rulePage.saved ? I18n.tr("Kept") : I18n.tr("Keep"); onPressed: { rules.setText(ruleText.text.trim() + "\n"); rulePage.saved = true; keptAgain.restart() } }
@@ -1804,7 +1804,7 @@ ShellRoot {
                 Label { width: rulePage.room; wrapMode: Text.WordWrap; color: Theme.dim
                         text: I18n.tr("What Claude Code, Codex and Gemini know about LatteOS when you ask them for help with this computer: how it is built, what may be changed and how, and that they plan first and ask. Add your own rules at the end.") }
                 Rectangle { width: rulePage.room; height: 360; radius: 16; color: Theme.card; border.width: 1; border.color: skillText.activeFocus ? Theme.gold : Theme.line
-                    Flickable { id: skillView; anchors.fill: parent; anchors.margins: 14; clip: true; contentHeight: skillText.implicitHeight; boundsBehavior: Flickable.StopAtBounds
+                    Flickable { ScrollGrip {} id: skillView; anchors.fill: parent; anchors.margins: 14; clip: true; contentHeight: skillText.implicitHeight; boundsBehavior: Flickable.StopAtBounds
                         TextEdit { id: skillText; width: parent.width; wrapMode: Text.Wrap; color: Theme.cream; font.family: "monospace"; font.pixelSize: 13; selectByMouse: true; selectionColor: Theme.coffee } } }
                 Row { spacing: 10
                     Pill { icon: "check"; strong: true; text: rulePage.skillSaved ? I18n.tr("Kept") : I18n.tr("Keep"); onPressed: { skillFile.setText(skillText.text); rulePage.skillSaved = true; skillKept.restart() } }

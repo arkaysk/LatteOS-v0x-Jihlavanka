@@ -1,7 +1,7 @@
 // a page that scrolls, with room around what it holds
 import QtQuick
 
-Flickable {
+Flickable { ScrollGrip {}
     default property alias content: inner.data
     readonly property real room: width - 56
     anchors.fill: parent

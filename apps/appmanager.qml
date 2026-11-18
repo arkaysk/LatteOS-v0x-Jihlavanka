@@ -401,7 +401,7 @@ ShellRoot {
                     Fact { icon: "world"; text: about.app && about.app.homepage ? about.app.homepage.replace(/^https?:\/\//, "").replace(/\/$/, "") : ""
                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Quickshell.execDetached(["xdg-open", about.app.homepage]) } }
                 }
-                ListView {
+                ListView { ScrollGrip {}
                     visible: about.app && (about.app.screenshots || []).length > 0
                     width: about.room; height: 300; orientation: ListView.Horizontal; spacing: 14; clip: true
                     model: about.app ? (about.app.screenshots || []) : []
@@ -596,7 +596,7 @@ ShellRoot {
                     // the console: what is being run, for whoever likes to see it
                     Pill { icon: "terminal-2"; text: shell.bConsoleOut ? I18n.tr("Hide the console") : I18n.tr("Show the console"); strong: shell.bConsoleOut; onPressed: shell.bConsoleOut = !shell.bConsoleOut }
                     Rectangle { visible: shell.bConsoleOut; width: parent.width; height: 300; radius: 14; color: "#0d0907"; border.color: Theme.line; clip: true
-                        ListView { id: lines; anchors.fill: parent; anchors.margins: 12; model: shell.bConsole; clip: true
+                        ListView { ScrollGrip {} id: lines; anchors.fill: parent; anchors.margins: 12; model: shell.bConsole; clip: true
                             onCountChanged: positionViewAtEnd()
                             delegate: Text { required property string modelData; width: lines.width; text: modelData; elide: Text.ElideRight; font.family: "JetBrains Mono"; font.pixelSize: 12
                                              color: modelData.startsWith("$ ") ? Theme.gold : (modelData.startsWith("# ") ? "#9ed6bd" : "#cdbfae") } } }

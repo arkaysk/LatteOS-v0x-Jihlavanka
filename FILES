@@ -625,6 +625,7 @@
 /usr/share/latteos/apps/common/CopyButton.qml           <- apps/common/CopyButton.qml
 /usr/share/latteos/apps/common/Pegboard.qml             <- apps/common/Pegboard.qml
 /usr/share/latteos/apps/common/AboutPage.qml            <- apps/common/AboutPage.qml
+/usr/share/latteos/apps/common/ScrollGrip.qml           <- apps/common/ScrollGrip.qml
 /usr/share/latteos/apps/common/Glyph.qml                        <- apps/common/Glyph.qml
 /usr/share/latteos/apps/common/Label.qml                        <- apps/common/Label.qml
 /usr/share/latteos/apps/common/Pill.qml                         <- apps/common/Pill.qml
