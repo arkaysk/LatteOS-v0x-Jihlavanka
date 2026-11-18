@@ -1,5 +1,5 @@
 vytvorene 18.11.2026
-naposledy upravene 18.11.2026
+naposledy upravene 18.11.2026 (overenie faktov a syntéza na konci)
 
 # LensAI — technologický audit formou prieskumu trhu
 
@@ -159,10 +159,10 @@ z MCP Registry, izoláciu serverov cez srt.
 | Kandidát | Typ | Technológia | Licencia | Integrácia |
 |---|---|---|---|---|
 | **`agent-client-protocol`** (`agentclientprotocol/rust-sdk`) | 🔵 knižnica | Rust (tokio) | Apache-2.0 | priamo do `crates/` |
-| `acpx` (crate) | 🔵 tenká vrstva | Rust | overiť | spúšťanie agentov + register |
+| `acpx` (crate) | 🔵 tenká vrstva | Rust | MIT na crates.io, v repe licencia chýba; meno má aj iný projekt (openclaw, npm) | nepoužiť |
 | sacp (Symposium) | alternatíva | Rust | MIT OR Apache-2.0 | sledovať |
 | Zed | 🟢 referenčný klient | Rust | GPL (editor) | inšpirácia UI |
-| `claude-agent-acp`, `codex-acp` | 🔵 adaptéry | TypeScript | overiť | spúšťať ako procesy |
+| `claude-agent-acp`, `codex-acp` (org `agentclientprotocol`) | 🔵 adaptéry | TypeScript | Apache-2.0 | spúšťať ako procesy |
 
 - **Oficiálne Rust SDK:** obe strany protokolu (klient aj agent), typy pre relácie, výzvy, volania nástrojov a
   **žiadosti o povolenie**; doplnky: `-tokio` (spúšťanie procesov agentov), `-http` (HTTP/SSE, WebSocket),
@@ -202,11 +202,11 @@ z MCP Registry, izoláciu serverov cez srt.
 
 | Kandidát | Typ | Technológia | Licencia | Integrácia |
 |---|---|---|---|---|
-| memex (`memex-chats`) | inšpirácia | Python, SQLite + sqlite-vec, MCP | overiť | vzor architektúry |
+| memex (`memex-chats`) | inšpirácia | Python, SQLite + sqlite-vec, MCP | MIT | vzor, kód sa dá prevziať |
 | doc-memory (`mcarlson/doc-memory`) | alternatíva | TypeScript, SQLite/Postgres | overiť | sledovať |
 | **SQLite FTS5** | 🔵 komponent | C | public domain | základ indexu |
 | **sqlite-vec** (`asg017/sqlite-vec`) | 🔵 komponent | C rozšírenie SQLite | MIT/Apache (overiť) | vektory v tom istom súbore |
-| **e5-sk-small** | 🔵 model | 45 M parametrov | overiť na HF | slovenské vektory |
+| **e5-sk-small** (`slovak-nlp/e5-sk-small`) | 🔵 model | 45 M parametrov, 384 rozmerov | MIT | slovenské vektory |
 | tantivy | alternatíva | Rust | MIT | ak by FTS5 nestačil |
 
 - **memex:** indexuje históriu claude.ai aj relácie Claude Code, hybridné hľadanie (vektory + FTS5 BM25 cez Reciprocal
@@ -252,7 +252,7 @@ z MCP Registry, izoláciu serverov cez srt.
 | BuzzASR Slovak | alternatíva STT | whisper-large-v3 fine-tune | overiť | do whisper.cpp |
 | **Silero VAD** | 🔵 VAD | ONNX | MIT | v sherpa-onnx |
 | TEN VAD | alternatíva VAD | C/ONNX | Apache-2.0 + extra podmienky | **nie** (podmienky licencie) |
-| **Piper — hlas sk_SK Lili** | 🔵 TTS | VITS/ONNX | dáta Lili CC0-1.0; model overiť | cez sherpa-onnx |
+| **Piper — hlas sk_SK Lili** | 🔵 TTS | VITS/ONNX | dáta CC0, základ hifi_tts (CC-BY-4.0, uviesť autora); Piper sám je teraz GPL-3.0 | model cez sherpa-onnx (Apache), nie cez Piper |
 | Chatterbox Multilingual | alternatíva TTS | PyTorch | MIT | slovenčinu nemá; komunitný sk fine-tune existuje |
 | hyprwhspr, Handy | 🟢 diktovanie | Linux/Wayland | overiť | vzor pre 10B.17 |
 
@@ -278,7 +278,7 @@ z MCP Registry, izoláciu serverov cez srt.
 | Kandidát | Typ | Technológia | Licencia | Integrácia |
 |---|---|---|---|---|
 | **agentes.chat** | 🟢 hotový | web (tímový chat), Docker Compose + Postgres | AGPL-3.0 | fork (rozhodnuté) |
-| **Eigent** (`eigent-ai/eigent`) | 🟢 alternatíva | Electron + React/TS, FastAPI, CAMEL | Apache-2.0 + doplnkové podmienky | overiť licenciu pred forkom |
+| **Eigent** (`eigent-ai/eigent`) | 🟢 alternatíva | Electron + React/TS, FastAPI, CAMEL | Apache-2.0 (bez doplnkov, overené 18. 11.) | fork možný |
 | Orca, Emdash, Superset | alternatívy (kód) | desktop, git worktree | overiť | inšpirácia (paralelní agenti) |
 | ACP `conductor` | 🔵 komponent | Rust | Apache-2.0 | orchestrácia nad ACP |
 | CAMEL | 🔵 knižnica | Python | overiť | iba ak vlastná farma |
@@ -302,7 +302,7 @@ z MCP Registry, izoláciu serverov cez srt.
 
 | Kandidát | Typ | Technológia | Licencia | Integrácia |
 |---|---|---|---|---|
-| **promptfoo** (`promptfoo/promptfoo`) | 🟢 hotový | TypeScript/Node CLI + web | MIT | CLI ako backend testov |
+| **promptfoo** (`promptfoo/promptfoo`) | 🟢 hotový | TypeScript/Node CLI + web | MIT (kúpil OpenAI 3/2026) | CLI, pevná verzia |
 | Odysseus Compare | inšpirácia | Python | AGPL-3.0 | slepé porovnanie (nápad) |
 | promptside | alternatíva | Node CLI | overiť | rýchle HTML porovnanie |
 | Multi-AI Chat / Panelize | iba UI nápady | — | MIT | nie (weby) |
@@ -324,14 +324,15 @@ z MCP Registry, izoláciu serverov cez srt.
 | Kandidát | Typ | Technológia | Licencia | Integrácia |
 |---|---|---|---|---|
 | **AGENTS.md** | 🔵 štandard | Markdown | otvorený štandard (AAIF / Linux Foundation) | súbor v každom projekte |
-| **Serena** (`oraios/serena`) | 🟢 hotový | Python, LSP, MCP | MIT | MCP server pre kód |
+| **Serena** (`oraios/serena`) | 🟢 hotový | Python, LSP, MCP | **GPL-3.0+** (iba SolidLSP MIT) | MCP server pre kód, samostatný proces |
 | Basic Memory | 🟢 hotový | (pozri 8) | AGPL-3.0 | znalosti projektu |
 | Obsidian | zdroj | — | uzavretý (súbory otvorené) | priečinok = kontext |
 
 - **AGENTS.md:** „README pre agentov“ v koreni projektu (zostavenie, testy, pravidlá); spravuje ho Agentic AI
   Foundation pod Linux Foundation; číta ho Codex, Copilot, Cursor, Gemini CLI a ďalšie, používa ho 60 000+ repozitárov.
 - **Serena:** agent pracuje s kódom po symboloch cez jazykové servery (LSP) namiesto čítania celých súborov a grepu;
-  40+ jazykov, MCP server, MIT.
+  40+ jazykov, MCP server; GPL-3.0+ (overené 18. 11.) = rovnako ako LatteOS, kód sa dá prevziať; ak bude LensAI pod inou
+  licenciou, iba ako samostatný proces.
 - 🟠 **Vlastné:** **projektový profil LatteOS** = priečinok + `AGENTS.md` + poznámky v Basic Memory + skilly + profil
   MCP nástrojov + Workfield (okná a aplikácie). LensAI pri otvorení projektu nastaví všetko naraz.
 
@@ -548,3 +549,105 @@ spolupracovať niekto s vlastným serverom a vlastnými agentmi.
 - Webová aplikácia v okne LensAI, alebo vlastný QML klient nad API forku.
 - Či majú podprojekty mať vlastných členov (ľudí), alebo vždy dediť od projektu.
 - Či sa Drive súbory majú zrkadliť do priečinka, alebo ostať iba v úložisku servera.
+
+---
+
+## Syntéza 18. 11.: ako najlepšie prvky spojiť
+
+Overené na webe (licencie, repá) a porovnané s kódom (`bin/latte-ai` 2547 r., `bin/latte-mcp` 239 r., `bin/latte-skill`
+404 r., všetko Python bez Node). Návrhy, nie rozhodnutia.
+
+### A. Opravy faktov (už zapracované v tabuľkách vyššie)
+
+- **Serena** je dnes GPL-3.0+ (iba SolidLSP MIT) — sedí k LatteOS (GPL-3.0+); pre LensAI s inou licenciou samostatný proces.
+- **Eigent** je čistý Apache-2.0, doplnkové podmienky už nemá.
+- **Adaptéry ACP** sú v organizácii `agentclientprotocol` (`claude-agent-acp`, `codex-acp`; starý `zed-industries/codex-acp`
+  archivovaný). Crate `agent-client-protocol-tokio` v repe SDK už nie je (posledná verzia 4/2026) → nepoužívať. `acpx` = dva
+  rôzne projekty → nepoužiť.
+- **sherpa-onnx** vie Canary natívne (nielen transducer/CTC); či sa práve KInIT `canary-1b-v2-sk` dá exportovať, treba skúsiť.
+- **Piper** je teraz `OHF-Voice/piper1-gpl` (GPL-3.0) → hlas Lili spúšťať cez sherpa-onnx (Apache), Piper netreba.
+- **promptfoo** kúpil OpenAI (3/2026), licencia ostáva MIT → pripnúť verziu, nič od neho nezávisí natrvalo.
+- **llama-swap**: skupiny sú teraz `routing.router.settings.groups`. **MCP Registry** stále preview (API v0.1 zmrazené).
+- **llama.cpp router** potvrdený: `llama-server` bez `-m`, `--models-dir`, `--models-preset` (INI), `--models-max` (LRU),
+  `--models-memory-margin`, `--sleep-idle-seconds`, `POST /models/load|unload`; výber podľa poľa `model`.
+- **llmfit** má knižnicu `llmfit-core` (Rust, MIT). **swarmclawai/mcp-core** je npm (TypeScript), nie Rust.
+
+### B. Kolízia mien: dve rôzne veci sa volajú „skill“ (návrh: nepremenovať)
+
+- `latte-skill` = **úkony v systéme s potvrdením** (wifi, hlasitosť, jas…, `SKILLS` v `bin/latte-skill`), pre AI cez
+  `do_skill` v latte-mcp. Svojou podstatou sú to **MCP nástroje**.
+- **Agent Skills** = priečinky so `SKILL.md` (pokyny pre agenta); LatteOS ich už má (`~/.config/latteos/skills/latteos`,
+  odkazy do `~/.claude`, `~/.codex`, `~/.agents/skills` — `latte-ai skill`).
+- Časť 6 vyššie ich mieša. Stránka Skilly v LensAI už ukazuje iba `SKILL.md` a opisy nástrojov `skills`/`do_skill`
+  v latte-mcp jasne hovoria „čo LatteOS môže zmeniť“ → **premenovanie netreba** (príkaz, nástroje MCP, LensShore a preklady
+  by sa menili bez úžitku). Iba v dokumentoch rozlišovať. vercel `npx skills` netreba — odkazy už robí `latte-ai skill`,
+  chýba iba urobiť `.agents/skills/` hlavnou cestou.
+
+### C. Chrbtica: tri uzly, všetko ostatné sa zapája do nich
+
+| Uzol | Čo drží | Čo sa doň zapojí |
+|---|---|---|
+| **`latte-ai`** (CLI, ostáva) | modely, účty, spotreba, hardvér | llama.cpp router, voľná VRAM, llmfit (katalóg), CodexBar/statusline |
+| **`latte-mcp`** (MCP server → aj host) | **všetky nástroje + jedna politika + záznam** | lenivé hľadanie nástrojov, HTTP na 127.0.0.1 pre Agent Chats, za ním Basic Memory, Serena, `search_chats`, Úkony |
+| **`latte-acp`** (nový malý démon, Rust SDK) | relácie agentov | Claude/Codex/Gemini cez ACP; ich `request_permission` ide do **existujúcej** fronty `latte-skill ask` → „Čaká na teba“ bez nového UI |
+
+Jediný nový proces je `latte-acp` — relácia ACP musí žiť dlhšie ako jedno volanie CLI. Ostatné ostáva ako dnes.
+
+### D. Prekryvy, ktoré treba zjednotiť (inak vzniknú dve pravdy)
+
+1. **Projekt.** Agent Chats sa dá vypnúť (F14) → zoznam projektov nemôže žiť iba v Postgrese forku. Návrh: **projekt =
+   priečinok** s `AGENTS.md` (12) a malým súborom `.latte/projekt.toml` (typ, stav, kde žije, zámok, agenti, profil
+   nástrojov). LensAI (Context 12) aj fork (F2, F3, F5, F7, F8, F16) čítajú ten istý súbor; stĺpce vo forku sú iba
+   zrkadlo pre pôvodného klienta.
+2. **Pamäť (rozhodnuté 18. 11.):** fork Agent Chats má **vlastnú pamäť** (`context_items`) pre projekty a podprojekty;
+   agent v ňom číta **pamäť podprojektu → projektu → systému, najbližšia najprv** (F4). Pamäť systému je LatteOS
+   (Markdown, Basic Memory; `ai-instructions.txt` sa stane jej poznámkou) a fork k nej siaha cez latte-mcp. Keď je
+   Agent Chats vypnutý (F14), ostatné AI majú pamäť systému ďalej.
+3. **Oprávnenia a zámok.** Dnes: `latte-skill allow`, `gate.rules`, plánovaný zámok F8, sandbox F6, ACP. Návrh: **jedna
+   politika** (`~/.config/latteos/ai-policy`) — ktoré AI smú, ktoré nástroje, ktoré priečinky (rw/ro) a domény. Číta ju
+   `latte-ai` (odmietne nepovolenú AI), `latte-mcp` (nástroje), `latte-acp` (čo sa pýta) a obal **bubblewrap** (priečinky).
+   Tým sa zatvorí aj dnešná diera (`ponytail:` v latte-skill: agent so shellom obíde schválenie MCP).
+4. **História vs. pamäť vs. kontext:** index rozhovorov (7) = čo sa povedalo; pamäť (8) = čo platí; projekt (12) = kde a
+   s čím. Všetky tri sa AI ukazujú iba cez latte-mcp, nikdy priamo.
+
+### E. Rozpočet závislostí (desktop, nie server)
+
+Dnes LensAI za behu nepotrebuje Node. Plán by pridal Node (srt, vercel skills, mcp-core, ccusage, promptfoo), Python
+balíky (Basic Memory, Serena) a Docker + Postgres (fork). Návrh:
+
+- **Bez Node za behu.** srt → **bubblewrap priamo** (srt je Node + beta; jeho sieťový proxy až keď bude treba zoznam
+  domén); mcp-core → meta-nástroje (`find_tool`, `describe_tool`, `call_tool`) napísať v Pythone v latte-mcp podľa vzoru
+  swarmclawai (MIT, autor do TRETIE-STRANY); vercel skills → netreba (B); ccusage → netreba, statusline je presnejšia;
+  promptfoo → voliteľný nástroj, inštalovať až na požiadanie.
+- **llama-swap netreba**: hlas pôjde cez sherpa-onnx (nie server s OpenAI API), takže dôvod „jeden koncový bod pre text,
+  reč aj obrázky“ odpadá. Stačí router llama.cpp; llama-swap iba ak raz pribudne generovanie obrázkov mimo ComfyUI.
+- **llmfit** iba ako voliteľné CLI (`recommend --json`) na skóre a katalóg; o tom, či sa model zmestí, rozhoduje
+  `llama-fit-params` / `--fit` + `--models-memory-margin` (už v latte-ai) a voľná VRAM zo sysfs / `nvidia-smi`.
+- Python balíky (Basic Memory AGPL, Serena GPL) ako **samostatné procesy** za latte-mcp, sťahované až pri zapnutí (ako F14).
+
+### F. Poradie podľa závislostí
+
+| # | Krok | Prečo tu | Na čom stojí |
+|---|---|---|---|
+| 1 | Router llama.cpp + `--fit` + voľná VRAM | najväčší zisk, nezávislé | — |
+| 2 | Uspávanie webov (schválené 17. 11.) | nezávislé, pamäť 3,3 GB | — |
+| 3 | **Politika AI** + bubblewrap obal | základ pre 4, 5, zámok F8 a sandbox F6 | — |
+| 4 | latte-mcp: lenivé nástroje + HTTP 127.0.0.1 + záznam | lokálne modely s malým kontextom, Agent Chats | 3 |
+| 5 | `latte-acp` → „Čaká na teba“ | nahradí titulky okien | 3, 4 |
+| 6 | **Projekt = priečinok** (`AGENTS.md` + `.latte/projekt.toml`) | spoločný pre Context aj fork | 3 |
+| 7 | Index rozhovorov (najprv FTS5, potom e5-sk vektory) → `search_chats` | | 4 |
+| 8 | Basic Memory za latte-mcp | | 4, 6 |
+| 9 | Hlas: sherpa-onnx + Parakeet sk (CPU) / Canary sk (GPU) + Silero, Lili | | — |
+| 10 | Fork Agent Chats F1–F8 | až keď 3, 4, 6 dávajú priečinky, politiku a nástroje | 3, 4, 6 |
+
+Oproti prehľadu v `lensAIplan.md` pribudli kroky 3 a 6 (základy, na ktorých stojí viac častí) a vypadli llama-swap,
+srt, vercel skills a mcp-core.
+
+### Otvorené na rozhodnutie
+
+- Pamäť: Markdown (Basic Memory) ako jediná pravda, alebo nechať fork s vlastnou `context_items`? (D2)
+- Premenovať `latte-skill` na Úkony (UI aj príkaz), alebo iba v UI? (B)
+- `latte-acp`: **návrh Rust.** Démon beží stále; Python s asyncio ~20 MB RSS, s knižnicou `mcp` ~59 MB (namerané
+  18. 11.), Rust démon rádovo ~5–10 MB (odhad, zmerať). Python SDK existuje (`agent-client-protocol` 1.0.0 na PyPI), ale
+  oficiálne a najúplnejšie je Rust SDK a `crates/` už sú. Rozdiel je malý oproti agentom samotným (Claude Code ~330 MB)
+  a webom (~3 GB) — najväčšia úspora RAM je uspávanie webov (krok 2).
