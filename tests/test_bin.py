@@ -231,6 +231,20 @@ with tempfile.TemporaryDirectory() as d:
     assert len(os.listdir(d)) == 1                    # too big in all: the oldest months go, this one stays
     ai.JOURNAL_BYTES = 20 << 20
 
+# projects: a folder made one, a subproject found inside it, settings written back, the nearest one found for a path
+with tempfile.TemporaryDirectory() as d:
+    ai.PROJECTS = os.path.join(d, "projects")
+    top = ai.project_new(os.path.join(d, "MagnaMoravia"), "Magna Moravia", "book", "forgejo")
+    ai.project_new(os.path.join(d, "MagnaMoravia", "Kniha1"), "Kniha 1", "book", "forgejo")
+    assert ai.project_list() == [top["path"]]                     # the subproject is not listed on its own
+    assert os.readlink(os.path.join(top["path"], "CLAUDE.md")) == "AGENTS.md"
+    got = ai.projects()[0]
+    assert got["storage"] == "forgejo" and [x["name"] for x in got["subs"]] == ["Kniha 1"], got
+    p = ai.project_read(top["path"]); p["lock"]["ai"] = ["claude"]; p["name"] = 'A "quoted" name'; ai.project_write(p)
+    assert ai.project_read(top["path"])["lock"]["ai"] == ["claude"] and ai.project_read(top["path"])["name"] == 'A "quoted" name'
+    os.makedirs(os.path.join(d, "MagnaMoravia", "Kniha1", "kapitoly"))
+    assert ai.project_of(os.path.join(d, "MagnaMoravia", "Kniha1", "kapitoly"))["name"] == "Kniha 1"
+
 mcp = load("latte-mcp")
 # the lazy tools' search: the words find the tool, a word no tool has finds none
 found = mcp.score("volume of the sound", [{"name": "skills", "description": "What LatteOS can change: the volume, the brightness"},

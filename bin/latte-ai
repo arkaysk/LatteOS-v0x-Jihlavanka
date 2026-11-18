@@ -108,6 +108,13 @@ No API key: the official tool of a service answers, with the account the user is
   latte-ai helper           the Helper's conversation, the oldest first: [{"at", "agent", "app", "task", "dir", "state":
                             running|done|error, "steps": [{"kind": text|tool|plan|ask, "text", "answer"}], "n" (items changed),
                             "log"}]; a task through ACP (latte-acp) with its steps, other journal entries without
+  latte-ai projects         every project, each with its subprojects: [{"path", "name", "type", "state", "storage",
+                            "remote", "lock": {"ai": [agent ids; none: all], "memory"}, "subs"}]
+  latte-ai project new DIR NAME TYPE [STORAGE]   a folder made a project (.latte/projekt.toml, AGENTS.md, CLAUDE.md →
+                            AGENTS.md); TYPE code|drawing|book|3d|music|comic|other, STORAGE offline|github|forgejo
+  latte-ai project set DIR state|type|storage|name|remote|memory VALUE · set DIR ai ID…   a project's setting; ai: the
+                            only agents allowed in it (none: all)
+  latte-ai project forget DIR   off the list (the folder stays) · latte-ai project DIR: the project a folder is in
   latte-ai helper say LOG TEXT | end LOG   the person goes on with a task that waits (state "waiting"), or ends it
   latte-ai journal [N]      what the AI changed, the newest first (N entries, 200): [{"at", "app", "ai", "task", "did",
                             "where", "items": [[before, after] | [what]], "more"}]; an entry shows its first 20 items
@@ -1717,6 +1724,97 @@ def doers():
     return sorted(there, key=lambda i: i != chosen)
 
 
+# ── projects (ROADMAP 10B.72, lensAIplan2.md D1, F2/F3/F8/F13/F16): a project is a folder of the person's, with
+# `.latte/projekt.toml` (what it is, its state, where it lives, its lock) and AGENTS.md (what every agent is told there;
+# CLAUDE.md beside it points to it, since Claude Code reads that name). The list of them is ~/.config/latteos/projects,
+# one folder a line: LensAI and the fork of Agent Chats read the same files, and switched off, Agent Chats loses nothing.
+PROJECTS = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "projects")
+PROJECT_TYPES = ("code", "drawing", "book", "3d", "music", "comic", "other")
+PROJECT_STATES = ("active", "paused", "done", "archived")
+PROJECT_STORAGE = ("offline", "github", "forgejo")
+
+
+def project_read(folder):
+    """A project's file, with what it does not say filled in; None when the folder is not one."""
+    import tomllib
+    try:
+        with open(os.path.join(folder, ".latte", "projekt.toml"), "rb") as f:
+            p = tomllib.load(f)
+    except (OSError, ValueError):
+        return None
+    lock = p.get("lock") if isinstance(p.get("lock"), dict) else {}
+    return {"path": folder, "name": str(p.get("name") or os.path.basename(folder)),
+            "type": p.get("type") if p.get("type") in PROJECT_TYPES else "other",
+            "state": p.get("state") if p.get("state") in PROJECT_STATES else "active",
+            "storage": p.get("storage") if p.get("storage") in PROJECT_STORAGE else "offline", "remote": str(p.get("remote") or ""),
+            "lock": {"ai": [str(x) for x in lock.get("ai") or []], "memory": lock.get("memory") if lock.get("memory") in ("shared", "separate", "none") else "shared"}}
+
+
+def project_write(p):
+    """The file back, written whole (TOML a person can read and change by hand)."""
+    q = lambda v: json.dumps(v, ensure_ascii=False)        # a TOML basic string is JSON's
+    text = ("# A project of LatteOS (LensAI › Projects): what it is, its state, where it lives, and which AI may work in it.\n"
+            "name = %s\ntype = %s\nstate = %s\nstorage = %s\nremote = %s\n\n[lock]\nai = [%s]\nmemory = %s\n"
+            % (q(p["name"]), q(p["type"]), q(p["state"]), q(p["storage"]), q(p["remote"]), ", ".join(map(q, p["lock"]["ai"])), q(p["lock"]["memory"])))
+    os.makedirs(os.path.join(p["path"], ".latte"), exist_ok=True)
+    with open(os.path.join(p["path"], ".latte", "projekt.toml"), "w") as f:
+        f.write(text)
+
+
+def project_list():
+    try:
+        with open(PROJECTS) as f:
+            return [l.strip() for l in f if l.strip()]
+    except OSError:
+        return []
+
+
+def projects():
+    """Every project, each with its subprojects (the folders right in it that are projects too)."""
+    out = []
+    for folder in project_list():
+        p = project_read(folder)
+        if not p:
+            continue
+        p["subs"] = [x for x in (project_read(os.path.join(folder, d)) for d in sorted(os.listdir(folder))
+                                 if os.path.isdir(os.path.join(folder, d, ".latte"))) if x]
+        p["exists"] = True
+        out.append(p)
+    return out
+
+
+def project_of(path):
+    """The project a folder belongs to, the nearest first (a subproject before its project), or None."""
+    path = os.path.realpath(path or "")
+    while path and path != "/":
+        p = project_read(path)
+        if p:
+            return p
+        path = os.path.dirname(path)
+    return None
+
+
+def project_new(folder, name, kind, storage):
+    folder = os.path.realpath(os.path.expanduser(folder))
+    os.makedirs(folder, exist_ok=True)
+    p = project_read(folder) or {"path": folder, "name": name, "type": kind, "state": "active", "storage": storage, "remote": "",
+                                  "lock": {"ai": [], "memory": "shared"}}
+    project_write(p)
+    agents = os.path.join(folder, "AGENTS.md")
+    if not os.path.exists(agents):
+        with open(agents, "w") as f:
+            f.write("# %s\n\n%s\n\n## %s\n\n- \n" % (name, T("What every AI working here should know about this project."), T("Rules")))
+    if not os.path.exists(os.path.join(folder, "CLAUDE.md")):
+        os.symlink("AGENTS.md", os.path.join(folder, "CLAUDE.md"))
+    # a subproject is found in its project's folder; only a project of its own goes on the list
+    parent = project_of(os.path.dirname(folder))
+    if not parent and folder not in project_list():
+        os.makedirs(os.path.dirname(PROJECTS), exist_ok=True)
+        with open(PROJECTS, "a") as f:
+            f.write(folder + "\n")
+    return project_read(folder)
+
+
 # the agents through ACP: its adapter (Apache-2.0, agentclientprotocol), or the tool itself
 ACP = {"claude": ["claude-agent-acp"], "chatgpt": ["codex-acp"], "gemini": ["gemini", "--acp"]}
 # the sign-in an ACP agent is told to use: Gemini's own setting (an API key, Google's sign-in…); others need none
@@ -1836,6 +1934,10 @@ def do(task, who="", where=""):
     if not who:
         return {"ok": False, "agent": ""}
     name = DOERS[who]["name"]
+    proj = project_of(where) if where else None
+    if proj and proj["lock"]["ai"] and who not in proj["lock"]["ai"]:
+        notify(T("{n} was not started").replace("{n}", name), T("The project {p} allows only: {a}").replace("{p}", proj["name"]).replace("{a}", ", ".join(proj["lock"]["ai"])))
+        return {"ok": False, "agent": who, "locked": True}
     if not shutil.which("bwrap"):
         notify(T("{n} was not started").replace("{n}", name), T("Its sandbox (bubblewrap) is not installed."))
         return {"ok": False, "agent": who, "sandbox": False}
@@ -2800,6 +2902,36 @@ def main(a):
         return 0 if r["ok"] else 1
     if a[:1] == ["journal"]:
         return journal_main(a[1:])
+    if a == ["projects"]:
+        print(json.dumps(projects(), ensure_ascii=False))
+        return 0
+    if a[:2] == ["project", "new"] and len(a) in (5, 6) and a[4] in PROJECT_TYPES and (len(a) == 5 or a[5] in PROJECT_STORAGE):
+        print(json.dumps(project_new(a[2], a[3], a[4], a[5] if len(a) == 6 else "offline"), ensure_ascii=False))
+        return 0
+    if a[:2] == ["project", "set"] and len(a) >= 5:
+        p = project_read(os.path.realpath(os.path.expanduser(a[2])))
+        allowed = {"state": PROJECT_STATES, "type": PROJECT_TYPES, "storage": PROJECT_STORAGE}
+        if not p or (a[3] in allowed and a[4] not in allowed[a[3]]) or a[3] not in ("state", "type", "storage", "name", "remote", "ai", "memory"):
+            return 2
+        if a[3] == "ai":
+            p["lock"]["ai"] = [x for x in a[4:] if x]          # none: every AI may
+        elif a[3] == "memory":
+            if a[4] not in ("shared", "separate", "none"):
+                return 2
+            p["lock"]["memory"] = a[4]
+        else:
+            p[a[3]] = a[4]
+        project_write(p)
+        return 0
+    if a[:2] == ["project", "forget"] and len(a) == 3:
+        # off the list only: the folder and what is in it stay
+        keep = [x for x in project_list() if x != os.path.realpath(os.path.expanduser(a[2]))]
+        with open(PROJECTS, "w") as f:
+            f.write("".join(x + "\n" for x in keep))
+        return 0
+    if a[:1] == ["project"] and len(a) == 2:
+        print(json.dumps(project_of(a[1]), ensure_ascii=False))
+        return 0
     if a == ["helper"]:
         print(json.dumps(helper(), ensure_ascii=False))
         return 0

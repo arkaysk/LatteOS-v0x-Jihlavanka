@@ -23,7 +23,7 @@ session() {   # $1 the mode latte-boot decided, then the arguments of latte-sess
     printf 'LATTE_MODE=%s\nLATTE_RENDERER=hw\nLATTE_TIER=eco\n' "$mode" > "$tmp/run/sys/session.env"
     printf '[mode]\nreason_id = "no-gpu"\nreason = "no card"\n' > "$tmp/run/sys/mode.toml"
     env PATH="$tmp/bin:$PATH" TMP_OUT="$tmp/out" LATTE_SHARE="$tmp/share" LATTE_RUN_DIR="$tmp/run/sys" LATTE_STATE_DIR="$tmp/sys" \
-        XDG_RUNTIME_DIR="$tmp/run" XDG_STATE_HOME="$tmp/state" XDG_CONFIG_HOME="$tmp/config" LANG=sk_SK.UTF-8 \
+        XDG_RUNTIME_DIR="$tmp/run" XDG_STATE_HOME="$tmp/state" XDG_CONFIG_HOME="$tmp/config" LANG=sk_SK.UTF-8 LATTE_TEST=1 \
         timeout 20 "$repo/bin/latte-session" "$@"
 }
 why() { head -1 "$tmp/run/latteos/safe-reason" 2>/dev/null; }

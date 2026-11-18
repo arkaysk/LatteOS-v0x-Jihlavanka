@@ -3600,6 +3600,15 @@ iba do priečinka úlohy; keďže teraz každú zmenu povoľuje človek (ACP), d
 ~/.bashrc, ~/.profile, ~/.config/autostart, ~/.config/systemd, ~/.config/pleamar, ~/.config/latteos, kľúčenky, ~/.local/bin…);
 odpovede a povolenia v `$XDG_RUNTIME_DIR/latteos` ostávajú agentovi iba na čítanie. Overené: zápis na Plochu áno, ~/.bashrc a odpovede nie.
 
+**10B.72** [x] 18. 11. **Projekty = priečinky** (krok 6 syntézy; F2, F3, F8, F13, F16): projekt je priečinok s `.latte/projekt.toml` (meno,
+typ kód/kreslenie/kniha/3D/hudba/komiks/iné, stav aktívny/pozastavený/hotový/archivovaný, kde žije offline/GitHub/Forgejo, zámok: povolení
+agenti, pamäť) a `AGENTS.md` (s `CLAUDE.md` → `AGENTS.md`); zoznam `~/.config/latteos/projects`, podprojekt = priečinok projektu, ktorý je tiež
+projekt. `latte-ai projects | project new|set|forget|DIR`; `latte-ai do` v priečinku projektu odmietne agenta, ktorého zámok nepovoľuje.
+LensAI › **Projekty**: nový projekt (meno, typ, kde žije, priečinok cez Prehľadávať…), karty so stavom (klik = ďalší), miestom, Priečinok,
+Úloha (Pomocník pracuje v jeho priečinku), zámok agentov, podprojekty. Chýba: pamäť projektu (krok 8), presun offline → online, väzba na
+kanály forku Agent Chats. Oprava popri tom: `tests/test_session.sh` po minúte posielal skutočnú výzvu „Choose your agent“ na plochu
+(`latte-session` → `latte-ai invite` po zmazaní náhrad testu) — teraz `LATTE_TEST=1`.
+
 ### 10C. [ ] Heidelberg
 
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví

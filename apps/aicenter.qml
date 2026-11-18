@@ -12,6 +12,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import QtQuick.Dialogs                 // the folder of a new project: the desktop's own dialog (the portal)
 import QtQuick.Controls as QQC      // the tooltips only: Controls' Label and Menu are not LatteOS's
 import "common"
 
@@ -200,6 +201,22 @@ ShellRoot {
     readonly property bool helpBusy: helped.some(t => t.state === "running")
     Ask { id: helperq; onDone: shell.helped = data || [] }
     Process { id: helpSay }
+    // the projects (latte-ai projects, ROADMAP 10B.72): folders with .latte/projekt.toml, each with its subprojects
+    property var projects: []
+    property string helpDir: ""                // a task of the Helper goes into this project's folder
+    property string helpDirName: ""
+    property string newIn: Quickshell.env("HOME") + "/Projekty"     // where a new project's folder is made
+    property string newType: "other"
+    property string newStorage: "offline"
+    Ask { id: projq; onDone: shell.projects = data || [] }
+    Process { id: projSet; onExited: projq.ask(["projects"]) }
+    function projDo(args) { projSet.command = ["latte-ai"].concat(args); projSet.running = true }
+    readonly property var projGlyph: ({ code: "code", drawing: "brush", book: "book", "3d": "box", music: "music", comic: "photo", other: "folder" })
+    readonly property var projStates: ["active", "paused", "done", "archived"]
+    readonly property var projStateGlyph: ({ active: "player-play", paused: "player-pause", done: "circle-check", archived: "package" })
+    readonly property var projStorageGlyph: ({ offline: "lock", github: "brand-github", forgejo: "home" })
+    function taskIn(p) { helpDir = p.path; helpDirName = p.name; go("agents") }
+    FolderDialog { id: newWhere; onAccepted: shell.newIn = decodeURIComponent(String(selectedFolder).replace(/^file:\/\//, "")) }
     // while the agents' page is open: at once, and every half minute what came since (an app may write any time)
     Timer { interval: shell.helpBusy ? 2000 : 30000; repeat: true; triggeredOnStart: true; running: shell.page === "agents"; onTriggered: helperq.ask(["helper"]) }
 
@@ -253,7 +270,7 @@ ShellRoot {
                                    cpu: { word: QT_TR_NOOP("On the processor"), color: "#7aa7ff" }, "too-big": { word: QT_TR_NOOP("Likely too large for this computer"), color: "#e5484d" } })
     // "Do it for me": the task goes to an agent in a terminal, which plans first and changes nothing before a yes
     Process { id: doer }
-    function doIt(task, who) { doer.command = ["latte-ai", "do", task].concat(who ? [who] : []); doer.running = true }
+    function doIt(task, who, dir) { doer.command = ["latte-ai", "do", task].concat(who ? [who] : []).concat(dir ? ["--in", dir] : []); doer.running = true }
     Timer { interval: 180000; repeat: true; running: shell.page === "agents"; onTriggered: agentsq.ask(["agents"]) }
     function tokens(n) { return n >= 1e6 ? (n / 1e6).toFixed(1) + " M" : n >= 1e3 ? Math.round(n / 1e3) + " k" : String(n || 0) }
     function modelWord(id) { const m = /claude-(\w+)-(\d+)-(\d+)/.exec(id || ""); return m ? m[1].charAt(0).toUpperCase() + m[1].slice(1) + " " + m[2] + "." + m[3] : (id || "") }
@@ -311,6 +328,7 @@ ShellRoot {
         else if (p === "team") teamq.running = true
         else if (p === "agents") { agentsq.ask(["agents"]); helpersq.ask(["helpers"]) }
         else if (p === "skills") skillq.ask(["skills"])
+        else if (p === "projects") { projq.ask(["projects"]); helpersq.ask(["helpers"]) }
         else if (p === "connectors") { serverq.running = true; mcpq.running = true }
         else if (p === "local") openLocal()
     }
@@ -386,7 +404,7 @@ ShellRoot {
     Component.onCompleted: {
         fresh.running = true
         list.ask(["chats"]); who.ask(["providers", "all"]); svc.ask(["services"]); keyq.ask(["keys"]); helpersq.ask(["helpers"])      // helpers: whether the AI is on
-        if (["all", "chats", "agents", "helpers", "local", "lensai", "team", "skills", "connectors", "about"].indexOf(words[0]) >= 0) page = words[0] === "helpers" ? "agents" : words[0]      // helpers: a part of the agents' page now
+        if (["all", "chats", "agents", "helpers", "local", "lensai", "team", "skills", "connectors", "about", "projects"].indexOf(words[0]) >= 0) go(words[0] === "helpers" ? "agents" : words[0])      // helpers: a part of the agents' page now; go() asks what the page shows
         const part = ({ services: "cli", models: "cli", keys: "api", instructions: "instructions", lensai: words[1] || "web" })[words[0]]      // what were pages of their own are parts of the settings
         if (part) openSection(part)
         if (words[0] === "tab" && words[1]) { page = "web"; tab = words[1]; tabBeside = words[2] || "" }      // latte-app aicenter tab claude [chatgpt]: its own page, another beside
@@ -498,7 +516,7 @@ ShellRoot {
                      : l.indexOf("model:") === 0 ? I18n.tr("Model {n} deleted", { n: l.slice(6) }) : l
         onUndone: { list.ask(["chats"]); localq.ask(["recommend"]); localModels.ask(["models", "measured"]); modelq.ask(["models"]) }
         heading: shell.page === "lensai" ? I18n.tr("Settings") : shell.page === "web" ? (shell.tabbed.find(t => t.id === shell.tab) || { name: "" }).name : shell.page === "home" ? I18n.tr("Overview") : shell.page === "all" ? I18n.tr("Conversations") : shell.page === "agents" ? I18n.tr("Agents") : shell.page === "local" ? I18n.tr("Local LLMs")
-                 : shell.page === "team" ? "Agent Chats" : shell.page === "skills" ? I18n.tr("Skills") : shell.page === "connectors" ? I18n.tr("Connectors") : shell.page === "about" ? I18n.tr("About LensAI") : (shell.chat ? shell.chat.title : I18n.tr("Conversations"))
+                 : shell.page === "team" ? "Agent Chats" : shell.page === "skills" ? I18n.tr("Skills") : shell.page === "connectors" ? I18n.tr("Connectors") : shell.page === "about" ? I18n.tr("About LensAI") : shell.page === "projects" ? I18n.tr("Projects") : (shell.chat ? shell.chat.title : I18n.tr("Conversations"))
         implicitWidth: 1120; implicitHeight: 760
         sideWidth: shell.folded ? 64 : 250
         Behavior on sideWidth { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
@@ -536,6 +554,7 @@ ShellRoot {
                 Item { width: 1; height: 6 }
                 Nav { width: parent.width; text: I18n.tr("Overview"); icon: "layout-dashboard"; on: shell.page === "home"; badge: shell.waitingCount; onPressed: shell.go("home") }
                 Nav { width: parent.width; text: I18n.tr("Conversations"); icon: "messages"; on: shell.page === "all" || shell.page === "chats"; onPressed: shell.go("all") }
+                Nav { width: parent.width; text: I18n.tr("Projects"); icon: "folders"; on: shell.page === "projects"; onPressed: shell.go("projects") }
                 Nav { width: parent.width; text: "Agent Chats"; icon: "users-group"; on: shell.page === "team"; onPressed: shell.go("team") }
                 Nav { width: parent.width; text: I18n.tr("Agents"); icon: "robot"; on: shell.page === "agents"; badge: shell.askingAgents.length; onPressed: shell.go("agents") }
                 Nav { width: parent.width; text: I18n.tr("Skills"); icon: "puzzle"; on: shell.page === "skills"; onPressed: shell.go("skills") }
@@ -1089,12 +1108,14 @@ ShellRoot {
                     Label { visible: shell.helped.length === 0; x: 18; y: 70; width: parent.width - 36; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
                             text: I18n.tr("Nothing yet. Small tasks for the AI from every app (sorting photos, renaming files, a setting) come here, one under another; what each changed opens beside it.") }
                     // the agent's answer done: the line goes on with it; "New task" ends it, and the line starts another (latte-ai do)
-                    Field { id: helperLine; x: 18; y: parent.height - 52; width: parent.width - 36 - (newTask.visible ? newTask.width + 8 : 0); icon: "sparkles"
-                            hint: shell.helpWaits ? I18n.tr("Answer the agent…") : I18n.tr("A task for your agent…")
+                    Field { id: helperLine; x: 18; y: parent.height - 52; width: parent.width - 36 - (newTask.visible ? newTask.width + 8 : 0) - (shell.helpDir !== "" && !shell.helpWaits ? 150 : 0); icon: "sparkles"
+                            hint: shell.helpWaits ? I18n.tr("Answer the agent…") : shell.helpDir !== "" ? I18n.tr("A task in the project {n}…", { n: shell.helpDirName }) : I18n.tr("A task for your agent…")
                             onAccepted: { const t = text.trim(); if (t === "") return
                                           if (shell.helpWaits) { helpSay.command = ["latte-ai", "helper", "say", shell.helpLast.log, t]; helpSay.running = true }
-                                          else shell.doIt(t, "")
+                                          else shell.doIt(t, "", shell.helpDir)
                                           text = ""; journalSoon.restart() } }
+                    Pill { visible: shell.helpDir !== "" && !shell.helpWaits; anchors.right: parent.right; anchors.rightMargin: 18; y: parent.height - 50; implicitHeight: 36; icon: "x"
+                           text: shell.helpDirName; onPressed: { shell.helpDir = ""; shell.helpDirName = "" } }
                     Pill { id: newTask; visible: shell.helpWaits; anchors.right: parent.right; anchors.rightMargin: 18; y: parent.height - 50; implicitHeight: 36; icon: "plus"; text: I18n.tr("New task")
                            onPressed: { Quickshell.execDetached(["latte-ai", "helper", "end", shell.helpLast.log]); journalSoon.restart() } }
                     Timer { id: journalSoon; interval: 1500; onTriggered: helperq.ask(["helper"]) } }
@@ -1211,6 +1232,75 @@ ShellRoot {
                             Rectangle { width: 20; height: 20; radius: 10; y: 3; x: sw.modelData.on ? 23 : 3; color: sw.modelData.on ? Theme.inkOnGold : Theme.dim }
                             MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor
                                         onClicked: shell.setHelper(["latte-ai", "toggle", sw.modelData.id, sw.modelData.on ? "off" : "on"]) } } } } } }
+
+        // ── the projects: all in one place (the user, 18. 11.), a folder each with its subprojects; what it is, its state,
+        // where it lives (offline · GitHub · Forgejo), which AI may work in it; a task for the agent goes into its folder ──
+        Scroll {
+            id: prPage
+            visible: shell.page === "projects"
+            Label { width: prPage.room; wrapMode: Text.WordWrap; color: Theme.dim
+                    text: I18n.tr("A project is a folder of yours. What it is and who may work in it is kept in it (.latte/projekt.toml), and what every AI should know there in AGENTS.md. A folder inside it made a project is its subproject.") }
+            // a new one: its name, what it is, where it lives, and the folder it is made in
+            Rectangle { width: prPage.room; height: npCol.implicitHeight + 32; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
+                Column { id: npCol; x: 18; y: 16; width: parent.width - 36; spacing: 12
+                    Label { text: I18n.tr("New project"); font.pixelSize: 16; font.weight: 800 }
+                    Field { id: npName; width: parent.width; icon: "folder"; hint: I18n.tr("Its name") }
+                    Flow { width: parent.width; spacing: 8
+                        Repeater { model: ["code", "drawing", "book", "3d", "music", "comic", "other"]
+                            Pill { required property string modelData; implicitHeight: 32; icon: shell.projGlyph[modelData]; strong: shell.newType === modelData
+                                   text: I18n.tr(({ code: "Code", drawing: "Drawing", book: "Book", "3d": "3D", music: "Music", comic: "Comic", other: "Other" })[modelData]); onPressed: shell.newType = modelData } } }
+                    Flow { width: parent.width; spacing: 8
+                        Repeater { model: ["offline", "github", "forgejo"]
+                            Pill { required property string modelData; implicitHeight: 32; icon: shell.projStorageGlyph[modelData]; strong: shell.newStorage === modelData
+                                   text: I18n.tr(({ offline: "Offline: this computer only", github: "Online: GitHub", forgejo: "Online: Forgejo at home" })[modelData]); onPressed: shell.newStorage = modelData } } }
+                    Row { spacing: 10; width: parent.width
+                        Label { anchors.verticalCenter: parent.verticalCenter; color: Theme.dim; font.pixelSize: 13; elide: Text.ElideMiddle; width: parent.width - npWhere.width - npMake.width - 20
+                                text: I18n.tr("In {p}", { p: (shell.newIn + "/" + (npName.text.trim() || "…")).replace(Quickshell.env("HOME"), "~") }) }
+                        Pill { id: npWhere; implicitHeight: 34; icon: "folders"; text: I18n.tr("Browse…"); onPressed: newWhere.open() }
+                        Pill { id: npMake; implicitHeight: 34; icon: "plus"; strong: true; text: I18n.tr("Make it"); enabled: npName.text.trim() !== ""; opacity: enabled ? 1 : 0.5
+                               onPressed: { shell.projDo(["project", "new", shell.newIn + "/" + npName.text.trim().replace(/\//g, "-"), npName.text.trim(), shell.newType, shell.newStorage]); npName.text = "" } } } } }
+            Label { visible: shell.projects.length === 0 && !projq.running; width: prPage.room; color: Theme.dim; text: I18n.tr("No project yet.") }
+            Repeater { model: shell.projects
+                Rectangle { id: pj; required property var modelData; width: prPage.room; height: pjCol.implicitHeight + 28; radius: 16; color: Theme.card
+                    opacity: modelData.state === "archived" ? 0.6 : 1
+                    Column { id: pjCol; x: 18; y: 14; width: parent.width - 36; spacing: 10
+                        Item { width: parent.width; height: 40
+                            Glyph { name: shell.projGlyph[pj.modelData.type] || "folder"; font.pixelSize: 24; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
+                            Column { x: 36; width: parent.width - 36 - pjTools.width - 12; anchors.verticalCenter: parent.verticalCenter; spacing: 1
+                                Label { width: parent.width; elide: Text.ElideRight; text: pj.modelData.name; font.pixelSize: 16; font.weight: 800 }
+                                Label { width: parent.width; elide: Text.ElideMiddle; color: Theme.faint; font.pixelSize: 11; text: pj.modelData.path.replace(Quickshell.env("HOME"), "~") } }
+                            Row { id: pjTools; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; spacing: 6
+                                // its state: pressed, the next one (active → paused → done → archived)
+                                Pill { implicitHeight: 30; icon: shell.projStateGlyph[pj.modelData.state]
+                                       text: I18n.tr(({ active: "Active", paused: "Paused", done: "Done", archived: "Archived" })[pj.modelData.state])
+                                       onPressed: shell.projDo(["project", "set", pj.modelData.path, "state", shell.projStates[(shell.projStates.indexOf(pj.modelData.state) + 1) % 4]]) }
+                                Pill { implicitHeight: 30; icon: shell.projStorageGlyph[pj.modelData.storage]
+                                       text: I18n.tr(({ offline: "Offline", github: "GitHub", forgejo: "Forgejo" })[pj.modelData.storage]) }
+                                Pill { implicitHeight: 30; icon: "folder"; text: I18n.tr("Folder"); onPressed: Quickshell.execDetached(["latte-app", "files", pj.modelData.path]) }
+                                Pill { implicitHeight: 30; icon: "sparkles"; strong: true; text: I18n.tr("Task"); onPressed: shell.taskIn(pj.modelData) } } }
+                        // the lock: the only agents allowed here (none chosen: every one)
+                        Flow { width: parent.width; spacing: 6
+                            Label { text: I18n.tr("Only these may work here:"); color: Theme.dim; font.pixelSize: 12; height: 28; verticalAlignment: Text.AlignVCenter }
+                            Repeater { model: (shell.helpers.agents || []).filter(a => a.installed)
+                                Pill { required property var modelData; implicitHeight: 28; text: modelData.name
+                                       readonly property bool on: pj.modelData.lock.ai.indexOf(modelData.id) >= 0; strong: on; icon: on ? "lock" : ""
+                                       onPressed: { const ai = on ? pj.modelData.lock.ai.filter(x => x !== modelData.id) : pj.modelData.lock.ai.concat([modelData.id])
+                                                    shell.projDo(["project", "set", pj.modelData.path, "ai"].concat(ai.length ? ai : [""])) } } }
+                            Label { visible: pj.modelData.lock.ai.length === 0; text: I18n.tr("(none chosen: every one)"); color: Theme.faint; font.pixelSize: 12; height: 28; verticalAlignment: Text.AlignVCenter } }
+                        // its subprojects, one row each
+                        Repeater { model: pj.modelData.subs || []
+                            Rectangle { id: sp; required property var modelData; width: pjCol.width; height: 40; radius: 10; color: Theme.raised
+                                Glyph { x: 14; name: "chevron-right"; font.pixelSize: 14; color: Theme.faint; anchors.verticalCenter: parent.verticalCenter }
+                                Glyph { x: 36; name: shell.projGlyph[sp.modelData.type] || "folder"; font.pixelSize: 16; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
+                                Label { x: 60; width: parent.width - 60 - spTools.width - 16; elide: Text.ElideRight; anchors.verticalCenter: parent.verticalCenter; font.weight: 700; text: sp.modelData.name }
+                                Row { id: spTools; anchors.right: parent.right; anchors.rightMargin: 8; anchors.verticalCenter: parent.verticalCenter; spacing: 6
+                                    Pill { implicitHeight: 28; icon: shell.projStateGlyph[sp.modelData.state]; text: I18n.tr(({ active: "Active", paused: "Paused", done: "Done", archived: "Archived" })[sp.modelData.state])
+                                           onPressed: shell.projDo(["project", "set", sp.modelData.path, "state", shell.projStates[(shell.projStates.indexOf(sp.modelData.state) + 1) % 4]]) }
+                                    Pill { implicitHeight: 28; icon: "folder"; text: ""; onPressed: Quickshell.execDetached(["latte-app", "files", sp.modelData.path]) }
+                                    Pill { implicitHeight: 28; icon: "sparkles"; text: I18n.tr("Task"); onPressed: shell.taskIn(sp.modelData) } } } }
+                        Label { text: I18n.tr("Take off the list (the folder stays)"); color: hideHit.containsMouse ? Theme.red : Theme.faint; font.pixelSize: 12
+                                MouseArea { id: hideHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: shell.projDo(["project", "forget", pj.modelData.path]) } } } } }
+        }
 
         // ── every agent skill on this computer, shown where it lives (the user, 17. 11.: a view, not a copy); edited where
         // it lives. Agent Chats keeps its agents' own skills, seen there ─────────────────────────────────────────────
