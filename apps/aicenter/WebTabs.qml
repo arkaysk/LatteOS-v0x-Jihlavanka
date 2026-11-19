@@ -105,12 +105,11 @@ Item {
             // profile, and the page that asked still knows it (the sign-in finishes there); a link to a new window or
             // tab (a source in an answer) goes to the browser, as in any app of web pages
             onNewWindowRequested: request => {
-                // agentgram's "Open folder" (latteos://agentgram/folder?p=PROJECT&s=SUB): the project's folder in Files
-                const u = String(request.requestedUrl)
+                // agentgram's "Open folder" (latteos://agentgram/folder?path=…): the project's folder in Files (latte-ai keeps
+                // it to ~/Projects, whatever the page asks)
                 if (u.startsWith("latteos://agentgram/folder?")) {
-                    const q = {}
-                    u.split("?")[1].split("&").forEach(kv => { const i = kv.indexOf("="); if (i > 0) q[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1).replace(/\+/g, " ")) })
-                    if (q.p) Quickshell.execDetached(["latte-ai", "agentgram", "folder", q.p].concat(q.s ? [q.s] : []))
+                    const m = u.match(/[?&]path=([^&]+)/)
+                    if (m) Quickshell.execDetached(["latte-ai", "agentgram", "folder", decodeURIComponent(m[1])])
                     return
                 }
                 // agentgram's "Connect this computer" (its desktop app's link, agenteschat://pair?server=&link=): LatteOS

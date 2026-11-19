@@ -578,3 +578,6 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 - **Pripojenie počítača k agentgramu zjednotené** (19. 11., používateľ): LensAI › Nastavenia › agentgram › „Pripojiť tento počítač“
   spáruje celé prostredie LensAI s prihlásenými AI do agentgramu; „Connect a computer“ v agentgrame otvorenom v LensAI robí to isté
   (odkaz desktopovej aplikácie zachytí LensAI → `latte-ai agentgram pair --link`), bez sťahovania aplikácie.
+- **Priečinok projektu = jeho Kontext** (19. 11., používateľ): priečinok vzniká už pri vytvorení projektu alebo podprojektu,
+  v `~/Projects` (podprojekt v priečinku projektu); všetky súbory v ňom sú od začiatku prístupné projektu, četom a agentom a
+  ukazujú sa v zozname súborov (Kontext). Kontext zo služby Drive zrušený.

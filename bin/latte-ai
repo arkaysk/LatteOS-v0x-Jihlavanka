@@ -121,8 +121,7 @@ No API key: the official tool of a service answers, with the account the user is
   latte-ai agentgram        its settings: {"on", "mode": local|remote, "server", "identity": home|other, "web", "api",
                             "paired", "client"}
   latte-ai agentgram set on on|off · mode local|remote · server URL · identity home|other   then starts and stops to match
-  latte-ai agentgram folder PROJECT [SUBPROJECT]   its folder ~/Projects/project[/subproject] (no accents), made and
-                            opened in Files: {"path"}
+  latte-ai agentgram folder PATH   a project's folder (only under ~/Projects), opened in Files: {"path"}
   latte-ai agentgram pair [--link CODE]   connects this computer (its runner) to the server: {"url", "code"} to confirm
                             there, then {"ok"}; with agentgram's connect link, the person lets it join on that page
   latte-ai memory-folder [CHANNEL [SUBCHANNEL]]   where the AI keeps what it has: latteAI/lensai, or latteAI/agentes/CHANNEL/SUB
@@ -2118,8 +2117,9 @@ def agentgram_apply():
     if s["on"] and s["identity"] == "home" and s["paired"] and bun:
         unit = ("[Unit]\nDescription=agentgram client (this computer's runner)\nAfter=network-online.target\n\n[Service]\n"
                 "ExecStart=%s %s/apps/server/runner/main.ts start\nEnvironment=AGENTES_RUNNER_HOME=%s\nEnvironment=AGENTES_RUNNER_SERVICE=systemd\n"
+                "Environment=LATTEOS_PROJECTS_DIR=%s\n"
                 "Environment=PATH=%s\nRestart=always\nRestartSec=5\nRestartPreventExitStatus=0 2 3\nKillMode=process\n\n[Install]\nWantedBy=default.target\n"
-                % (bun, AGENTGRAM_SRC, AGENTGRAM_RUNNER, os.path.dirname(bun) + os.pathsep + SEARCH))
+                % (bun, AGENTGRAM_SRC, AGENTGRAM_RUNNER, PROJECTS_DIR, os.path.dirname(bun) + os.pathsep + SEARCH))
         old = open(AGENTGRAM_UNIT).read() if os.path.exists(AGENTGRAM_UNIT) else ""
         if old != unit:
             os.makedirs(os.path.dirname(AGENTGRAM_UNIT), exist_ok=True)
@@ -2172,16 +2172,17 @@ def agentgram_pair(link=""):
     return 0 if ok else 1
 
 
-def agentgram_folder(names):
-    """A project's folder of agentgram (and a subproject's inside it): ~/Projects/PROJECT[/SUBPROJECT], named after them
-    with no accents (the user, 18. 11.), made when first asked for; the person puts there what its agents should have."""
-    # ponytail: found by the names; a renamed project gets a new folder until agentgram keeps the path (F5)
-    parts = [slug(n) for n in names if n.strip()][:2]
-    if not parts:
+PROJECTS_DIR = os.path.expanduser("~/Projects")      # agentgram's projects' folders (the user, 19. 11.)
+
+
+def agentgram_folder(path):
+    """A project's folder of agentgram (agentgram makes it with the project), shown in Files; only one under ~/Projects,
+    whatever a page asks for."""
+    real = os.path.realpath(os.path.expanduser(path))
+    if not real.startswith(os.path.realpath(PROJECTS_DIR) + os.sep):
         return ""
-    path = os.path.join(os.path.expanduser("~/Projects"), *parts)
-    os.makedirs(path, exist_ok=True)
-    return path
+    os.makedirs(real, exist_ok=True)
+    return real
 
 
 def project_new(folder, name, kind, storage):
@@ -3317,8 +3318,8 @@ def main(a):
         return agentgram_pair()
     if a[:3] == ["agentgram", "pair", "--link"] and len(a) == 4 and re.match(r"^[A-Za-z0-9-]{4,40}$", a[3]):
         return agentgram_pair(a[3])
-    if a[:2] == ["agentgram", "folder"] and len(a) in (3, 4):
-        path = agentgram_folder(a[2:])
+    if a[:2] == ["agentgram", "folder"] and len(a) == 3:
+        path = agentgram_folder(a[2])
         if not path:
             return 2
         subprocess.Popen(["latte-app", "files", path], start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
