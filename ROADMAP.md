@@ -3731,6 +3731,17 @@ a v mene protokolu servera), zdroj v O aplikácii = vetva `agent-chats` repozit�
 (LensAI › Nastavenia › agentgram), potom F5–F6: čet projektu beží v priečinku `~/Projects/projekt/podprojekt` (runner: povolený
 priečinok, cwd), pieskovisko bubblewrap (podprojekt rw, projekt ro, súrodenci skrytí).
 
+**10B.78** [ ] 19. 11. **agentgram: Wiki a centrálna pamäť LensAI** (používateľ 19. 11.: „Wiki — informácie pre všetkých agentov
+nezávisle od projektu; ako to prepojiť s centrálnou pamäťou LensAI“). Wiki agentgramu (ADR 0023): stránky Markdown s priečinkami,
+verziami a `[[odkazmi]]`, čítajú ju všetci agenti (relevantné stránky v každom behu, nad pamäťou), píšu len na pokyn osoby. Návrh:
+jedna pravda = priečinok Markdown (pamäť systému LatteOS, 10B.75), Wiki jeho zrkadlo v oboch smeroch; rozhodne používateľ.
+
+**10B.79** [ ] 19. 11. **agentgram: online projekty cez Drive namiesto GitHubu** (používateľ 19. 11.: online projekt sa ukladá lokálne
+aj v Drive, rovnaká štruktúra priečinkov, dostupný aj vzdialeným používateľom; GitHub/Forgejo netreba, kód na GitHube cez
+konektory agentov). Mení F13/F15–F18 v `lensAIplan2.md`. Treba: Drive dnes nemá priečinky (súbory podľa konverzácie) — cesta súboru
+v projekte, synchronizácia priečinok ↔ Drive v runneri (nové, zmenené, zmazané; konflikt = obe verzie), limit 50 MB na súbor,
+prepínač offline/online na stránke projektu.
+
 ### 10C. [ ] Heidelberg
 
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví
