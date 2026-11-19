@@ -3731,6 +3731,13 @@ a v mene protokolu servera), zdroj v O aplikácii = vetva `agent-chats` repozit�
 (LensAI › Nastavenia › agentgram), potom F5–F6: čet projektu beží v priečinku `~/Projects/projekt/podprojekt` (runner: povolený
 priečinok, cwd), pieskovisko bubblewrap (podprojekt rw, projekt ro, súrodenci skrytí).
 
+  **19. 11. — F5–F6 hotové:** priečinok projektu vzniká s ním (`~/LensAI/agentgram/projekt/podprojekt`, čety bez projektu
+`channels/`), premenuje sa s ním, je Kontextom (stránka projektu: súbory, Pridať do 1 GB); čet projektu beží v jeho priečinku
+(runner: `LATTEOS_PROJECTS_DIR`) v bubblewrap — projekt zapisuje do svojho, podprojekt do svojho a projekt iba číta, súrodenci
+a iné projekty skryté (test s bubblewrap). Pripojenie počítača zjednotené (LensAI › Nastavenia aj „Connect a computer“ v LensAI).
+**Chýba:** skutočný beh agenta v priečinku (Claude Pro používateľa má 95 % týždňa — neskúšal som), domov mimo projektov ostáva
+čitateľný (CLI potrebujú svoje prihlásenia), slovenčina (F11).
+
 **10B.78** [ ] 19. 11. **agentgram: Wiki a centrálna pamäť LensAI** (používateľ 19. 11.: „Wiki — informácie pre všetkých agentov
 nezávisle od projektu; ako to prepojiť s centrálnou pamäťou LensAI“). Wiki agentgramu (ADR 0023): stránky Markdown s priečinkami,
 verziami a `[[odkazmi]]`, čítajú ju všetci agenti (relevantné stránky v každom behu, nad pamäťou), píšu len na pokyn osoby. Návrh:
