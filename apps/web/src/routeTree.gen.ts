@@ -56,6 +56,7 @@ import { Route as OrgOrgIdDashboardsDashboardIdRouteImport } from './routes/org.
 import { Route as OrgOrgIdDriveFileIdRouteImport } from './routes/org.$orgId.drive_.$fileId'
 import { Route as OrgOrgIdIssuesIndexRouteImport } from './routes/org.$orgId.issues.index'
 import { Route as OrgOrgIdIssuesNumberRouteImport } from './routes/org.$orgId.issues.$number'
+import { Route as OrgOrgIdProjectsCategoryIdRouteImport } from './routes/org.$orgId.projects.$categoryId'
 import { Route as OrgOrgIdSettingsSectionRouteImport } from './routes/org.$orgId.settings_.$section'
 import { Route as OrgOrgIdThreadsIndexRouteImport } from './routes/org.$orgId.threads.index'
 import { Route as OrgOrgIdThreadsThreadIdRouteImport } from './routes/org.$orgId.threads.$threadId'
@@ -307,6 +308,12 @@ const OrgOrgIdIssuesNumberRoute = OrgOrgIdIssuesNumberRouteImport.update({
   path: '/issues/$number',
   getParentRoute: () => OrgOrgIdRoute,
 } as any)
+const OrgOrgIdProjectsCategoryIdRoute =
+  OrgOrgIdProjectsCategoryIdRouteImport.update({
+    id: '/projects/$categoryId',
+    path: '/projects/$categoryId',
+    getParentRoute: () => OrgOrgIdRoute,
+  } as any)
 const OrgOrgIdSettingsSectionRoute = OrgOrgIdSettingsSectionRouteImport.update({
   id: '/settings_/$section',
   path: '/settings/$section',
@@ -432,6 +439,7 @@ export interface FileRoutesByFullPath {
   '/org/$orgId/dashboards/$dashboardId': typeof OrgOrgIdDashboardsDashboardIdRoute
   '/org/$orgId/drive/$fileId': typeof OrgOrgIdDriveFileIdRoute
   '/org/$orgId/issues/$number': typeof OrgOrgIdIssuesNumberRoute
+  '/org/$orgId/projects/$categoryId': typeof OrgOrgIdProjectsCategoryIdRoute
   '/org/$orgId/settings/$section': typeof OrgOrgIdSettingsSectionRoute
   '/org/$orgId/threads/$threadId': typeof OrgOrgIdThreadsThreadIdRoute
   '/org/$orgId/wiki/$slug': typeof OrgOrgIdWikiSlugRoute
@@ -494,6 +502,7 @@ export interface FileRoutesByTo {
   '/org/$orgId/dashboards/$dashboardId': typeof OrgOrgIdDashboardsDashboardIdRoute
   '/org/$orgId/drive/$fileId': typeof OrgOrgIdDriveFileIdRoute
   '/org/$orgId/issues/$number': typeof OrgOrgIdIssuesNumberRoute
+  '/org/$orgId/projects/$categoryId': typeof OrgOrgIdProjectsCategoryIdRoute
   '/org/$orgId/settings/$section': typeof OrgOrgIdSettingsSectionRoute
   '/org/$orgId/threads/$threadId': typeof OrgOrgIdThreadsThreadIdRoute
   '/org/$orgId/wiki/$slug': typeof OrgOrgIdWikiSlugRoute
@@ -558,6 +567,7 @@ export interface FileRoutesById {
   '/org/$orgId/dashboards/$dashboardId': typeof OrgOrgIdDashboardsDashboardIdRoute
   '/org/$orgId/drive_/$fileId': typeof OrgOrgIdDriveFileIdRoute
   '/org/$orgId/issues/$number': typeof OrgOrgIdIssuesNumberRoute
+  '/org/$orgId/projects/$categoryId': typeof OrgOrgIdProjectsCategoryIdRoute
   '/org/$orgId/settings_/$section': typeof OrgOrgIdSettingsSectionRoute
   '/org/$orgId/threads/$threadId': typeof OrgOrgIdThreadsThreadIdRoute
   '/org/$orgId/wiki_/$slug': typeof OrgOrgIdWikiSlugRoute
@@ -623,6 +633,7 @@ export interface FileRouteTypes {
     | '/org/$orgId/dashboards/$dashboardId'
     | '/org/$orgId/drive/$fileId'
     | '/org/$orgId/issues/$number'
+    | '/org/$orgId/projects/$categoryId'
     | '/org/$orgId/settings/$section'
     | '/org/$orgId/threads/$threadId'
     | '/org/$orgId/wiki/$slug'
@@ -685,6 +696,7 @@ export interface FileRouteTypes {
     | '/org/$orgId/dashboards/$dashboardId'
     | '/org/$orgId/drive/$fileId'
     | '/org/$orgId/issues/$number'
+    | '/org/$orgId/projects/$categoryId'
     | '/org/$orgId/settings/$section'
     | '/org/$orgId/threads/$threadId'
     | '/org/$orgId/wiki/$slug'
@@ -748,6 +760,7 @@ export interface FileRouteTypes {
     | '/org/$orgId/dashboards/$dashboardId'
     | '/org/$orgId/drive_/$fileId'
     | '/org/$orgId/issues/$number'
+    | '/org/$orgId/projects/$categoryId'
     | '/org/$orgId/settings_/$section'
     | '/org/$orgId/threads/$threadId'
     | '/org/$orgId/wiki_/$slug'
@@ -1124,6 +1137,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrgOrgIdIssuesNumberRouteImport
       parentRoute: typeof OrgOrgIdRoute
     }
+    '/org/$orgId/projects/$categoryId': {
+      id: '/org/$orgId/projects/$categoryId'
+      path: '/projects/$categoryId'
+      fullPath: '/org/$orgId/projects/$categoryId'
+      preLoaderRoute: typeof OrgOrgIdProjectsCategoryIdRouteImport
+      parentRoute: typeof OrgOrgIdRoute
+    }
     '/org/$orgId/settings_/$section': {
       id: '/org/$orgId/settings_/$section'
       path: '/settings/$section'
@@ -1247,6 +1267,7 @@ interface OrgOrgIdRouteChildren {
   OrgOrgIdDashboardsDashboardIdRoute: typeof OrgOrgIdDashboardsDashboardIdRoute
   OrgOrgIdDriveFileIdRoute: typeof OrgOrgIdDriveFileIdRoute
   OrgOrgIdIssuesNumberRoute: typeof OrgOrgIdIssuesNumberRoute
+  OrgOrgIdProjectsCategoryIdRoute: typeof OrgOrgIdProjectsCategoryIdRoute
   OrgOrgIdSettingsSectionRoute: typeof OrgOrgIdSettingsSectionRoute
   OrgOrgIdThreadsThreadIdRoute: typeof OrgOrgIdThreadsThreadIdRoute
   OrgOrgIdWikiSlugRoute: typeof OrgOrgIdWikiSlugRoute
@@ -1287,6 +1308,7 @@ const OrgOrgIdRouteChildren: OrgOrgIdRouteChildren = {
   OrgOrgIdDashboardsDashboardIdRoute: OrgOrgIdDashboardsDashboardIdRoute,
   OrgOrgIdDriveFileIdRoute: OrgOrgIdDriveFileIdRoute,
   OrgOrgIdIssuesNumberRoute: OrgOrgIdIssuesNumberRoute,
+  OrgOrgIdProjectsCategoryIdRoute: OrgOrgIdProjectsCategoryIdRoute,
   OrgOrgIdSettingsSectionRoute: OrgOrgIdSettingsSectionRoute,
   OrgOrgIdThreadsThreadIdRoute: OrgOrgIdThreadsThreadIdRoute,
   OrgOrgIdWikiSlugRoute: OrgOrgIdWikiSlugRoute,

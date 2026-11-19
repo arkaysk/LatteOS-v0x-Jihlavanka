@@ -9,6 +9,10 @@ const { channelCategories, channels } = schema;
 
 export type ChannelCategory = typeof channelCategories.$inferSelect;
 
+/** LatteOS: a category as a project (Claude Projects): its kind (null: a plain category) and where it stands. */
+export type ProjectType = "code" | "drawing" | "book" | "3d" | "music" | "comic" | "other";
+export type ProjectState = "active" | "paused" | "done";
+
 /** A category's name as people see it in the sidebar. */
 export const CATEGORY_NAME_MAX = 40;
 
@@ -29,12 +33,27 @@ function cleanName(name: string) {
   return clean;
 }
 
-/** Names are unique per organization ignoring case ("Marketing" and "marketing" are the same category). */
-async function requireFreeName(db: Executor, orgId: string, name: string, except?: string) {
+/**
+ * Names are unique per place ignoring case ("Marketing" and "marketing" are the same category); LatteOS: a place is the
+ * top of the sidebar or one project, so two projects may each have an "Album 1".
+ */
+async function requireFreeName(
+  db: Executor,
+  orgId: string,
+  name: string,
+  except?: string,
+  parentId: string | null = null,
+) {
   const [row] = await db
     .select({ id: channelCategories.id })
     .from(channelCategories)
-    .where(and(eq(channelCategories.orgId, orgId), sql`lower(${channelCategories.name}) = lower(${name})`));
+    .where(
+      and(
+        eq(channelCategories.orgId, orgId),
+        parentId ? eq(channelCategories.parentId, parentId) : isNull(channelCategories.parentId),
+        sql`lower(${channelCategories.name}) = lower(${name})`,
+      ),
+    );
   if (row && row.id !== except) throw new ConflictError(`The category ${name} already exists`);
 }
 
@@ -108,6 +127,24 @@ export async function endOfCategory(db: Executor, orgId: string, categoryId: str
   return max > 0 ? max + 1 : 0;
 }
 
+/**
+ * LatteOS: a subproject goes under a project one level deep: the parent is a category of the org that is not a
+ * subproject itself, and a category that has subprojects goes under no one.
+ */
+async function requireProjectParent(db: Executor, orgId: string, parentId: string, childId: string | null) {
+  if (childId && parentId === childId) throw new ValidationError("A project can't be its own subproject");
+  const parent = await requireCategory(db, orgId, parentId);
+  if (parent.parentId) throw new ValidationError("A subproject can't have subprojects of its own");
+  if (childId) {
+    const [sub] = await db
+      .select({ id: channelCategories.id })
+      .from(channelCategories)
+      .where(eq(channelCategories.parentId, childId))
+      .limit(1);
+    if (sub) throw new ValidationError("A project with subprojects can't become a subproject");
+  }
+}
+
 /** A category a channel may be put in: it belongs to the org. */
 export async function requireCategoryInOrg(db: Executor, orgId: string, categoryId: string) {
   return requireCategory(db, orgId, categoryId);
@@ -121,12 +158,14 @@ export async function createChannelCategory(
   db: Database,
   actorId: string,
   orgId: string,
-  input: { name: string; channelIds?: string[] },
+  input: { name: string; channelIds?: string[]; parentId?: string | null; projectType?: ProjectType | null },
   options: Options = {},
 ): Promise<ChannelCategory> {
   await requirePermission(db, actorId, orgId, "manage_channels");
   const name = cleanName(input.name);
-  await requireFreeName(db, orgId, name);
+  const parentId = input.parentId ?? null;
+  if (parentId) await requireProjectParent(db, orgId, parentId, null);
+  await requireFreeName(db, orgId, name, undefined, parentId);
   try {
     const category = await db.transaction(async (tx) => {
       const [last] = await tx
@@ -135,7 +174,14 @@ export async function createChannelCategory(
         .where(eq(channelCategories.orgId, orgId));
       const [row] = await tx
         .insert(channelCategories)
-        .values({ orgId, name, position: Number(last?.n ?? 0), createdByUserId: actorId })
+        .values({
+          orgId,
+          name,
+          position: Number(last?.n ?? 0),
+          createdByUserId: actorId,
+          parentId,
+          projectType: input.projectType ?? null,
+        })
         .returning();
       if (!row) throw new Error("category insert returned nothing");
       const wanted = [...new Set(input.channelIds ?? [])];
@@ -164,23 +210,43 @@ export async function createChannelCategory(
   }
 }
 
-/** Renames a category (admins). */
+/**
+ * Renames a category (admins); LatteOS: also what makes it a project — its project (one level), kind, state and the
+ * instructions its chats' agents keep to. Only what is given changes.
+ */
 export async function renameChannelCategory(
   db: Database,
   actorId: string,
   orgId: string,
   categoryId: string,
-  input: { name: string },
+  input: {
+    name?: string;
+    parentId?: string | null;
+    projectType?: ProjectType | null;
+    projectState?: ProjectState;
+    instructions?: string;
+    /** What its agents keep for the next chats (the person edits it as a whole). */
+    memory?: string;
+  },
   options: Options = {},
 ): Promise<ChannelCategory> {
   await requirePermission(db, actorId, orgId, "manage_channels");
-  await requireCategory(db, orgId, categoryId);
-  const name = cleanName(input.name);
-  await requireFreeName(db, orgId, name, categoryId);
+  const now = await requireCategory(db, orgId, categoryId);
+  if (input.parentId) await requireProjectParent(db, orgId, input.parentId, categoryId);
+  const name = input.name !== undefined ? cleanName(input.name) : now.name;
+  const parentId = input.parentId !== undefined ? input.parentId : now.parentId;
+  if (name !== now.name || parentId !== now.parentId) await requireFreeName(db, orgId, name, categoryId, parentId);
   try {
     const [row] = await db
       .update(channelCategories)
-      .set({ name })
+      .set({
+        name,
+        parentId,
+        ...(input.projectType !== undefined ? { projectType: input.projectType } : {}),
+        ...(input.projectState !== undefined ? { projectState: input.projectState } : {}),
+        ...(input.instructions !== undefined ? { instructions: input.instructions } : {}),
+        ...(input.memory !== undefined ? { memory: input.memory } : {}),
+      })
       .where(and(eq(channelCategories.orgId, orgId), eq(channelCategories.id, categoryId)))
       .returning();
     if (!row) throw new NotFoundError("Category not found");
@@ -203,7 +269,13 @@ export async function deleteChannelCategory(
   await requirePermission(db, actorId, orgId, "manage_channels");
   await requireCategory(db, orgId, categoryId);
   await db.transaction(async (tx) => {
+    // LatteOS: a project's subprojects go with it (cascade); their chats join the loose ones too
+    const subs = await tx
+      .select({ id: channelCategories.id })
+      .from(channelCategories)
+      .where(and(eq(channelCategories.orgId, orgId), eq(channelCategories.parentId, categoryId)));
     const moving = await channelsIn(tx, orgId, categoryId);
+    for (const sub of subs) moving.push(...(await channelsIn(tx, orgId, sub.id)));
     const loose = await channelsIn(tx, orgId, null);
     await writeOrder(tx, orgId, null, [...loose, ...moving]);
     await tx
@@ -285,4 +357,30 @@ export async function placeChannel(
     await writeOrder(tx, orgId, input.categoryId, ids);
   });
   await layoutChanged(orgId, options);
+}
+
+/** A project's memory stays short enough to read whole in every chat. */
+export const PROJECT_MEMORY_MAX = 20_000;
+
+/**
+ * LatteOS: an agent keeps what it learnt in its chat's project (the subproject it is in, never the project above it):
+ * one line at the memory's end. False when the chat is in no project or the memory is full.
+ */
+export async function addToProjectMemory(db: Database, orgId: string, channelId: string, line: string) {
+  const [here] = await db
+    .select({
+      id: channelCategories.id,
+      memory: channelCategories.memory,
+      projectType: channelCategories.projectType,
+      parentId: channelCategories.parentId,
+    })
+    .from(channelCategories)
+    .innerJoin(channels, eq(channels.categoryId, channelCategories.id))
+    .where(and(eq(channels.orgId, orgId), eq(channels.id, channelId)));
+  if (!here || (!here.projectType && !here.parentId)) return false;
+  const text = `- ${line.replace(/\s+/g, " ").trim()}`;
+  const memory = here.memory.trim() ? `${here.memory.trimEnd()}\n${text}` : text;
+  if (memory.length > PROJECT_MEMORY_MAX) return false;
+  await db.update(channelCategories).set({ memory }).where(eq(channelCategories.id, here.id));
+  return true;
 }

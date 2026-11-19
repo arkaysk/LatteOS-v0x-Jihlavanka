@@ -1509,6 +1509,22 @@ function fileInput(input: { name: string; bytes: Uint8Array; contentType?: strin
  * type, size and SHA-256 (ADR 0025). Always untrusted: downloaded as an
  * attachment, never rendered on the app's origin. Placed like `createArtifact`.
  */
+/**
+ * LatteOS: a file put in a project's Context (a category's): the whole workspace sees it, as every chat's agent of the
+ * project and its subprojects reads it (context.ts projectBrief).
+ */
+export async function putInProjectContext(db: Database, orgId: string, artifactId: string, categoryId: string) {
+  const [category] = await db
+    .select({ id: schema.channelCategories.id })
+    .from(schema.channelCategories)
+    .where(and(eq(schema.channelCategories.orgId, orgId), eq(schema.channelCategories.id, categoryId)));
+  if (!category) throw new NotFoundError("Project not found");
+  await db
+    .update(artifacts)
+    .set({ categoryId, share: "everyone" })
+    .where(and(eq(artifacts.orgId, orgId), eq(artifacts.id, artifactId)));
+}
+
 export async function createFileArtifact(
   deps: ArtifactDeps,
   actor: ArtifactActor,
@@ -1989,6 +2005,8 @@ export interface ArtifactFilters {
   channelId?: string;
   /** In any of these conversations. */
   channelIds?: string[];
+  /** LatteOS: in the Context of any of these projects (categories). */
+  categoryIds?: string[];
   author?: ArtifactAuthor;
   /** Made or last changed by any of them. */
   authors?: ArtifactAuthor[];
@@ -2058,6 +2076,7 @@ async function artifactScope(db: Database, actor: ArtifactActor, orgId: string, 
     ),
     filters.channelId ? eq(artifacts.channelId, filters.channelId) : undefined,
     filters.channelIds?.length ? inArray(artifacts.channelId, filters.channelIds) : undefined,
+    filters.categoryIds?.length ? inArray(artifacts.categoryId, filters.categoryIds) : undefined,
     filters.since ? gte(artifacts.updatedAt, filters.since) : undefined,
     filters.author ? madeBy(filters.author) : undefined,
     filters.authors?.length

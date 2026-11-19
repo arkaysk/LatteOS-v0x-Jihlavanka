@@ -22,6 +22,7 @@ import { agentsByHandle, handleOf } from "../agents";
 import { type AgentsDmReads, agentsDmReads, readerOfMessage, readerOfRun } from "../agents-dm-reads";
 import { runAuthorityById, UUID } from "../authority";
 import { caches } from "../cache";
+import { addToProjectMemory } from "../channel-categories";
 import { isChannelMember, peopleAllIn, personReach } from "../channels";
 import { CONFIDENTIAL_STUB, confidentialThreadSql, isConfidential } from "../confidential";
 import { agentsDmsOf, consultationOrigin } from "../consultations";
@@ -634,7 +635,7 @@ export function createContextToolSource(deps: ContextDeps): ToolSource {
     {
       name: "remember",
       description:
-        'Save, on your own, what you learn: a person correcting you or saying how they want things done (even in passing), a lasting fact about the company or its people. How its systems work (where code lives, how a tool behaves) is a note for yourself. Cite what grounds it (basis: person_said when a person here said it, found when you found it), write it as a fact ("Ana wants reports in Portuguese"), not as an order to yourself, and skip one-off requests. A person telling you not to do something again, or to always do it another way ("don\'t forward this to other agents", "não faça mais isso"), is a preference: save it in your own words, saying what to do instead, with everywhere: true to follow it everywhere (word it without private details from this one). A person\'s lasting rule for your work (no need to ask before each send, where to send things): kind rule, kept under their name everywhere, routines too. Asked to keep something for all of you ("everyone, remember…", "pessoal, lembrem…"): save it once with for: "team" (everywhere: false keeps it to this conversation); never ask other agents for copies. Never a secret\'s value; a system\'s host, port, user and key file path are a note for yourself.',
+        'Save, on your own, what you learn: a person correcting you or saying how they want things done (even in passing), a lasting fact about the company or its people. How its systems work (where code lives, how a tool behaves) is a note for yourself. Cite what grounds it (basis: person_said when a person here said it, found when you found it), write it as a fact ("Ana wants reports in Portuguese"), not as an order to yourself, and skip one-off requests. A person telling you not to do something again, or to always do it another way ("don\'t forward this to other agents", "não faça mais isso"), is a preference: save it in your own words, saying what to do instead, with everywhere: true to follow it everywhere (word it without private details from this one). A person\'s lasting rule for your work (no need to ask before each send, where to send things): kind rule, kept under their name everywhere, routines too. Asked to keep something for all of you ("everyone, remember…", "pessoal, lembrem…"): save it once with for: "team" (everywhere: false keeps it to this conversation); never ask other agents for copies. In a project\'s chat (# This project), what the project\'s next chats should know (a decision about the work, a name, how a character speaks): for: "project", one short line; it goes to its memory, which the person reads and edits. Never a secret\'s value; a system\'s host, port, user and key file path are a note for yourself.',
       scope: "memory:write",
       inputSchema: {
         type: "object",
@@ -645,7 +646,7 @@ export function createContextToolSource(deps: ContextDeps): ToolSource {
           key: { type: "string", maxLength: 120, description: KEY_DESCRIPTION },
           everywhere: { type: "boolean" },
           basis: { type: "string", enum: ["person_said", "found"] },
-          for: { type: "string", enum: ["me", "team"] },
+          for: { type: "string", enum: ["me", "team", "project"] },
         },
         required: ["content"],
         additionalProperties: false,
@@ -653,7 +654,7 @@ export function createContextToolSource(deps: ContextDeps): ToolSource {
       async execute(input, ctx) {
         try {
           // What is kept for the whole team holds nothing of one person's: the right hand saves it where it was said.
-          const kept = input.for === "team" ? { person: null } : await rightHandKeeps(ctx);
+          const kept = input.for === "team" || input.for === "project" ? { person: null } : await rightHandKeeps(ctx);
           if ("refused" in kept) return { content: kept.refused, isError: true };
           const content = str(input.content);
           // A run that read outside content saves no rule pointing somewhere no person here wrote (ADR 0117): a
@@ -668,6 +669,16 @@ export function createContextToolSource(deps: ContextDeps): ToolSource {
                 data: { code: UNASKED_DESTINATION },
               };
             }
+          }
+          // LatteOS: the project's memory, one line at its end; only the chat's own (sub)project, never the one above
+          if (input.for === "project") {
+            const line = str(input.title) ? `${str(input.title)}: ${content}` : content;
+            return (await addToProjectMemory(ctx.db, ctx.orgId, ctx.channelId, line))
+              ? { content: "Kept in the project's memory." }
+              : {
+                  content: "This chat is in no project, or its memory is full: keep it for yourself instead.",
+                  isError: true,
+                };
           }
           // Code sets the trust (ADR 0120): a person's words only when a person wrote the message this run answers.
           const { trust, person, outside } = await learnTrust(ctx);

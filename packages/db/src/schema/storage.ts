@@ -201,6 +201,8 @@ export const artifacts = pgTable(
     title: text().notNull(),
     channelId: uuid(),
     threadId: uuid(),
+    /** LatteOS: a file of a project's Context (a category's), for every chat in it and in its subprojects. */
+    categoryId: uuid(),
     /** `html` is always untrusted: the app renders it only in a sandboxed iframe on another origin. */
     untrusted: boolean().notNull().default(false),
     /** Listed in the Drive and found by search. False for what lives in a conversation (ADR 0113): blocks and polls. */

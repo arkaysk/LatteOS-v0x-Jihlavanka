@@ -3289,6 +3289,13 @@ export function createFakeHttpApi(state: FakeState): Omit<HttpApi, FakedParts> {
         c.name = name.trim();
         return { ...c };
       },
+      updateCategory: async (orgId, categoryId, input) => {
+        log("chat.updateCategory", orgId, categoryId, input);
+        const c = state.channelCategories?.find((x) => x.id === categoryId);
+        if (!c) throw new ApiError(404, "not_found", "Category not found");
+        Object.assign(c, input);
+        return { ...c };
+      },
       deleteCategory: async (orgId, categoryId) => {
         log("chat.deleteCategory", orgId, categoryId);
         state.channelCategories = (state.channelCategories ?? []).filter((c) => c.id !== categoryId);

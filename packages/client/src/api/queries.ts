@@ -168,6 +168,8 @@ import type {
   Person,
   PersonalTokenInput,
   PersonLimits,
+  ProjectInput,
+  ProjectType,
   Proposal,
   ReactionCount,
   ReminderInput,
@@ -1324,7 +1326,12 @@ export function useCreateChannelCategory(orgId: string) {
   const api = useApi();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { name: string; channelIds?: string[] }) => api.chat.createCategory(orgId, input),
+    mutationFn: (input: {
+      name: string;
+      channelIds?: string[];
+      parentId?: string | null;
+      projectType?: ProjectType | null;
+    }) => api.chat.createCategory(orgId, input),
     onSuccess: () => refreshLayout(qc, orgId),
   });
 }
@@ -1335,6 +1342,16 @@ export function useRenameChannelCategory(orgId: string) {
   return useMutation({
     mutationFn: (input: { categoryId: string; name: string }) =>
       api.chat.renameCategory(orgId, input.categoryId, input.name),
+    onSuccess: () => refreshLayout(qc, orgId),
+  });
+}
+
+/** LatteOS: a category as a project — its project, kind, state or instructions (admins). */
+export function useUpdateProject(orgId: string, categoryId: string) {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ProjectInput) => api.chat.updateCategory(orgId, categoryId, input),
     onSuccess: () => refreshLayout(qc, orgId),
   });
 }
@@ -4729,12 +4746,17 @@ export function useUploadFile(orgId: string) {
       file: File;
       title?: string;
       channelId?: string | null;
+      categoryId?: string | null;
       artifactId?: string;
       note?: string;
     }): Promise<ArtifactDetail> =>
       input.artifactId
         ? api.artifacts.uploadVersion(orgId, input.artifactId, input.file, { note: input.note })
-        : api.artifacts.upload(orgId, input.file, { title: input.title, channelId: input.channelId }),
+        : api.artifacts.upload(orgId, input.file, {
+            title: input.title,
+            channelId: input.channelId,
+            categoryId: input.categoryId,
+          }),
     meta: { silent: true },
     onSettled: () => qc.invalidateQueries({ queryKey: keys.artifacts(orgId) }),
   });

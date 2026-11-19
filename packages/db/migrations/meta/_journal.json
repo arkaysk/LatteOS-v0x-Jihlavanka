@@ -2115,6 +2115,20 @@
       "when": 1795101128350,
       "tag": "0306_latteos_project_instructions",
       "breakpoints": true
+    },
+    {
+      "idx": 304,
+      "version": "7",
+      "when": 1795103730387,
+      "tag": "0307_latteos_category_projects",
+      "breakpoints": true
+    },
+    {
+      "idx": 305,
+      "version": "7",
+      "when": 1795105331351,
+      "tag": "0308_latteos_project_memory",
+      "breakpoints": true
     }
   ]
 }

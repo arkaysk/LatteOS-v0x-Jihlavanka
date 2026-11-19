@@ -2,6 +2,7 @@ import {
   ApiError,
   type Channel,
   type ChannelCategory,
+  type ProjectType,
   useChannelCategories,
   useChannels,
   useCreateChannelCategory,
@@ -28,6 +29,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@/lib/toast";
 import { useOrg } from "./org-context";
+import { PROJECT_ICONS, PROJECT_TYPES } from "./project/kinds";
 
 /** Categories are named as typed, at most this long (the server's CATEGORY_NAME_MAX). */
 const NAME_MAX = 40;
@@ -49,6 +51,7 @@ export function NewCategoryDialog({
   nameOnly,
   initialName = "",
   onCreated,
+  parentId,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -57,6 +60,8 @@ export function NewCategoryDialog({
   /** What the person had typed where they asked for it ("Criar “Produto”"). */
   initialName?: string;
   onCreated?: (category: ChannelCategory) => void;
+  /** LatteOS: a subproject of this project (it takes no channels: its chats start on its page). */
+  parentId?: string;
 }) {
   const { t } = useTranslation();
   const { org } = useOrg();
@@ -68,6 +73,10 @@ export function NewCategoryDialog({
   const [q, setQ] = useState("");
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [touched, setTouched] = useState(false);
+  // LatteOS: what kind of project it is; none: a plain category
+  const [projectType, setProjectType] = useState<ProjectType | null>(null);
+  const parent = parentId ? categories.data?.find((c) => c.id === parentId) : undefined;
+  const onlyName = nameOnly || Boolean(parentId);
   const nameField = useRef<HTMLInputElement>(null);
   // Only as it opens: what opened it can change while it saves, once the list holds the category being made (Mover's
   // `initialName` goes empty when its search finds that name).
@@ -78,11 +87,12 @@ export function NewCategoryDialog({
     setQ("");
     setPicked(new Set(withChannel ? [withChannel] : []));
     setTouched(false);
+    setProjectType(null);
     create.reset();
   }, [open]);
   const categoryName = new Map((categories.data ?? []).map((c) => [c.id, c.name]));
   const taken = useHeldWhile(
-    (categories.data ?? []).some((c) => sameName(c.name, name)),
+    (categories.data ?? []).some((c) => (c.parentId ?? undefined) === parentId && sameName(c.name, name)),
     create.isPending || create.isSuccess,
   );
   const error = !name.trim() ? "empty" : taken ? "taken" : null;
@@ -101,7 +111,11 @@ export function NewCategoryDialog({
     // Keep the sidebar's order for the channels it takes.
     const channelIds = (channels.data ?? []).filter((c) => picked.has(c.id)).map((c) => c.id);
     create.mutate(
-      { name: name.trim(), channelIds: nameOnly ? undefined : channelIds },
+      {
+        name: name.trim(),
+        channelIds: onlyName ? undefined : channelIds,
+        ...(parentId ? { parentId } : projectType ? { projectType } : {}),
+      },
       {
         onSuccess: (category) => {
           onOpenChange(false);
@@ -120,8 +134,8 @@ export function NewCategoryDialog({
     <Dialog
       open={open}
       onOpenChange={onOpenChange}
-      title={t("channelCategories.newCategory")}
-      description={t("channelCategories.newCategoryDesc")}
+      title={parent ? t("projectPage.newSubprojectIn", { name: parent.name }) : t("channelCategories.newCategory")}
+      description={parent ? t("projectPage.newSubprojectDesc") : t("channelCategories.newCategoryDesc")}
       closeLabel={t("common.close")}
       width={480}
       // Not autoFocus: it also opens over Criar canal and over the channel's details.
@@ -160,9 +174,26 @@ export function NewCategoryDialog({
                 autoComplete="off"
               />
             </Field>
-            {!nameOnly && <span className="ac-field__label">{t("channelCategories.channels")}</span>}
+            {!parentId && (
+              <Field label={t("projectPage.kind")} id="category-project">
+                <Select
+                  id="category-project"
+                  value={projectType ?? "none"}
+                  onValueChange={(v) => setProjectType(v === "none" ? null : (v as ProjectType))}
+                  options={[
+                    { value: "none", label: t("projectPage.notAProject") },
+                    ...PROJECT_TYPES.map((k) => ({
+                      value: k,
+                      label: t(`projectPage.types.${k}`),
+                      leading: <Icon name={PROJECT_ICONS[k]} size={16} />,
+                    })),
+                  ]}
+                />
+              </Field>
+            )}
+            {!onlyName && <span className="ac-field__label">{t("channelCategories.channels")}</span>}
           </DialogBody>
-          {!nameOnly && (
+          {!onlyName && (
             <DialogSearchList
               query={q}
               onQueryChange={setQ}
@@ -195,7 +226,7 @@ export function NewCategoryDialog({
         <DialogFooter bar>
           <Button onClick={() => onOpenChange(false)}>{t("common.cancel")}</Button>
           <Button type="submit" variant="primary" loading={create.isPending}>
-            {!nameOnly && picked.size > 0
+            {!onlyName && picked.size > 0
               ? t("channelCategories.createWith", { count: picked.size })
               : t("channelCategories.create")}
           </Button>

@@ -1,0 +1,1 @@
+ALTER TABLE "channel_categories" ADD COLUMN "memory" text DEFAULT '' NOT NULL;

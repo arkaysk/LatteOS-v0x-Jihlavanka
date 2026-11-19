@@ -32,11 +32,11 @@ export const channelKindEnum = pgEnum("channel_kind", ["channel", "dm", "forum",
 export type ChannelKind = Exclude<(typeof channelKindEnum.enumValues)[number], "forum">;
 
 /**
- * LatteOS: a channel as a project (lensAIplan2.md F2, F3). Its state (an archived project is an archived channel), and
- * what kind of work it is; null type: a plain channel, not a project.
+ * LatteOS: a category as a project, as Claude Projects (the user, 19. 11.): what kind of work it is (null: a plain
+ * category) and where it stands. The type names keep the channel's of migration 0305, where they were first.
  */
-export const channelProjectStateEnum = pgEnum("channel_project_state", ["active", "paused", "done"]);
-export const channelProjectTypeEnum = pgEnum("channel_project_type", [
+export const projectStateEnum = pgEnum("channel_project_state", ["active", "paused", "done"]);
+export const projectTypeEnum = pgEnum("channel_project_type", [
   "code",
   "drawing",
   "book",
@@ -63,8 +63,24 @@ export const channelCategories = pgTable(
     position: integer().notNull().default(0),
     createdByUserId: text().references(() => users.id, { onDelete: "set null" }),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    /**
+     * LatteOS: the project this category is a subproject of, one level only (a subproject has none of its own); its
+     * channels are the subproject's chats. Null: a category of its own.
+     */
+    parentId: uuid().references((): AnyPgColumn => channelCategories.id, { onDelete: "cascade" }),
+    /** LatteOS: what kind of project; null: a plain category. */
+    projectType: projectTypeEnum(),
+    projectState: projectStateEnum().notNull().default("active"),
+    /** LatteOS: what every agent in its chats keeps to; a subproject's agents read its project's first. */
+    instructions: text().notNull().default(""),
+    /**
+     * LatteOS: what its chats' agents learnt and keep for the next chats, as Claude's project memory — the agents add to
+     * it (`remember` for the project), the person reads and edits it; a subproject's agents read its project's too.
+     */
+    memory: text().notNull().default(""),
   },
-  (t) => [unique().on(t.orgId, t.id), unique().on(t.orgId, t.name)],
+  // a name once per place: two projects may each have an "Album 1"
+  (t) => [unique().on(t.orgId, t.id), unique().on(t.orgId, t.parentId, t.name).nullsNotDistinct()],
 );
 
 /** A conversation space. `public`: any member of the organization may join; `private`: invite only. */
@@ -99,18 +115,6 @@ export const channels = pgTable(
     categoryId: uuid().references(() => channelCategories.id, { onDelete: "set null" }),
     /** Order inside its category (or among the channels with none), from 0. */
     position: integer().notNull().default(0),
-    /**
-     * LatteOS (F1): the project this channel is a subproject of — one level only, a subproject has none of its own and a
-     * project with subprojects is no one's; null: a channel of its own. The sidebar shows it under its project; an app
-     * that does not know it sees one list as before.
-     */
-    parentId: uuid().references((): AnyPgColumn => channels.id, { onDelete: "set null" }),
-    /** LatteOS (F2): where the project stands; archived is `archivedAt`. */
-    projectState: channelProjectStateEnum().notNull().default("active"),
-    /** LatteOS (F3): what kind of work; null: a plain channel. */
-    projectType: channelProjectTypeEnum(),
-    /** LatteOS (F4): what every agent working here keeps to, as a Claude project's instructions; a subproject's agents read its project's too. */
-    instructions: text().notNull().default(""),
   },
   (t) => [unique().on(t.orgId, t.name), unique().on(t.orgId, t.id), unique().on(t.orgId, t.dmKey)],
 );

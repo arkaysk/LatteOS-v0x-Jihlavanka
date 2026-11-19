@@ -313,6 +313,7 @@ const artifactQuery = (f: ArtifactFilters) => ({
   kinds: csv(f.kinds),
   channelId: f.channelId,
   channelIds: csv(f.channelIds),
+  categoryIds: csv(f.categoryIds),
   authorType: f.author?.type,
   authorId: f.author?.id,
   changed: f.changed && f.author ? "1" : undefined,
@@ -1085,6 +1086,11 @@ export function createHttpApi(options: TransportOptions = {}): HttpApi {
           method: "PATCH",
           json: { name },
         }),
+      updateCategory: (orgId, categoryId, input) =>
+        request<ChannelCategory>(`${org(orgId)}/channel-categories/${enc(categoryId)}`, {
+          method: "PATCH",
+          json: input,
+        }),
       deleteCategory: (orgId, categoryId) =>
         request<void>(`${org(orgId)}/channel-categories/${enc(categoryId)}`, { method: "DELETE" }),
       placeCategory: (orgId, categoryId, beforeCategoryId) =>
@@ -1603,6 +1609,7 @@ export function createHttpApi(options: TransportOptions = {}): HttpApi {
         if (options.title) form.append("title", options.title);
         if (options.channelId) form.append("channelId", options.channelId);
         if (options.threadId) form.append("threadId", options.threadId);
+        if (options.categoryId) form.append("categoryId", options.categoryId);
         return files.upload<ArtifactDetail>(`${org(orgId)}/artifacts/files`, form);
       },
       uploadVersion: (orgId, id, file, options = {}) => {

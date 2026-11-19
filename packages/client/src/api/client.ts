@@ -268,6 +268,8 @@ import type {
   PlanServes,
   Poll,
   PostMedia,
+  ProjectInput,
+  ProjectType,
   Proposal,
   PushDeviceInput,
   ReactionCount,
@@ -976,8 +978,13 @@ export interface ApiClient {
     /** The sidebar's categories, in order (ADR 0080). */
     categories(orgId: string): Promise<ChannelCategory[]>;
     /** Admins: a category at the end, optionally taking `channelIds` along. */
-    createCategory(orgId: string, input: { name: string; channelIds?: string[] }): Promise<ChannelCategory>;
+    createCategory(
+      orgId: string,
+      input: { name: string; channelIds?: string[]; parentId?: string | null; projectType?: ProjectType | null },
+    ): Promise<ChannelCategory>;
     renameCategory(orgId: string, categoryId: string, name: string): Promise<ChannelCategory>;
+    /** LatteOS: a category as a project — its name, project, kind, state, instructions; only what is given. */
+    updateCategory(orgId: string, categoryId: string, input: ProjectInput): Promise<ChannelCategory>;
     /** Its channels go on top, with no category. */
     deleteCategory(orgId: string, categoryId: string): Promise<void>;
     /** Before `beforeCategoryId`, or to the end (null). */
@@ -1904,7 +1911,7 @@ export interface ApiClient {
     upload(
       orgId: string,
       file: File,
-      options?: { title?: string; channelId?: string | null; threadId?: string | null },
+      options?: { title?: string; channelId?: string | null; threadId?: string | null; categoryId?: string | null },
     ): Promise<ArtifactDetail>;
     /** A new version of an uploaded file (multipart, ≤ 50 MB). */
     uploadVersion(orgId: string, id: string, file: File, options?: { note?: string }): Promise<ArtifactDetail>;

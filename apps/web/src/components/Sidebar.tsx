@@ -164,6 +164,8 @@ import { ArchivedChannelsDialog } from "./ArchivedChannelsDialog";
 import { ChangeAvatarDialog } from "./AvatarBuilder";
 import { FeedbackMark } from "./arrival/FeedbackDialog";
 import { MoveChannelDialog, NewCategoryDialog, RenameCategoryDialog } from "./ChannelCategoryDialogs";
+import { isProject, PROJECT_ICONS } from "./project/kinds";
+import "./project/project.css";
 import { openPalette } from "./CommandMenu";
 import { DeleteAccountDialog } from "./DeleteAccount";
 import { MenuEntries } from "./DesktopMenus";
@@ -306,7 +308,7 @@ export function Sidebar() {
   // A new channel: `true` with no category, or the category whose + opened it.
   const [creatingChannel, setCreatingChannel] = useState<boolean | string>(false);
   // A new category: empty, or with the channel whose menu asked for it.
-  const [newCategory, setNewCategory] = useState<{ withChannel?: string } | null>(null);
+  const [newCategory, setNewCategory] = useState<{ withChannel?: string; parentId?: string } | null>(null);
   // Archived channels this person may bring back: "Canais arquivados" in Canais' + while there are some.
   const archivedChannels = useArchivedChannels(orgId).data ?? [];
   const [showArchived, setShowArchived] = useState(false);
@@ -703,7 +705,9 @@ export function Sidebar() {
         loading={channels.isLoading}
         sections={sections}
         onNewChannel={(categoryId) => setCreatingChannel(categoryId ?? true)}
-        onNewCategory={(withChannel) => setNewCategory(withChannel ? { withChannel } : {})}
+        onNewCategory={(withChannel, parentId) =>
+          setNewCategory(withChannel ? { withChannel } : parentId ? { parentId } : {})
+        }
         onPrefetch={prefetch}
         headProps={sectionMenu("channels")}
         addEntries={[...newChannelItem, ...newCategoryItem, ...archivedItem]}
@@ -1037,6 +1041,7 @@ export function Sidebar() {
         open={newCategory !== null}
         onOpenChange={(open) => !open && setNewCategory(null)}
         withChannel={newCategory?.withChannel}
+        parentId={newCategory?.parentId}
       />
       <SidebarSetupDialog open={customizing} onClose={() => setCustomizing(false)} />
       {groupDialog && <GroupNameDialog purpose={groupDialog} onClose={() => setGroupDialog(null)} />}
@@ -1090,18 +1095,7 @@ function CreateAgentTile({ onOpen }: { onOpen: () => void }) {
 }
 
 /** The fixed sections, a channel category as `category:<id>` (ADR 0080) and a group of agents as `group:<id>` (ADR 0083). */
-type SectionId = "channels" | "agents" | "people" | `category:${string}` | `group:${string}` | `project:${string}`;
-
-/** LatteOS: a project's kind as its row's icon (F3); a plain channel keeps the channel's. */
-const PROJECT_ICONS = {
-  code: "code",
-  drawing: "pen",
-  book: "book",
-  "3d": "layers",
-  music: "sound",
-  comic: "image",
-  other: "channel",
-} as const;
+type SectionId = "channels" | "agents" | "people" | `category:${string}` | `group:${string}`;
 
 /**
  * Which sidebar categories are closed, remembered in this browser for each person in each workspace. One closed by
@@ -1205,6 +1199,23 @@ function SidebarSection({
   );
 }
 
+/** LatteOS: a project's mark at its header's end — its kind's icon, pressed: the project's page. */
+function ProjectMark({ category, orgId }: { category: ChannelCategory; orgId: string }) {
+  const { t } = useTranslation();
+  return (
+    <Link
+      to="/org/$orgId/projects/$categoryId"
+      params={{ orgId, categoryId: category.id }}
+      className="sidebar__project-mark"
+      title={t("projectPage.open")}
+      aria-label={t("projectPage.open")}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <Icon name={PROJECT_ICONS[category.projectType ?? "other"]} size={14} />
+    </Link>
+  );
+}
+
 /** A part header's +: a menu of what it creates (none of it allowed: no +). */
 function SectionAdd({ label, entries }: { label: string; entries: MenuEntry[] }) {
   if (!entries.length) return null;
@@ -1281,8 +1292,8 @@ function SidebarChannels({
   sections: ReturnType<typeof useSidebarSections>;
   /** A category's + (its id), or a new channel with none (null). */
   onNewChannel: (categoryId: string | null) => void;
-  /** A new category, with the channel whose menu asked for it. */
-  onNewCategory: (withChannel?: string) => void;
+  /** A new category, with the channel whose menu asked for it; LatteOS: a subproject of `parentId`. */
+  onNewCategory: (withChannel?: string, parentId?: string) => void;
   onPrefetch: (channelId: string) => void;
   /** "Canais"' header: the section's own menu (its place in the sidebar). */
   headProps?: HTMLAttributes<HTMLDivElement>;
@@ -1319,15 +1330,18 @@ function SidebarChannels({
   // A channel whose category isn't loaded yet (or is gone) shows with the ones with none. So nothing drags until
   // the categories load: a drop would take the channel out of its category.
   const categoryOf = (c: Channel) => (c.categoryId && known.has(c.categoryId) ? c.categoryId : null);
-  // LatteOS (F1): a subproject goes under its project's row, wherever that one is, and only there
-  const isSub = (c: Channel) => !!c.parentId && channels.some((p) => p.id === c.parentId);
-  const subsOf = (id: string) => channels.filter((c) => c.parentId === id);
-  const pinnedChannels = pinned.flatMap((id) => channels.filter((c) => c.id === id && c.isMember && !isSub(c)));
-  const unpinned = channels.filter((c) => !pinnedChannels.includes(c) && !isSub(c));
+  const pinnedChannels = pinned.flatMap((id) => channels.filter((c) => c.id === id && c.isMember));
+  const unpinned = channels.filter((c) => !pinnedChannels.includes(c));
   const loose = unpinned.filter((c) => categoryOf(c) === null);
   const inCategory = (id: string) => unpinned.filter((c) => categoryOf(c) === id);
   // A category shows while it holds a channel I can see; who manages channels keeps the empty ones to drop channels in.
-  const shown = manages ? list : list.filter((c) => inCategory(c.id).length > 0);
+  // LatteOS: a project shows while one of its subprojects does; a subproject sits in its project's body.
+  const holds = (id: string) => inCategory(id).length > 0;
+  const shown = manages
+    ? list
+    : list.filter((c) => holds(c.id) || list.some((s) => s.parentId === c.id && holds(s.id)));
+  const tops = shown.filter((c) => !c.parentId || !known.has(c.parentId));
+  const subsOf = (id: string) => shown.filter((c) => c.parentId === id);
   const categoryIds = shown.map((c) => `${CATEGORY_KEY}${c.id}` as SectionId);
 
   // ── Dragging: a channel onto a channel (before/after) or a header (into); a header onto a header ──
@@ -1479,6 +1493,21 @@ function SidebarChannels({
         icon: "plus",
         run: () => onNewChannel(category.id),
       });
+    if (isProject(category))
+      actions.push({
+        id: "open-project",
+        label: t("projectPage.open"),
+        icon: "drive",
+        run: () =>
+          void navigate({ to: "/org/$orgId/projects/$categoryId", params: { orgId, categoryId: category.id } }),
+      });
+    if (manages && category.projectType && !category.parentId)
+      actions.push({
+        id: "new-subproject",
+        label: t("projectPage.newSubproject"),
+        icon: "layers",
+        run: () => onNewCategory(undefined, category.id),
+      });
     if (manages)
       actions.push({
         id: "rename",
@@ -1513,19 +1542,7 @@ function SidebarChannels({
   };
 
   // A pinned row stays put: it doesn't drag, and nothing drops on it.
-  // LatteOS (F1): a project with subprojects, its row and then theirs (folded with its chevron, remembered here)
   const row = (c: Channel, top = false) => {
-    const subs = subsOf(c.id);
-    if (subs.length === 0) return oneRow(c, top, false);
-    const open = sections.isOpen(`project:${c.id}`);
-    return (
-      <Fragment key={c.id}>
-        {oneRow(c, top, false, open)}
-        {open && subs.map((s) => oneRow(s, false, true))}
-      </Fragment>
-    );
-  };
-  const oneRow = (c: Channel, top: boolean, sub: boolean, expanded?: boolean) => {
     // Discord's marks: something new lights the row (a pill on its left edge, the name in full ink) with how many
     // messages wait, in a quiet count; only a mention of me gets the red one. Muted, it rests dim whatever comes, but a
     // mention still shows.
@@ -1536,10 +1553,9 @@ function SidebarChannels({
         key={c.id}
         to="/org/$orgId/c/$channelId"
         params={{ orgId, channelId: c.id }}
-        className={sub ? "sidebar__item sidebar__item--sub" : "sidebar__item"}
+        className="sidebar__item"
         title={`#${c.name}`}
         data-kind="channel"
-        data-project-state={c.projectType ? c.projectState : undefined}
         data-unread={unread}
         data-muted={c.muted || undefined}
         {...(top
@@ -1557,35 +1573,11 @@ function SidebarChannels({
         onClick={() => markOpen(c.id)}
         {...channelMenu(c)}
       >
-        {expanded !== undefined && (
-          <button
-            type="button"
-            className="sidebar__project-fold"
-            aria-label={t(expanded ? "shell.sidebarMenu.hideSubprojects" : "shell.sidebarMenu.showSubprojects")}
-            aria-expanded={expanded}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              sections.toggle(`project:${c.id}`);
-            }}
-          >
-            <Icon name={expanded ? "chevronDown" : "chevronRight"} />
-          </button>
-        )}
-        <Icon name={c.projectType ? PROJECT_ICONS[c.projectType] : "channel"} className="sidebar__channel-icon" />
+        <Icon name="channel" className="sidebar__channel-icon" />
         <span className="sidebar__channel-abbr" aria-hidden="true">
           {channelInitials(c.name)}
         </span>
         <span className="sidebar__item-label">{c.name}</span>
-        {c.projectType && c.projectState !== "active" && (
-          <Icon
-            name={c.projectState === "done" ? "check" : "pause"}
-            className="sidebar__project-state"
-            aria-label={t(
-              c.projectState === "done" ? "shell.sidebarMenu.projectDone" : "shell.sidebarMenu.projectPaused",
-            )}
-          />
-        )}
         {mentions > 0 ? (
           <UnreadCount count={mentions} mentions />
         ) : unread ? (
@@ -1632,6 +1624,75 @@ function SidebarChannels({
   );
   const mentions = channels.reduce((n, c) => n + (c.isMember ? (c.mentionCount ?? 0) : 0), 0);
 
+  // LatteOS: a project's subprojects stand in its body, after its own chats; a project's name opens its page
+  const section = (category: ChannelCategory): ReactNode => {
+    const actions = categoryActions(category);
+    return (
+      <SidebarSection
+        key={category.id}
+        id={`${CATEGORY_KEY}${category.id}`}
+        label={category.name}
+        sections={sections}
+        className={cx("sidebar__section--category", category.parentId && "sidebar__section--sub")}
+        drop={{ onDragOver: (e) => overCategoryBody(e, category), onDrop: drop }}
+        headProps={
+          {
+            draggable: manages,
+            "data-drop": dropMark(`${CATEGORY_KEY}${category.id}`),
+            onDragStart: (e) => startDrag(e, { kind: "category", id: category.id }),
+            onDragEnd: endDrag,
+            onDragOver: (e) => overCategory(e, category),
+            onDrop: drop,
+            ...entityMenu(() => [
+              { kind: "header", label: category.name },
+              ...actions.map(
+                (a): MenuEntry => ({
+                  kind: "item",
+                  id: a.id,
+                  label: a.label,
+                  icon: a.icon,
+                  danger: a.danger,
+                  run: a.run,
+                }),
+              ),
+            ]),
+          } as HTMLAttributes<HTMLDivElement>
+        }
+        action={
+          <>
+            {isProject(category) && <ProjectMark category={category} orgId={orgId} />}
+            {addButton(category.id, t("channelCategories.newChannelIn", { name: category.name }))}
+            <Menu
+              align="start"
+              label={t("channelCategories.options", { name: category.name })}
+              trigger={
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  iconOnly
+                  icon="more"
+                  className="sidebar__section-add"
+                  aria-label={t("channelCategories.options", { name: category.name })}
+                />
+              }
+            >
+              {actions.map((a) => (
+                <Fragment key={a.id}>
+                  {a.id === "new-category" && <MenuSeparator />}
+                  <MenuItem icon={a.icon} danger={a.danger} description={a.description} onSelect={a.run}>
+                    {a.label}
+                  </MenuItem>
+                </Fragment>
+              ))}
+            </Menu>
+          </>
+        }
+      >
+        {inCategory(category.id).map((c) => row(c))}
+        {subsOf(category.id).map(section)}
+      </SidebarSection>
+    );
+  };
   return (
     <>
       <SidebarSection
@@ -1681,72 +1742,7 @@ function SidebarChannels({
           </Menu>
         )}
       </SidebarSection>
-      {shown.map((category) => {
-        const actions = categoryActions(category);
-        return (
-          <SidebarSection
-            key={category.id}
-            id={`${CATEGORY_KEY}${category.id}`}
-            label={category.name}
-            sections={sections}
-            className="sidebar__section--category"
-            drop={{ onDragOver: (e) => overCategoryBody(e, category), onDrop: drop }}
-            headProps={
-              {
-                draggable: manages,
-                "data-drop": dropMark(`${CATEGORY_KEY}${category.id}`),
-                onDragStart: (e) => startDrag(e, { kind: "category", id: category.id }),
-                onDragEnd: endDrag,
-                onDragOver: (e) => overCategory(e, category),
-                onDrop: drop,
-                ...entityMenu(() => [
-                  { kind: "header", label: category.name },
-                  ...actions.map(
-                    (a): MenuEntry => ({
-                      kind: "item",
-                      id: a.id,
-                      label: a.label,
-                      icon: a.icon,
-                      danger: a.danger,
-                      run: a.run,
-                    }),
-                  ),
-                ]),
-              } as HTMLAttributes<HTMLDivElement>
-            }
-            action={
-              <>
-                {addButton(category.id, t("channelCategories.newChannelIn", { name: category.name }))}
-                <Menu
-                  align="start"
-                  label={t("channelCategories.options", { name: category.name })}
-                  trigger={
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      iconOnly
-                      icon="more"
-                      className="sidebar__section-add"
-                      aria-label={t("channelCategories.options", { name: category.name })}
-                    />
-                  }
-                >
-                  {actions.map((a) => (
-                    <Fragment key={a.id}>
-                      {a.id === "new-category" && <MenuSeparator />}
-                      <MenuItem icon={a.icon} danger={a.danger} description={a.description} onSelect={a.run}>
-                        {a.label}
-                      </MenuItem>
-                    </Fragment>
-                  ))}
-                </Menu>
-              </>
-            }
-          >
-            {inCategory(category.id).map((c) => row(c))}
-          </SidebarSection>
-        );
-      })}
+      {tops.map(section)}
       {dialogs}
     </>
   );

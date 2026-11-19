@@ -9,6 +9,8 @@ import {
   listChannelCategories,
   listChannelOverrides,
   listPins,
+  type ProjectState,
+  type ProjectType,
   pinMessage,
   placeChannel,
   placeChannelCategory,
@@ -39,11 +41,33 @@ const tags = ["Channels"];
 const ChannelParams = OrgParams.extend({ channelId: z.uuid() });
 const PinParams = ChannelParams.extend({ messageId: z.uuid() });
 const CategoryParams = OrgParams.extend({ categoryId: z.uuid() });
-const categoryJson = (r: { id: string; name: string; position: number }) => ({
+const categoryJson = (r: {
+  id: string;
+  name: string;
+  position: number;
+  parentId: string | null;
+  projectType: ProjectType | null;
+  projectState: ProjectState;
+  instructions: string;
+  memory: string;
+}) => ({
   id: r.id,
   name: r.name,
   position: r.position,
+  parentId: r.parentId,
+  projectType: r.projectType,
+  projectState: r.projectState,
+  instructions: r.instructions,
+  memory: r.memory,
 });
+const ProjectFields = {
+  parentId: z
+    .uuid()
+    .nullable()
+    .optional()
+    .openapi({ description: "LatteOS: a subproject of this category; null: its own." }),
+  projectType: z.enum(["code", "drawing", "book", "3d", "music", "comic", "other"]).nullable().optional(),
+};
 const OverrideTarget = z.object({
   type: z.enum(["role", "person"]),
   id: z.string().min(1).openapi({ description: "A role's id (`everyone`, \"Todos\", too) or a person's user id." }),
@@ -266,18 +290,6 @@ export function channelRoutes(deps: AppDeps) {
               description:
                 "Private only: people holding one of these roles (departments) also see it and may join (ADR 0125); empty: invite only.",
             }),
-            parentId: z
-              .uuid()
-              .nullable()
-              .optional()
-              .openapi({ description: "LatteOS: make it a subproject of this channel; null: its own." }),
-            projectState: z.enum(["active", "paused", "done"]).optional(),
-            projectType: z.enum(["code", "drawing", "book", "3d", "music", "comic", "other"]).nullable().optional(),
-            instructions: z
-              .string()
-              .max(20000)
-              .optional()
-              .openapi({ description: "LatteOS: what every agent working here keeps to." }),
           }),
         ),
       },
@@ -298,10 +310,6 @@ export function channelRoutes(deps: AppDeps) {
           createdAt: r.createdAt.toISOString(),
           categoryId: r.categoryId,
           position: r.position,
-          parentId: r.parentId,
-          projectState: r.projectState,
-          projectType: r.projectType,
-          instructions: r.instructions,
         },
         200,
       );
@@ -387,6 +395,7 @@ export function channelRoutes(deps: AppDeps) {
           z.object({
             name: z.string().min(1).max(40),
             channelIds: z.array(z.uuid()).max(200).optional().openapi({ description: "Channels it takes, in order." }),
+            ...ProjectFields,
           }),
         ),
       },
@@ -405,8 +414,19 @@ export function channelRoutes(deps: AppDeps) {
       path: "/organizations/{orgId}/channel-categories/{categoryId}",
       tags,
       security,
-      summary: "Rename a category (admins)",
-      request: { params: CategoryParams, body: body(z.object({ name: z.string().min(1).max(40) })) },
+      summary: "Rename a category, or (LatteOS) change it as a project (admins)",
+      request: {
+        params: CategoryParams,
+        body: body(
+          z.object({
+            name: z.string().min(1).max(40).optional(),
+            ...ProjectFields,
+            projectState: z.enum(["active", "paused", "done"]).optional(),
+            instructions: z.string().max(20000).optional(),
+            memory: z.string().max(20000).optional(),
+          }),
+        ),
+      },
       responses: { 200: json(ChannelCategory), ...errors },
     }),
     async (c) => {

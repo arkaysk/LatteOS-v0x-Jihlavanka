@@ -1378,12 +1378,6 @@ export interface Channel {
   createdByUserId?: string | null;
   /** Its sidebar category (ADR 0080); null or absent: on top, with none. */
   categoryId?: string | null;
-  /** LatteOS: the project it is a subproject of (F1), where it stands (F2) and what kind (F3). */
-  parentId?: string | null;
-  projectState?: ProjectState;
-  projectType?: ProjectType | null;
-  /** LatteOS (F4): what every agent working here keeps to, as a Claude project's instructions. */
-  instructions?: string;
   /** Order inside its category, from 0. */
   position?: number;
   /**
@@ -1424,19 +1418,7 @@ export interface ChannelInput {
   visibility?: "public" | "private";
   /** Private only: limits it to people holding one of these roles (ADR 0125); empty: invite only. */
   audienceRoleIds?: string[];
-  /** LatteOS: a subproject of this channel (F1); null: its own. */
-  parentId?: string | null;
-  /** LatteOS: where the project stands (F2). */
-  projectState?: ProjectState;
-  /** LatteOS: what kind of project (F3); null: a plain channel. */
-  projectType?: ProjectType | null;
-  /** LatteOS: what every agent working here keeps to (F4). */
-  instructions?: string;
 }
-
-/** LatteOS: a channel as a project (F2, F3). */
-export type ProjectState = "active" | "paused" | "done";
-export type ProjectType = "code" | "drawing" | "book" | "3d" | "music" | "comic" | "other";
 
 /** A `#channel` link's card (`chat.card`): what the channel is and who is in it. */
 /** A pasted message link's pill (`GET …/messages/{id}/card`): where the message is and who wrote it, never its text. */
@@ -1498,7 +1480,29 @@ export interface ChannelCategory {
   name: string;
   /** Order in the sidebar, from 0. */
   position: number;
+  /** LatteOS: a category as a project (Claude Projects): its project when it is a subproject (one level), its kind
+   * (null: a plain category), where it stands, and what every agent in its chats keeps to. */
+  parentId?: string | null;
+  projectType?: ProjectType | null;
+  projectState?: ProjectState;
+  instructions?: string;
+  /** What its agents learnt and keep for the next chats; the person edits it. */
+  memory?: string;
 }
+
+/** LatteOS: what a category as a project may change. */
+export interface ProjectInput {
+  name?: string;
+  parentId?: string | null;
+  projectType?: ProjectType | null;
+  projectState?: ProjectState;
+  instructions?: string;
+  memory?: string;
+}
+
+/** LatteOS: a category as a project — what kind of work, and where it stands. */
+export type ProjectState = "active" | "paused" | "done";
+export type ProjectType = "code" | "drawing" | "book" | "3d" | "music" | "comic" | "other";
 
 /** A channel's latest top-level message, for the conversation list. */
 export interface ChannelLastMessage {
@@ -4019,6 +4023,8 @@ export interface ArtifactFilters {
   channelId?: string;
   /** In any of these conversations. */
   channelIds?: string[];
+  /** LatteOS: in the Context of any of these projects (categories). */
+  categoryIds?: string[];
   author?: ArtifactAuthor;
   /** `author` made or changed it (any version), not only made it. */
   changed?: boolean;

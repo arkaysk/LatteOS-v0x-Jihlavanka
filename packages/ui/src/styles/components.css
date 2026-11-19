@@ -2250,6 +2250,12 @@ html:not([data-pointer]) .ac-chip--button:focus-visible {
 .ac-logo--mono .ac-logo__eyes {
   fill: var(--surface);
 }
+/* LatteOS: agentgram's fedora and coffee cup, in one ink with the body (the surface's colour marks them apart). */
+.ac-logo--mono .ac-logo__dress path {
+  fill: currentColor;
+  stroke: var(--surface);
+  stroke-width: 0.6;
+}
 .ac-logo__word {
   display: inline-flex;
   align-items: baseline;

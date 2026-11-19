@@ -660,6 +660,20 @@ export const ChannelCategory = z
     id: z.uuid(),
     name: z.string(),
     position: z.number().int().openapi({ description: "Order in the sidebar, from 0." }),
+    parentId: z.uuid().nullable().optional().openapi({
+      description: "LatteOS: the project this category is a subproject of (one level); null: a category of its own.",
+    }),
+    projectType: z
+      .enum(["code", "drawing", "book", "3d", "music", "comic", "other"])
+      .nullable()
+      .optional()
+      .openapi({ description: "LatteOS: what kind of project; null: a plain category." }),
+    projectState: z.enum(["active", "paused", "done"]).optional(),
+    instructions: z.string().optional().openapi({ description: "LatteOS: what every agent in its chats keeps to." }),
+    memory: z
+      .string()
+      .optional()
+      .openapi({ description: "LatteOS: what its agents learnt and keep for the next chats." }),
   })
   .openapi("ChannelCategory");
 
@@ -688,20 +702,6 @@ export const Channel = z
       .optional()
       .openapi({ description: "Its sidebar category; null: on top, with none." }),
     position: z.number().int().optional().openapi({ description: "Order inside its category, from 0." }),
-    parentId: z.uuid().nullable().optional().openapi({
-      description: "LatteOS: the project this channel is a subproject of (one level); null: a channel of its own.",
-    }),
-    projectState: z.enum(["active", "paused", "done"]).optional().openapi({
-      description: "LatteOS: where the project stands; an archived project is an archived channel.",
-    }),
-    projectType: z
-      .enum(["code", "drawing", "book", "3d", "music", "comic", "other"])
-      .nullable()
-      .optional()
-      .openapi({ description: "LatteOS: what kind of project; null: a plain channel." }),
-    instructions: z.string().optional().openapi({
-      description: "LatteOS: what every agent working here keeps to; a subproject's agents read its project's too.",
-    }),
     unreadCount: z.number().int().optional().openapi({
       description:
         "Channel list only: messages since you last read it (since you joined, if never), not yours; a thread reply counts only in a thread you follow; an agent's sticker or GIF after its own reply never (ADR 0091). At most 100; 0 when you're not a member.",

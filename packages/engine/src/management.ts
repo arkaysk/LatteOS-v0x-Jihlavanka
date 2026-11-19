@@ -14,11 +14,8 @@ import {
   channelRoleIds,
   dropRoleLeavers,
   managesChannel,
-  type ProjectState,
-  type ProjectType,
   placesAgentsIn,
   readableChannelIds,
-  requireProjectParent,
 } from "./channels";
 import { proposalsWaitingFor } from "./context/proposals";
 import { invalidateDefaults, modelInfoFor } from "./credentials";
@@ -569,20 +566,7 @@ export async function updateChannel(
   actorId: string,
   orgId: string,
   channelId: string,
-  input: {
-    name?: string;
-    topic?: string;
-    visibility?: "public" | "private";
-    audienceRoleIds?: string[];
-    /** LatteOS: the project it is a subproject of (F1); null: a channel of its own. */
-    parentId?: string | null;
-    /** LatteOS: where the project stands (F2). */
-    projectState?: ProjectState;
-    /** LatteOS: what kind of project (F3); null: a plain channel. */
-    projectType?: ProjectType | null;
-    /** LatteOS: what every agent working here keeps to (F4). */
-    instructions?: string;
-  },
+  input: { name?: string; topic?: string; visibility?: "public" | "private"; audienceRoleIds?: string[] },
   options: { pubsub?: PubSub } = {},
 ) {
   const membership = await requireActiveMembership(db, actorId, orgId);
@@ -600,7 +584,6 @@ export async function updateChannel(
   if (channel.name === "general" && name !== undefined && name !== "general")
     throw new ValidationError("#general can't be renamed");
   if (channel.kind === "dm") throw new ValidationError("A direct conversation keeps its participants");
-  if (input.parentId) await requireProjectParent(db, orgId, input.parentId, channelId);
   const accessChanges = input.visibility !== undefined || input.audienceRoleIds !== undefined;
   const visibility = input.visibility ?? channel.visibility;
   const asked =
@@ -630,10 +613,6 @@ export async function updateChannel(
         .set({
           ...(name !== undefined ? { name } : {}),
           ...(input.topic !== undefined ? { topic: input.topic } : {}),
-          ...(input.parentId !== undefined ? { parentId: input.parentId } : {}),
-          ...(input.projectState !== undefined ? { projectState: input.projectState } : {}),
-          ...(input.projectType !== undefined ? { projectType: input.projectType } : {}),
-          ...(input.instructions !== undefined ? { instructions: input.instructions } : {}),
           ...access,
         })
         .where(eq(channels.id, channelId))

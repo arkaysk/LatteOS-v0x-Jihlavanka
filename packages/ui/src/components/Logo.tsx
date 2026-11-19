@@ -5,10 +5,22 @@ import { ditherUrl } from "../sky/dither";
 
 /** The domain in the expanded logo: a brand name, never translated. */
 
-
-/** The mark is the agent from the engine: body at (2, 2), side 28, and its eyes. */
-const BODY = bodyPath(2, 2, 28);
-const EYES = eyeShapes("round").map((e) => ({ x: 2 + e.x * 28, y: 2 + e.y * 28, w: e.w * 28, h: e.h * 28 }));
+/**
+ * The mark is the agent from the engine — body at (4, 9), side 23, and its eyes — in agentgram's fedora, with a coffee to go
+ * (LatteOS, the user's 19. 11.: its own mark, not agentes.chat's).
+ */
+const X = 4;
+const Y = 9;
+const SIDE = 23;
+const BODY = bodyPath(X, Y, SIDE);
+const EYES = eyeShapes("round").map((e) => ({ x: X + e.x * SIDE, y: Y + e.y * SIDE, w: e.w * SIDE, h: e.h * SIDE }));
+const HAT = "#2b2f36";
+const BAND = "#c8a15a";
+// its coffee to go: a paper cup, its lid and sleeve
+const CUP = "#f7f3ec";
+const LID = "#3b2a20";
+const SLEEVE = "#a8743f";
+const SEAL = "#f2d39a";
 
 /**
  * The agent mark: the square with the cut corner in the sky's dither (solid
@@ -45,10 +57,10 @@ export function LogoMark({
       <image
         className="ac-logo__dither"
         href={ditherUrl(sky ?? "sky", 12)}
-        x="2"
-        y="2"
-        width="28"
-        height="28"
+        x={X}
+        y={Y}
+        width={SIDE}
+        height={SIDE}
         preserveAspectRatio="none"
         clipPath={`url(#${clip})`}
       />
@@ -56,6 +68,26 @@ export function LogoMark({
         {EYES.map((e) => (
           <rect key={e.x} x={e.x} y={e.y} width={e.w} height={e.h} rx={e.w / 2} />
         ))}
+      </g>
+      <g className="ac-logo__dress">
+        <g transform="translate(8.1 9.1) scale(.72)">
+          <path
+            d="M20.4 18.6h9.2l-1.2 12.4c-.05.55-.5.98-1.05.98h-4.7c-.55 0-1-.43-1.05-.98z"
+            fill={CUP}
+            stroke={LID}
+            strokeWidth=".5"
+          />
+          <path d="M20.75 22.2h8.5l-.45 4.6h-7.6z" fill={SLEEVE} />
+          <circle cx="25" cy="24.5" r="1.25" fill={SEAL} />
+          <path d="M19.9 17.2c0-.5.4-.9.9-.9h8.4c.5 0 .9.4.9.9v1.6h-10.2z" fill={LID} />
+          <path d="M21.2 16.3l.5-1.1h6.6l.5 1.1z" fill={LID} />
+        </g>
+        <path d="M9 9.2 10.2 3.2c.2-.9 1-1.4 1.9-1.2l3.9 1 3.9-1c.9-.2 1.7.3 1.9 1.2L23 9.2z" fill={HAT} />
+        <path d="M9.4 7.4h13.2l.4 1.8H9z" fill={BAND} />
+        <path
+          d="M2 9.6c0-.9.7-1.4 1.6-1.4h24.8c.9 0 1.6.5 1.6 1.4 0 .6-.5 1-1.1 1H3.1c-.6 0-1.1-.4-1.1-1z"
+          fill={HAT}
+        />
       </g>
     </svg>
   );
