@@ -47,6 +47,7 @@ ShellRoot {
                  + "printf 'kernel=%s\\n' \"$(uname -r)\";"
                  + "printf 'disks=%s\\n' \"$(lsblk -rno NAME,SIZE,MOUNTPOINTS | awk '$3 ~ /^\\// {print $3\" \"$2}' | sed -E 's/([0-9])([KMGT])$/\\1 \\2B/' | paste -sd ',' | sed 's/,/  ·  /g')\";"
                  + "printf 'users=%s\\n' \"$(getent passwd | awk -F: '$3 >= 1000 && $3 < 60000 {print $1}' | paste -sd ',')\";"
+                 + "printf 'usb=%s\\n' \"$(cat /sys/bus/usb/devices/*/idVendor 2>/dev/null | sort -u | paste -sd ' ')\";"
                  + "printf 'lang=%s\\n' \"$(localectl status 2>/dev/null | sed -n 's/.*LANG=//p' | head -1)\""]
         stdout: StdioCollector { onStreamFinished: { const f = {}; this.text.split("\n").forEach(l => { const k = l.indexOf("="); if (k > 0) f[l.slice(0, k)] = l.slice(k + 1).trim() }); shell.facts = f } } }
     // GFX6 to GFX8 (an RX 640 is one) need Linux 7.3 and Mesa 26.3 (PLAN 3.4)
@@ -85,7 +86,13 @@ ShellRoot {
     // untouched (null), a group is chosen, except the Game session's without a real graphics card (PLAN 3.2)
     // off by default: the Game session without a real graphics card; the boot menu without UEFI, and with Secure Boot
     // on (its key waits for a password at the next start that this window does not show yet, ROADMAP 3.11)
-    function chosenOf(g) { return g.chosen === null ? ((g.packages.indexOf("steam") < 0 || realGpu) && (g.packages.indexOf("gnu-efi-devel") < 0 || facts.sb === "off")) : g.chosen }
+    // a peripheral's tool only when that maker's device is plugged in (USB vendor ids): Logitech; ASUS, Corsair, NZXT, Razer lights
+    // ponytail: by maker, not by model; LPnP (ROADMAP 10E.14) will know each device
+    // Razer's lights are OpenRazer's and NZXT's CoolerControl's, not OpenRGB's: one tool a device (two would fight over it)
+    readonly property var usbWants: ({ "solaar": ["046d"], "openrgb": ["0b05", "1b1c"], "openrazer-meta": ["1532"], "polychromatic": ["1532"],
+                                       "coolercontrol": ["1e71"], "opendeck": ["0300", "6602", "6603", "5548", "0fd9"] })
+    function usbHas(g) { const have = (facts.usb || "").split(" "); return g.packages.every(p => !usbWants[p] || usbWants[p].some(v => have.indexOf(v) >= 0)) }
+    function chosenOf(g) { return g.chosen === null ? ((g.packages.indexOf("steam") < 0 || realGpu) && (g.packages.indexOf("gnu-efi-devel") < 0 || facts.sb === "off") && usbHas(g)) : g.chosen }
     readonly property var chosenPackages: groups.filter(g => chosenOf(g) && (ai || !g.packages.some(p => aiWords.indexOf(p) >= 0)))
                                                 .reduce((all, g) => all.concat(g.packages), [])
 
@@ -235,6 +242,12 @@ ShellRoot {
                             text: I18n.tr("For NVIDIA's driver: RPM Fusion (akmod-nvidia, not free software).") }
                     Text2 { visible: shell.chosenPackages.indexOf("steam") >= 0
                             text: I18n.tr("For the Game session: RPM Fusion (Steam, not free software) and Terra (gamescope-session only).") }
+                    Text2 { visible: shell.chosenPackages.indexOf("openrazer-meta") >= 0
+                            text: I18n.tr("For Razer: openSUSE's hardware:razer repository (OpenRazer, Polychromatic; its module is signed for Secure Boot with the same key).") }
+                    Text2 { visible: shell.chosenPackages.indexOf("coolercontrol") >= 0
+                            text: I18n.tr("For the cooler: CoolerControl's COPR (codifryed/CoolerControl).") }
+                    Text2 { visible: shell.chosenPackages.indexOf("opendeck") >= 0
+                            text: I18n.tr("For the stream dock: OpenDeck from its GitHub release, with the Ajazz plugin.") }
                     Text2 { text: I18n.tr("It takes about half an hour, most of it building. The computer can be left alone meanwhile.") } }
 
                 // ── Installing: the parts on the left, LatteOS shown on the right, the bar under them ──

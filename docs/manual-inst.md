@@ -101,3 +101,12 @@ Na latte-lab sa prevod nerobí (zamrzol pri ňom; používateľ 18. 11.). Na hla
 - z výsledku skopírovať na latte-lab do `/data/ai/models/asr/parakeet-tdt-0.6b-v3-sk-int8/` súbory `encoder.int8.onnx`
   (aj jeho `*.weights`, ak vznikne), `decoder.int8.onnx`, `joiner.int8.onnx`, `tokens.txt`. `latte-ai` ho potom použije sám
   (bez `encoder*.onnx` ho preskočí). Dekodér, joiner a tokens sú tam už z 18. 11.
+
+## 19. 11. 2026 — hlavné PC po inštalácii LatteOS (podrobne `docs/instalator/HLAVNE-PC.md`)
+
+- Pred inštaláciou vo Windowse ako admin: `manage-bde -status`, `Confirm-SecureBootUEFI`, `powercfg /h off`; presunúť dáta z E:
+  (4 TB NVMe, ~1,84 TB), ak ho dostane LatteOS. Disk 2 TB „Data 2T“ (H:) nikdy nevyberať.
+- Pri prvom štarte so Secure Boot: MokManager → Enroll MOK → heslo, ktoré ukázal sprievodca.
+- Nastavenia › Obrazovky › Acer Z301C → 144 Hz.
+- Razer, NZXT, Ajazz, Logitech, RGB: nainštaluje sprievodca (zaškrtne podľa pripojených zariadení); po prihlásení iba nastaviť
+  DPI (Polychromatic), krivku pumpy (CoolerControl) a klávesy docku (OpenDeck).

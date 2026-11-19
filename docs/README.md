@@ -18,6 +18,7 @@
 ### 💻 Programátor
 - [LatteIndex — systémový index súborov](latte-index/PLAN.md) — spoločná lokálna databáza a prírastkové indexovanie
 - [Chapolera — sémantická vrstva nad súbormi](chapolera/PLAN.md) — extrakcia, tagy, taxonómia a vratné organizovanie
+- [LPnP + DisplayKit — zariadenia a obrazovky](devices/LPNP-DISPLAYKIT.md) — ovládače a funkcie zariadení cez komunitné nástroje, zostavy monitorov, HDR/ICC (ROADMAP 10E.14–19, 8B.09–12)
 - [Engine Goo — API](../session/goo/README.md) — ako pridať alebo upraviť kvapku
 - [Denník rozhodnutí](goo/ROZHODNUTIA.md) — kedy a prečo sa čo rozhodlo, čo bolo zamietnuté
 - [Inštalácia a testy na latte-lab](../setup/lab/README.md)

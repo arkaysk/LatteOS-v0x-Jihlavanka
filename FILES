@@ -22,6 +22,7 @@
 /usr/share/xdg-desktop-portal/portals/pleamar.portal    <- pleamar:pleamar-wm/pleamar.portal
 /usr/share/xdg-desktop-portal/pleamar-portals.conf      <- pleamar:pleamar-wm/pleamar-portals.conf
 /usr/bin/latte-greeter                                  <- bin/latte-greeter
+/usr/lib/udev/rules.d/40-opendeck-akp03.rules          <- system/udev/40-opendeck-akp03.rules
 /usr/bin/latte-login                                    <- bin/latte-login
 /usr/bin/latte-sky                                      <- bin/latte-sky
 /usr/share/latteos/sky/stars.tsv                        <- system/sky/stars.tsv
@@ -877,6 +878,11 @@ package: inotify-tools                                               # the deskt
 optional: perl-Image-ExifTool mediainfo                              # Properties › Details: everything a photo, a song, a video or a document says of itself (latte-props)
 optional: gucharmap                                                   # the character map (ROADMAP 8D.05): @ and the other signs a shortcut can't type, as Windows' map
 optional: yaru-icon-theme                                             # the icons files, folders and apps are shown with; others installed are offered in the Settings
+optional: solaar                                                     # Logitech keyboards and mice: pairing, battery, their keys, as Logi Options+ does; chosen when one is plugged in
+optional: openrgb                                                    # the lights of the board, the case and the memory, as Armoury Crate and iCUE do; chosen when one is plugged in
+optional: openrazer-meta polychromatic                               # Razer mice, keyboards and headsets: DPI, lights, battery, as Synapse does; chosen when one is plugged in
+optional: coolercontrol                                              # the pump, fans and lights of an NZXT cooler, as NZXT CAM does; chosen when one is plugged in
+optional: opendeck                                                   # stream docks (Ajazz, Mirabox, Elgato): keys with pictures and knobs, as their own app does; chosen when one is plugged in
 optional /usr/bin/skwd-wall-v2: skwd-wall (github.com/liixini/skwd-wall; Fedora: dnf copr enable piixini/skwd-wall-v2, then skwd-wall-v2): the wallpaper picker, transitions, scenes, and the colours of the theme "from the wallpaper"
 optional /usr/bin/whyd: whyd (github.com/vmaltarello/whyd, the rpm of its releases): SAFE then says why the last session ended, from the journal
 

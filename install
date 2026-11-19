@@ -140,6 +140,15 @@ includepkgs=gamescope-session gamescope-session-steam
 """
 
 
+# The tools of peripherals (ROADMAP 2.11, user 19. 11.: all of them, as on Windows), chosen by the installer's window when
+# such a device is plugged in: OpenRazer and Polychromatic (Razer, as Synapse) from openSUSE's hardware:razer, CoolerControl
+# (NZXT's cooler, as CAM) from its COPR, OpenDeck (stream docks) from its release with 4ndv's plugin for Ajazz (GPL-3.0).
+RAZER_REPO = "https://download.opensuse.org/repositories/hardware:/razer/Fedora_%s/hardware:razer.repo"
+OPENDECK = "https://github.com/nekename/OpenDeck/releases/download/v2.14.2/opendeck-2.14.2-1.x86_64.rpm"
+AKP03 = "https://github.com/4ndv/opendeck-akp03/releases/download/v0.11.0/opendeck-akp03.plugin.zip"
+DKMS_SIGN = "/etc/dkms/framework.conf.d/latteos-mok.conf"   # OpenRazer's module signed with the same key as NVIDIA's
+
+
 def repositories(extra, nvidia=False):
     """Add what the chosen packages come from (RPM Fusion for NVIDIA's driver too); False when one could not be added."""
     have = subprocess.run(["dnf", "repolist", "--enabled"], capture_output=True, text=True).stdout
@@ -153,6 +162,11 @@ def repositories(extra, nvidia=False):
     if any(p in GAMES for p in extra):
         if "terra-latteos" not in have:
             with open("/etc/yum.repos.d/terra-latteos.repo", "w") as f: f.write(TERRA)
+    if "openrazer-meta" in extra and "hardware_razer" not in have:
+        v = subprocess.run(["rpm", "-E", "%fedora"], capture_output=True, text=True).stdout.strip()
+        steps.append(["dnf", "config-manager", "addrepo", "--from-repofile=" + RAZER_REPO % v])
+    if "coolercontrol" in extra and "codifryed:CoolerControl" not in have:
+        steps.append(["dnf", "copr", "enable", "-y", "codifryed/CoolerControl"])
     if "mise" in extra and "mise-repo" not in have:
         steps.append(["dnf", "config-manager", "addrepo", "--from-repofile=https://mise.jdx.dev/rpm/mise.repo"])
     for step in steps:
@@ -189,6 +203,42 @@ def firmware_off(cards, say):
         f.write("# LatteOS (install --gpu): firmware of graphics cards this PC does not have; delete this file for another card\n"
                 "[main]\nexcludepkgs=%s\n" % ",".join(drop))
     say("   left out, firmware of cards this PC does not have: " + " ".join(drop))
+
+
+def peripherals(extra, say):
+    """What a peripheral's tool needs beyond its package; none of it fails the install."""
+    if "openrazer-meta" in extra:               # its daemon talks only to plugdev's members
+        for user in users(): subprocess.run(["gpasswd", "-a", user, "plugdev"], capture_output=True)
+        # its package builds the module only for the Linux running now, and fails when that one's headers are not there
+        # (a fresh Fedora brings a newer kernel-devel): built here for the Linux the next start runs; new ones by dkms's hook
+        k = default_kernel()
+        subprocess.run(["dnf", "install", "-y", "kernel-devel-" + k], capture_output=True)
+        subprocess.run(["dkms", "autoinstall", "-k", k], capture_output=True)
+        built = not subprocess.run(["modinfo", "-F", "version", "razermouse", "-k", k], capture_output=True).returncode
+        say("   Razer: OpenRazer's module " + ("built for Linux " + k if built else "not built (dkms status; its log in /var/lib/dkms/openrazer-driver/)")
+            + "; the users are in plugdev; Polychromatic is its window")
+    if "coolercontrol" in extra:
+        subprocess.run(["systemctl", "enable", "coolercontrold.service"], capture_output=True)
+        say("   the cooler: coolercontrold starts with the system")
+    if "opendeck" in extra:
+        say("   $ dnf install -y " + OPENDECK)
+        if subprocess.run(["dnf", "install", "-y", OPENDECK]).returncode:
+            say("   OpenDeck could not be installed: " + OPENDECK)
+            return
+        try:
+            import io, urllib.request, zipfile
+            plugin = zipfile.ZipFile(io.BytesIO(urllib.request.urlopen(AKP03, timeout=60).read()))
+            for user in users():                # OpenDeck's own folder: Tauri's config dir by its identifier
+                pw = pwd.getpwnam(user)
+                top = os.path.join(pw.pw_dir, ".config", "me.amankhanna.opendeck")
+                plugin.extractall(os.path.join(top, "plugins"))
+                for d, _, fs in os.walk(top):
+                    for x in [d] + [os.path.join(d, f) for f in fs]: os.chown(x, pw.pw_uid, pw.pw_gid)
+                for x in plugin.namelist():         # its programs: the zip keeps no modes
+                    if x.endswith("-linux"): os.chmod(os.path.join(top, "plugins", x), 0o755)
+            say("   the stream dock: OpenDeck with the Ajazz plugin (Ajazz AKP03, Mirabox N3)")
+        except Exception as e:
+            say("   OpenDeck is there, its Ajazz plugin is not (%s): OpenDeck › Plugins › Install from file, %s" % (e, AKP03))
 
 
 def mok_password():
@@ -305,9 +355,17 @@ def main(a):
     for line in may_files: say("   optional: " + line[9:])
     if not (must or files or may or may_files): say("   all there")
     # Fedora's packages it brings itself; a missing file that is not a package still has to be there first
+    mok = ""                                    # Secure Boot's password for MokManager, when a key was queued
     if with_packages:
         part("packages")
         extra = [p for p in fetch if p not in must]
+        if "openrazer-meta" in extra and secure_boot():   # its module is built while dnf installs it: the key first
+            if not dnf(["install", "-y", "akmods", "mokutil", "openssl"], 0.55, 0.58):
+                mok = mok_key(say)
+                os.makedirs(os.path.dirname(DKMS_SIGN), exist_ok=True)
+                with open(DKMS_SIGN, "w") as f:
+                    f.write("# LatteOS (install): DKMS signs with akmods' key, the one MokManager learns (ROADMAP 2.11)\n"
+                            "mok_signing_key=/etc/pki/akmods/private/private_key.priv\nmok_certificate=" + MOK_KEY + "\n")
         if not repositories(extra, nvidia):
             say("install: a repository could not be added")
             return 1
@@ -329,18 +387,20 @@ def main(a):
             return 1
         # a chosen extra still missing from every repository is left out, not fatal
         if extra:
-            dnf(["install", "-y", "--skip-unavailable"] + extra, 0.6 if must else 0.0, 1.0)
-            left = [p for p in extra if subprocess.run(["rpm", "-q", "--whatprovides", p], capture_output=True).returncode]
+            plain = [p for p in extra if p != "opendeck"]     # OpenDeck comes from its release (peripherals)
+            if plain: dnf(["install", "-y", "--skip-unavailable"] + plain, 0.6 if must else 0.0, 1.0)
+            left = [p for p in plain if subprocess.run(["rpm", "-q", "--whatprovides", p], capture_output=True).returncode]
             if left: say("   not in Fedora's repositories, left out: " + " ".join(left))
+            peripherals(extra, say)
         must = needs(sections)[0]
-    building, mok = None, ""
+    building = None
     if nvidia:
         say("== NVIDIA's driver")
         if secure_boot():
             if dnf(["install", "-y", "akmods", "mokutil", "openssl"], 0.9, 0.92):
                 say("install: the tools for Secure Boot's key could not be installed")
                 return 1
-            mok = mok_key(say)
+            mok = mok or mok_key(say)
         if dnf(["install", "-y"] + NVIDIA, 0.92, 1.0):
             say("install: NVIDIA's driver could not be installed")
             return 1
@@ -466,9 +526,9 @@ def main(a):
             say("   NVIDIA's module is not built yet: akmods builds it at the next start (its log: /var/cache/akmods/nvidia/)")
         else:
             say("   NVIDIA's module is built for Linux " + k)
-        if mok:
-            say("@mok " + mok)
-            say("   Secure Boot: at the next start MokManager asks for the password " + mok + " once (Enroll MOK, Continue, Yes)")
+    if mok:
+        say("@mok " + mok)
+        say("   Secure Boot: at the next start MokManager asks for the password " + mok + " once (Enroll MOK, Continue, Yes)")
     if failed:
         # the wizard must not say "installed" when the login screen or SAFE was not set up
         say("install: these steps failed:")
