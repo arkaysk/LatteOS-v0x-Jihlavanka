@@ -168,13 +168,15 @@ function Chooser({ onPick, onClose }: { onPick: (step: ConnectStep) => void; onC
   // Inside the desktop app that may host agents, one click (below). In a browser, the app on this computer through
   // a link, where the app takes one; a phone's browser has no computer to connect. Elsewhere (an app that runs this
   // server, plain http, a server on this computer) only the one line.
-  const thisStep: ConnectStep | null = inDesktopApp()
-    ? "link"
-    : isHandheld(navigator.userAgent)
-      ? null
-      : appPairsWith(window.location.origin)
-        ? "this"
-        : "link";
+  const thisStep: ConnectStep | null = inLatteOS()
+    ? "this"
+    : inDesktopApp()
+      ? "link"
+      : isHandheld(navigator.userAgent)
+        ? null
+        : appPairsWith(window.location.origin)
+          ? "this"
+          : "link";
   return (
     <>
       <DialogBody>
@@ -516,6 +518,12 @@ function LinkFlow({
  * ended), offered for as long as the dialog waits, since the person may install the app first. The browser asks
  * before it opens an app, so the words say what to choose.
  */
+/**
+ * LatteOS: agentgram opened in LensAI (Qt WebEngine): LensAI connects this computer, with the AIs it is signed in to
+ * (`latte-ai agentgram pair --link`), in place of the agentgram desktop app.
+ */
+const inLatteOS = () => typeof navigator !== "undefined" && /QtWebEngine/.test(navigator.userAgent);
+
 function OpenInApp({
   href,
   making,
@@ -532,25 +540,31 @@ function OpenInApp({
         <p>{t("devices.thisApp.text")}</p>
         {href ? (
           <Button asChild size="lg" variant="primary" block>
-            <a href={href}>{t("devices.thisApp.open")}</a>
+            {/* in LensAI a new window's link is LatteOS's to take (WebTabs.qml): it connects this computer itself */}
+            <a href={href} {...(inLatteOS() ? { target: "_blank", rel: "noopener" } : {})}>
+              {t(inLatteOS() ? "devices.thisApp.openLatteOS" : "devices.thisApp.open")}
+            </a>
           </Button>
         ) : (
           <Button size="lg" variant="primary" block loading={making} disabled>
             {t("devices.thisApp.open")}
           </Button>
         )}
-        <p className="small muted">{t("devices.thisApp.browserAsks")}</p>
+        {!inLatteOS() && <p className="small muted">{t("devices.thisApp.browserAsks")}</p>}
       </div>
-      <section className="dv-app dv-app--get" aria-labelledby="dv-app-get">
-        <GroupHeading level={3} id="dv-app-get" title={t("devices.thisApp.noApp")} />
-        <DownloadWithGuide onLine={onLine} />
-        <p className="small muted">{t("devices.thisApp.afterInstall")}</p>
-        <p className="small muted">
-          <button type="button" className="ac-link" onClick={() => onLine?.()}>
-            {t("devices.computer.orLine")}
-          </button>
-        </p>
-      </section>
+      {/* LatteOS needs no app: LensAI is the one */}
+      {!inLatteOS() && (
+        <section className="dv-app dv-app--get" aria-labelledby="dv-app-get">
+          <GroupHeading level={3} id="dv-app-get" title={t("devices.thisApp.noApp")} />
+          <DownloadWithGuide onLine={onLine} />
+          <p className="small muted">{t("devices.thisApp.afterInstall")}</p>
+          <p className="small muted">
+            <button type="button" className="ac-link" onClick={() => onLine?.()}>
+              {t("devices.computer.orLine")}
+            </button>
+          </p>
+        </section>
+      )}
     </>
   );
 }

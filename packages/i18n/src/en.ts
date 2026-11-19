@@ -16394,6 +16394,8 @@ export const en = {
     thisApp: {
       text: "The agentgram app connects it in one click, and asks you first.",
       open: "Open the agentgram app",
+      /** LatteOS: agentgram in LensAI, which connects this computer itself. */
+      openLatteOS: "Connect this computer",
       browserAsks: "Your browser asks to open it: choose Open, and Always allow if it offers.",
       noApp: "Don't have the app?",
       afterInstall: "After installing, press Open the agentgram app again. The link works once, for 10 minutes.",
