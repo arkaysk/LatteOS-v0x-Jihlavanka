@@ -3742,6 +3742,11 @@ agentmi (Sonnet) podľa spoločného slovníka LatteOS (ty, kanál, vlákno, če
 kontroly ako pri ostatných jazykoch (zástupné znaky, značky, štyri plurálne tvary, nezlomiteľné medzery), stránky pomocníka, @všetci,
 slovník; účet používateľa prepnutý na slovenčinu. **Chýba:** e-maily a push upozornenia (padajú na angličtinu), ostatné jazyky
 forku nemajú texty LatteOS (test `every language against English` pre 13 jazykov), jazyková kontrola prekladu človekom.
+  **19. 11. noc — dáta agentgramu k aplikácii (používateľ: domovský priečinok je pre dokumenty):** ako pôvodný natívny server
+(`~/.agentes`): `~/.local/share/agentgram/server/{db, files, repos, .env}` — databáza presunutá z vývojového priečinka, Drive zo
+súborov v databáze do `files/` (súbor „Tajný Svet v1.0.docx“ overený stiahnutím), história online projektov z `~/LensAI/agentgram/.repos`.
+Viditeľné ostáva `~/LensAI/agentgram/` (projekty, `channels/`). Kópie súborov v databáze ostali ako záloha. Fork iba pridáva —
+pôvodný agentes.chat sa má vedieť pripojiť (rozhodnutie 19. 11.).
 
 **10B.78** [ ] 19. 11. **agentgram: Wiki a centrálna pamäť LensAI** (používateľ 19. 11.: „Wiki — informácie pre všetkých agentov
 nezávisle od projektu; ako to prepojiť s centrálnou pamäťou LensAI“). Wiki agentgramu (ADR 0023): stránky Markdown s priečinkami,
