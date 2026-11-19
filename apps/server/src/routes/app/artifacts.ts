@@ -28,7 +28,6 @@ import {
   MAX_MESSAGE_LENGTH,
   openFileConversation,
   purgeArtifactNow,
-  putInProjectContext,
   replyToBlock,
   requireLiveFile,
   restoreArtifact,
@@ -395,7 +394,6 @@ export function artifactRoutes(deps: AppDeps) {
           kinds: csv("Comma-separated kinds: any of them.", Kind),
           channelId: z.uuid().optional(),
           channelIds: csv("Comma-separated channel or DM ids: in any of them.", z.uuid()),
-          categoryIds: csv("LatteOS: comma-separated project (category) ids: in any of their Contexts.", z.uuid()),
           authorType: z.enum(["agent", "person"]).optional(),
           authorId: z.string().optional(),
           /** With `authorType`/`authorId`: made or changed by them (any version), not only made. */
@@ -439,7 +437,6 @@ export function artifactRoutes(deps: AppDeps) {
         kinds: query.kinds,
         channelId: query.channelId,
         channelIds: query.channelIds,
-        categoryIds: query.categoryIds,
         authors: query.authors,
         who: query.who,
         ...(query.changed ? { changedBy: author } : { author }),
@@ -506,7 +503,6 @@ export function artifactRoutes(deps: AppDeps) {
             title: z.string().max(200).optional().openapi({ description: "Default: the file name." }),
             channelId: z.uuid().optional(),
             threadId: z.uuid().optional(),
-            categoryId: z.uuid().optional().openapi({ description: "LatteOS: into this project's Context." }),
           }),
         ),
       },
@@ -523,7 +519,6 @@ export function artifactRoutes(deps: AppDeps) {
         channelId: form.channelId ?? null,
         threadId: form.threadId ?? null,
       });
-      if (form.categoryId) await putInProjectContext(db, orgId, created.id, form.categoryId);
       return c.json(await withFacts(userId, orgId, created), 201);
     },
   );

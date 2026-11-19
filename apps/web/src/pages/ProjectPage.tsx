@@ -9,14 +9,14 @@ import {
   keys,
   type ProjectState,
   type ProjectType,
+  useAddProjectFile,
   useApi,
-  useArtifacts,
   useChannelCategories,
   useChannels,
+  useProjectFiles,
   useRoutines,
   useUpdateProject,
 } from "@agenteschat/client";
-import { KIND_ICON } from "@agenteschat/client/lib/artifacts";
 import { errorText } from "@agenteschat/client/lib/errors";
 import { fileIcon } from "@agenteschat/client/lib/files";
 import { relativeTime } from "@agenteschat/client/lib/format";
@@ -26,7 +26,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { UploadButton, useDriveUpload } from "@/components/artifacts/Upload";
+import { UploadButton } from "@/components/artifacts/Upload";
 import { NewCategoryDialog } from "@/components/ChannelCategoryDialogs";
 import { toChannelName } from "@/components/NewChannelDialog";
 import { useOrg } from "@/components/org-context";
@@ -41,8 +41,7 @@ const lastAt = (c: Channel) => c.lastMessage?.createdAt ?? c.createdAt;
  * The project's folder on this computer (~/Projects/project[/subproject]): LensAI opens it in Files (WebTabs.qml,
  * `latte-ai agentgram folder`); a plain browser has nothing to open it with.
  */
-const folderLink = (names: string[]) =>
-  `latteos://agentgram/folder?${names.map((n, i) => `${i ? "s" : "p"}=${encodeURIComponent(n)}`).join("&")}`;
+const folderLink = (folder: string) => `latteos://agentgram/folder?path=${encodeURIComponent(folder)}`;
 
 /** A chat's channel name from its first words, made free of the names already taken ("kapitola-3", "kapitola-3-2"). */
 function chatName(text: string, taken: Set<string>) {
@@ -86,15 +85,17 @@ export function ProjectPage({ categoryId }: { categoryId: string }) {
           {project.name}
         </h1>
         <ProjectSettings project={project} />
-        <a
-          className="ac-btn ac-btn--sm project-page__folder"
-          href={folderLink(parent ? [parent.name, project.name] : [project.name])}
-          target="_blank"
-          rel="noopener"
-          title={t("projectPage.folderHint")}
-        >
-          <Icon name="drive" size={16} /> {t("projectPage.folder")}
-        </a>
+        {project.folder && (
+          <a
+            className="ac-btn ac-btn--sm project-page__folder"
+            href={folderLink(project.folder)}
+            target="_blank"
+            rel="noopener"
+            title={t("projectPage.folderHint")}
+          >
+            <Icon name="drive" size={16} /> {t("projectPage.folder")}
+          </a>
+        )}
       </header>
       <div className="project-page__cols">
         <div className="project-page__main">
@@ -372,52 +373,52 @@ function Memory({ project, parent }: { project: ChannelCategory; parent?: Channe
   );
 }
 
+/** Its Context: the files in its folder, what the person put there and what the agents made; a subproject's also lists its project's. */
 function Context({ project, parent }: { project: ChannelCategory; parent?: ChannelCategory }) {
   const { t, i18n } = useTranslation();
   const { org } = useOrg();
-  const own = useArtifacts(org.id, { categoryIds: [project.id], sort: "recent" }).artifacts ?? [];
-  // a subproject's agents read its project's files too: shown after its own, marked
-  // (with no project, the same query as `own`: one request, from the cache)
-  const above = useArtifacts(org.id, { categoryIds: [parent?.id ?? project.id], sort: "recent" }).artifacts ?? [];
-  const files = [...own, ...(parent ? above.map((a) => ({ ...a, fromProject: true })) : [])];
-  const { upload, busy } = useDriveUpload(undefined, { categoryId: project.id });
+  const toast = useToast();
+  const own = useProjectFiles(org.id, project.id).data?.files ?? [];
+  const above = useProjectFiles(org.id, parent?.id).data?.files ?? [];
+  const add = useAddProjectFile(org.id, project.id);
+  const files = [
+    ...own.map((f) => ({ ...f, from: "" })),
+    ...(parent ? above.map((f) => ({ ...f, from: parent.name })) : []),
+  ];
+  const upload = async (list: File[]) => {
+    for (const f of list) await add.mutateAsync(f).catch((e) => toast.show(errorText(t, e), "error"));
+  };
   return (
     <section className="project-page__card">
       <h2 className="project-page__part-head">
         <Icon name="attach" size={16} /> {t("projectPage.context")}
         <span className="project-page__count">{files.length}</span>
-        <UploadButton
-          label={t("projectPage.add")}
-          onFiles={(f) => void upload(f)}
-          busy={busy}
-          multiple
-          variant="ghost"
-          className="project-page__add"
-        />
+        {project.folder && (
+          <UploadButton
+            label={t("projectPage.add")}
+            onFiles={(f) => void upload(f)}
+            busy={add.isPending}
+            multiple
+            variant="ghost"
+            className="project-page__add"
+          />
+        )}
       </h2>
-      <p className="project-page__hint">{t(parent ? "projectPage.contextHintSub" : "projectPage.contextHint")}</p>
+      <p className="project-page__hint">
+        {project.folder
+          ? t(parent ? "projectPage.contextHintSub" : "projectPage.contextHint")
+          : t("projectPage.noFolder")}
+      </p>
       {files.length === 0 ? (
         <p className="project-page__empty">{t("projectPage.noFiles")}</p>
       ) : (
         <ul className="project-page__files">
-          {files.map((a) => (
-            <li key={a.id}>
-              <Link
-                to="/org/$orgId/drive"
-                params={{ orgId: org.id }}
-                search={{ artifact: a.id }}
-                className="project-page__file"
-              >
-                <Icon
-                  name={(a.kind === "file" ? fileIcon(a.title) : (KIND_ICON[a.kind] ?? "file")) as IconName}
-                  size={16}
-                />
-                <span className="project-page__chat-name">{a.title}</span>
-                {"fromProject" in a && parent && (
-                  <span className="project-page__when">{t("projectPage.fromProject", { name: parent.name })}</span>
-                )}
-                <span className="project-page__when">{relativeTime(t, i18n.language, a.updatedAt)}</span>
-              </Link>
+          {files.map((f) => (
+            <li key={`${f.from}/${f.path}`} className="project-page__file" title={f.path}>
+              <Icon name={fileIcon(f.path) as IconName} size={16} />
+              <span className="project-page__chat-name">{f.path}</span>
+              {f.from && <span className="project-page__when">{t("projectPage.fromProject", { name: f.from })}</span>}
+              <span className="project-page__when">{relativeTime(t, i18n.language, f.modifiedAt)}</span>
             </li>
           ))}
         </ul>

@@ -26,6 +26,7 @@ import { type BlockSpecReader, blockStateNotes } from "./block-state";
 import { isSandboxedBrain } from "./brains/types";
 import { caches } from "./cache";
 import { summarizeScopes } from "./capabilities";
+import { projectFiles } from "./channel-categories";
 import { peopleAllIn } from "./channels";
 import {
   CONFIDENTIAL_NOT_SHOWN,
@@ -2064,9 +2065,9 @@ export function getOrgCached(db: Database, orgId: string) {
 
 /**
  * LatteOS, as Claude Projects (the user, 19. 11.): a chat is a channel in a project (a category with a kind) or in one
- * of its subprojects. Its agents keep to the project's instructions, then the subproject's; they see the names of the
- * files in both Contexts (to read with `read_artifact`) and of the other chats of both (to read with
- * `read_conversation`). A plain category says nothing.
+ * of its subprojects. Its agents keep to the project's instructions and memory, then the subproject's; they see both
+ * folders (its own to write in, the project's to read) with the files in them, and the other chats of both (to read
+ * with `read_conversation`). A plain category says nothing.
  */
 export async function projectBrief(db: Database, orgId: string, channel: typeof schema.channels.$inferSelect) {
   if (!channel.categoryId) return "";
@@ -2084,42 +2085,33 @@ export async function projectBrief(db: Database, orgId: string, channel: typeof 
     : [];
   const places = parent ? [parent, here] : [here];
   const ids = places.map((c) => c.id);
-  const [files, chats] = await Promise.all([
-    db
-      .select({ id: schema.artifacts.id, title: schema.artifacts.title, categoryId: schema.artifacts.categoryId })
-      .from(schema.artifacts)
-      .where(
-        and(
-          eq(schema.artifacts.orgId, orgId),
-          inArray(schema.artifacts.categoryId, ids),
-          isNull(schema.artifacts.deletedAt),
-        ),
-      )
-      .orderBy(desc(schema.artifacts.updatedAt))
-      .limit(60),
-    db
-      .select({ name: schema.channels.name, categoryId: schema.channels.categoryId })
-      .from(schema.channels)
-      .where(
-        and(
-          eq(schema.channels.orgId, orgId),
-          inArray(schema.channels.categoryId, ids),
-          eq(schema.channels.kind, "channel"),
-          isNull(schema.channels.archivedAt),
-          ne(schema.channels.id, channel.id),
-        ),
-      )
-      .orderBy(asc(schema.channels.position), asc(schema.channels.name))
-      .limit(60),
-  ]);
+  const chats = await db
+    .select({ name: schema.channels.name, categoryId: schema.channels.categoryId })
+    .from(schema.channels)
+    .where(
+      and(
+        eq(schema.channels.orgId, orgId),
+        inArray(schema.channels.categoryId, ids),
+        eq(schema.channels.kind, "channel"),
+        isNull(schema.channels.archivedAt),
+        ne(schema.channels.id, channel.id),
+      ),
+    )
+    .orderBy(asc(schema.channels.position), asc(schema.channels.name))
+    .limit(60);
   const parts = places.map((c) => {
     const what = c === parent || !parent ? `Project "${c.name}"` : `Subproject "${c.name}"`;
-    const own = files.filter((f) => f.categoryId === c.id).map((f) => `"${f.title}" (${f.id})`);
+    // its folder is its Context: what the person put there is the agents' from the start
+    const own = projectFiles(c.folder)
+      .slice(0, 60)
+      .map((f) => f.path);
     const talks = chats.filter((t) => t.categoryId === c.id).map((t) => `#${t.name}`);
     return [
       c.instructions.trim() ? `## ${what}: its instructions\n${c.instructions.trim()}` : "",
       c.memory.trim() ? `## ${what}: its memory (what its chats learnt)\n${c.memory.trim()}` : "",
-      own.length ? `## ${what}: files in its Context\n${own.join(", ")}` : "",
+      c.folder
+        ? `## ${what}: its folder ${c.folder}${c === here ? " (yours to read and write)" : " (only to read)"}${own.length ? `\nIn it: ${own.join(", ")}` : "\nEmpty for now."}`
+        : "",
       talks.length ? `## ${what}: its other chats\n${talks.join(", ")}` : "",
     ]
       .filter(Boolean)
@@ -2127,7 +2119,7 @@ export async function projectBrief(db: Database, orgId: string, channel: typeof 
   });
   const where = parent ? `the subproject "${here.name}" of the project "${parent.name}"` : `the project "${here.name}"`;
   return [
-    `# This project\nThis conversation is one chat of ${where}. Keep to its instructions in all your work here${parent ? " (the project's are for every subproject; the subproject's add to them)" : ""}. Read a file of its Context with \`read_artifact\` and another chat with \`read_conversation\` when the work needs them. What this ${parent ? "subproject's" : "project's"} next chats should know goes to its memory: \`remember\` with for: "project".${parent ? " The project's own files, chats and memory are only to read from here." : ""}`,
+    `# This project\nThis conversation is one chat of ${where}. Keep to its instructions in all your work here${parent ? " (the project's are for every subproject; the subproject's add to them)" : ""}. Its folder on the computer is its Context: read its files there, and write what the work makes in this ${parent ? "subproject's" : "project's"} own folder. Read another chat with \`read_conversation\` when the work needs it. What this ${parent ? "subproject's" : "project's"} next chats should know goes to its memory: \`remember\` with for: "project".${parent ? " The project's own files, chats and memory are only to read from here." : ""}`,
     ...parts.filter(Boolean),
   ].join("\n\n");
 }

@@ -123,6 +123,8 @@ export const MULTIPART_PATHS = [
   /\/organizations\/[^/]+\/imports\/files$/,
   /\/organizations\/[^/]+\/channels\/[^/]+\/voice$/,
   /\/feedback\/files$/,
+  // LatteOS: a file put in a project's folder
+  /\/organizations\/[^/]+\/channel-categories\/[^/]+\/files$/,
 ];
 /** Multipart overhead allowed on top of an uploaded file itself. */
 export const MULTIPART_SLACK_BYTES = 64 * 1024;

@@ -24,6 +24,7 @@ import {
 } from "@agenteschat/providers/plans";
 import { planFull, planState } from "@agenteschat/ui/plan-state";
 import type { Agent } from "../agents";
+import { chatFolder } from "../channel-categories";
 import type { ModelGateway } from "../gateway";
 import type { MachineStatus } from "../machine-hub";
 import { pausedMessage } from "../machines";
@@ -909,7 +910,8 @@ export async function resolveBrain(
             options.now ?? new Date(),
           )),
           machineId,
-          cwd: "",
+          // LatteOS: a project's chat works in the project's folder (the runner allows ~/Projects)
+          cwd: (await chatFolder(deps.db, run.orgId, run.channelId)) ?? "",
         }
       : undefined);
   return {

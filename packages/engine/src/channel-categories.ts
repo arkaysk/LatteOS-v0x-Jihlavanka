@@ -1,3 +1,5 @@
+import { mkdirSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import path from "node:path";
 import type { PubSub } from "@agenteschat/adapters";
 import { and, asc, type Database, type Executor, eq, inArray, isNull, schema, sql } from "@agenteschat/db";
 import { managesChannel } from "./channels";
@@ -128,6 +130,84 @@ export async function endOfCategory(db: Executor, orgId: string, categoryId: str
 }
 
 /**
+ * LatteOS: where projects keep their folders on the computer the agents work on (the server and the agents on one
+ * computer, LatteOS's own: LATTEOS_PROJECTS_DIR, ~/Projects). Unset: no folders are made (a server elsewhere).
+ */
+// ponytail: the server makes the folders; a server on another computer than the agents' needs the runner to
+export const projectsDir = () => process.env.LATTEOS_PROJECTS_DIR?.trim() || null;
+
+/** A folder's name from a project's: no accents, small letters, words joined by "_" (the user, 18. 11.). */
+export const folderName = (name: string) =>
+  name
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "") || "project";
+
+/** Its folder, made now: a project's in the projects' folder, a subproject's in its project's; a free name. */
+function makeFolder(name: string, parent: ChannelCategory | null): string | null {
+  const root = parent ? parent.folder : projectsDir();
+  if (!root) return null;
+  const base = path.join(root, folderName(name));
+  let folder = base;
+  for (let n = 2; existsDir(folder); n++) folder = `${base}_${n}`;
+  mkdirSync(folder, { recursive: true });
+  return folder;
+}
+
+const existsDir = (p: string) => {
+  try {
+    return statSync(p).isDirectory();
+  } catch {
+    return false;
+  }
+};
+
+/** A file of a project's folder, as its Context lists it: its path in the folder, size and last change. */
+export interface ProjectFile {
+  path: string;
+  size: number;
+  modifiedAt: string;
+}
+
+/** The files in a project's folder, the newest first: hidden ones left out, three folders deep, 300 at most. */
+export function projectFiles(folder: string | null): ProjectFile[] {
+  if (!folder || !existsDir(folder)) return [];
+  const out: ProjectFile[] = [];
+  const walk = (dir: string, depth: number) => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      if (e.name.startsWith(".") || out.length >= 300) continue;
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) {
+        if (depth < 3) walk(full, depth + 1);
+      } else if (e.isFile()) {
+        const st = statSync(full);
+        out.push({ path: path.relative(folder, full), size: st.size, modifiedAt: st.mtime.toISOString() });
+      }
+    }
+  };
+  walk(folder, 1);
+  return out.sort((a, b) => b.modifiedAt.localeCompare(a.modifiedAt));
+}
+
+/** A file put in a project's folder ("Add" on its page): its own name, nothing that leaves the folder. */
+export function saveProjectFile(folder: string, name: string, bytes: Uint8Array) {
+  const clean = path.basename(name).replace(/^\.+/, "").trim();
+  if (!clean) throw new ValidationError("The file has no name");
+  const target = path.join(folder, clean);
+  writeFileSync(target, bytes);
+  return path.relative(folder, target);
+}
+
+/** A project's folder for its page (who reads the workspace). */
+export async function projectFolderOf(db: Database, actorId: string, orgId: string, categoryId: string) {
+  await requirePermission(db, actorId, orgId, "read");
+  const category = await requireCategory(db, orgId, categoryId);
+  return category.folder;
+}
+
+/**
  * LatteOS: a subproject goes under a project one level deep: the parent is a category of the org that is not a
  * subproject itself, and a category that has subprojects goes under no one.
  */
@@ -181,6 +261,11 @@ export async function createChannelCategory(
           createdByUserId: actorId,
           parentId,
           projectType: input.projectType ?? null,
+          // a project's folder is made with it (the user, 19. 11.)
+          folder:
+            parentId || input.projectType
+              ? makeFolder(name, parentId ? await requireCategory(tx, orgId, parentId) : null)
+              : null,
         })
         .returning();
       if (!row) throw new Error("category insert returned nothing");
@@ -246,6 +331,10 @@ export async function renameChannelCategory(
         ...(input.projectState !== undefined ? { projectState: input.projectState } : {}),
         ...(input.instructions !== undefined ? { instructions: input.instructions } : {}),
         ...(input.memory !== undefined ? { memory: input.memory } : {}),
+        // a plain category made a project gets its folder then; a project's folder stays when it is renamed
+        ...(!now.folder && (input.projectType || parentId)
+          ? { folder: makeFolder(name, parentId ? await requireCategory(db, orgId, parentId) : null) }
+          : {}),
       })
       .where(and(eq(channelCategories.orgId, orgId), eq(channelCategories.id, categoryId)))
       .returning();
@@ -383,4 +472,17 @@ export async function addToProjectMemory(db: Database, orgId: string, channelId:
   if (memory.length > PROJECT_MEMORY_MAX) return false;
   await db.update(channelCategories).set({ memory }).where(eq(channelCategories.id, here.id));
   return true;
+}
+
+/**
+ * LatteOS: the folder a chat's turns start in: its project's (or subproject's), where the person put what the agents
+ * work with. Null: the agent's own folder, as before (a chat in no project, or a project with no folder).
+ */
+export async function chatFolder(db: Executor, orgId: string, channelId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ folder: channelCategories.folder })
+    .from(channelCategories)
+    .innerJoin(channels, eq(channels.categoryId, channelCategories.id))
+    .where(and(eq(channels.orgId, orgId), eq(channels.id, channelId)));
+  return row?.folder ?? null;
 }

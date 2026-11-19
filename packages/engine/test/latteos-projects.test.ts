@@ -4,12 +4,15 @@ import { afterEach, beforeEach, expect, test } from "bun:test";
 import { eq, schema } from "@agenteschat/db";
 import {
   addToProjectMemory,
+  chatFolder,
   createChannel,
   createChannelCategory,
   deleteChannelCategory,
   listChannelCategories,
   projectBrief,
+  projectFiles,
   renameChannelCategory,
+  saveProjectFile,
   ValidationError,
 } from "../src";
 import { type Fixture, setup } from "./fixtures";
@@ -44,7 +47,7 @@ test("a subproject goes under its project, one level deep; two projects may each
   expect((await row(chat.id)).categoryId).toBeNull();
 });
 
-test("a chat of a subproject gets its project's instructions first, then its own, both Contexts and other chats", async () => {
+test("a chat of a subproject gets its project's instructions first, then its own, and the other chats of both", async () => {
   const axel = await createChannelCategory(f.db, f.owner.id, f.org.id, { name: "Axel", projectType: "music" });
   const album = await createChannelCategory(f.db, f.owner.id, f.org.id, { name: "Album 1", parentId: axel.id });
   await renameChannelCategory(f.db, f.owner.id, f.org.id, axel.id, { instructions: "Lyrics in Slovak." });
@@ -52,20 +55,9 @@ test("a chat of a subproject gets its project's instructions first, then its own
   const here = await createChannel(f.db, f.owner.id, f.org.id, { name: "texty", categoryId: album.id });
   await createChannel(f.db, f.owner.id, f.org.id, { name: "obal", categoryId: album.id });
   await createChannel(f.db, f.owner.id, f.org.id, { name: "kapela", categoryId: axel.id });
-  const file = (title: string, categoryId: string) => ({
-    orgId: f.org.id,
-    kind: "file" as const,
-    title,
-    categoryId,
-    createdByType: "user",
-    createdById: f.owner.id,
-    updatedByType: "user",
-    updatedById: f.owner.id,
-  });
-  await f.db.insert(schema.artifacts).values([file("band.md", axel.id), file("riffs.txt", album.id)]);
   const text = await projectBrief(f.db, f.org.id, await row(here.id));
   expect(text.indexOf("Lyrics in Slovak.")).toBeLessThan(text.indexOf("Garage metal"));
-  for (const word of ['"band.md"', '"riffs.txt"', "#obal", "#kapela"]) expect(text).toContain(word);
+  for (const word of ["#obal", "#kapela"]) expect(text).toContain(word);
   expect(text).not.toContain("#texty");
   // a chat in a plain category, or in none, hears nothing of projects
   const plain = await createChannelCategory(f.db, f.owner.id, f.org.id, { name: "Marketing" });
@@ -90,4 +82,43 @@ test("an agent keeps a line in its subproject's memory, never in the project abo
   // a chat in no project keeps nothing there
   const loose = await createChannel(f.db, f.owner.id, f.org.id, { name: "loose" });
   expect(await addToProjectMemory(f.db, f.org.id, loose.id, "anything")).toBe(false);
+});
+
+test("a project's folder is made with it, a subproject's inside it; what is in it is the chats' Context", async () => {
+  const { mkdtempSync, writeFileSync, existsSync, rmSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const root = mkdtempSync(`${tmpdir()}/latteos-projects-`);
+  const before = process.env.LATTEOS_PROJECTS_DIR;
+  process.env.LATTEOS_PROJECTS_DIR = root;
+  try {
+    const magna = await createChannelCategory(f.db, f.owner.id, f.org.id, {
+      name: "Magna Moravia",
+      projectType: "book",
+    });
+    const kniha = await createChannelCategory(f.db, f.owner.id, f.org.id, {
+      name: "Kniha očí vlka",
+      parentId: magna.id,
+    });
+    expect(magna.folder).toBe(`${root}/magna_moravia`);
+    expect(kniha.folder).toBe(`${root}/magna_moravia/kniha_oci_vlka`);
+    expect(existsSync(kniha.folder as string)).toBe(true);
+    // a plain category has none
+    expect((await createChannelCategory(f.db, f.owner.id, f.org.id, { name: "Marketing" })).folder).toBeNull();
+    writeFileSync(`${magna.folder}/svet.md`, "Great Moravia, 2300");
+    expect(saveProjectFile(kniha.folder as string, "../../escape/kapitola.md", new TextEncoder().encode("x"))).toBe(
+      "kapitola.md",
+    );
+    expect(projectFiles(kniha.folder).map((x) => x.path)).toEqual(["kapitola.md"]);
+    const chat = await createChannel(f.db, f.owner.id, f.org.id, { name: "prolog", categoryId: kniha.id });
+    expect(await chatFolder(f.db, f.org.id, chat.id)).toBe(kniha.folder);
+    const text = await projectBrief(f.db, f.org.id, await row(chat.id));
+    expect(text).toContain(`${kniha.folder} (yours to read and write)`);
+    expect(text).toContain(`${magna.folder} (only to read)`);
+    expect(text).toContain("svet.md");
+    expect(text).toContain("kapitola.md");
+  } finally {
+    if (before === undefined) delete process.env.LATTEOS_PROJECTS_DIR;
+    else process.env.LATTEOS_PROJECTS_DIR = before;
+    rmSync(root, { recursive: true, force: true });
+  }
 });

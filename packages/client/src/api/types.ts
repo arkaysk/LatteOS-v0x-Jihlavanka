@@ -1488,6 +1488,15 @@ export interface ChannelCategory {
   instructions?: string;
   /** What its agents learnt and keep for the next chats; the person edits it. */
   memory?: string;
+  /** Its folder on the agents' computer (~/Projects/project[/subproject]): its Context. */
+  folder?: string | null;
+}
+
+/** LatteOS: a file in a project's folder (its Context). */
+export interface ProjectFile {
+  path: string;
+  size: number;
+  modifiedAt: string;
 }
 
 /** LatteOS: what a category as a project may change. */
@@ -4023,8 +4032,6 @@ export interface ArtifactFilters {
   channelId?: string;
   /** In any of these conversations. */
   channelIds?: string[];
-  /** LatteOS: in the Context of any of these projects (categories). */
-  categoryIds?: string[];
   author?: ArtifactAuthor;
   /** `author` made or changed it (any version), not only made it. */
   changed?: boolean;

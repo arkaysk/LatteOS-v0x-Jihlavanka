@@ -268,6 +268,7 @@ import type {
   PlanServes,
   Poll,
   PostMedia,
+  ProjectFile,
   ProjectInput,
   ProjectType,
   Proposal,
@@ -985,6 +986,9 @@ export interface ApiClient {
     renameCategory(orgId: string, categoryId: string, name: string): Promise<ChannelCategory>;
     /** LatteOS: a category as a project — its name, project, kind, state, instructions; only what is given. */
     updateCategory(orgId: string, categoryId: string, input: ProjectInput): Promise<ChannelCategory>;
+    /** LatteOS: the files in a project's folder (its Context), and a file put in it. */
+    projectFiles(orgId: string, categoryId: string): Promise<{ folder: string | null; files: ProjectFile[] }>;
+    addProjectFile(orgId: string, categoryId: string, file: File): Promise<{ path: string }>;
     /** Its channels go on top, with no category. */
     deleteCategory(orgId: string, categoryId: string): Promise<void>;
     /** Before `beforeCategoryId`, or to the end (null). */
@@ -1911,7 +1915,7 @@ export interface ApiClient {
     upload(
       orgId: string,
       file: File,
-      options?: { title?: string; channelId?: string | null; threadId?: string | null; categoryId?: string | null },
+      options?: { title?: string; channelId?: string | null; threadId?: string | null },
     ): Promise<ArtifactDetail>;
     /** A new version of an uploaded file (multipart, ≤ 50 MB). */
     uploadVersion(orgId: string, id: string, file: File, options?: { note?: string }): Promise<ArtifactDetail>;

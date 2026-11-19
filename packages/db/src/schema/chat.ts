@@ -78,6 +78,12 @@ export const channelCategories = pgTable(
      * it (`remember` for the project), the person reads and edits it; a subproject's agents read its project's too.
      */
     memory: text().notNull().default(""),
+    /**
+     * LatteOS: its folder on the computer its agents work on (~/Projects/project[/subproject]), made with it: what is
+     * in it is the project's Context, for the person and the agents alike. Null: none (a plain category, or a server
+     * that makes no folders).
+     */
+    folder: text(),
   },
   // a name once per place: two projects may each have an "Album 1"
   (t) => [unique().on(t.orgId, t.id), unique().on(t.orgId, t.parentId, t.name).nullsNotDistinct()],

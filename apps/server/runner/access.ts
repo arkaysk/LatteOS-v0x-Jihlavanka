@@ -253,7 +253,11 @@ export function widens(a: RunnerAccess, b: RunnerAccess): boolean {
 /** The folders allowed for one agent (as stored). */
 export function foldersFor(access: RunnerAccess, agentId: string | undefined): string[] {
   if (!agentId) return [];
-  return access.folders.filter((f) => grantedTo(f, agentId)).map((f) => f.path);
+  const own = access.folders.filter((f) => grantedTo(f, agentId)).map((f) => f.path);
+  // LatteOS: the projects' folders (~/Projects) for every agent: a project's chat works in its own (the engine's cwd);
+  // which of them it may write in is the sandbox's to keep (F6)
+  const projects = process.env.LATTEOS_PROJECTS_DIR?.trim();
+  return projects && !own.includes(projects) ? [...own, projects] : own;
 }
 
 /** The same, as real paths that exist now (an allowed folder that vanished or moved is skipped). */

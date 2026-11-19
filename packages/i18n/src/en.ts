@@ -4513,8 +4513,11 @@ export const en = {
     memoryEmpty: "Nothing yet: the agents add what the next chats should know.",
     projectMemory: "The project {{name}}'s memory (read here too)",
     context: "Context",
-    contextHint: "Files every chat's agents read. A subproject's agents read these too.",
-    contextHintSub: "Files this subproject's agents read, and its project's.",
+    contextHint:
+      "The files in the project's folder: what you put there is the agents' from the start. A subproject's agents read these too.",
+    contextHintSub:
+      "The files in this subproject's folder, which its agents read and write, and its project's, which they only read.",
+    noFolder: "This project has no folder on this computer.",
     add: "Add",
     noFiles: "No files yet.",
     fromProject: "from {{name}}",

@@ -201,6 +201,7 @@ import type {
   PhoneSignIn,
   PlanServes,
   Poll,
+  ProjectFile,
   Proposal,
   ReactionCount,
   Reminder,
@@ -313,7 +314,6 @@ const artifactQuery = (f: ArtifactFilters) => ({
   kinds: csv(f.kinds),
   channelId: f.channelId,
   channelIds: csv(f.channelIds),
-  categoryIds: csv(f.categoryIds),
   authorType: f.author?.type,
   authorId: f.author?.id,
   changed: f.changed && f.author ? "1" : undefined,
@@ -1086,6 +1086,15 @@ export function createHttpApi(options: TransportOptions = {}): HttpApi {
           method: "PATCH",
           json: { name },
         }),
+      projectFiles: (orgId, categoryId) =>
+        request<{ folder: string | null; files: ProjectFile[] }>(
+          `${org(orgId)}/channel-categories/${enc(categoryId)}/files`,
+        ),
+      addProjectFile: (orgId, categoryId, file) => {
+        const form = new FormData();
+        form.append("file", file, file.name);
+        return files.upload<{ path: string }>(`${org(orgId)}/channel-categories/${enc(categoryId)}/files`, form);
+      },
       updateCategory: (orgId, categoryId, input) =>
         request<ChannelCategory>(`${org(orgId)}/channel-categories/${enc(categoryId)}`, {
           method: "PATCH",
@@ -1609,7 +1618,6 @@ export function createHttpApi(options: TransportOptions = {}): HttpApi {
         if (options.title) form.append("title", options.title);
         if (options.channelId) form.append("channelId", options.channelId);
         if (options.threadId) form.append("threadId", options.threadId);
-        if (options.categoryId) form.append("categoryId", options.categoryId);
         return files.upload<ArtifactDetail>(`${org(orgId)}/artifacts/files`, form);
       },
       uploadVersion: (orgId, id, file, options = {}) => {

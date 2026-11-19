@@ -3289,6 +3289,8 @@ export function createFakeHttpApi(state: FakeState): Omit<HttpApi, FakedParts> {
         c.name = name.trim();
         return { ...c };
       },
+      projectFiles: async () => ({ folder: null, files: [] }),
+      addProjectFile: async (_orgId, _categoryId, file) => ({ path: file.name }),
       updateCategory: async (orgId, categoryId, input) => {
         log("chat.updateCategory", orgId, categoryId, input);
         const c = state.channelCategories?.find((x) => x.id === categoryId);

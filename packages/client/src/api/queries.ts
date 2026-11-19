@@ -1356,6 +1356,27 @@ export function useUpdateProject(orgId: string, categoryId: string) {
   });
 }
 
+/** LatteOS: the files in a project's folder (its Context); looked at again every half minute, as the person adds some. */
+export function useProjectFiles(orgId: string, categoryId: string | undefined) {
+  const api = useApi();
+  return useQuery({
+    queryKey: keys.projectFiles(orgId, categoryId ?? ""),
+    queryFn: () => api.chat.projectFiles(orgId, categoryId ?? ""),
+    enabled: Boolean(categoryId),
+    refetchInterval: 30_000,
+  });
+}
+
+/** LatteOS: a file put in a project's folder. */
+export function useAddProjectFile(orgId: string, categoryId: string) {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (file: File) => api.chat.addProjectFile(orgId, categoryId, file),
+    onSettled: () => qc.invalidateQueries({ queryKey: keys.projectFiles(orgId, categoryId) }),
+  });
+}
+
 export function useDeleteChannelCategory(orgId: string) {
   const api = useApi();
   const qc = useQueryClient();
@@ -4746,17 +4767,12 @@ export function useUploadFile(orgId: string) {
       file: File;
       title?: string;
       channelId?: string | null;
-      categoryId?: string | null;
       artifactId?: string;
       note?: string;
     }): Promise<ArtifactDetail> =>
       input.artifactId
         ? api.artifacts.uploadVersion(orgId, input.artifactId, input.file, { note: input.note })
-        : api.artifacts.upload(orgId, input.file, {
-            title: input.title,
-            channelId: input.channelId,
-            categoryId: input.categoryId,
-          }),
+        : api.artifacts.upload(orgId, input.file, { title: input.title, channelId: input.channelId }),
     meta: { silent: true },
     onSettled: () => qc.invalidateQueries({ queryKey: keys.artifacts(orgId) }),
   });

@@ -20,11 +20,7 @@ export interface UploadItem {
  * `artifactId`: a new version of that file instead of a new file. `queue`:
  * the batch being sent, file by file (empty once it's over).
  */
-export function useDriveUpload(
-  onUploaded?: (saved: ArtifactDetail, file: File) => void,
-  /** LatteOS: new files go into this project's Context. */
-  place?: { categoryId?: string },
-) {
+export function useDriveUpload(onUploaded?: (saved: ArtifactDetail, file: File) => void) {
   const { t } = useTranslation();
   const { org } = useOrg();
   const toast = useToast();
@@ -45,9 +41,7 @@ export function useDriveUpload(
       setCurrent(file.name);
       mark(i, "sending");
       try {
-        const saved = await mutation.mutateAsync(
-          target ? { file, artifactId: target.artifactId } : { file, categoryId: place?.categoryId },
-        );
+        const saved = await mutation.mutateAsync(target ? { file, artifactId: target.artifactId } : { file });
         mark(i, "done");
         onUploaded?.(saved, file);
       } catch (error) {

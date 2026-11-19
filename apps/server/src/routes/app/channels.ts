@@ -14,14 +14,19 @@ import {
   pinMessage,
   placeChannel,
   placeChannelCategory,
+  projectFiles,
+  projectFolderOf,
   removeChannelMember,
   renameChannelCategory,
   requireChannelAccess,
+  requirePermission,
+  saveProjectFile,
   setChannelAgentAutoReply,
   setChannelOverride,
   unarchiveChannel,
   unpinMessage,
   updateChannel,
+  ValidationError,
 } from "@agenteschat/engine";
 import { createRoute, z } from "@hono/zod-openapi";
 import {
@@ -50,6 +55,7 @@ const categoryJson = (r: {
   projectState: ProjectState;
   instructions: string;
   memory: string;
+  folder: string | null;
 }) => ({
   id: r.id,
   name: r.name,
@@ -59,6 +65,7 @@ const categoryJson = (r: {
   projectState: r.projectState,
   instructions: r.instructions,
   memory: r.memory,
+  folder: r.folder,
 });
 const ProjectFields = {
   parentId: z
@@ -360,6 +367,62 @@ export function channelRoutes(deps: AppDeps) {
       const { orgId, channelId } = c.req.valid("param");
       const row = await setChannelOverride(db, c.get("user").id, orgId, channelId, c.req.valid("json"), opts);
       return row ? c.json(row, 200) : c.body(null, 204);
+    },
+  );
+
+  // ── LatteOS: a project's folder is its Context — its files, and a file put in it ──
+
+  const ProjectFile = z.object({
+    path: z.string().openapi({ description: "Its place in the project's folder." }),
+    size: z.number().int(),
+    modifiedAt: z.string(),
+  });
+  app.openapi(
+    createRoute({
+      method: "get",
+      path: "/organizations/{orgId}/channel-categories/{categoryId}/files",
+      tags,
+      security,
+      summary: "LatteOS: the files in a project's folder, the newest first",
+      request: { params: CategoryParams },
+      responses: { 200: json(z.object({ folder: z.string().nullable(), files: z.array(ProjectFile) })), ...errors },
+    }),
+    async (c) => {
+      const { orgId, categoryId } = c.req.valid("param");
+      const folder = await projectFolderOf(db, c.get("user").id, orgId, categoryId);
+      return c.json({ folder, files: projectFiles(folder) }, 200);
+    },
+  );
+
+  app.openapi(
+    createRoute({
+      method: "post",
+      path: "/organizations/{orgId}/channel-categories/{categoryId}/files",
+      tags,
+      security,
+      summary: "LatteOS: put a file in a project's folder (≤ 50 MB)",
+      request: {
+        params: CategoryParams,
+        body: {
+          required: true,
+          content: {
+            "multipart/form-data": {
+              schema: z.object({ file: z.any().openapi({ type: "string", format: "binary" }) }),
+            },
+          },
+        },
+      },
+      responses: { 201: json(z.object({ path: z.string() }), "Saved"), ...errors },
+    }),
+    async (c) => {
+      const { orgId, categoryId } = c.req.valid("param");
+      await requirePermission(db, c.get("user").id, orgId, "create_channels");
+      const folder = await projectFolderOf(db, c.get("user").id, orgId, categoryId);
+      if (!folder) throw new ValidationError("This project has no folder");
+      const file = (c.req.valid("form") as { file?: unknown }).file;
+      if (!(file instanceof File)) throw new ValidationError("send the file in the field file");
+      if (file.size > 50 * 1024 * 1024) throw new ValidationError("the file is too large (max 50 MB)");
+      return c.json({ path: saveProjectFile(folder, file.name, new Uint8Array(await file.arrayBuffer())) }, 201);
     },
   );
 
