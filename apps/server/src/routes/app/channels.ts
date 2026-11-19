@@ -14,13 +14,13 @@ import {
   pinMessage,
   placeChannel,
   placeChannelCategory,
+  projectFilePath,
   projectFiles,
   projectFolderOf,
   removeChannelMember,
   renameChannelCategory,
   requireChannelAccess,
   requirePermission,
-  saveProjectFile,
   setChannelAgentAutoReply,
   setChannelOverride,
   unarchiveChannel,
@@ -400,7 +400,7 @@ export function channelRoutes(deps: AppDeps) {
       path: "/organizations/{orgId}/channel-categories/{categoryId}/files",
       tags,
       security,
-      summary: "LatteOS: put a file in a project's folder (≤ 50 MB)",
+      summary: "LatteOS: put a file in a project's folder (≤ 1 GB)",
       request: {
         params: CategoryParams,
         body: {
@@ -421,8 +421,11 @@ export function channelRoutes(deps: AppDeps) {
       if (!folder) throw new ValidationError("This project has no folder");
       const file = (c.req.valid("form") as { file?: unknown }).file;
       if (!(file instanceof File)) throw new ValidationError("send the file in the field file");
-      if (file.size > 50 * 1024 * 1024) throw new ValidationError("the file is too large (max 50 MB)");
-      return c.json({ path: saveProjectFile(folder, file.name, new Uint8Array(await file.arrayBuffer())) }, 201);
+      // ponytail: the form arrives whole before it is written; past 1 GB it would want a streamed upload
+      if (file.size > 1024 * 1024 * 1024) throw new ValidationError("the file is too large (max 1 GB)");
+      const target = projectFilePath(folder, file.name);
+      await Bun.write(target, file);
+      return c.json({ path: target.slice(folder.length + 1) }, 201);
     },
   );
 

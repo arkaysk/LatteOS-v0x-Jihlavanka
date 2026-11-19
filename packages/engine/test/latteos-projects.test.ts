@@ -111,6 +111,9 @@ test("a project's folder is made with it, a subproject's inside it; what is in i
     expect(projectFiles(kniha.folder).map((x) => x.path)).toEqual(["kapitola.md"]);
     const chat = await createChannel(f.db, f.owner.id, f.org.id, { name: "prolog", categoryId: kniha.id });
     expect(await chatFolder(f.db, f.org.id, chat.id)).toBe(kniha.folder);
+    // a chat in no project works in the main folder of the chats
+    const loose = await createChannel(f.db, f.owner.id, f.org.id, { name: "pokec" });
+    expect(await chatFolder(f.db, f.org.id, loose.id)).toBe(`${root}/channels`);
     const text = await projectBrief(f.db, f.org.id, await row(chat.id));
     expect(text).toContain(`${kniha.folder} (yours to read and write)`);
     expect(text).toContain(`${magna.folder} (only to read)`);

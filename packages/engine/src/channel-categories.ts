@@ -131,7 +131,7 @@ export async function endOfCategory(db: Executor, orgId: string, categoryId: str
 
 /**
  * LatteOS: where projects keep their folders on the computer the agents work on (the server and the agents on one
- * computer, LatteOS's own: LATTEOS_PROJECTS_DIR, ~/Projects). Unset: no folders are made (a server elsewhere).
+ * computer, LatteOS's own: LATTEOS_PROJECTS_DIR, ~/LensAI/agentgram). Unset: no folders are made (a server elsewhere).
  */
 // ponytail: the server makes the folders; a server on another computer than the agents' needs the runner to
 export const projectsDir = () => process.env.LATTEOS_PROJECTS_DIR?.trim() || null;
@@ -207,14 +207,22 @@ export function projectFiles(folder: string | null): ProjectFile[] {
   return out.sort((a, b) => b.modifiedAt.localeCompare(a.modifiedAt));
 }
 
-/** A file put in a project's folder ("Add" on its page): its own name, nothing that leaves the folder. */
-export function saveProjectFile(folder: string, name: string, bytes: Uint8Array) {
+/** A file's place in a project's folder ("Add" on its page): its own name, nothing that leaves the folder. */
+export function projectFilePath(folder: string, name: string) {
   const clean = path.basename(name).replace(/^\.+/, "").trim();
   if (!clean) throw new ValidationError("The file has no name");
-  const target = path.join(folder, clean);
+  return path.join(folder, clean);
+}
+
+/** A file put in a project's folder. */
+export function saveProjectFile(folder: string, name: string, bytes: Uint8Array) {
+  const target = projectFilePath(folder, name);
   writeFileSync(target, bytes);
   return path.relative(folder, target);
 }
+
+/** The folder of the chats in no project (the user, 19. 11.: one main folder, the projects' beside it). */
+export const CHANNELS_FOLDER = "channels";
 
 /** A project's folder for its page (who reads the workspace). */
 export async function projectFolderOf(db: Database, actorId: string, orgId: string, categoryId: string) {
@@ -500,7 +508,8 @@ export async function addToProjectMemory(db: Database, orgId: string, channelId:
 
 /**
  * LatteOS: the folder a chat's turns start in: its project's (or subproject's), where the person put what the agents
- * work with. Null: the agent's own folder, as before (a chat in no project, or a project with no folder).
+ * work with; a chat in no project, the main folder of the chats (`channels`). Null: the agent's own folder, as before
+ * (no projects' folder on this server).
  */
 export async function chatFolder(db: Executor, orgId: string, channelId: string): Promise<string | null> {
   const [row] = await db
@@ -508,5 +517,10 @@ export async function chatFolder(db: Executor, orgId: string, channelId: string)
     .from(channelCategories)
     .innerJoin(channels, eq(channels.categoryId, channelCategories.id))
     .where(and(eq(channels.orgId, orgId), eq(channels.id, channelId)));
-  return row?.folder ?? null;
+  if (row?.folder) return row.folder;
+  const root = projectsDir();
+  if (!root) return null;
+  const main = path.join(root, CHANNELS_FOLDER);
+  mkdirSync(main, { recursive: true });
+  return main;
 }

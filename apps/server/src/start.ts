@@ -635,6 +635,8 @@ async function boot(
         // Bun's default (10 s) cuts a request still waiting on its answer: opening a site in an agent's
         // browser waits for the page, and a closed browser starts first (up to 90 s on the computer).
         idleTimeout: 120,
+        // LatteOS: a file put in a project's folder may be up to 1 GB (each route keeps its own limit, body-limit.ts)
+        maxRequestBodySize: 1100 * 1024 * 1024,
         fetch: (req, srv) => ownHostAnswer(req) ?? realtime.fetch(req, srv, (r) => app.fetch(r)),
         websocket: realtime.websocket,
         // What the HTTP app doesn't answer itself: a WebSocket upgrade that failed before the socket opened.
