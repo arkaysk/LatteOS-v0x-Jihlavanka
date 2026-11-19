@@ -2227,9 +2227,7 @@ html:not([data-pointer]) .ac-chip--button:focus-visible {
   height: 1.25em;
   flex: none;
 }
-.ac-logo__body {
-  fill: var(--agent);
-}
+/* LatteOS: agentgram's body is its own glow (Logo.tsx); the mono logo still inks it below. */
 /* Eyes are white on every agent, in both themes. */
 .ac-logo__eyes {
   fill: #ffffff;

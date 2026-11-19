@@ -7,7 +7,8 @@ import type { AuthConfig } from "../api/types";
 export const LICENSE_URL = "https://www.gnu.org/licenses/agpl-3.0.html";
 
 /** Mirror of `SOURCE_URL`'s default (packages/config/src/schema.ts), for a server too old to send `sourceUrl`. */
-export const PUBLIC_SOURCE_URL = "https://github.com/agentes-chat/agentes-chat";
+// LatteOS: agentgram's own source (AGPL: the modified work's), on the LatteOS repository's branch agent-chats
+export const PUBLIC_SOURCE_URL = "https://github.com/arkaysk/LatteOS-v0x-Jihlavanka/tree/agent-chats";
 
 /**
  * A self-hosted server: never agentes.chat Cloud, nor before the server's config arrives, so the Cloud never shows

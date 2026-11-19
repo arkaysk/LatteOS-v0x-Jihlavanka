@@ -1,18 +1,20 @@
 import { type CSSProperties, useId } from "react";
-import { bodyPath, eyeShapes, type SkyPair } from "../agent/engine.js";
+import { eyeShapes, type SkyPair } from "../agent/engine.js";
 import { cx } from "../cx";
-import { ditherUrl } from "../sky/dither";
 
 /** The domain in the expanded logo: a brand name, never translated. */
 
 /**
- * The mark is the agent from the engine — body at (4, 9), side 23, and its eyes — in agentgram's fedora, with a coffee to go
+ * agentgram's mark: a body at (4, 9), side 23, with the engine's eyes, in a fedora, with a coffee to go
  * (LatteOS, the user's 19. 11.: its own mark, not agentes.chat's).
  */
 const X = 4;
 const Y = 9;
 const SIDE = 23;
-const BODY = bodyPath(X, Y, SIDE);
+// agentgram's own body (the user, 19. 11.): a square of even corners in a smooth glow, not agentes' cut corner and dither
+const RADIUS = 4.2;
+const TOP = "#6cc4ff";
+const BOTTOM = "#2a5fd0";
 const EYES = eyeShapes("round").map((e) => ({ x: X + e.x * SIDE, y: Y + e.y * SIDE, w: e.w * SIDE, h: e.h * SIDE }));
 const HAT = "#2b2f36";
 const BAND = "#c8a15a";
@@ -23,9 +25,8 @@ const SLEEVE = "#a8743f";
 const SEAL = "#f2d39a";
 
 /**
- * The agent mark: the square with the cut corner in the sky's dither (solid
- * `agent` under it, and alone in the mono logo) and the engine's white eyes.
- * `sky`: a given workspace's pair (`workspaceSky`) in place of the active one's.
+ * The mark: the square in its glow (one ink in the mono logo), the engine's white eyes, the fedora and the cup.
+ * `sky`: a given workspace's pair (`workspaceSky`) as the glow.
  */
 export function LogoMark({
   size,
@@ -38,7 +39,7 @@ export function LogoMark({
   label?: string;
   sky?: SkyPair;
 }) {
-  const clip = `ac-logo-${useId().replace(/[^\w-]/g, "")}`;
+  const glow = `ac-logo-${useId().replace(/[^\w-]/g, "")}`;
   return (
     <svg
       viewBox="0 0 32 32"
@@ -49,21 +50,12 @@ export function LogoMark({
       aria-hidden={label ? undefined : true}
     >
       <defs>
-        <clipPath id={clip}>
-          <path d={BODY} />
-        </clipPath>
+        <linearGradient id={glow} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor={sky ? sky[0] : TOP} />
+          <stop offset="1" stopColor={sky ? sky[1] : BOTTOM} />
+        </linearGradient>
       </defs>
-      <path className="ac-logo__body" d={BODY} style={sky ? { fill: sky[1] } : undefined} />
-      <image
-        className="ac-logo__dither"
-        href={ditherUrl(sky ?? "sky", 12)}
-        x={X}
-        y={Y}
-        width={SIDE}
-        height={SIDE}
-        preserveAspectRatio="none"
-        clipPath={`url(#${clip})`}
-      />
+      <rect className="ac-logo__body" x={X} y={Y} width={SIDE} height={SIDE} rx={RADIUS} fill={`url(#${glow})`} />
       <g className="ac-logo__eyes">
         {EYES.map((e) => (
           <rect key={e.x} x={e.x} y={e.y} width={e.w} height={e.h} rx={e.w / 2} />
