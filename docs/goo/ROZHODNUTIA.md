@@ -585,3 +585,6 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
   v `~/LensAI/agentgram/…` (namiesto `~/Projects`), čety bez projektu v hlavnom priečinku `channels/`; premenovaný projekt premenuje
   aj priečinok. Online projekty sa budú ukladať aj v Drive (rovnaká štruktúra, každý projekt samostatná zložka), Forgejo a vlastný
   git server sa nerobia; kód na GitHube cez konektory agentov. Wiki sa prepojí s centrálnou pamäťou **LensAI** (Basic Memory).
+- **agentgram kompatibilný s pôvodným agentes.chat** (19. 11., používateľ): fork nesmie príliš rozbiť pôvodnú aplikáciu;
+  neforkovaný agentes.chat (klienti, runner) sa musí vedieť pripojiť, dať sa pridať a pozvať. Zmeny vo forku iba pridávajú.
+  Dáta aplikácie (databáza, súbory, história) nepatria do domovského priečinka medzi dokumenty, ale k aplikácii (XDG).
