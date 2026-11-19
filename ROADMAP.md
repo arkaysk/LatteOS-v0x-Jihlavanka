@@ -3744,12 +3744,17 @@ verziami a `[[odkazmi]]`, čítajú ju všetci agenti (relevantné stránky v ka
 jedna pravda = centrálna pamäť LensAI (Basic Memory, priečinok Markdown, 10B.75; zvolená v `lensAIplan2.md` §8), Wiki jej zrkadlo
 v oboch smeroch; rozhodne používateľ.
 
-**10B.79** [ ] 19. 11. **agentgram: online projekty cez Drive namiesto GitHubu** (používateľ 19. 11.: online projekt sa ukladá lokálne
+**10B.79** [~] 19. 11. **agentgram: online projekty cez Drive namiesto GitHubu** (používateľ 19. 11.: online projekt sa ukladá lokálne
 aj v Drive, rovnaká štruktúra priečinkov, dostupný aj vzdialeným používateľom; GitHub/Forgejo netreba, kód na GitHube cez
 konektory agentov). Mení F13/F15–F18 v `lensAIplan2.md`. Treba: Drive dnes nemá priečinky (súbory podľa konverzácie) — cesta súboru
 v projekte, synchronizácia priečinok ↔ Drive v runneri (nové, zmenené, zmazané; konflikt = obe verzie), limit 50 MB na súbor,
 prepínač offline/online na stránke projektu. **Rozhodnuté 19. 11.:** Forgejo sa ruší, online projekty cez Drive; Drive ostáva
 bez priečinkov — projekt (podprojekt) = samostatná zložka. Na lokálnom serveri online netreba (Drive je na tom istom disku).
+  **19. 11. — hotové:** projekt Offline/Online na jeho stránke (`online`, 0310); online priečinok žije na serveri (na tomto počítači
+priamo `~/LensAI/agentgram`, na serveri inde `FILES_DIR/projects`) a runner každého počítača ho dvakrát za minútu zrovná so svojou
+kópiou (nové, zmenené, zmazané; zmena na oboch stranách = obe verzie, „(conflict MENO)“); server na tom istom počítači sa preskočí.
+Overené: test synchronizácie (dve kolá, mazanie, konflikt), cesty servera naživo. Namiesto položiek Drive je to priečinok servera
+(Drive bez priečinkov ostal, ako chcel používateľ). **Chýba:** skúška so skutočným vzdialeným serverom (hlavné PC), verzie súborov.
 
 ### 10C. [ ] Heidelberg
 
