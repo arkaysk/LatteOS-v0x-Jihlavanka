@@ -32,7 +32,8 @@
     "id": "kamu",
     "tr": "siz",
     "pl": "ty",
-    "ru": "вы, lowercase"
+    "ru": "вы, lowercase",
+    "sk": "Informal \"ty\" (tvoj, môžeš), friendly and short like the English; natural modern Slovak with no needless anglicisms; buttons are infinitives (Uložiť, Zrušiť); \"agent\" stays agent (agenti)."
   },
   "terms": [
     {
@@ -50,7 +51,8 @@
       "id": "agen",
       "tr": "ajan",
       "pl": "agent",
-      "ru": "агент"
+      "ru": "агент",
+      "sk": "agent"
     },
     {
       "en": "people",
@@ -67,7 +69,8 @@
       "id": "orang",
       "tr": "kişiler",
       "pl": "osoby",
-      "ru": "люди"
+      "ru": "люди",
+      "sk": "ľudia"
     },
     {
       "en": "workspace",
@@ -83,7 +86,8 @@
       "id": "ruang kerja",
       "tr": "çalışma alanı",
       "pl": "przestrzeń robocza",
-      "ru": "рабочее пространство"
+      "ru": "рабочее пространство",
+      "sk": "pracovný priestor"
     },
     {
       "en": "team",
@@ -99,7 +103,8 @@
       "id": "tim",
       "tr": "ekip",
       "pl": "zespół",
-      "ru": "команда"
+      "ru": "команда",
+      "sk": "tím"
     },
     {
       "en": "member",
@@ -115,7 +120,8 @@
       "id": "anggota",
       "tr": "üye",
       "pl": "członek",
-      "ru": "участник"
+      "ru": "участник",
+      "sk": "člen"
     },
     {
       "en": "Owner (role)",
@@ -132,7 +138,8 @@
       "id": "Pemilik",
       "tr": "Sahip",
       "pl": "Właściciel",
-      "ru": "Владелец"
+      "ru": "Владелец",
+      "sk": "Vlastník"
     },
     {
       "en": "Admin (role)",
@@ -149,7 +156,8 @@
       "id": "Admin",
       "tr": "Yönetici",
       "pl": "Administrator",
-      "ru": "Администратор"
+      "ru": "Администратор",
+      "sk": "Správca"
     },
     {
       "en": "role (workspace)",
@@ -166,7 +174,8 @@
       "id": "peran",
       "tr": "rol",
       "pl": "rola",
-      "ru": "роль"
+      "ru": "роль",
+      "sk": "rola"
     },
     {
       "en": "role (agent's job)",
@@ -183,7 +192,8 @@
       "id": "peran",
       "tr": "rol",
       "pl": "rola",
-      "ru": "роль"
+      "ru": "роль",
+      "sk": "úloha"
     },
     {
       "en": "channel",
@@ -199,7 +209,8 @@
       "id": "kanal",
       "tr": "kanal",
       "pl": "kanał",
-      "ru": "канал"
+      "ru": "канал",
+      "sk": "kanál"
     },
     {
       "en": "direct message",
@@ -215,7 +226,8 @@
       "id": "pesan langsung",
       "tr": "doğrudan mesaj",
       "pl": "wiadomość bezpośrednia",
-      "ru": "личное сообщение"
+      "ru": "личное сообщение",
+      "sk": "súkromná správa"
     },
     {
       "en": "thread",
@@ -232,7 +244,8 @@
       "id": "utas",
       "tr": "ileti dizisi",
       "pl": "wątek",
-      "ru": "ветка"
+      "ru": "ветка",
+      "sk": "vlákno"
     },
     {
       "en": "mention",
@@ -248,7 +261,8 @@
       "id": "sebutan",
       "tr": "bahsetme",
       "pl": "wzmianka",
-      "ru": "упоминание"
+      "ru": "упоминание",
+      "sk": "zmienka"
     },
     {
       "en": "task",
@@ -264,7 +278,8 @@
       "id": "tugas",
       "tr": "görev",
       "pl": "zadanie",
-      "ru": "задача"
+      "ru": "задача",
+      "sk": "úloha"
     },
     {
       "en": "mission",
@@ -281,7 +296,8 @@
       "id": "misi",
       "tr": "misyon",
       "pl": "misja",
-      "ru": "миссия"
+      "ru": "миссия",
+      "sk": "misia"
     },
     {
       "en": "routine",
@@ -298,7 +314,8 @@
       "id": "rutinitas",
       "tr": "rutin",
       "pl": "rutyna",
-      "ru": "регулярная задача"
+      "ru": "регулярная задача",
+      "sk": "rutina"
     },
     {
       "en": "approval",
@@ -314,7 +331,8 @@
       "id": "persetujuan",
       "tr": "onay",
       "pl": "zatwierdzenie",
-      "ru": "одобрение"
+      "ru": "одобрение",
+      "sk": "schválenie"
     },
     {
       "en": "approve / deny",
@@ -330,7 +348,8 @@
       "id": "setujui / tolak",
       "tr": "onayla / reddet",
       "pl": "zatwierdź / odrzuć",
-      "ru": "одобрить / отклонить"
+      "ru": "одобрить / отклонить",
+      "sk": "schváliť / zamietnuť"
     },
     {
       "en": "Waiting for you",
@@ -346,7 +365,8 @@
       "id": "Menunggumu",
       "tr": "Sizi bekliyor",
       "pl": "Czeka na ciebie",
-      "ru": "Ждёт вас"
+      "ru": "Ждёт вас",
+      "sk": "Čaká na teba"
     },
     {
       "en": "connector",
@@ -362,7 +382,8 @@
       "id": "konektor",
       "tr": "bağlayıcı",
       "pl": "konektor",
-      "ru": "коннектор"
+      "ru": "коннектор",
+      "sk": "konektor"
     },
     {
       "en": "skill",
@@ -379,7 +400,8 @@
       "id": "skill",
       "tr": "beceri",
       "pl": "umiejętność",
-      "ru": "навык"
+      "ru": "навык",
+      "sk": "skill"
     },
     {
       "en": "memory",
@@ -395,7 +417,8 @@
       "id": "memori",
       "tr": "bellek",
       "pl": "pamięć",
-      "ru": "память"
+      "ru": "память",
+      "sk": "pamäť"
     },
     {
       "en": "instructions",
@@ -411,7 +434,8 @@
       "id": "instruksi",
       "tr": "talimatlar",
       "pl": "instrukcje",
-      "ru": "инструкции"
+      "ru": "инструкции",
+      "sk": "pokyny"
     },
     {
       "en": "budget",
@@ -427,7 +451,8 @@
       "id": "anggaran",
       "tr": "bütçe",
       "pl": "budżet",
-      "ru": "бюджет"
+      "ru": "бюджет",
+      "sk": "rozpočet"
     },
     {
       "en": "computer (agent's)",
@@ -444,7 +469,8 @@
       "id": "komputer",
       "tr": "bilgisayar",
       "pl": "komputer",
-      "ru": "компьютер"
+      "ru": "компьютер",
+      "sk": "počítač"
     },
     {
       "en": "AI account",
@@ -460,7 +486,8 @@
       "id": "akun AI",
       "tr": "yapay zeka hesabı",
       "pl": "konto AI",
-      "ru": "аккаунт ИИ"
+      "ru": "аккаунт ИИ",
+      "sk": "účet AI"
     },
     {
       "en": "API key",
@@ -476,7 +503,8 @@
       "id": "kunci API",
       "tr": "API anahtarı",
       "pl": "klucz API",
-      "ru": "API-ключ"
+      "ru": "API-ключ",
+      "sk": "kľúč API"
     },
     {
       "en": "improvement proposal",
@@ -492,7 +520,8 @@
       "id": "usulan perbaikan",
       "tr": "iyileştirme önerisi",
       "pl": "propozycja ulepszenia",
-      "ru": "предложение по улучшению"
+      "ru": "предложение по улучшению",
+      "sk": "návrh na zlepšenie"
     },
     {
       "en": "Continue (a paused run)",
@@ -509,7 +538,8 @@
       "id": "Lanjutkan",
       "tr": "Devam et",
       "pl": "Kontynuuj",
-      "ru": "Продолжить"
+      "ru": "Продолжить",
+      "sk": "Pokračovať"
     },
     {
       "en": "notification",
@@ -525,7 +555,8 @@
       "id": "notifikasi",
       "tr": "bildirim",
       "pl": "powiadomienie",
-      "ru": "уведомление"
+      "ru": "уведомление",
+      "sk": "upozornenie"
     },
     {
       "en": "Sign in / Sign out",
@@ -541,7 +572,8 @@
       "id": "Masuk / Keluar",
       "tr": "Giriş yap / Çıkış yap",
       "pl": "Zaloguj się / Wyloguj się",
-      "ru": "Войти / Выйти"
+      "ru": "Войти / Выйти",
+      "sk": "Prihlásiť sa / Odhlásiť sa"
     },
     {
       "en": "Settings",
@@ -557,7 +589,8 @@
       "id": "Pengaturan",
       "tr": "Ayarlar",
       "pl": "Ustawienia",
-      "ru": "Настройки"
+      "ru": "Настройки",
+      "sk": "Nastavenia"
     },
     {
       "en": "Language",
@@ -573,7 +606,8 @@
       "id": "Bahasa",
       "tr": "Dil",
       "pl": "Język",
-      "ru": "Язык"
+      "ru": "Язык",
+      "sk": "Jazyk"
     },
     {
       "en": "Automatic (language)",
@@ -590,7 +624,8 @@
       "id": "Otomatis",
       "tr": "Otomatik",
       "pl": "Automatycznie",
-      "ru": "Автоматически"
+      "ru": "Автоматически",
+      "sk": "Automaticky"
     }
   ]
 }

@@ -20,4 +20,5 @@ export const loadStrings: Record<AppLocale, () => Promise<LocaleStrings>> = {
   tr: json("tr", () => import("./locales/tr.json")),
   pl: json("pl", () => import("./locales/pl.json")),
   ru: json("ru", () => import("./locales/ru.json")),
+  sk: json("sk", () => import("./locales/sk.json")),
 };

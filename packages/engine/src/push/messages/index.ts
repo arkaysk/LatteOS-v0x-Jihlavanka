@@ -32,6 +32,7 @@ export const PUSH: Record<AppLocale, Partial<PushStrings>> = {
   tr,
   pl,
   ru,
+  sk: {},
 };
 
 /** A language's push words, English where it has none. */

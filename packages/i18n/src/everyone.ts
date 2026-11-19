@@ -20,6 +20,7 @@ export const EVERYONE_WORD: Record<AppLocale, string> = {
   tr: "herkes",
   pl: "wszyscy",
   ru: "все",
+  sk: "všetci",
 };
 
 export const EVERYONE_WORDS: readonly string[] = [...new Set(Object.values(EVERYONE_WORD))];

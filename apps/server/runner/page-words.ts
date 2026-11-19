@@ -115,6 +115,13 @@ export const START_WORDS: Record<AppLocale, StartWords> = {
     hint: "Адрес, который видят сайты",
     tip: "Введите адрес в строке выше",
   },
+  sk: {
+    title: "Nová karta",
+    eyebrow: "POČÍTAČ AGENTA",
+    exitIp: "Výstupná IP",
+    hint: "Adresa, ktorú vidia weby",
+    tip: "Napíšte adresu do riadka hore",
+  },
 };
 
 export interface CrashWords {
@@ -190,6 +197,11 @@ export const CRASH_WORDS: Record<AppLocale, CrashWords> = {
     memory: "Странице не хватило памяти",
     told: "Агенту сообщат.",
   },
+  sk: {
+    stopped: "Stránka prestala fungovať",
+    memory: "Stránke došla pamäť",
+    told: "Agent sa to dozvie.",
+  },
 };
 
 /** The line macOS's password window shows when the Mac sets up Xcode for an iPhone. */
@@ -208,4 +220,5 @@ export const XCODE_PROMPT: Record<AppLocale, string> = {
   tr: "agentes.chat, iPhone'ları bağlamak için Xcode'u kullanmak istiyor.",
   pl: "agentes.chat chce użyć Xcode, aby połączyć iPhone'y.",
   ru: "agentes.chat хочет использовать Xcode, чтобы подключать iPhone.",
+  sk: "agentgram chce použiť Xcode na pripájanie iPhonov.",
 };

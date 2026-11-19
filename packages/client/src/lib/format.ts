@@ -160,6 +160,7 @@ const RELATIVE_DAYS: Record<AppLocale, readonly [string, string, string]> = {
   tr: ["dün", "bugün", "yarın"],
   pl: ["wczoraj", "dzisiaj", "jutro"],
   ru: ["вчера", "сегодня", "завтра"],
+  sk: ["včera", "dnes", "zajtra"],
 };
 
 /** "ontem", "today", "明日": the language's word for the day `offset` (-1, 0, 1) away, lowercase where it writes it so. */

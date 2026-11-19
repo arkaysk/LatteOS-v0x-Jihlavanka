@@ -844,8 +844,19 @@ export class RunnerDaemon implements RequestObserver {
     // LatteOS: the online projects' folders kept in step with the server's, twice a minute
     const projects = process.env.LATTEOS_PROJECTS_DIR?.trim();
     if (projects) {
+      // the chats in no project work in channels/ (the engine's CHANNELS_FOLDER): a turn there is refused while it's
+      // missing, so it is made now and again each round should someone delete it
+      const chats = () => {
+        try {
+          mkdirSync(path.join(projects, "channels"), { recursive: true });
+        } catch (err) {
+          this.opts.log(`projects: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      };
+      chats();
       let running = false;
       const round = setInterval(() => {
+        chats();
         const config = this.session?.config;
         if (!config || running) return;
         running = true;

@@ -38,6 +38,7 @@ const BY_LOCALE: Record<AppLocale, Partial<Record<LegalKind, LegalDocument>>> = 
   tr: legalTr,
   pl: legalPl,
   ru: legalRu,
+  sk: {},
 };
 
 /** Each page in every language that has it (English always). */

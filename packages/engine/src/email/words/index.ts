@@ -37,6 +37,7 @@ export const WORDS: Record<AppLocale, EmailWords> = {
   tr,
   pl,
   ru,
+  sk: {},
 };
 
 /** The emails' words in `locale`, English where it has none. */
