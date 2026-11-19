@@ -6,7 +6,7 @@ import { ValidationError } from "./errors";
 
 /**
  * LatteOS (ROADMAP 10B.79, the user's 19. 11.: "as on GitHub"): an online project's history is a git repository on
- * the server, hidden in the projects' folder (`.repos/ID.git`); no git server of its own. Each computer's runner
+ * the server, with the application's data (`LATTEOS_REPOS_DIR/ID.git`); no git server of its own. Each computer's runner
  * commits its copy, pulls with git's own merge and pushes. Changes that touch the same lines are a conflict: the
  * runner pushes its side to `refs/conflicts/COMPUTER` and waits; the project's page shows both sides, and the
  * person (or an agent for them) resolves it here — a merge commit the runner then simply takes.
@@ -17,10 +17,11 @@ const SERVER = { name: "agentgram", email: "agentgram@localhost" };
 
 /** The project's repository on the server; made bare when first asked for (a project made online). */
 export function projectRepo(categoryId: string): string | null {
-  const root = projectsDir();
+  // the application's data, not the person's folders: LATTEOS_REPOS_DIR (~/.local/share/agentgram/server/repos)
+  const root =
+    process.env.LATTEOS_REPOS_DIR?.trim() || (projectsDir() ? path.join(projectsDir() as string, ".repos") : null);
   if (!root || !/^[0-9a-f-]{36}$/.test(categoryId)) return null;
-  const dir = path.join(root, ".repos", `${categoryId}.git`);
-  return dir;
+  return path.join(root, `${categoryId}.git`);
 }
 
 export async function git(repo: string, args: string[], opts: { input?: string; env?: Record<string, string> } = {}) {
