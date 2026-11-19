@@ -2107,15 +2107,17 @@ def agentgram_apply():
     """Starts and stops what the settings say: the local server, and the runner when the home identity is paired."""
     s = agentgram()
     ctl = lambda *a: subprocess.run(["systemctl", "--user"] + list(a), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    # enabled, so it is there after the next login too, as the user turned it on
     if s["on"] and s["mode"] == "local":
-        ctl("start", "agentgram", "latte-mcp")
+        ctl("enable", "--now", "agentgram")
+        ctl("start", "latte-mcp")
     else:
-        ctl("stop", "agentgram")
+        ctl("disable", "--now", "agentgram")
     bun = shutil.which("bun", path=SEARCH + os.pathsep + os.path.expanduser("~/.bun/bin"))
     if s["on"] and s["identity"] == "home" and s["paired"] and bun:
         unit = ("[Unit]\nDescription=agentgram client (this computer's runner)\nAfter=network-online.target\n\n[Service]\n"
                 "ExecStart=%s %s/apps/server/runner/main.ts start\nEnvironment=AGENTES_RUNNER_HOME=%s\nEnvironment=AGENTES_RUNNER_SERVICE=systemd\n"
-                "Environment=PATH=%s\nRestart=always\nRestartSec=5\nRestartPreventExitStatus=0 2 3\nKillMode=process\n"
+                "Environment=PATH=%s\nRestart=always\nRestartSec=5\nRestartPreventExitStatus=0 2 3\nKillMode=process\n\n[Install]\nWantedBy=default.target\n"
                 % (bun, AGENTGRAM_SRC, AGENTGRAM_RUNNER, os.path.dirname(bun) + os.pathsep + SEARCH))
         old = open(AGENTGRAM_UNIT).read() if os.path.exists(AGENTGRAM_UNIT) else ""
         if old != unit:
@@ -2123,9 +2125,10 @@ def agentgram_apply():
             with open(AGENTGRAM_UNIT, "w") as f:
                 f.write(unit)
             ctl("daemon-reload")
+        ctl("enable", "agentgram-runner")
         ctl("restart" if old != unit else "start", "agentgram-runner")
     else:
-        ctl("stop", "agentgram-runner")
+        ctl("disable", "--now", "agentgram-runner")
 
 
 def agentgram_set(key, value):
