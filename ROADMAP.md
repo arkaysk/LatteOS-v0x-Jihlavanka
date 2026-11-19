@@ -3723,6 +3723,13 @@ pridá riadok cez `remember` s for: "project" (iba do svojho podprojektu, nadrad
 (WebTabs, overené testom qs-web) → `latte-ai agentgram folder` vytvorí `~/Projects/projekt/podprojekt` (bez diakritiky) a otvorí Súbory.
 Nová ikonka agentgramu: pôvodná postavička s fedorou a kávou so sebou v papierovom pohári (Logo.tsx, favicon, ikony 512/180/ico).
 **Chýba:** súbory z priečinka ako Kontext (F5), pieskovisko (F6), ikonky „app-icons“ na výber (sky, night…) ostali pôvodné.
+  **19. 11. noc — fork verejne:** ikonka vlastná (telo s rovnakými rohmi a plynulým prechodom, fedora, káva so sebou), meno
+agentgram v anglických a portugalských textoch (agentes.chat ostáva v povinnom riadku o pôvode v O aplikácii, pri ich Cloude, odkazoch
+a v mene protokolu servera), zdroj v O aplikácii = vetva `agent-chats` repozitára LatteOS (aj `SOURCE_URL` v službe). Vetva
+**`agent-chats` pushnutá** na GitHub (na pokyn používateľa). **Chýba:** preklady stránky projektu v ďalších 13 jazykoch forku
+(test `every language against English` padá na `projectPage.*`; F11), app-icons na výber. **Ďalej:** pripojiť tento počítač
+(LensAI › Nastavenia › agentgram), potom F5–F6: čet projektu beží v priečinku `~/Projects/projekt/podprojekt` (runner: povolený
+priečinok, cwd), pieskovisko bubblewrap (podprojekt rw, projekt ro, súrodenci skrytí).
 
 ### 10C. [ ] Heidelberg
 

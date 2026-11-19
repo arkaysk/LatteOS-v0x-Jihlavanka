@@ -572,3 +572,6 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 - **Vetva v0.55** (19. 11., používateľ): `v0.5-pleamarwm-jihlavanka` premenovaná na **`v0.55`** (na GitHube aj lokálne, ostáva
   predvolená); adresa inštalácie je kratšia (`…/LatteOS-v0x-Jihlavanka/v0.55/get`). Vedľajšia vetva `ccr-265aac87-yqlp7h` bola celá
   obsiahnutá vo `v0.55` (nič nové), preto zmazaná.
+- **Ikonka agentgramu a verejný fork** (19. 11., používateľ): postavička s fedorou a kávou so sebou (papierový pohár) namiesto šálu;
+  telo vlastné — rovnaké rohy a plynulý prechod namiesto ich zrezaného rohu a vzoru (obdĺžnik s očami nie je ich licencia, Grokbot má
+  podobnú). Najprv opravy (meno v rozhraní, riadok o pôvode), potom push vetvy `agent-chats` na GitHub — urobené 19. 11.
