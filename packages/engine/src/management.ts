@@ -580,6 +580,8 @@ export async function updateChannel(
     projectState?: ProjectState;
     /** LatteOS: what kind of project (F3); null: a plain channel. */
     projectType?: ProjectType | null;
+    /** LatteOS: what every agent working here keeps to (F4). */
+    instructions?: string;
   },
   options: { pubsub?: PubSub } = {},
 ) {
@@ -631,6 +633,7 @@ export async function updateChannel(
           ...(input.parentId !== undefined ? { parentId: input.parentId } : {}),
           ...(input.projectState !== undefined ? { projectState: input.projectState } : {}),
           ...(input.projectType !== undefined ? { projectType: input.projectType } : {}),
+          ...(input.instructions !== undefined ? { instructions: input.instructions } : {}),
           ...access,
         })
         .where(eq(channels.id, channelId))

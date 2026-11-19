@@ -297,6 +297,8 @@ export interface ChannelListItem {
   parentId: string | null;
   projectState: ProjectState;
   projectType: ProjectType | null;
+  /** LatteOS (F4): what every agent working here keeps to. */
+  instructions: string;
   isMember: boolean;
   /** Listed only because I'm an administrator (ADR 0151): the apps keep it off the sidebar until opened or joined. */
   seenAsAdmin: boolean;
@@ -338,6 +340,7 @@ interface ChannelListRow {
   parent_id: string | null;
   project_state: ProjectState;
   project_type: ProjectType | null;
+  instructions: string;
   is_member: boolean;
   seen_as_admin: boolean;
   unread_count: number | string | null;
@@ -383,7 +386,7 @@ export async function listChannels(db: Database, userId: string, orgId: string):
     and u.meta->>'mediaAfter' is null`;
   const rows = rowsOf<ChannelListRow>(
     await db.execute(sql`select c.id, c.org_id, c.name, c.topic, c.visibility, c.audience_role_ids, c.created_by_user_id, c.created_at,
-        c.category_id, c.position, c.parent_id, c.project_state, c.project_type,
+        c.category_id, c.position, c.parent_id, c.project_state, c.project_type, c.instructions,
         (cm.id is not null) as is_member,
         (cm.id is null and c.visibility <> 'public' and not ${channelAudienceSql("c", sql`${userId}`)}) as seen_as_admin,
         coalesce(un.n, 0) as unread_count, coalesce(un.m, 0) as mention_count,
@@ -441,6 +444,7 @@ export async function listChannels(db: Database, userId: string, orgId: string):
       parentId: r.parent_id,
       projectState: r.project_state,
       projectType: r.project_type,
+      instructions: r.instructions ?? "",
       isMember: r.is_member === true,
       seenAsAdmin: r.seen_as_admin === true,
       unreadCount: Number(r.unread_count ?? 0),

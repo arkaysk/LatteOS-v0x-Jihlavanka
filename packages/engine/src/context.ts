@@ -1108,6 +1108,8 @@ export async function buildRunContext(
 
   // A routine's background run: its routine block, time line and where it reports (ADR 0053 §4).
   const routine = background ? await routineContext(db, run, agent, trigger, zone, personal) : null;
+  // LatteOS (F4): a project's instructions and the files of its Context, a subproject's after its project's
+  const projectText = !routine && channel?.kind === "channel" ? await projectBrief(db, run.orgId, channel) : "";
   const previous = history[history.findIndex((m) => m.id === trigger.id) - 1];
   const nowFor: NonNullable<ContextBlock["now"]> = routine
     ? { zone: routine.zone, who: null, gapMs: null }
@@ -1348,6 +1350,7 @@ export async function buildRunContext(
         ]
       : []),
     ...(answersForEveryone(run, trigger) ? [{ turn: true, text: WHY_ANSWER_FOR_EVERYONE }] : []),
+    ...(projectText ? [{ turn: true, text: projectText }] : []),
     {
       turn: true,
       text: routine
@@ -2057,6 +2060,46 @@ export function getOrgCached(db: Database, orgId: string) {
     const [row] = await db.select().from(organizations).where(eq(organizations.id, orgId));
     return row ?? null;
   }) as Promise<typeof organizations.$inferSelect | null>;
+}
+
+/**
+ * LatteOS (F4), as a Claude project: what the agents keep to in this project (a subproject: its project's first, then
+ * its own) and the names of the files in its Context (the Drive files of the channel and of its project), to read with
+ * `read_artifact` when the work needs them.
+ */
+export async function projectBrief(db: Database, orgId: string, channel: typeof schema.channels.$inferSelect) {
+  const parent = channel.parentId ? await getChannelCached(db, orgId, channel.parentId) : null;
+  const places = [parent, channel].filter((c): c is typeof schema.channels.$inferSelect => !!c);
+  const files = await db
+    .select({ id: schema.artifacts.id, title: schema.artifacts.title, channelId: schema.artifacts.channelId })
+    .from(schema.artifacts)
+    .where(
+      and(
+        eq(schema.artifacts.orgId, orgId),
+        inArray(
+          schema.artifacts.channelId,
+          places.map((c) => c.id),
+        ),
+        eq(schema.artifacts.inDrive, true),
+        isNull(schema.artifacts.deletedAt),
+      ),
+    )
+    .orderBy(desc(schema.artifacts.updatedAt))
+    .limit(60);
+  const parts = places.map((c) => {
+    const own = files.filter((f) => f.channelId === c.id).map((f) => `"${f.title}" (${f.id})`);
+    const what = c === parent ? `Project #${c.name}` : parent ? `Subproject #${c.name}` : `Project #${c.name}`;
+    return [
+      c.instructions.trim() ? `## ${what}: its instructions\n${c.instructions.trim()}` : "",
+      own.length ? `## ${what}: files in its Context\n${own.join(", ")}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+  });
+  const text = parts.filter(Boolean).join("\n\n");
+  return text
+    ? `# This project\nKeep to these instructions in all your work here.${parent ? " The project's are for every subproject; the subproject's add to them." : ""} Read a file of the Context with \`read_artifact\` when the work needs it.\n\n${text}`
+    : "";
 }
 
 /** Channel row through the per-process cache. */

@@ -113,6 +113,7 @@ export function chatRoutes(deps: AppDeps) {
             parentId: r.parentId,
             projectState: r.projectState,
             projectType: r.projectType,
+            instructions: r.instructions,
             unreadCount: r.unreadCount,
             mentionCount: r.mentionCount,
             lastReadAt: iso(r.lastReadAt),

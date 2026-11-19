@@ -273,6 +273,11 @@ export function channelRoutes(deps: AppDeps) {
               .openapi({ description: "LatteOS: make it a subproject of this channel; null: its own." }),
             projectState: z.enum(["active", "paused", "done"]).optional(),
             projectType: z.enum(["code", "drawing", "book", "3d", "music", "comic", "other"]).nullable().optional(),
+            instructions: z
+              .string()
+              .max(20000)
+              .optional()
+              .openapi({ description: "LatteOS: what every agent working here keeps to." }),
           }),
         ),
       },
@@ -296,6 +301,7 @@ export function channelRoutes(deps: AppDeps) {
           parentId: r.parentId,
           projectState: r.projectState,
           projectType: r.projectType,
+          instructions: r.instructions,
         },
         200,
       );

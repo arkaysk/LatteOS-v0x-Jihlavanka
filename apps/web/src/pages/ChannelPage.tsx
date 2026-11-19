@@ -367,6 +367,7 @@ import { useOrg } from "@/components/org-context";
 import { AuthorStatus } from "@/components/Presence";
 import { ProfileTrigger } from "@/components/ProfileCard";
 import { ProjectFields } from "@/components/ProjectFields";
+import { isProject, ProjectPanel } from "@/components/ProjectPanel";
 import { ReachLines } from "@/components/ReachLines";
 import { MessageReactions, useEmojiLabels } from "@/components/Reactions";
 import {
@@ -1082,6 +1083,8 @@ function ChannelView({
     return () => window.removeEventListener("keydown", onKey);
   }, [chrome?.panel]);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  // LatteOS: the project's side (Instructions, Context, Scheduled)
+  const [projectOpen, setProjectOpen] = useState(false);
   const membersColumn = useMembersColumn();
   const dmSidebar = useDmSidebar();
   // Opened from a sidebar row's "Adicionar pessoas ou agentes": straight to adding, and closing that closes it all.
@@ -2567,6 +2570,7 @@ function ChannelView({
                     onDetails={() => setDetailsOpen(true)}
                     onSearch={openSearch}
                     searching={searchOpen}
+                    {...(isProject(channel) && readable ? { onProject: () => setProjectOpen(true) } : {})}
                   />
                 )}
                 {/* Under the header: the conversation, and the members beside it (the header spans both, as Discord's). */}
@@ -3063,6 +3067,8 @@ function ChannelView({
                       hidden={hiddenCount(taskView.data?.hidden, tasksAgentId)}
                       onClose={() => setTasksOpen(false)}
                     />
+                  ) : projectOpen && isProject(channel) ? (
+                    <ProjectPanel channel={channel} onClose={() => setProjectOpen(false)} />
                   ) : panel || searchOpen ? (
                     <SidePanel
                       inAddress={Boolean(panel)}

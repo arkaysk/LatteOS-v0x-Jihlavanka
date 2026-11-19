@@ -1382,6 +1382,8 @@ export interface Channel {
   parentId?: string | null;
   projectState?: ProjectState;
   projectType?: ProjectType | null;
+  /** LatteOS (F4): what every agent working here keeps to, as a Claude project's instructions. */
+  instructions?: string;
   /** Order inside its category, from 0. */
   position?: number;
   /**
@@ -1428,6 +1430,8 @@ export interface ChannelInput {
   projectState?: ProjectState;
   /** LatteOS: what kind of project (F3); null: a plain channel. */
   projectType?: ProjectType | null;
+  /** LatteOS: what every agent working here keeps to (F4). */
+  instructions?: string;
 }
 
 /** LatteOS: a channel as a project (F2, F3). */

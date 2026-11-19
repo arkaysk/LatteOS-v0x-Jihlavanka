@@ -699,6 +699,9 @@ export const Channel = z
       .nullable()
       .optional()
       .openapi({ description: "LatteOS: what kind of project; null: a plain channel." }),
+    instructions: z.string().optional().openapi({
+      description: "LatteOS: what every agent working here keeps to; a subproject's agents read its project's too.",
+    }),
     unreadCount: z.number().int().optional().openapi({
       description:
         "Channel list only: messages since you last read it (since you joined, if never), not yours; a thread reply counts only in a thread you follow; an agent's sticker or GIF after its own reply never (ADR 0091). At most 100; 0 when you're not a member.",

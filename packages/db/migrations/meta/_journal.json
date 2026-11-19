@@ -2108,6 +2108,13 @@
       "when": 1795032368699,
       "tag": "0305_latteos_channel_projects",
       "breakpoints": true
+    },
+    {
+      "idx": 303,
+      "version": "7",
+      "when": 1795101128350,
+      "tag": "0306_latteos_project_instructions",
+      "breakpoints": true
     }
   ]
 }

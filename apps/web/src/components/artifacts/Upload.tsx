@@ -18,9 +18,10 @@ export interface UploadItem {
  * Sends files to the Drive one at a time: the 50 MB limit is checked here
  * first (a translated message, nothing sent), then the server checks again.
  * `artifactId`: a new version of that file instead of a new file. `queue`:
- * the batch being sent, file by file (empty once it's over).
+ * the batch being sent, file by file (empty once it's over). `channelId`: new files go to that channel (LatteOS: a
+ * project's Context).
  */
-export function useDriveUpload(onUploaded?: (saved: ArtifactDetail, file: File) => void) {
+export function useDriveUpload(onUploaded?: (saved: ArtifactDetail, file: File) => void, channelId?: string) {
   const { t } = useTranslation();
   const { org } = useOrg();
   const toast = useToast();
@@ -41,7 +42,9 @@ export function useDriveUpload(onUploaded?: (saved: ArtifactDetail, file: File) 
       setCurrent(file.name);
       mark(i, "sending");
       try {
-        const saved = await mutation.mutateAsync(target ? { file, artifactId: target.artifactId } : { file });
+        const saved = await mutation.mutateAsync(
+          target ? { file, artifactId: target.artifactId } : { file, channelId },
+        );
         mark(i, "done");
         onUploaded?.(saved, file);
       } catch (error) {

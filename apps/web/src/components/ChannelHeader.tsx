@@ -27,6 +27,7 @@ export function ChannelHeader({
   searching,
   membersOpen,
   onMembers,
+  onProject,
 }: {
   channel: Channel;
   isMember: boolean;
@@ -43,6 +44,8 @@ export function ChannelHeader({
   /** The members column (a sheet on a phone) is showing. */
   membersOpen: boolean;
   onMembers: () => void;
+  /** LatteOS: a project's side (Instructions, Context, Scheduled); none: not a project. */
+  onProject?: () => void;
 }) {
   const { t } = useTranslation();
   const channelEntries = useChannelMenu();
@@ -69,6 +72,17 @@ export function ChannelHeader({
           <QueueButton machineId={queueMachine} />
           {isMember && <ChannelThreadsButton channelId={channel.id} channelName={channel.name} />}
           {isMember && <ChannelPinsButton channelId={channel.id} channelName={channel.name} />}
+          {onProject && (
+            <button
+              type="button"
+              className="ac-btn ac-btn--ghost ac-btn--icon channel__icon"
+              aria-label={t("projectPanel.open")}
+              title={t("projectPanel.open")}
+              onClick={onProject}
+            >
+              <Icon name="drive" />
+            </button>
+          )}
           <button
             type="button"
             className="ac-btn ac-btn--ghost ac-btn--icon channel__icon channel__cog"

@@ -109,6 +109,8 @@ export const channels = pgTable(
     projectState: channelProjectStateEnum().notNull().default("active"),
     /** LatteOS (F3): what kind of work; null: a plain channel. */
     projectType: channelProjectTypeEnum(),
+    /** LatteOS (F4): what every agent working here keeps to, as a Claude project's instructions; a subproject's agents read its project's too. */
+    instructions: text().notNull().default(""),
   },
   (t) => [unique().on(t.orgId, t.name), unique().on(t.orgId, t.id), unique().on(t.orgId, t.dmKey)],
 );
