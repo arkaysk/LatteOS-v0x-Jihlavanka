@@ -58,6 +58,7 @@ export * from "./card-via";
 export * from "./catch-up";
 export * from "./catch-up-triage";
 export * from "./channel-categories";
+export * from "./project-git";
 export * from "./channel-deletion";
 export * from "./channel-permissions";
 export * from "./channels";

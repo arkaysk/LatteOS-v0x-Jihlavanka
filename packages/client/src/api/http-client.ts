@@ -85,6 +85,7 @@ import type {
   ComputerQueue,
   ComputerSetup,
   ComputerTarget,
+  ConflictSides,
   Connection,
   ConnectLink,
   ConnectLinkState,
@@ -201,6 +202,8 @@ import type {
   PhoneSignIn,
   PlanServes,
   Poll,
+  ProjectChange,
+  ProjectConflict,
   ProjectFile,
   Proposal,
   ReactionCount,
@@ -1095,6 +1098,26 @@ export function createHttpApi(options: TransportOptions = {}): HttpApi {
         form.append("file", file, file.name);
         return files.upload<{ path: string }>(`${org(orgId)}/channel-categories/${enc(categoryId)}/files`, form);
       },
+      projectHistory: (orgId, categoryId) =>
+        request<{ changes: ProjectChange[] }>(`${org(orgId)}/channel-categories/${enc(categoryId)}/history`),
+      projectConflicts: (orgId, categoryId) =>
+        request<{ conflicts: ProjectConflict[] }>(`${org(orgId)}/channel-categories/${enc(categoryId)}/conflicts`),
+      conflictSides: (orgId, categoryId, computer, path) =>
+        request<ConflictSides>(
+          `${org(orgId)}/channel-categories/${enc(categoryId)}/conflicts/${enc(computer)}?path=${enc(path)}`,
+        ),
+      resolveConflict: (orgId, categoryId, computer, files) =>
+        request<{ commit: string }>(
+          `${org(orgId)}/channel-categories/${enc(categoryId)}/conflicts/${enc(computer)}/resolve`,
+          { json: { files } },
+        ),
+      aiMerge: (orgId, categoryId, computer, path) =>
+        request<{ text: string }>(
+          `${org(orgId)}/channel-categories/${enc(categoryId)}/conflicts/${enc(computer)}/merge`,
+          {
+            json: { path },
+          },
+        ),
       updateCategory: (orgId, categoryId, input) =>
         request<ChannelCategory>(`${org(orgId)}/channel-categories/${enc(categoryId)}`, {
           method: "PATCH",

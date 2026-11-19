@@ -190,3 +190,77 @@ a.project-page__sub:hover {
   gap: 6px;
   text-decoration: none;
 }
+/* an online project's conflicts and history (ProjectGit.tsx) */
+.project-page__file--button {
+  inline-size: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.project-page__file--button:hover {
+  background: var(--surface-hover, rgba(127, 127, 127, 0.12));
+}
+.project-page__conflicts .project-page__part-head {
+  color: var(--warn, #b45309);
+}
+.project-page__history-files {
+  margin: 0 0 var(--space-2, 8px);
+  padding: 0 0 0 var(--space-4, 16px);
+  list-style: none;
+  font-size: 13px;
+}
+.project-page__mark {
+  display: inline-block;
+  inline-size: 1.4em;
+  font-family: var(--font-mono, monospace);
+  font-weight: 600;
+}
+.project-page__history-files [data-status="add"] .project-page__mark {
+  color: var(--ok, #15803d);
+}
+.project-page__history-files [data-status="remove"] .project-page__mark {
+  color: var(--danger, #b91c1c);
+}
+.project-conflict {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 12px);
+}
+.project-conflict__sides {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-3, 12px);
+}
+@media (max-width: 900px) {
+  .project-conflict__sides {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.project-conflict__side {
+  min-inline-size: 0;
+  max-block-size: 55vh;
+  overflow: auto;
+}
+.project-conflict__side h3 {
+  margin: 0 0 var(--space-2, 8px);
+  font-size: 14px;
+}
+.project-conflict__edit {
+  font-family: var(--font-mono, monospace);
+  min-block-size: 40vh;
+}
+.project-conflict__choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2, 8px);
+}
+.project-conflict__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2, 8px);
+}
+.project-conflict__nav [aria-current="true"] {
+  font-weight: 600;
+}

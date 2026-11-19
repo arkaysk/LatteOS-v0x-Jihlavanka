@@ -31,6 +31,7 @@ import { NewCategoryDialog } from "@/components/ChannelCategoryDialogs";
 import { toChannelName } from "@/components/NewChannelDialog";
 import { useOrg } from "@/components/org-context";
 import { isProject, PROJECT_ICONS, PROJECT_STATES, PROJECT_TYPES } from "@/components/project/kinds";
+import { ProjectConflicts, ProjectHistory } from "@/components/project/ProjectGit";
 import { useDirectory } from "@/hooks/useDirectory";
 import { useToast } from "@/lib/toast";
 import "@/components/project/project.css";
@@ -102,6 +103,12 @@ export function ProjectPage({ categoryId }: { categoryId: string }) {
           <NewChat project={project} />
           {!parent && <Subprojects project={project} subs={subs} />}
           <Chats project={project} />
+          {project.online && !project.parentId && (
+            <>
+              <ProjectConflicts categoryId={project.id} />
+              <ProjectHistory categoryId={project.id} />
+            </>
+          )}
         </div>
         <aside className="project-page__side" aria-label={t("projectPage.about")}>
           <Instructions project={project} parent={parent} />

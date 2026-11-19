@@ -114,7 +114,7 @@ import { systemGitCache } from "./git";
 import type { HandlerContext, RequestObserver, RequestOutcome } from "./handlers";
 import { Holds } from "./holds";
 import { IphoneSetup, type IphoneSetupOptions } from "./iphone-setup";
-import { sameComputer, syncOnlineProjects } from "./latteos-project-sync";
+import { syncOnlineProjects } from "./latteos-project-sync";
 import { currentProcess, isCompiled, selfCommand } from "./launch";
 import { tailLines } from "./logfile";
 import { adoptLoginPath } from "./login-path";
@@ -847,7 +847,7 @@ export class RunnerDaemon implements RequestObserver {
       let running = false;
       const round = setInterval(() => {
         const config = this.session?.config;
-        if (!config || running || sameComputer(config.server)) return;
+        if (!config || running) return;
         running = true;
         void syncOnlineProjects({
           server: config.server,

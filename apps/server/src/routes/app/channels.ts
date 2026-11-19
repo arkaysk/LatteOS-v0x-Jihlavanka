@@ -2,9 +2,11 @@ import {
   archiveChannel,
   CHANNEL_KEYS,
   channelMembersDetail,
+  conflictSides,
   createChannelCategory,
   deleteChannel,
   deleteChannelCategory,
+  ensureProjectRepo,
   listArchivedChannels,
   listChannelCategories,
   listChannelOverrides,
@@ -14,13 +16,17 @@ import {
   pinMessage,
   placeChannel,
   placeChannelCategory,
+  projectConflicts,
   projectFilePath,
   projectFiles,
   projectFolderOf,
+  projectHistory,
   removeChannelMember,
   renameChannelCategory,
   requireChannelAccess,
   requirePermission,
+  resolveConflict,
+  resolveSummaryModel,
   setChannelAgentAutoReply,
   setChannelOverride,
   unarchiveChannel,
@@ -431,6 +437,141 @@ export function channelRoutes(deps: AppDeps) {
     },
   );
 
+  // ── LatteOS: an online project's history and its conflicts, as on GitHub (10B.79) ──
+
+  const project = async (c: { get(k: "user"): { id: string } }, orgId: string, categoryId: string) => {
+    await projectFolderOf(db, c.get("user").id, orgId, categoryId);
+    return categoryId;
+  };
+  app.openapi(
+    createRoute({
+      method: "get",
+      path: "/organizations/{orgId}/channel-categories/{categoryId}/history",
+      tags,
+      security,
+      summary: "LatteOS: what changed in an online project, the newest first",
+      request: { params: CategoryParams },
+      responses: {
+        200: json(
+          z.object({
+            changes: z.array(
+              z.object({
+                id: z.string(),
+                author: z.string(),
+                at: z.string(),
+                message: z.string(),
+                files: z.array(z.object({ status: z.string(), path: z.string() })),
+              }),
+            ),
+          }),
+        ),
+        ...errors,
+      },
+    }),
+    async (c) => {
+      const { orgId, categoryId } = c.req.valid("param");
+      return c.json({ changes: await projectHistory(await project(c, orgId, categoryId)) }, 200);
+    },
+  );
+  app.openapi(
+    createRoute({
+      method: "get",
+      path: "/organizations/{orgId}/channel-categories/{categoryId}/conflicts",
+      tags,
+      security,
+      summary: "LatteOS: an online project's conflicts, one per computer, with the files both sides changed",
+      request: { params: CategoryParams },
+      responses: {
+        200: json(z.object({ conflicts: z.array(z.object({ computer: z.string(), files: z.array(z.string()) })) })),
+        ...errors,
+      },
+    }),
+    async (c) => {
+      const { orgId, categoryId } = c.req.valid("param");
+      return c.json({ conflicts: await projectConflicts(await project(c, orgId, categoryId)) }, 200);
+    },
+  );
+  const ConflictParams = CategoryParams.extend({ computer: z.string().regex(/^[\w.-]{1,80}$/) });
+  app.openapi(
+    createRoute({
+      method: "get",
+      path: "/organizations/{orgId}/channel-categories/{categoryId}/conflicts/{computer}",
+      tags,
+      security,
+      summary:
+        "LatteOS: a conflicting file's sides — what both started from, the server's, the computer's, git's merge",
+      request: { params: ConflictParams, query: z.object({ path: z.string().min(1).max(1000) }) },
+      responses: {
+        200: json(z.object({ base: z.string(), server: z.string(), computer: z.string(), merged: z.string() })),
+        ...errors,
+      },
+    }),
+    async (c) => {
+      const { orgId, categoryId, computer } = c.req.valid("param");
+      const id = await project(c, orgId, categoryId);
+      return c.json(await conflictSides(id, computer, c.req.valid("query").path), 200);
+    },
+  );
+  app.openapi(
+    createRoute({
+      method: "post",
+      path: "/organizations/{orgId}/channel-categories/{categoryId}/conflicts/{computer}/resolve",
+      tags,
+      security,
+      summary: "LatteOS: resolve a computer's conflict — each conflicting file's final text (null: removed)",
+      request: {
+        params: ConflictParams,
+        body: body(z.object({ files: z.record(z.string(), z.string().max(20_000_000).nullable()) })),
+      },
+      responses: { 200: json(z.object({ commit: z.string() })), ...errors },
+    }),
+    async (c) => {
+      const { orgId, categoryId, computer } = c.req.valid("param");
+      const user = c.get("user") as { id: string; name?: string };
+      await requirePermission(db, user.id, orgId, "create_channels");
+      const id = await project(c, orgId, categoryId);
+      const commit = await resolveConflict(id, computer, c.req.valid("json").files, user.name || "a person");
+      return c.json({ commit }, 200);
+    },
+  );
+  app.openapi(
+    createRoute({
+      method: "post",
+      path: "/organizations/{orgId}/channel-categories/{categoryId}/conflicts/{computer}/merge",
+      tags,
+      security,
+      summary: "LatteOS: an AI's merge of a conflicting file, for the person to check and save",
+      request: { params: ConflictParams, body: body(z.object({ path: z.string().min(1).max(1000) })) },
+      responses: { 200: json(z.object({ text: z.string() })), ...errors },
+    }),
+    async (c) => {
+      const { orgId, categoryId, computer } = c.req.valid("param");
+      await requirePermission(db, c.get("user").id, orgId, "create_channels");
+      const id = await project(c, orgId, categoryId);
+      const file = c.req.valid("json").path;
+      const sides = await conflictSides(id, computer, file);
+      const context = deps.extras?.context;
+      if (!context) throw new ValidationError("No AI is set up on this server");
+      const model = await resolveSummaryModel(context, orgId);
+      const result = await context.gateway.complete({
+        orgId,
+        kind: "summary",
+        model,
+        system:
+          "You merge two versions of one file that both changed since a common original, as a careful editor would. Keep every change of both where they don't contradict; where they do, keep the best of both in one coherent text. Answer with the merged file only: no explanation, no code fences, no conflict markers.",
+        messages: [
+          {
+            role: "user",
+            content: `File: ${file}\n\n=== Original ===\n${sides.base}\n\n=== Version A (the server's) ===\n${sides.server}\n\n=== Version B (${computer}'s) ===\n${sides.computer}`,
+          },
+        ],
+        signal: AbortSignal.timeout(120_000),
+        maxTokens: 16_000,
+      });
+      return c.json({ text: result.text.replace(/^```\w*\n|\n```\s*$/g, "") }, 200);
+    },
+  );
+
   // ── Sidebar categories (ADR 0080): the org's layout, the same for everyone ──
 
   app.openapi(
@@ -504,6 +645,8 @@ export function channelRoutes(deps: AppDeps) {
     async (c) => {
       const { orgId, categoryId } = c.req.valid("param");
       const r = await renameChannelCategory(db, c.get("user").id, orgId, categoryId, c.req.valid("json"), opts);
+      // LatteOS: made online, its history starts on the server
+      if (r.online) await ensureProjectRepo(r.id);
       return c.json(categoryJson(r), 200);
     },
   );

@@ -3291,6 +3291,11 @@ export function createFakeHttpApi(state: FakeState): Omit<HttpApi, FakedParts> {
       },
       projectFiles: async () => ({ folder: null, files: [] }),
       addProjectFile: async (_orgId, _categoryId, file) => ({ path: file.name }),
+      projectHistory: async () => ({ changes: [] }),
+      projectConflicts: async () => ({ conflicts: [] }),
+      conflictSides: async () => ({ base: "", server: "", computer: "", merged: "" }),
+      resolveConflict: async () => ({ commit: "" }),
+      aiMerge: async () => ({ text: "" }),
       updateCategory: async (orgId, categoryId, input) => {
         log("chat.updateCategory", orgId, categoryId, input);
         const c = state.channelCategories?.find((x) => x.id === categoryId);

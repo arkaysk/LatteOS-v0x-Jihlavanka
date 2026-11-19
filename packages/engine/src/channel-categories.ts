@@ -551,21 +551,3 @@ export async function onlineProjects(db: Executor, orgId: string) {
       : [];
   });
 }
-
-/** A file's place in a project's folder, from a path a computer sent: nothing that leaves the folder, nothing hidden. */
-export function insideProject(folder: string, rel: string): string {
-  const target = path.resolve(folder, rel);
-  if (!target.startsWith(folder + path.sep) || rel.split(/[\\/]/).some((p) => p.startsWith(".")))
-    throw new ValidationError("That path is not in the project");
-  return target;
-}
-
-/** The files of an online project's folder, each with its content's sha-256, for a computer keeping its copy. */
-export async function projectFilesWithSums(folder: string) {
-  const out: (ProjectFile & { sha256: string })[] = [];
-  for (const f of projectFiles(folder, 32, 20_000)) {
-    const bytes = await Bun.file(path.join(folder, f.path)).bytes();
-    out.push({ ...f, sha256: new Bun.CryptoHasher("sha256").update(bytes).digest("hex") });
-  }
-  return out;
-}

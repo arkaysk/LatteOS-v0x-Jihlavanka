@@ -1377,6 +1377,65 @@ export function useAddProjectFile(orgId: string, categoryId: string) {
   });
 }
 
+/** LatteOS: what changed in an online project, the newest first. */
+export function useProjectHistory(orgId: string, categoryId: string, enabled = true) {
+  const api = useApi();
+  return useQuery({
+    queryKey: keys.projectHistory(orgId, categoryId),
+    queryFn: () => api.chat.projectHistory(orgId, categoryId),
+    enabled,
+    refetchInterval: 30_000,
+  });
+}
+
+/** LatteOS: an online project's conflicts, looked at again every half minute (a computer's round may make one). */
+export function useProjectConflicts(orgId: string, categoryId: string, enabled = true) {
+  const api = useApi();
+  return useQuery({
+    queryKey: keys.projectConflicts(orgId, categoryId),
+    queryFn: () => api.chat.projectConflicts(orgId, categoryId),
+    enabled,
+    refetchInterval: 30_000,
+  });
+}
+
+/** LatteOS: a conflicting file's sides. */
+export function useConflictSides(orgId: string, categoryId: string, computer: string, path: string | null) {
+  const api = useApi();
+  return useQuery({
+    queryKey: [...keys.projectConflicts(orgId, categoryId), computer, path ?? ""],
+    queryFn: () => api.chat.conflictSides(orgId, categoryId, computer, path ?? ""),
+    enabled: Boolean(path),
+  });
+}
+
+/** LatteOS: a computer's conflict resolved, every conflicting file's final text at once. */
+export function useResolveConflict(orgId: string, categoryId: string) {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { computer: string; files: Record<string, string | null> }) =>
+      api.chat.resolveConflict(orgId, categoryId, input.computer, input.files),
+    onSettled: () => {
+      for (const key of [
+        keys.projectConflicts(orgId, categoryId),
+        keys.projectHistory(orgId, categoryId),
+        keys.projectFiles(orgId, categoryId),
+      ])
+        void qc.invalidateQueries({ queryKey: key });
+    },
+  });
+}
+
+/** LatteOS: an AI's merge of a conflicting file, for the person to check before saving. */
+export function useAiMerge(orgId: string, categoryId: string) {
+  const api = useApi();
+  return useMutation({
+    mutationFn: (input: { computer: string; path: string }) =>
+      api.chat.aiMerge(orgId, categoryId, input.computer, input.path),
+  });
+}
+
 export function useDeleteChannelCategory(orgId: string) {
   const api = useApi();
   const qc = useQueryClient();

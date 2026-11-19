@@ -1501,6 +1501,29 @@ export interface ProjectFile {
   modifiedAt: string;
 }
 
+/** LatteOS: one change in an online project's history; a file's status is git's A, M or D. */
+export interface ProjectChange {
+  id: string;
+  author: string;
+  at: string;
+  message: string;
+  files: { status: string; path: string }[];
+}
+
+/** LatteOS: a computer's changes the server couldn't merge, with the files both sides changed. */
+export interface ProjectConflict {
+  computer: string;
+  files: string[];
+}
+
+/** LatteOS: a conflicting file's sides; `merged` is git's merge with markers where both changed the same lines. */
+export interface ConflictSides {
+  base: string;
+  server: string;
+  computer: string;
+  merged: string;
+}
+
 /** LatteOS: what a category as a project may change. */
 export interface ProjectInput {
   name?: string;

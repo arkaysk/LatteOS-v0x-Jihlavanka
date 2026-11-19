@@ -1,4 +1,3 @@
-import { mkdirSync } from "node:fs";
 import { isIP } from "node:net";
 import path from "node:path";
 import { CLI_INSTALL_CAUSES, CLI_INSTALL_STATES, INSTALLABLE_CLIS, limitIp } from "@agenteschat/adapters";
@@ -16,10 +15,10 @@ import {
   DeviceCodeLimitError,
   deleteMachine,
   denyDeviceCode,
+  ensureProjectRepo,
   getDeviceCode,
   hostComputerState,
   hostKey,
-  insideProject,
   listMachineOutages,
   listMachines,
   machineCliInstall,
@@ -31,7 +30,6 @@ import {
   PROVISIONING_STATES,
   PROVISIONING_STEPS,
   pollDeviceToken,
-  projectFilesWithSums,
   receiveMachineUpload,
   reduceMachineAccess,
   renameMachine,
@@ -1346,40 +1344,69 @@ export function registerMachinePublicRoutes(api: OpenAPIHono, deps: AppDeps) {
     return c.json({ projects: projects.map(({ id, path }) => ({ id, path })) }, 200);
   });
 
-  api.get("/machines/projects/:id/files", async (c) => {
+  // The project's history over git's smart HTTP (`git http-backend`): the computer's own clone pulls and pushes here
+  api.all("/machines/projects/:id/git/*", async (c) => {
     const machine = await machineOf(c);
     if (!machine) return apiError(c, 401, "machine.unauthorized", UNAUTHORIZED);
-    const folder = await onlineFolder(machine.orgId, c.req.param("id"));
-    if (!folder) return apiError(c, 404, "not_found", "No online project here");
-    return c.json({ files: await projectFilesWithSums(folder) }, 200);
-  });
-
-  api.on(["GET", "PUT", "DELETE"], "/machines/projects/:id/file", async (c) => {
-    const machine = await machineOf(c);
-    if (!machine) return apiError(c, 401, "machine.unauthorized", UNAUTHORIZED);
-    const folder = await onlineFolder(machine.orgId, c.req.param("id"));
-    if (!folder) return apiError(c, 404, "not_found", "No online project here");
-    let target: string;
-    try {
-      target = insideProject(folder, c.req.query("path") ?? "");
-    } catch {
-      return apiError(c, 400, "invalid_request", "That path is not in the project");
+    const id = c.req.param("id");
+    if (!(await onlineFolder(machine.orgId, id))) return apiError(c, 404, "not_found", "No online project here");
+    const repo = await ensureProjectRepo(id);
+    if (!repo) return apiError(c, 404, "not_found", "No online project here");
+    const url = new URL(c.req.url);
+    const rest = url.pathname.slice(url.pathname.indexOf("/git/") + 4);
+    const proc = Bun.spawn(["git", "http-backend"], {
+      stdin: c.req.method === "POST" ? c.req.raw.body : "ignore",
+      stdout: "pipe",
+      stderr: "ignore",
+      env: {
+        ...process.env,
+        GIT_PROJECT_ROOT: path.dirname(repo),
+        GIT_HTTP_EXPORT_ALL: "1",
+        PATH_INFO: `/${path.basename(repo)}${rest}`,
+        REQUEST_METHOD: c.req.method,
+        QUERY_STRING: url.search.slice(1),
+        CONTENT_TYPE: c.req.header("content-type") ?? "",
+        ...(c.req.header("content-encoding") ? { HTTP_CONTENT_ENCODING: c.req.header("content-encoding") } : {}),
+        REMOTE_USER: machine.name,
+        REMOTE_ADDR: "127.0.0.1",
+      },
+    });
+    // a CGI answer: its headers (Status among them), a blank line, then the body as it comes
+    const reader = proc.stdout.getReader();
+    let head = new Uint8Array(0);
+    let split = -1;
+    while (split < 0) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      const both = new Uint8Array(head.length + value.length);
+      both.set(head);
+      both.set(value, head.length);
+      head = both;
+      split = Buffer.from(head).indexOf("\r\n\r\n");
     }
-    const file = Bun.file(target);
-    if (c.req.method === "GET") {
-      if (!(await file.exists())) return apiError(c, 404, "not_found", "No such file");
-      return new Response(file, { headers: { "content-type": "application/octet-stream" } });
+    if (split < 0) return apiError(c, 500, "internal", "git answered nothing");
+    const headers = new Headers();
+    let status = 200;
+    for (const line of Buffer.from(head.subarray(0, split)).toString().split("\r\n")) {
+      const i = line.indexOf(":");
+      if (i < 0) continue;
+      const key = line.slice(0, i).trim();
+      const value = line.slice(i + 1).trim();
+      if (key.toLowerCase() === "status") status = Number.parseInt(value, 10) || 200;
+      else headers.append(key, value);
     }
-    if (c.req.method === "DELETE") {
-      if (await file.exists()) await file.delete();
-      return c.body(null, 204);
-    }
-    // ponytail: the body is read whole before it is written; 1 GB at most, as on the project's page
-    if (Number(c.req.header("content-length") ?? "0") > 1024 * 1024 * 1024)
-      return apiError(c, 413, "artifact.file_too_large", "The file is too large (max 1 GB)");
-    mkdirSync(path.dirname(target), { recursive: true });
-    await Bun.write(target, await c.req.arrayBuffer());
-    return c.body(null, 204);
+    const first = head.subarray(split + 4);
+    const body = new ReadableStream<Uint8Array>({
+      start(ctl) {
+        if (first.length) ctl.enqueue(first);
+      },
+      async pull(ctl) {
+        const { value, done } = await reader.read();
+        if (done) ctl.close();
+        else ctl.enqueue(value);
+      },
+    });
+    return new Response(body, { status, headers });
   });
 
   // The bytes of a file this machine was told to fetch (`pull`), straight from storage.

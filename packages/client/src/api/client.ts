@@ -118,6 +118,7 @@ import type {
   ComputerQueue,
   ComputerSetup,
   ComputerTarget,
+  ConflictSides,
   Connection,
   ConnectLink,
   ConnectLinkState,
@@ -268,6 +269,8 @@ import type {
   PlanServes,
   Poll,
   PostMedia,
+  ProjectChange,
+  ProjectConflict,
   ProjectFile,
   ProjectInput,
   ProjectType,
@@ -989,6 +992,17 @@ export interface ApiClient {
     /** LatteOS: the files in a project's folder (its Context), and a file put in it. */
     projectFiles(orgId: string, categoryId: string): Promise<{ folder: string | null; files: ProjectFile[] }>;
     addProjectFile(orgId: string, categoryId: string, file: File): Promise<{ path: string }>;
+    /** LatteOS: an online project's history, its conflicts, a conflict's sides, its resolution and an AI's merge. */
+    projectHistory(orgId: string, categoryId: string): Promise<{ changes: ProjectChange[] }>;
+    projectConflicts(orgId: string, categoryId: string): Promise<{ conflicts: ProjectConflict[] }>;
+    conflictSides(orgId: string, categoryId: string, computer: string, path: string): Promise<ConflictSides>;
+    resolveConflict(
+      orgId: string,
+      categoryId: string,
+      computer: string,
+      files: Record<string, string | null>,
+    ): Promise<{ commit: string }>;
+    aiMerge(orgId: string, categoryId: string, computer: string, path: string): Promise<{ text: string }>;
     /** Its channels go on top, with no category. */
     deleteCategory(orgId: string, categoryId: string): Promise<void>;
     /** Before `beforeCategoryId`, or to the end (null). */
