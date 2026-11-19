@@ -3737,6 +3737,11 @@ priečinok, cwd), pieskovisko bubblewrap (podprojekt rw, projekt ro, súrodenci 
 a iné projekty skryté (test s bubblewrap). Pripojenie počítača zjednotené (LensAI › Nastavenia aj „Connect a computer“ v LensAI).
 **Chýba:** skutočný beh agenta v priečinku (Claude Pro používateľa má 95 % týždňa — neskúšal som), domov mimo projektov ostáva
 čitateľný (CLI potrebujú svoje prihlásenia), slovenčina (F11).
+  **19. 11. noc — F11 slovenčina hotová:** agentgram má jazyk `sk` (pripravený): 17 566 textov aplikácie preložených 6 pomocnými
+agentmi (Sonnet) podľa spoločného slovníka LatteOS (ty, kanál, vlákno, čet, pracovný priestor, rutina, skilly, pravá ruka…), všetky
+kontroly ako pri ostatných jazykoch (zástupné znaky, značky, štyri plurálne tvary, nezlomiteľné medzery), stránky pomocníka, @všetci,
+slovník; účet používateľa prepnutý na slovenčinu. **Chýba:** e-maily a push upozornenia (padajú na angličtinu), ostatné jazyky
+forku nemajú texty LatteOS (test `every language against English` pre 13 jazykov), jazyková kontrola prekladu človekom.
 
 **10B.78** [ ] 19. 11. **agentgram: Wiki a centrálna pamäť LensAI** (používateľ 19. 11.: „Wiki — informácie pre všetkých agentov
 nezávisle od projektu; ako to prepojiť s centrálnou pamäťou LensAI“). Wiki agentgramu (ADR 0023): stránky Markdown s priečinkami,
