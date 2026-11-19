@@ -123,7 +123,8 @@ No API key: the official tool of a service answers, with the account the user is
   latte-ai agentgram set on on|off · mode local|remote · server URL · identity home|other   then starts and stops to match
   latte-ai agentgram folder PROJECT [SUBPROJECT]   its folder ~/Projects/project[/subproject] (no accents), made and
                             opened in Files: {"path"}
-  latte-ai agentgram pair   connects this computer (its runner) to the server: {"url", "code"} to confirm there, then {"ok"}
+  latte-ai agentgram pair [--link CODE]   connects this computer (its runner) to the server: {"url", "code"} to confirm
+                            there, then {"ok"}; with agentgram's connect link, the person lets it join on that page
   latte-ai memory-folder [CHANNEL [SUBCHANNEL]]   where the AI keeps what it has: latteAI/lensai, or latteAI/agentes/CHANNEL/SUB
   latte-ai project set DIR state|type|storage|name|remote|memory VALUE · set DIR ai ID…   a project's setting; ai: the
                             only agents allowed in it (none: all)
@@ -2147,16 +2148,18 @@ def agentgram_set(key, value):
     return True
 
 
-def agentgram_pair():
+def agentgram_pair(link=""):
     """Connects this computer to the server as agentgram's own runner does (a code confirmed on the server's page): a line
-    {"url", "code"} as soon as there is one, then {"ok"}; when it worked, the client starts."""
+    {"url", "code"} as soon as there is one, then {"ok"}; when it worked, the client starts. With `link` (agentgram's
+    "Connect a computer" in LensAI), the code its page made: the person lets it join there."""
     s = agentgram()
     bun = shutil.which("bun", path=SEARCH + os.pathsep + os.path.expanduser("~/.bun/bin"))
     if not bun or not s["api"]:
         print(json.dumps({"ok": False}), flush=True)
         return 1
     p = subprocess.Popen([bun, os.path.join(AGENTGRAM_SRC, "apps/server/runner/main.ts"), "pair", "--server", s["api"],
-                          "--home", AGENTGRAM_RUNNER, "--dir", os.path.join(os.path.dirname(ai_folder()), "agentes")],
+                          "--home", AGENTGRAM_RUNNER, "--dir", os.path.join(os.path.dirname(ai_folder()), "agentes")]
+                         + (["--link", link] if link else []),
                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=dict(os.environ, NO_COLOR="1"))
     for line in p.stdout:
         m = re.search(r"https?://\S+[?&]code=([A-Za-z0-9]+)", line)
@@ -3312,6 +3315,8 @@ def main(a):
         return 0 if agentgram_set(a[2], a[3]) else 2
     if a == ["agentgram", "pair"]:
         return agentgram_pair()
+    if a[:3] == ["agentgram", "pair", "--link"] and len(a) == 4 and re.match(r"^[A-Za-z0-9-]{4,40}$", a[3]):
+        return agentgram_pair(a[3])
     if a[:2] == ["agentgram", "folder"] and len(a) in (3, 4):
         path = agentgram_folder(a[2:])
         if not path:

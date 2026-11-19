@@ -575,3 +575,6 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 - **Ikonka agentgramu a verejný fork** (19. 11., používateľ): postavička s fedorou a kávou so sebou (papierový pohár) namiesto šálu;
   telo vlastné — rovnaké rohy a plynulý prechod namiesto ich zrezaného rohu a vzoru (obdĺžnik s očami nie je ich licencia, Grokbot má
   podobnú). Najprv opravy (meno v rozhraní, riadok o pôvode), potom push vetvy `agent-chats` na GitHub — urobené 19. 11.
+- **Pripojenie počítača k agentgramu zjednotené** (19. 11., používateľ): LensAI › Nastavenia › agentgram › „Pripojiť tento počítač“
+  spáruje celé prostredie LensAI s prihlásenými AI do agentgramu; „Connect a computer“ v agentgrame otvorenom v LensAI robí to isté
+  (odkaz desktopovej aplikácie zachytí LensAI → `latte-ai agentgram pair --link`), bez sťahovania aplikácie.

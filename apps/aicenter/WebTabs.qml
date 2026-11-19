@@ -113,6 +113,13 @@ Item {
                     if (q.p) Quickshell.execDetached(["latte-ai", "agentgram", "folder", q.p].concat(q.s ? [q.s] : []))
                     return
                 }
+                // agentgram's "Connect this computer" (its desktop app's link, agenteschat://pair?server=&link=): LatteOS
+                // connects this computer itself, with the AIs it is signed in to; the page then asks to let it join
+                if (u.startsWith("agenteschat://pair?")) {
+                    const m = u.match(/[?&]link=([A-Za-z0-9-]{4,40})/)
+                    if (m) Quickshell.execDetached(["latte-ai", "agentgram", "pair", "--link", m[1]])
+                    return
+                }
                 if (request.destination === WebEngineNewWindowRequest.InNewDialog) {
                     const w = popup.createObject(tabs, { profile: view.profile })
                     request.openIn(w.view)
