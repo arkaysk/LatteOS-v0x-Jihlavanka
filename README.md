@@ -51,7 +51,7 @@ a user with administrator rights. A separate `/data` partition for your files is
 **2. Run one command.** Log in on the text console and run:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/arkaysk/LatteOS-v0x-Jihlavanka/v0.5-pleamarwm-jihlavanka/get | sudo sh
+curl -fsSL https://raw.githubusercontent.com/arkaysk/LatteOS-v0x-Jihlavanka/v0.55/get | sudo sh
 ```
 
 It checks that this is Fedora 45 with a network, installs only `git`, `cage` and `quickshell` from Fedora, downloads

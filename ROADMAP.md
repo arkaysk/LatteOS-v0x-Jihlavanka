@@ -42,7 +42,7 @@ LatteOS:2.x xxx
 > 6.41 stránka Kvapky (+ voľba Správa úloh platí), 6H.09, 6N LensCloud (tretí spúšťač, **overiť meno s používateľom**), 6B.47 krok 1
 > (päta + panel akcií). Pri každej úlohe nižšie je riadok „14. 11. (noc)“ s tým, čo chýba. DockShore je hmota Goo (1D.25).
 
-**Vetva `v0.5-pleamarwm-jihlavanka` (od 31. 10. 2026, predvolená od 2. 11.):** prechod z Hyprlandu na pleamar-wm (1D) je na latte-lab hotový — Hyprland odinštalovaný, „LatteOS GOO“ beží na pleamar-wm (2. 11.). Z 1D ostáva 1D.41 (nezopakovalo sa) a overenie na hlavnom PC s dvoma monitormi (1D.01, 1D.07); 1D.14 a 1D.42 hotové, ikony na ploche v Goo (7B.05) hotové 4. 11. Potom LensAI (10B, súpis `docs/lensai/POZIADAVKY.md`), **hneď po ňom LPnP + DisplayKit** (používateľ 19. 11.: 10E.14–10E.19, 8B.09–8B.12, návrh a kontrola `docs/devices/LPNP-DISPLAYKIT.md`) a YOL (7C) podľa používateľa, až potom sa pokračuje v poradí nižšie.
+**Vetva `v0.55` (od 31. 10. 2026 ako `v0.5-pleamarwm-jihlavanka`, predvolená od 2. 11., premenovaná 19. 11.):** prechod z Hyprlandu na pleamar-wm (1D) je na latte-lab hotový — Hyprland odinštalovaný, „LatteOS GOO“ beží na pleamar-wm (2. 11.). Z 1D ostáva 1D.41 (nezopakovalo sa) a overenie na hlavnom PC s dvoma monitormi (1D.01, 1D.07); 1D.14 a 1D.42 hotové, ikony na ploche v Goo (7B.05) hotové 4. 11. Potom LensAI (10B, súpis `docs/lensai/POZIADAVKY.md`), **hneď po ňom LPnP + DisplayKit** (používateľ 19. 11.: 10E.14–10E.19, 8B.09–8B.12, návrh a kontrola `docs/devices/LPNP-DISPLAYKIT.md`) a YOL (7C) podľa používateľa, až potom sa pokračuje v poradí nižšie.
 
 Určené 22. 10. 2026 (nahrádza bývalé „Teraz“ z 12. 10.). Ide sa zhora, neskáče sa; nový nápad na koniec svojej kategórie, nie sem.
 Poradie drží tri pravidlá: **čo blokuje overovanie ostatného ide prvé** (štart, SAFE, obrazovky), **plocha pred aplikáciami**,
@@ -159,7 +159,7 @@ Neskôr: obraz ako Bazzite, rollback.
 ---
 
 ### 1D. [~] pleamar-wm namiesto Hyprlandu
-Vetva `v0.5-pleamarwm-jihlavanka`. Goo ostáva samostatný proces; mení sa vrstva okien pod ním. Hyprland ostáva v prihlasovači ako
+Vetva `v0.55` (pôvodne `v0.5-pleamarwm-jihlavanka`). Goo ostáva samostatný proces; mení sa vrstva okien pod ním. Hyprland ostáva v prihlasovači ako
 druhá relácia, kým nová nevie všetko, čo on. Zdroje: [pleamar-wm](https://github.com/k4ditano/pleamar-wm), `docs/goo/ROZHODNUTIA.md`.
 
 **Postup prenosu (používateľ 2. 11.): pleamar-wm sa integruje celý, potom sa mení podľa zadania LatteOS.** Berie sa pleamar,

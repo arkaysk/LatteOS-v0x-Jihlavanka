@@ -569,3 +569,6 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
   položka v ľavom menu sivá a neklikateľná. Voľby: **spustiť lokálny server** alebo **pripojiť sa na vzdialený** (adresa); s oboma
   sa zapne aj klient (runner tohto počítača). **Identita:** domáca = kompletne domáce údaje, agenti používajú prihlásenia AI tohto
   počítača (nikto sa neprihlasuje znova); iná = vlastné prihlásenie. ROADMAP 10B.77.
+- **Vetva v0.55** (19. 11., používateľ): `v0.5-pleamarwm-jihlavanka` premenovaná na **`v0.55`** (na GitHube aj lokálne, ostáva
+  predvolená); adresa inštalácie je kratšia (`…/LatteOS-v0x-Jihlavanka/v0.55/get`). Vedľajšia vetva `ccr-265aac87-yqlp7h` bola celá
+  obsiahnutá vo `v0.55` (nič nové), preto zmazaná.

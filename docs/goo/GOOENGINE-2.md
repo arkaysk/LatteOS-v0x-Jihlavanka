@@ -1,7 +1,7 @@
 # GooEngine 2 — „Živá hladina“
 
 Návrh a pokyny na kódovanie · 11. 11. 2026, druhé znenie (po rozhodnutiach používateľa z večera 11. 11.)
-Vetva `v0.5-pleamarwm-jihlavanka` · ROADMAP 6.09, 6.21, 6.27–6.30, 6M, 1D.25–1D.27
+Vetva `v0.55` (pôvodne `v0.5-pleamarwm-jihlavanka`) · ROADMAP 6.09, 6.21, 6.27–6.30, 6M, 1D.25–1D.27
 
 Zadanie pre reláciu, ktorá GooEngine prepíše. Zásady Goo (`LATTEOS-GOO.md` §2–3) platia ďalej: kvapky sú káva,
 kurzor iba priťahuje, karta rastie z ucha, okraj obrazovky je hladina. Mení sa, **z čoho pohyb vzniká** (fyzikálne
