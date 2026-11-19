@@ -116,6 +116,12 @@ test("a project's folder is made with it, a subproject's inside it; what is in i
     expect(text).toContain(`${magna.folder} (only to read)`);
     expect(text).toContain("svet.md");
     expect(text).toContain("kapitola.md");
+    // renamed, the project's folder goes with it, its subprojects' inside it too
+    await renameChannelCategory(f.db, f.owner.id, f.org.id, magna.id, { name: "Veľká Morava" });
+    const [moved] = await f.db.select().from(schema.channelCategories).where(eq(schema.channelCategories.id, kniha.id));
+    expect(moved?.folder).toBe(`${root}/velka_morava/kniha_oci_vlka`);
+    expect(existsSync(`${root}/velka_morava/kniha_oci_vlka/kapitola.md`)).toBe(true);
+    expect(existsSync(`${root}/magna_moravia`)).toBe(false);
   } finally {
     if (before === undefined) delete process.env.LATTEOS_PROJECTS_DIR;
     else process.env.LATTEOS_PROJECTS_DIR = before;

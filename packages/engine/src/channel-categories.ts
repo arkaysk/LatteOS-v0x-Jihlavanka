@@ -1,4 +1,4 @@
-import { mkdirSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, renameSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import type { PubSub } from "@agenteschat/adapters";
 import { and, asc, type Database, type Executor, eq, inArray, isNull, schema, sql } from "@agenteschat/db";
@@ -154,6 +154,22 @@ function makeFolder(name: string, parent: ChannelCategory | null): string | null
   for (let n = 2; existsDir(folder); n++) folder = `${base}_${n}`;
   mkdirSync(folder, { recursive: true });
   return folder;
+}
+
+/**
+ * A project's folder renamed with it, or moved into its new project's: its new place (a free name), what was in it
+ * kept. Where nothing makes folders it stays.
+ */
+function moveFolder(folder: string, name: string, parent: ChannelCategory | null): string {
+  const root = parent ? parent.folder : projectsDir();
+  if (!root || !existsDir(folder)) return folder;
+  const base = path.join(root, folderName(name));
+  if (base === folder) return folder;
+  let target = base;
+  for (let n = 2; existsDir(target); n++) target = `${base}_${n}`;
+  mkdirSync(root, { recursive: true });
+  renameSync(folder, target);
+  return target;
 }
 
 const existsDir = (p: string) => {
@@ -331,14 +347,22 @@ export async function renameChannelCategory(
         ...(input.projectState !== undefined ? { projectState: input.projectState } : {}),
         ...(input.instructions !== undefined ? { instructions: input.instructions } : {}),
         ...(input.memory !== undefined ? { memory: input.memory } : {}),
-        // a plain category made a project gets its folder then; a project's folder stays when it is renamed
+        // a plain category made a project gets its folder then; renamed or moved, its folder goes with it (the user)
         ...(!now.folder && (input.projectType || parentId)
           ? { folder: makeFolder(name, parentId ? await requireCategory(db, orgId, parentId) : null) }
-          : {}),
+          : now.folder && (name !== now.name || parentId !== now.parentId)
+            ? { folder: moveFolder(now.folder, name, parentId ? await requireCategory(db, orgId, parentId) : null) }
+            : {}),
       })
       .where(and(eq(channelCategories.orgId, orgId), eq(channelCategories.id, categoryId)))
       .returning();
     if (!row) throw new NotFoundError("Category not found");
+    // its subprojects' folders were inside the one that moved
+    if (now.folder && row.folder && row.folder !== now.folder)
+      await db
+        .update(channelCategories)
+        .set({ folder: sql`${row.folder} || substr(${channelCategories.folder}, ${now.folder.length + 1})` })
+        .where(and(eq(channelCategories.orgId, orgId), eq(channelCategories.parentId, categoryId)));
     await layoutChanged(orgId, options);
     return row;
   } catch (error) {
