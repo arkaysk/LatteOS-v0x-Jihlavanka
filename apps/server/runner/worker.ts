@@ -28,6 +28,7 @@ import { DesktopManager, type DesktopManagerOptions } from "./desktop";
 import { RUNNER_VERSION, RunnerError, toMachineError } from "./errors";
 import type { CacheFill, CloneSlots } from "./git";
 import { type HandlerContext, handleRequest } from "./handlers";
+import { withProjectSandbox } from "./latteos-sandbox";
 import { currentProcess, isCompiled, selfCommand } from "./launch";
 import { readLines } from "./lines";
 import { McpBridge, type McpTaskInfo, mcpSocketPath } from "./mcp";
@@ -562,7 +563,8 @@ export async function runWorker(o: WorkerOptions): Promise<number> {
   // Under systemd the agent's Chrome and AI CLIs start in slices of their own, root moving them there first.
   const gated = (kind: ScopeKind): Spawn | undefined =>
     systemdBooted() ? (file, args, options) => spawnGated(kind, file, args, options, link.enterScope) : undefined;
-  const cli = gated("cli");
+  // LatteOS: an AI CLI in a project's folder runs with the projects kept apart (latteos-sandbox.ts)
+  const cli = withProjectSandbox(gated("cli"));
   const chrome = gated("browser");
   dropAgySignIns(agentAccountsDir(home, "antigravity"));
   // The account folders root lends to this agent's user for its turns and tasks (`AccountManager.lendTo`), and its
