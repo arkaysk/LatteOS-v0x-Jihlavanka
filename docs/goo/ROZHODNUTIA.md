@@ -581,3 +581,7 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 - **Priečinok projektu = jeho Kontext** (19. 11., používateľ): priečinok vzniká už pri vytvorení projektu alebo podprojektu,
   v `~/Projects` (podprojekt v priečinku projektu); všetky súbory v ňom sú od začiatku prístupné projektu, četom a agentom a
   ukazujú sa v zozname súborov (Kontext). Kontext zo služby Drive zrušený.
+- **Priečinky agentgramu v ~/LensAI/agentgram, Forgejo zrušené** (19. 11., používateľ): projekty a podprojekty ako priečinky
+  v `~/LensAI/agentgram/…` (namiesto `~/Projects`), čety bez projektu v hlavnom priečinku `channels/`; premenovaný projekt premenuje
+  aj priečinok. Online projekty sa budú ukladať aj v Drive (rovnaká štruktúra, každý projekt samostatná zložka), Forgejo a vlastný
+  git server sa nerobia; kód na GitHube cez konektory agentov. Wiki sa prepojí s centrálnou pamäťou **LensAI** (Basic Memory).

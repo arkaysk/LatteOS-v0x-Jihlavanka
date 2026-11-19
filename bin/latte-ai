@@ -121,7 +121,7 @@ No API key: the official tool of a service answers, with the account the user is
   latte-ai agentgram        its settings: {"on", "mode": local|remote, "server", "identity": home|other, "web", "api",
                             "paired", "client"}
   latte-ai agentgram set on on|off · mode local|remote · server URL · identity home|other   then starts and stops to match
-  latte-ai agentgram folder PATH   a project's folder (only under ~/Projects), opened in Files: {"path"}
+  latte-ai agentgram folder PATH   a project's folder (only under ~/LensAI/agentgram), opened in Files: {"path"}
   latte-ai agentgram pair [--link CODE]   connects this computer (its runner) to the server: {"url", "code"} to confirm
                             there, then {"ok"}; with agentgram's connect link, the person lets it join on that page
   latte-ai memory-folder [CHANNEL [SUBCHANNEL]]   where the AI keeps what it has: latteAI/lensai, or latteAI/agentes/CHANNEL/SUB
@@ -2172,11 +2172,11 @@ def agentgram_pair(link=""):
     return 0 if ok else 1
 
 
-PROJECTS_DIR = os.path.expanduser("~/Projects")      # agentgram's projects' folders (the user, 19. 11.)
+PROJECTS_DIR = os.path.expanduser("~/LensAI/agentgram")   # agentgram's projects' folders, the chats in none in channels/ (the user, 19. 11.)
 
 
 def agentgram_folder(path):
-    """A project's folder of agentgram (agentgram makes it with the project), shown in Files; only one under ~/Projects,
+    """A project's folder of agentgram (agentgram makes it with the project), shown in Files; only one under ~/LensAI/agentgram,
     whatever a page asks for."""
     real = os.path.realpath(os.path.expanduser(path))
     if not real.startswith(os.path.realpath(PROJECTS_DIR) + os.sep):

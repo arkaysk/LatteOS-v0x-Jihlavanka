@@ -106,7 +106,7 @@ Item {
             // tab (a source in an answer) goes to the browser, as in any app of web pages
             onNewWindowRequested: request => {
                 // agentgram's "Open folder" (latteos://agentgram/folder?path=…): the project's folder in Files (latte-ai keeps
-                // it to ~/Projects, whatever the page asks)
+                // it to ~/LensAI/agentgram, whatever the page asks)
                 if (u.startsWith("latteos://agentgram/folder?")) {
                     const m = u.match(/[?&]path=([^&]+)/)
                     if (m) Quickshell.execDetached(["latte-ai", "agentgram", "folder", decodeURIComponent(m[1])])
