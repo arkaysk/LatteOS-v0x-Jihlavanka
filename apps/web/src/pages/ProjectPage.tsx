@@ -121,7 +121,7 @@ function ProjectSettings({ project }: { project: ChannelCategory }) {
   const toast = useToast();
   const update = useUpdateProject(org.id, project.id);
   if (!can(org, "manage_channels")) return null;
-  const change = (input: { projectType?: ProjectType; projectState?: ProjectState }) =>
+  const change = (input: { projectType?: ProjectType; projectState?: ProjectState; online?: boolean }) =>
     update.mutate(input, { onError: (e) => toast.show(errorText(t, e), "error") });
   return (
     <div className="project-page__settings">
@@ -135,6 +135,17 @@ function ProjectSettings({ project }: { project: ChannelCategory }) {
             label: t(`projectPage.types.${k}`),
             leading: <Icon name={PROJECT_ICONS[k]} size={16} />,
           }))}
+        />
+      )}
+      {!project.parentId && (
+        <Select
+          aria-label={t("projectPage.where")}
+          value={project.online ? "online" : "offline"}
+          onValueChange={(v) => change({ online: v === "online" })}
+          options={[
+            { value: "offline", label: t("projectPage.offline"), leading: <Icon name="lock" size={16} /> },
+            { value: "online", label: t("projectPage.online"), leading: <Icon name="cloud" size={16} /> },
+          ]}
         />
       )}
       <Select

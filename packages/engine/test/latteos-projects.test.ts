@@ -110,13 +110,13 @@ test("a project's folder is made with it, a subproject's inside it; what is in i
     );
     expect(projectFiles(kniha.folder).map((x) => x.path)).toEqual(["kapitola.md"]);
     const chat = await createChannel(f.db, f.owner.id, f.org.id, { name: "prolog", categoryId: kniha.id });
-    expect(await chatFolder(f.db, f.org.id, chat.id)).toBe(kniha.folder);
+    expect(await chatFolder(f.db, f.org.id, chat.id)).toBe("~/LensAI/agentgram/magna_moravia/kniha_oci_vlka");
     // a chat in no project works in the main folder of the chats
     const loose = await createChannel(f.db, f.owner.id, f.org.id, { name: "pokec" });
-    expect(await chatFolder(f.db, f.org.id, loose.id)).toBe(`${root}/channels`);
+    expect(await chatFolder(f.db, f.org.id, loose.id)).toBe("~/LensAI/agentgram/channels");
     const text = await projectBrief(f.db, f.org.id, await row(chat.id));
-    expect(text).toContain(`${kniha.folder} (yours to read and write)`);
-    expect(text).toContain(`${magna.folder} (only to read)`);
+    expect(text).toContain("~/LensAI/agentgram/magna_moravia/kniha_oci_vlka (yours to read and write)");
+    expect(text).toContain("~/LensAI/agentgram/magna_moravia (only to read)");
     expect(text).toContain("svet.md");
     expect(text).toContain("kapitola.md");
     // renamed, the project's folder goes with it, its subprojects' inside it too

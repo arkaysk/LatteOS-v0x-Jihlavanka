@@ -133,8 +133,20 @@ export async function endOfCategory(db: Executor, orgId: string, categoryId: str
  * LatteOS: where projects keep their folders on the computer the agents work on (the server and the agents on one
  * computer, LatteOS's own: LATTEOS_PROJECTS_DIR, ~/LensAI/agentgram). Unset: no folders are made (a server elsewhere).
  */
-// ponytail: the server makes the folders; a server on another computer than the agents' needs the runner to
-export const projectsDir = () => process.env.LATTEOS_PROJECTS_DIR?.trim() || null;
+// A server elsewhere (FILES_DIR) keeps the online projects' folders with its files; each computer has its copy (runner).
+export const projectsDir = () =>
+  process.env.LATTEOS_PROJECTS_DIR?.trim() ||
+  (process.env.FILES_DIR?.trim() ? path.join(process.env.FILES_DIR.trim(), "projects") : null);
+
+/** Where the agents' computers keep the projects' folders (the runner's LATTEOS_PROJECTS_DIR, the user's 19. 11.). */
+export const AGENT_PROJECTS = "~/LensAI/agentgram";
+
+/** A project's folder as the agents' computer has it: the same place under its own projects' folder. */
+export function agentPath(folder: string): string {
+  const root = projectsDir();
+  const rel = root ? path.relative(root, folder) : "";
+  return rel && !rel.startsWith("..") && !path.isAbsolute(rel) ? `${AGENT_PROJECTS}/${rel}` : folder;
+}
 
 /** A folder's name from a project's: no accents, small letters, words joined by "_" (the user, 18. 11.). */
 export const folderName = (name: string) =>
@@ -188,15 +200,15 @@ export interface ProjectFile {
 }
 
 /** The files in a project's folder, the newest first: hidden ones left out, three folders deep, 300 at most. */
-export function projectFiles(folder: string | null): ProjectFile[] {
+export function projectFiles(folder: string | null, deep = 3, most = 300): ProjectFile[] {
   if (!folder || !existsDir(folder)) return [];
   const out: ProjectFile[] = [];
   const walk = (dir: string, depth: number) => {
     for (const e of readdirSync(dir, { withFileTypes: true })) {
-      if (e.name.startsWith(".") || out.length >= 300) continue;
+      if (e.name.startsWith(".") || out.length >= most) continue;
       const full = path.join(dir, e.name);
       if (e.isDirectory()) {
-        if (depth < 3) walk(full, depth + 1);
+        if (depth < deep) walk(full, depth + 1);
       } else if (e.isFile()) {
         const st = statSync(full);
         out.push({ path: path.relative(folder, full), size: st.size, modifiedAt: st.mtime.toISOString() });
@@ -336,6 +348,8 @@ export async function renameChannelCategory(
     instructions?: string;
     /** What its agents keep for the next chats (the person edits it as a whole). */
     memory?: string;
+    /** Its folder also on the server, every computer's copy kept in step. */
+    online?: boolean;
   },
   options: Options = {},
 ): Promise<ChannelCategory> {
@@ -355,6 +369,7 @@ export async function renameChannelCategory(
         ...(input.projectState !== undefined ? { projectState: input.projectState } : {}),
         ...(input.instructions !== undefined ? { instructions: input.instructions } : {}),
         ...(input.memory !== undefined ? { memory: input.memory } : {}),
+        ...(input.online !== undefined ? { online: input.online } : {}),
         // a plain category made a project gets its folder then; renamed or moved, its folder goes with it (the user)
         ...(!now.folder && (input.projectType || parentId)
           ? { folder: makeFolder(name, parentId ? await requireCategory(db, orgId, parentId) : null) }
@@ -517,10 +532,40 @@ export async function chatFolder(db: Executor, orgId: string, channelId: string)
     .from(channelCategories)
     .innerJoin(channels, eq(channels.categoryId, channelCategories.id))
     .where(and(eq(channels.orgId, orgId), eq(channels.id, channelId)));
-  if (row?.folder) return row.folder;
+  if (row?.folder) return agentPath(row.folder);
+  return projectsDir() ? `${AGENT_PROJECTS}/${CHANNELS_FOLDER}` : null;
+}
+
+/** LatteOS: the online projects of a workspace, each with its folder's place under the projects' folder. */
+export async function onlineProjects(db: Executor, orgId: string) {
   const root = projectsDir();
-  if (!root) return null;
-  const main = path.join(root, CHANNELS_FOLDER);
-  mkdirSync(main, { recursive: true });
-  return main;
+  if (!root) return [];
+  const rows = await db
+    .select({ id: channelCategories.id, folder: channelCategories.folder })
+    .from(channelCategories)
+    .where(and(eq(channelCategories.orgId, orgId), eq(channelCategories.online, true)));
+  return rows.flatMap((r) => {
+    const rel = r.folder ? path.relative(root, r.folder) : "";
+    return rel && !rel.startsWith("..") && !path.isAbsolute(rel)
+      ? [{ id: r.id, path: rel, folder: r.folder as string }]
+      : [];
+  });
+}
+
+/** A file's place in a project's folder, from a path a computer sent: nothing that leaves the folder, nothing hidden. */
+export function insideProject(folder: string, rel: string): string {
+  const target = path.resolve(folder, rel);
+  if (!target.startsWith(folder + path.sep) || rel.split(/[\\/]/).some((p) => p.startsWith(".")))
+    throw new ValidationError("That path is not in the project");
+  return target;
+}
+
+/** The files of an online project's folder, each with its content's sha-256, for a computer keeping its copy. */
+export async function projectFilesWithSums(folder: string) {
+  const out: (ProjectFile & { sha256: string })[] = [];
+  for (const f of projectFiles(folder, 32, 20_000)) {
+    const bytes = await Bun.file(path.join(folder, f.path)).bytes();
+    out.push({ ...f, sha256: new Bun.CryptoHasher("sha256").update(bytes).digest("hex") });
+  }
+  return out;
 }

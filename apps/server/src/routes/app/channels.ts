@@ -56,6 +56,7 @@ const categoryJson = (r: {
   instructions: string;
   memory: string;
   folder: string | null;
+  online: boolean;
 }) => ({
   id: r.id,
   name: r.name,
@@ -66,6 +67,7 @@ const categoryJson = (r: {
   instructions: r.instructions,
   memory: r.memory,
   folder: r.folder,
+  online: r.online,
 });
 const ProjectFields = {
   parentId: z
@@ -490,6 +492,10 @@ export function channelRoutes(deps: AppDeps) {
             projectState: z.enum(["active", "paused", "done"]).optional(),
             instructions: z.string().max(20000).optional(),
             memory: z.string().max(20000).optional(),
+            online: z
+              .boolean()
+              .optional()
+              .openapi({ description: "LatteOS: its folder on the server too, every computer's copy in step." }),
           }),
         ),
       },

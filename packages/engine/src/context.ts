@@ -26,7 +26,7 @@ import { type BlockSpecReader, blockStateNotes } from "./block-state";
 import { isSandboxedBrain } from "./brains/types";
 import { caches } from "./cache";
 import { summarizeScopes } from "./capabilities";
-import { projectFiles } from "./channel-categories";
+import { agentPath, projectFiles } from "./channel-categories";
 import { peopleAllIn } from "./channels";
 import {
   CONFIDENTIAL_NOT_SHOWN,
@@ -2110,7 +2110,7 @@ export async function projectBrief(db: Database, orgId: string, channel: typeof 
       c.instructions.trim() ? `## ${what}: its instructions\n${c.instructions.trim()}` : "",
       c.memory.trim() ? `## ${what}: its memory (what its chats learnt)\n${c.memory.trim()}` : "",
       c.folder
-        ? `## ${what}: its folder ${c.folder}${c === here ? " (yours to read and write)" : " (only to read)"}${own.length ? `\nIn it: ${own.join(", ")}` : "\nEmpty for now."}`
+        ? `## ${what}: its folder ${agentPath(c.folder)}${c === here ? " (yours to read and write)" : " (only to read)"}${own.length ? `\nIn it: ${own.join(", ")}` : "\nEmpty for now."}`
         : "",
       talks.length ? `## ${what}: its other chats\n${talks.join(", ")}` : "",
     ]

@@ -1,4 +1,6 @@
+import { mkdirSync } from "node:fs";
 import { isIP } from "node:net";
+import path from "node:path";
 import { CLI_INSTALL_CAUSES, CLI_INSTALL_STATES, INSTALLABLE_CLIS, limitIp } from "@agenteschat/adapters";
 import {
   ARTIFACT_LIMITS,
@@ -17,16 +19,19 @@ import {
   getDeviceCode,
   hostComputerState,
   hostKey,
+  insideProject,
   listMachineOutages,
   listMachines,
   machineCliInstall,
   moveAgentsFromMachine,
   NotFoundError,
+  onlineProjects,
   openFilePull,
   PROVISIONING_REASONS,
   PROVISIONING_STATES,
   PROVISIONING_STEPS,
   pollDeviceToken,
+  projectFilesWithSums,
   receiveMachineUpload,
   reduceMachineAccess,
   renameMachine,
@@ -41,6 +46,7 @@ import {
   ValidationError,
 } from "@agenteschat/engine";
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
+import type { Context } from "hono";
 import { installScript, withoutTrailingSlashes } from "../../runner/install-script";
 import { requestIp, requestLimitIp } from "../http/client-ip";
 import { apiError, domainErrorResponse, errorResponse } from "../http/errors";
@@ -1321,6 +1327,59 @@ export function registerMachinePublicRoutes(api: OpenAPIHono, deps: AppDeps) {
       if (mapped) return mapped;
       throw error;
     }
+  });
+
+  // ── LatteOS: online projects (the user, 19. 11.) — each computer keeps its copy of their folders in step ──
+  const machineOf = async (c: Context) => {
+    const auth = c.req.header("authorization") ?? "";
+    const token = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
+    return token ? await authenticateMachine(db, token) : null;
+  };
+  const onlineFolder = async (orgId: string, id: string) =>
+    (await onlineProjects(db, orgId)).find((p) => p.id === id)?.folder ?? null;
+  const UNAUTHORIZED = "This computer's token is not valid";
+
+  api.get("/machines/projects", async (c) => {
+    const machine = await machineOf(c);
+    if (!machine) return apiError(c, 401, "machine.unauthorized", UNAUTHORIZED);
+    const projects = await onlineProjects(db, machine.orgId);
+    return c.json({ projects: projects.map(({ id, path }) => ({ id, path })) }, 200);
+  });
+
+  api.get("/machines/projects/:id/files", async (c) => {
+    const machine = await machineOf(c);
+    if (!machine) return apiError(c, 401, "machine.unauthorized", UNAUTHORIZED);
+    const folder = await onlineFolder(machine.orgId, c.req.param("id"));
+    if (!folder) return apiError(c, 404, "not_found", "No online project here");
+    return c.json({ files: await projectFilesWithSums(folder) }, 200);
+  });
+
+  api.on(["GET", "PUT", "DELETE"], "/machines/projects/:id/file", async (c) => {
+    const machine = await machineOf(c);
+    if (!machine) return apiError(c, 401, "machine.unauthorized", UNAUTHORIZED);
+    const folder = await onlineFolder(machine.orgId, c.req.param("id"));
+    if (!folder) return apiError(c, 404, "not_found", "No online project here");
+    let target: string;
+    try {
+      target = insideProject(folder, c.req.query("path") ?? "");
+    } catch {
+      return apiError(c, 400, "invalid_request", "That path is not in the project");
+    }
+    const file = Bun.file(target);
+    if (c.req.method === "GET") {
+      if (!(await file.exists())) return apiError(c, 404, "not_found", "No such file");
+      return new Response(file, { headers: { "content-type": "application/octet-stream" } });
+    }
+    if (c.req.method === "DELETE") {
+      if (await file.exists()) await file.delete();
+      return c.body(null, 204);
+    }
+    // ponytail: the body is read whole before it is written; 1 GB at most, as on the project's page
+    if (Number(c.req.header("content-length") ?? "0") > 1024 * 1024 * 1024)
+      return apiError(c, 413, "artifact.file_too_large", "The file is too large (max 1 GB)");
+    mkdirSync(path.dirname(target), { recursive: true });
+    await Bun.write(target, await c.req.arrayBuffer());
+    return c.body(null, 204);
   });
 
   // The bytes of a file this machine was told to fetch (`pull`), straight from storage.

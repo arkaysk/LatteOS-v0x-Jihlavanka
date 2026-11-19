@@ -4482,6 +4482,9 @@ export const en = {
     kind: "Project",
     notAProject: "Not a project: a plain category",
     state: "State",
+    where: "Where it lives",
+    offline: "Offline: on this computer",
+    online: "Online: on the server, a copy on every computer",
     types: {
       code: "Code",
       drawing: "Drawing",

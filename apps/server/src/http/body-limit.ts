@@ -25,6 +25,8 @@ const OWN_LIMIT = [
   /\/organizations\/[^/]+\/imports$/,
   /\/organizations\/[^/]+\/vault\/import$/,
   /^\/api\/machines\/uploads\//,
+  // LatteOS: a computer's copy of an online project's file (1 GB at most, machines.ts)
+  /^\/api\/machines\/projects\//,
   /^\/api\/webhooks\//,
   /^\/api\/hooks\//,
   /^\/api\/github-app\/webhook$/,

@@ -1,0 +1,1 @@
+ALTER TABLE "channel_categories" ADD COLUMN "online" boolean DEFAULT false NOT NULL;

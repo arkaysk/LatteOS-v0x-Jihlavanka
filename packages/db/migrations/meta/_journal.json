@@ -2136,6 +2136,13 @@
       "when": 1795109613093,
       "tag": "0309_latteos_project_folder",
       "breakpoints": true
+    },
+    {
+      "idx": 307,
+      "version": "7",
+      "when": 1795113123124,
+      "tag": "0310_latteos_project_online",
+      "breakpoints": true
     }
   ]
 }

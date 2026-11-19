@@ -84,6 +84,11 @@ export const channelCategories = pgTable(
      * that makes no folders).
      */
     folder: text(),
+    /**
+     * LatteOS: online (the user, 19. 11.): its folder lives on the server too, and every computer of the workspace keeps
+     * its own copy in step (the runner); offline: only on the server's own computer.
+     */
+    online: boolean().notNull().default(false),
   },
   // a name once per place: two projects may each have an "Album 1"
   (t) => [unique().on(t.orgId, t.id), unique().on(t.orgId, t.parentId, t.name).nullsNotDistinct()],

@@ -674,6 +674,11 @@ export const ChannelCategory = z
       .string()
       .optional()
       .openapi({ description: "LatteOS: what its agents learnt and keep for the next chats." }),
+    folder: z.string().nullable().optional(),
+    online: z
+      .boolean()
+      .optional()
+      .openapi({ description: "LatteOS: its folder on the server too, every computer's copy in step." }),
   })
   .openapi("ChannelCategory");
 

@@ -1488,8 +1488,10 @@ export interface ChannelCategory {
   instructions?: string;
   /** What its agents learnt and keep for the next chats; the person edits it. */
   memory?: string;
-  /** Its folder on the agents' computer (~/Projects/project[/subproject]): its Context. */
+  /** Its folder on the agents' computer (~/LensAI/agentgram/project[/subproject]): its Context. */
   folder?: string | null;
+  /** Its folder on the server too, every computer's copy kept in step; else only on the server's computer. */
+  online?: boolean;
 }
 
 /** LatteOS: a file in a project's folder (its Context). */
@@ -1507,6 +1509,7 @@ export interface ProjectInput {
   projectState?: ProjectState;
   instructions?: string;
   memory?: string;
+  online?: boolean;
 }
 
 /** LatteOS: a category as a project — what kind of work, and where it stands. */

@@ -114,6 +114,7 @@ import { systemGitCache } from "./git";
 import type { HandlerContext, RequestObserver, RequestOutcome } from "./handlers";
 import { Holds } from "./holds";
 import { IphoneSetup, type IphoneSetupOptions } from "./iphone-setup";
+import { sameComputer, syncOnlineProjects } from "./latteos-project-sync";
 import { currentProcess, isCompiled, selfCommand } from "./launch";
 import { tailLines } from "./logfile";
 import { adoptLoginPath } from "./login-path";
@@ -840,6 +841,30 @@ export class RunnerDaemon implements RequestObserver {
     }, 60_000);
     relayed.unref?.();
     this.timers.push(relayed);
+    // LatteOS: the online projects' folders kept in step with the server's, twice a minute
+    const projects = process.env.LATTEOS_PROJECTS_DIR?.trim();
+    if (projects) {
+      let running = false;
+      const round = setInterval(() => {
+        const config = this.session?.config;
+        if (!config || running || sameComputer(config.server)) return;
+        running = true;
+        void syncOnlineProjects({
+          server: config.server,
+          token: config.token,
+          projects,
+          stateFile: path.join(this.opts.home, "project-sync.json"),
+          name: config.name,
+          log: this.opts.log,
+        })
+          .catch((err) => this.opts.log(`projects: ${err instanceof Error ? err.message : String(err)}`))
+          .finally(() => {
+            running = false;
+          });
+      }, 30_000);
+      round.unref?.();
+      this.timers.push(round);
+    }
     this.expireRequests();
   }
 
