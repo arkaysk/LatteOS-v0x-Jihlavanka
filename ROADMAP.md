@@ -3755,6 +3755,13 @@ priamo `~/LensAI/agentgram`, na serveri inde `FILES_DIR/projects`) a runner kaž
 kópiou (nové, zmenené, zmazané; zmena na oboch stranách = obe verzie, „(conflict MENO)“); server na tom istom počítači sa preskočí.
 Overené: test synchronizácie (dve kolá, mazanie, konflikt), cesty servera naživo. Namiesto položiek Drive je to priečinok servera
 (Drive bez priečinkov ostal, ako chcel používateľ). **Chýba:** skúška so skutočným vzdialeným serverom (hlavné PC), verzie súborov.
+  **19. 11. večer — ako na GitHube (používateľ: „zaveď to a zrealizuj“):** história online projektu je git repozitár na serveri
+(`.repos/ID.git`, git smart HTTP s tokenom počítača, bez vlastného git servera); runner commitne, zlúči gitom, pushne; zmena
+tých istých riadkov = konflikt (`refs/conflicts/POČÍTAČ`), projekt na tom počítači čaká. Stránka projektu: História (kto, kedy,
+súbory) a Konflikty — obe strany proti spoločnému originálu, Vziať serverovú, Ponechať počítača, Ponechať obe, Upraviť ručne,
+Zlúčiť s AI (model súhrnov, osoba skontroluje); uloženie = merge commit. Overené: test s dvoma klonmi, naživo cez HTTP (clone, push,
+kolo runnera, konflikt cez API, vyriešenie). **Chýba:** Zlúčiť s AI naživo, pohľad na dialóg na obrazovke, git LFS pre veľké
+súbory, zamknutie súboru, náhľady obrázkov v konflikte, server inde (Kontext tam číta pracovný priečinok, nie históriu).
 
 ### 10C. [ ] Heidelberg
 
