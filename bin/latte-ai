@@ -121,6 +121,8 @@ No API key: the official tool of a service answers, with the account the user is
   latte-ai agentgram        its settings: {"on", "mode": local|remote, "server", "identity": home|other, "web", "api",
                             "paired", "client"}
   latte-ai agentgram set on on|off · mode local|remote · server URL · identity home|other   then starts and stops to match
+  latte-ai agentgram folder PROJECT [SUBPROJECT]   its folder ~/Projects/project[/subproject] (no accents), made and
+                            opened in Files: {"path"}
   latte-ai agentgram pair   connects this computer (its runner) to the server: {"url", "code"} to confirm there, then {"ok"}
   latte-ai memory-folder [CHANNEL [SUBCHANNEL]]   where the AI keeps what it has: latteAI/lensai, or latteAI/agentes/CHANNEL/SUB
   latte-ai project set DIR state|type|storage|name|remote|memory VALUE · set DIR ai ID…   a project's setting; ai: the
@@ -2164,6 +2166,18 @@ def agentgram_pair():
     return 0 if ok else 1
 
 
+def agentgram_folder(names):
+    """A project's folder of agentgram (and a subproject's inside it): ~/Projects/PROJECT[/SUBPROJECT], named after them
+    with no accents (the user, 18. 11.), made when first asked for; the person puts there what its agents should have."""
+    # ponytail: found by the names; a renamed project gets a new folder until agentgram keeps the path (F5)
+    parts = [slug(n) for n in names if n.strip()][:2]
+    if not parts:
+        return ""
+    path = os.path.join(os.path.expanduser("~/Projects"), *parts)
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
 def project_new(folder, name, kind, storage):
     folder = os.path.realpath(os.path.expanduser(folder))
     os.makedirs(folder, exist_ok=True)
@@ -3295,6 +3309,13 @@ def main(a):
         return 0 if agentgram_set(a[2], a[3]) else 2
     if a == ["agentgram", "pair"]:
         return agentgram_pair()
+    if a[:2] == ["agentgram", "folder"] and len(a) in (3, 4):
+        path = agentgram_folder(a[2:])
+        if not path:
+            return 2
+        subprocess.Popen(["latte-app", "files", path], start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        print(json.dumps({"path": path}))
+        return 0
     if a == ["agentgram", "apply"]:
         agentgram_apply()
         return 0

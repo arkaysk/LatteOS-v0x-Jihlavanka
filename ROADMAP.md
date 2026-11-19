@@ -3707,6 +3707,22 @@ web: tlačidlo Projekt v hlavičke projektu/podprojektu → bočný panel ako Cl
 na Drive + projektu, Pridať nahrá do kanála, Naplánované = rutiny kanála). **Chýba:** Pamäť projektu (`context_items` so scopeId kanála),
 priečinok a pieskovisko (F5–F6), čety podprojektu navzájom (nástroj na zoznam vlákien kanála), slovenčina (F11), pohľad na panel
 skutočnou snímkou (LensAI mal používateľ otvorený, neklikal som).
+  **19. 11. večer — projekty = kategórie (používateľ: „založiť naše Claude kategórie na agentes-kategóriách a vytvoriť
+subkategórie“):** projekt = kategória agentes s typom, podprojekt = jej podkategória (jedna úroveň), čety = kanály v nich. Kanál ako
+projekt (F1–F3, 0305/0306) zrušený: migrácia 0307 presúva parent/typ/stav/pokyny na `channel_categories` (meno jedinečné v rámci
+projektu), `artifacts.category_id` = Kontext projektu (zdieľaný celému priestoru). Agent v čete dostane „# This project“: pokyny
+projektu, potom podprojektu, súbory oboch Kontextov a mená ostatných četov (`projectBrief`, testy `latteos-projects.test.ts`). Web:
+v bočnom paneli podprojekty v tele projektu, ikona projektu otvára **stránku projektu** (`/org/…/projects/ID`): Nový čet (vytvorí
+kanál v projekte, pridá zvoleného agenta s odpoveďou na všetko, pošle prvú správu), Podprojekty, Čety (najnovšie hore); vpravo Pokyny,
+Kontext (Pridať), Naplánované. Nová kategória ponúka typ projektu; ponuka projektu „Nový podprojekt“. Skúšobná Magna Moravia prenesená
+(projekt + Kniha očí vlka, Postavy; staré kanály ako čety). Necommitnuté vo forku. **Chýba:** Pamäť, priečinok a pieskovisko (F5–F6),
+slovenčina (F11), snímka stránky (používateľ musí obnoviť agentgram).
+  **19. 11. neskoro — Pamäť, priečinok, ikonka:** pamäť projektu ako v Claude Projects (`channel_categories.memory`, migrácia 0308): agent
+pridá riadok cez `remember` s for: "project" (iba do svojho podprojektu, nadradený iba číta), osoba ju upravuje na stránke projektu;
+čety ju dostávajú v „# This project“. Tlačidlo „Open folder“ na stránke projektu → `latteos://agentgram/folder?p=&s=` → LensAI
+(WebTabs, overené testom qs-web) → `latte-ai agentgram folder` vytvorí `~/Projects/projekt/podprojekt` (bez diakritiky) a otvorí Súbory.
+Nová ikonka agentgramu: pôvodná postavička s fedorou a kávou so sebou v papierovom pohári (Logo.tsx, favicon, ikony 512/180/ico).
+**Chýba:** súbory z priečinka ako Kontext (F5), pieskovisko (F6), ikonky „app-icons“ na výber (sky, night…) ostali pôvodné.
 
 ### 10C. [ ] Heidelberg
 
