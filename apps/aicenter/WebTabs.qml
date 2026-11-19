@@ -19,6 +19,8 @@ Item {
     // not an array: a new array would make every tab again, and each would load its page anew)
     ListModel { id: opened }
     function has(id) { for (let i = 0; i < opened.count; i++) if (opened.get(i).service === id) return i; return -1 }
+    // a page of its service in a tab already open (agentgram's code to confirm); a tab not open yet starts at its web
+    function load(id, url) { for (let i = 0; i < views.count; i++) { const v = views.itemAt(i); if (v && v.modelData === id) { v.url = url; return } } }
     // each open tab's own icon, as its page gives it (its favicon): { claude: "image://favicon/…" }
     property var icons: ({})
     // a tab out of sight whose page has something new: it changed its title or its icon (a reply finished, a message

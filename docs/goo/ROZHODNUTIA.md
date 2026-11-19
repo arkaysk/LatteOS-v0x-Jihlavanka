@@ -555,3 +555,17 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
   v logu je „agentgram“, značka (ikonka) ostáva tá istá. Pozor: TRADEMARKS.md agentes.chat dovoľuje ich logo, symbol a ikony
   v cudzom mene iba s písomným súhlasom — pred verejným pushnutím treba vlastnú ikonku alebo ich súhlas. Pôvodný agentes-chat
   v LensAI nahradený agentgramom (služby agentes-server a agentes-runner vypnuté, dáta v ~/.agentes ostali). ROADMAP 10B.77.
+- **LPnP + DisplayKit hneď po LensAI** (19. 11., používateľ): návrh „LatteOS 0.6 – DisplayKit + LPnP“ prijatý do ROADMAP ako 10E.14–10E.19
+  (LPnP v Správcovi zariadení) a 8B.09–8B.12 (DisplayKit v Obrazovkách). Etapy E1–E5 namiesto čísel verzií (0.6 je už Fáza 2, 14.21);
+  návrat cez snapper (nie ostree, 1C odložené); adaptér iba pleamar-wm. Kontrola: `docs/devices/LPNP-DISPLAYKIT.md`.
+- **agentgram: projekty ako Claude Projects** (19. 11., používateľ, so snímkou Claude Projects): projekt (napr. „Hudba Axel ReV.On“,
+  „MagnaMoravia“) → podprojekty (Album 1, Album 2) → v nich čety. Každý projekt aj podprojekt má ako Claude Projects **Pokyny,
+  Kontext (zoznam príloh = súbory jeho priečinka, s obsadením), Pamäť a Naplánované**. Čet v podprojekte pozná jeho pamäť, všetky
+  jeho čety a všetky súbory jeho priečinka (čítanie aj zápis); pamäť a súbory nadradeného projektu iba číta; nad projektom už
+  nevidí súbory, iba celkovú pamäť a pravidlá (systému). Súbory pre agentov vkladá používateľ do zodpovedajúceho priečinka, preto
+  je priečinok bežný a používateľovi prístupný. Spresňuje F4–F6 v `lensAIplan2.md`. ROADMAP 10B.77.
+- **agentgram v Nastaveniach, LensAI › Projekty zrušené** (19. 11., používateľ): keď je agentgram vypnutý, projekty má každá AI
+  vo vlastnom prostredí — stránka Projekty v LensAI odstránená. Vypínač agentgramu je v LensAI › Nastavenia › agentgram; vypnutý =
+  položka v ľavom menu sivá a neklikateľná. Voľby: **spustiť lokálny server** alebo **pripojiť sa na vzdialený** (adresa); s oboma
+  sa zapne aj klient (runner tohto počítača). **Identita:** domáca = kompletne domáce údaje, agenti používajú prihlásenia AI tohto
+  počítača (nikto sa neprihlasuje znova); iná = vlastné prihlásenie. ROADMAP 10B.77.

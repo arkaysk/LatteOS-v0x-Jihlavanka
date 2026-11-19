@@ -118,6 +118,10 @@ No API key: the official tool of a service answers, with the account the user is
   latte-ai project new DIR NAME TYPE [STORAGE]   a folder made a project (.latte/projekt.toml, AGENTS.md, CLAUDE.md →
                             AGENTS.md); TYPE code|drawing|book|3d|music|comic|other, STORAGE offline|github|forgejo
   latte-ai project new --in PARENT NAME TYPE [STORAGE]   the same, its folder named after it in PARENT (slug: no accents)
+  latte-ai agentgram        its settings: {"on", "mode": local|remote, "server", "identity": home|other, "web", "api",
+                            "paired", "client"}
+  latte-ai agentgram set on on|off · mode local|remote · server URL · identity home|other   then starts and stops to match
+  latte-ai agentgram pair   connects this computer (its runner) to the server: {"url", "code"} to confirm there, then {"ok"}
   latte-ai memory-folder [CHANNEL [SUBCHANNEL]]   where the AI keeps what it has: latteAI/lensai, or latteAI/agentes/CHANNEL/SUB
   latte-ai project set DIR state|type|storage|name|remote|memory VALUE · set DIR ai ID…   a project's setting; ai: the
                             only agents allowed in it (none: all)
@@ -2073,6 +2077,93 @@ def ai_folder(*names):
     return path
 
 
+AGENTGRAM = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "agentgram.json")
+# ponytail: agentgram runs from its development source until a built one ships with LatteOS (ROADMAP 10B.77)
+AGENTGRAM_SRC = os.path.expanduser("~/src/agentes-chat")
+AGENTGRAM_LOCAL = {"web": "http://localhost:5173/", "api": "http://127.0.0.1:5173"}      # the built server: API and web on one port
+AGENTGRAM_RUNNER = os.path.join(os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share"), "agentgram", "runner")
+AGENTGRAM_UNIT = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "systemd", "user", "agentgram-runner.service")
+
+
+def agentgram():
+    """agentgram as LensAI › Settings sets it (the user, 19. 11.): off, a server of its own on this computer (local) or
+    someone's (remote); the client (this computer's runner) comes on with either. The home identity lends the
+    computer's own sign-ins of every AI to the agents (nobody signs in again); another one is a page with a profile
+    of its own and no runner here."""
+    s = {"on": False, "mode": "local", "server": "", "identity": "home"}
+    s.update({k: v for k, v in read_json(AGENTGRAM).items() if k in s})
+    local = s["mode"] == "local"
+    s["web"] = AGENTGRAM_LOCAL["web"] if local else s["server"]
+    s["api"] = AGENTGRAM_LOCAL["api"] if local else s["server"].rstrip("/")
+    cfg = read_json(os.path.join(AGENTGRAM_RUNNER, "config.json"))
+    s["paired"] = bool(cfg.get("token")) and str(cfg.get("server", "")).rstrip("/") == s["api"].rstrip("/") and s["api"] != ""
+    s["client"] = subprocess.run(["systemctl", "--user", "is-active", "--quiet", "agentgram-runner"]).returncode == 0
+    return s
+
+
+def agentgram_apply():
+    """Starts and stops what the settings say: the local server, and the runner when the home identity is paired."""
+    s = agentgram()
+    ctl = lambda *a: subprocess.run(["systemctl", "--user"] + list(a), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if s["on"] and s["mode"] == "local":
+        ctl("start", "agentgram", "latte-mcp")
+    else:
+        ctl("stop", "agentgram")
+    bun = shutil.which("bun", path=SEARCH + os.pathsep + os.path.expanduser("~/.bun/bin"))
+    if s["on"] and s["identity"] == "home" and s["paired"] and bun:
+        unit = ("[Unit]\nDescription=agentgram client (this computer's runner)\nAfter=network-online.target\n\n[Service]\n"
+                "ExecStart=%s %s/apps/server/runner/main.ts start\nEnvironment=AGENTES_RUNNER_HOME=%s\nEnvironment=AGENTES_RUNNER_SERVICE=systemd\n"
+                "Environment=PATH=%s\nRestart=always\nRestartSec=5\nRestartPreventExitStatus=0 2 3\nKillMode=process\n"
+                % (bun, AGENTGRAM_SRC, AGENTGRAM_RUNNER, os.path.dirname(bun) + os.pathsep + SEARCH))
+        old = open(AGENTGRAM_UNIT).read() if os.path.exists(AGENTGRAM_UNIT) else ""
+        if old != unit:
+            os.makedirs(os.path.dirname(AGENTGRAM_UNIT), exist_ok=True)
+            with open(AGENTGRAM_UNIT, "w") as f:
+                f.write(unit)
+            ctl("daemon-reload")
+        ctl("restart" if old != unit else "start", "agentgram-runner")
+    else:
+        ctl("stop", "agentgram-runner")
+
+
+def agentgram_set(key, value):
+    allowed = {"on": ("on", "off"), "mode": ("local", "remote"), "identity": ("home", "other")}
+    if key == "server":
+        if not re.match(r"^https?://[^\s/]+", value):
+            return False
+    elif value not in allowed.get(key, ()):
+        return False
+    s = read_json(AGENTGRAM)
+    s[key] = value == "on" if key == "on" else value.strip()
+    os.makedirs(os.path.dirname(AGENTGRAM), exist_ok=True)
+    with open(AGENTGRAM, "w") as f:
+        json.dump(s, f)
+    agentgram_apply()
+    return True
+
+
+def agentgram_pair():
+    """Connects this computer to the server as agentgram's own runner does (a code confirmed on the server's page): a line
+    {"url", "code"} as soon as there is one, then {"ok"}; when it worked, the client starts."""
+    s = agentgram()
+    bun = shutil.which("bun", path=SEARCH + os.pathsep + os.path.expanduser("~/.bun/bin"))
+    if not bun or not s["api"]:
+        print(json.dumps({"ok": False}), flush=True)
+        return 1
+    p = subprocess.Popen([bun, os.path.join(AGENTGRAM_SRC, "apps/server/runner/main.ts"), "pair", "--server", s["api"],
+                          "--home", AGENTGRAM_RUNNER, "--dir", os.path.join(os.path.dirname(ai_folder()), "agentes")],
+                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, env=dict(os.environ, NO_COLOR="1"))
+    for line in p.stdout:
+        m = re.search(r"https?://\S+[?&]code=([A-Za-z0-9]+)", line)
+        if m:
+            print(json.dumps({"url": m.group(0), "code": m.group(1)}), flush=True)
+    ok = p.wait() == 0
+    if ok:
+        agentgram_apply()
+    print(json.dumps({"ok": ok}), flush=True)
+    return 0 if ok else 1
+
+
 def project_new(folder, name, kind, storage):
     folder = os.path.realpath(os.path.expanduser(folder))
     os.makedirs(folder, exist_ok=True)
@@ -3196,6 +3287,16 @@ def main(a):
         return 0
     if a[:1] == ["search"] and len(a) in (2, 3) and (len(a) == 2 or a[2].isdigit()):
         print(json.dumps(search(a[1], int(a[2]) if len(a) == 3 else 20), ensure_ascii=False))
+        return 0
+    if a == ["agentgram"]:
+        print(json.dumps(agentgram()))
+        return 0
+    if a[:2] == ["agentgram", "set"] and len(a) == 4:
+        return 0 if agentgram_set(a[2], a[3]) else 2
+    if a == ["agentgram", "pair"]:
+        return agentgram_pair()
+    if a == ["agentgram", "apply"]:
+        agentgram_apply()
         return 0
     if a == ["projects"]:
         print(json.dumps(projects(), ensure_ascii=False))

@@ -1,5 +1,5 @@
 vytvorene 22.10.2026
-naposledy upravene 18.11.2026
+naposledy upravene 19.11.2026
 # LatteOS:0.5 Jihlavanka Build
 
 Nasleduju kategorie. a ich opis. Jednotlive doplnkove napady sa budu doplnat ako bod pod kategorie (napr 1.01. [x] doplnkova idea k Kernel). Podkategorie budu zase čislene (1A) [x]` `[~]` `[ ] značky na hotovo, čiastočne, nezačate. 
@@ -42,7 +42,7 @@ LatteOS:2.x xxx
 > 6.41 stránka Kvapky (+ voľba Správa úloh platí), 6H.09, 6N LensCloud (tretí spúšťač, **overiť meno s používateľom**), 6B.47 krok 1
 > (päta + panel akcií). Pri každej úlohe nižšie je riadok „14. 11. (noc)“ s tým, čo chýba. DockShore je hmota Goo (1D.25).
 
-**Vetva `v0.5-pleamarwm-jihlavanka` (od 31. 10. 2026, predvolená od 2. 11.):** prechod z Hyprlandu na pleamar-wm (1D) je na latte-lab hotový — Hyprland odinštalovaný, „LatteOS GOO“ beží na pleamar-wm (2. 11.). Z 1D ostáva 1D.41 (nezopakovalo sa) a overenie na hlavnom PC s dvoma monitormi (1D.01, 1D.07); 1D.14 a 1D.42 hotové, ikony na ploche v Goo (7B.05) hotové 4. 11. Potom LensAI (10B, súpis `docs/lensai/POZIADAVKY.md`) a YOL (7C) podľa používateľa, až potom sa pokračuje v poradí nižšie.
+**Vetva `v0.5-pleamarwm-jihlavanka` (od 31. 10. 2026, predvolená od 2. 11.):** prechod z Hyprlandu na pleamar-wm (1D) je na latte-lab hotový — Hyprland odinštalovaný, „LatteOS GOO“ beží na pleamar-wm (2. 11.). Z 1D ostáva 1D.41 (nezopakovalo sa) a overenie na hlavnom PC s dvoma monitormi (1D.01, 1D.07); 1D.14 a 1D.42 hotové, ikony na ploche v Goo (7B.05) hotové 4. 11. Potom LensAI (10B, súpis `docs/lensai/POZIADAVKY.md`), **hneď po ňom LPnP + DisplayKit** (používateľ 19. 11.: 10E.14–10E.19, 8B.09–8B.12, návrh a kontrola `docs/devices/LPNP-DISPLAYKIT.md`) a YOL (7C) podľa používateľa, až potom sa pokračuje v poradí nižšie.
 
 Určené 22. 10. 2026 (nahrádza bývalé „Teraz“ z 12. 10.). Ide sa zhora, neskáče sa; nový nápad na koniec svojej kategórie, nie sem.
 Poradie drží tri pravidlá: **čo blokuje overovanie ostatného ide prvé** (štart, SAFE, obrazovky), **plocha pred aplikáciami**,
@@ -269,8 +269,8 @@ miesto a zrušil maximalizáciu; teraz iba po skutočnom ťahaní (`dragging`). 
 druhý raz). Stav zisťuje `AppWindow` z veľkosti okna, pleamar-wm ho aplikácii neposiela. 4. 11.
 **1D.48** [~] (13. 11.) **`breathe.wgsl` nechá duchov kurzora a trhá karty** (latte-lab, pleamar 0.7.27): kým skupina so shaderom, ktorý beží stále (`shader: breathe …`, parts/body.plm a outline.plm), je zapnutá, po pohybe myši zostávajú na obrazovke obrysy kurzora a sklenené karty sa trhajú. Overené zapnutím a vypnutím pri rovnakom pohybe (ydotool); vybratie kurzora zo skupiny nepomohlo. `PLEAMAR_FULL_REPAINT=1` nepomohla, takže nejde o poškodenie snímok pre kompozitor, ale pravdepodobne o obraz skupiny so shaderom, ktorý sa tam, odkiaľ sa obsah pohol, nečistí. Dočasne: `alive = false` (drops.plm), dýchanie kvapiek beží cez čísla scény (`breathing` v hodinách `tick`, ~13 % jadra v pokoji, kvapka dýcha 1,2 %), vlnenie hladiny chýba. Ostáva: nájsť príčinu v pleamare (patches/issues/pleamar-shader-group-stale-picture.txt, neposlané), potom `alive` vrátiť.
 **1D.49** [ ] (16. 11.) **Flatpak aplikácie s GPU (Vulkan) sú v pleamar-wm rozsypané** (latte-lab, RX 640 GFX8, Linux 7.3, Mesa 26.3-rc3 v `/opt/mesa-26.3` z `patches/old-amd.sh`): PhotoCraft 0.10 a WordCraft 0.8 (`ai.storyteller.*`, Rust egui + wgpu → RADV) majú text a detaily rozhádzané po blokoch, jednofarebné plochy celé, čierne obdĺžniky; aj náhľad okna v doku. Flatpak nesie vlastnú Mesu 26.2.2/26.2.5 (runtime `org.freedesktop.Platform` 26.08), hostiteľ 26.3-rc3 → nesúlad rozloženia (tiling/DCC) dmabuf medzi klientom a kompozítorom, rovnaký druh chyby ako pri monitore (`pleamar-wm-scanout-layouts.patch`). Overené: ďalšia kópia cez GPU v pleamar-wm rozbitá, s `RADV_DEBUG=nodcc` horšia; pod labwc headless a v pleamar-wm cez XWayland čistá (tam si však PhotoCraft sám prepol kreslenie na CPU — ktorá strana číta rozloženie zle, pleamar-wm alebo Mesa vo flatpaku, ešte nie je isté). Goo (wgpu, Mesa hostiteľa) je v poriadku. **Obídenie:** `flatpak override --user --nosocket=wayland --socket=x11 <id>` (alebo PhotoCraft › Preferences › Performance › Linux display server X11). **Riešenie (vybrať):** (a) pleamar-wm na kartách GFX6–8 ponúkne klientom v linux-dmabuf feedback iba lineárne rozloženie (záplata, ako `scanout-layouts`); (b) flatpaky dostanú tú istú Mesu ako hostiteľ (rozšírenie `org.freedesktop.Platform.GL.*` s Mesou 26.3, do `old-amd.sh` a inštalátora 2.10). Najprv zistiť, ktoré rozloženie klient posiela (`WAYLAND_DEBUG`, modifier v `zwp_linux_buffer_params_v1.add`), a overiť inú GPU flatpak aplikáciu. Po prechode Fedory na Mesu 26.3 (1D.16) overiť znova.
-
-
+**1D.50** [ ] (19. 11.) **Dotyková obrazovka v pleamar-wm** (hlavné PC: ViewSonic TD2760, SiS `0457:157A`, `hid-multitouch`): pleamar-wm
+dotyk zatiaľ nemá (README: „Not yet: touch screens“); treba dotyk namapovaný na svoj výstup. Najprv upstream, inak záplata alebo návrh do `patches/issues/`.
 
 ## 2. [~] Instalator OS
 Zdroje: `fresh-install`, `install`, `migrate-v03`, `docs/NAVRH-STARTU.md`
@@ -330,6 +330,12 @@ možno spoľahlivo dokončiť v alpha rozsahu.
     `akmod-nvidia` + `xorg-x11-drv-nvidia-cuda` z RPM Fusion (predvolene otvorené moduly), zostavenie modulu (~5 min) beží na pozadí
     súbežne so zostavovaním pleamaru; pri Secure Boot kľúč `kmodgenca` pred zostavením a `mokutil --import` s heslom z písmen bez y/z
     (MokManager má QWERTY), ktoré sprievodca ukáže na konci. Staršie NVIDIA zatiaľ nouveau (ovládač 580xx neskôr). Zdroj: rpmfusion.org/Howto/NVIDIA, Howto/Secure Boot.
+**2.11** [~] (19. 11., používateľ) **Hlavné PC pripravené na inštaláciu** (RTX 3060 bez iGPU, ASUS B560, periférie Logitech/Razer/NZXT/
+Corsair/ASUS Aura/Ajazz, Acer Z301C 144 Hz + dotykový ViewSonic TD2760): kontrola a postup `docs/instalator/HLAVNE-PC.md`.
+19. 11.: overené `akmod-nvidia` 615.78.08 pre F45 v RPM Fusion (sám zakáže nouveau a nova_core); pridané súčasti **solaar** a **openrgb**,
+sprievodca ich zaškrtne podľa pripojených USB výrobcov (`/sys/bus/usb/devices/*/idVendor`). Doplnené (používateľ: „všetko vrátane periférnych programov“): **OpenRazer + Polychromatic** (OBS hardware:razer, DKMS podpísaný
+kľúčom MOK ako NVIDIA, `plugdev`), **CoolerControl** (COPR, `coolercontrold`), **OpenDeck** + doplnok Ajazz AKP03 (vydania na GitHube,
+udev `system/udev/40-opendeck-akp03.rules`) — `install`: `repositories()`, `peripherals()`. Ostáva: ostrá inštalácia, 144 Hz predvolene, dotyk (1D.50). **Pozor:** 4 TB NVMe má dnes 1,84 TB dát (E:).
 
 ### 2A. [ ] Prvé spustenie
 Po prvom prihlásení sa kvapky predstavia.
@@ -2342,6 +2348,21 @@ monitor HDR vie); **Rozšírené nastavenia** (údaje o monitore, VRR); **Grafik
 - Rovnaký výpočet použije tapeta (7A.13) a obrazovky iných zariadení (19.06), kde sa PPI líši najviac (telefón, tablet).
 **8B.08** [ ] **Farebné profily a ovládanie monitora** (neskôr, používateľ 2. 11., ako vo Windows): (1) farebné profily ICC monitora (`colord`, profil z EDID alebo kalibrácie) a ich použitie v správcovi okien (protokol `wp-color-management`; pleamar-wm ho zatiaľ nemá → overiť, inak návrh autorovi); (2) čo monitor sám dokáže, z EDID (farebný priestor, HDR, rozsah jasu) a cez DDC/CI (`ddcutil`: jas, kontrast, teplota farieb, vstup priamo v monitore), ponúknuť v Nastaveniach › Hardvér › Obrazovky, ktoré pracujú priamo s EDID a ovládajú monitor cez DDC/CI (používateľ 2. 11.). Súvisí s nočným svetlom (1D.32).
 
+**8B.09** [ ] (19. 11., používateľ) **DisplayKit — `latte-displayd`, etapa E3** (návrh a kontrola: `docs/devices/LPNP-DISPLAYKIT.md` §6):
+identita monitora = odtlačok EDID (nie DP-1), **zostavy** (množina odtlačkov → rozloženie, obnovenie pri rovnakej množine;
+logiku prevziať z kanshi/shikane, MIT), poloha v mm, „posledný funkčný stav“, bezpečné aplikovanie 15 s (už je v 8B.04 — zjednotiť),
+skratka na bezpečný režim (natívne, 60 Hz, SDR, mierka 1) z čierneho obrazu cez `system/pleamarwm/keys.conf`. Rozšíri `bin/latte-screens`
+a pegboard (8B.04), nepíše sa vedľa. Adaptér iba **pleamar-wm** / wlr-output-management (Hyprland nie je); čo pleamar-wm naozaj vie
+(`zwlr_output_configuration`, `wp_color_manager_v1`, `tearing_control` sú v binárke) najprv overiť.
+**8B.10** [ ] (19. 11.) **Pegboard v2** (E3): výber zostavy hore + „Uložiť ako novú“, odznaky na dlaždici (HDR · VRR · Hz · ICC · %),
+klik na monitor → bočný panel Režim · Mierka · Farby · HDR · Hardvér · Tapeta. Mikrozoom = 8B.07 (tu iba miesto v paneli).
+**8B.11** [ ] (19. 11.) **HDR, ICC a VRR cez adaptér** (E4; nahrádza HDR/profil/VRR z 8B.06 a bod (1) z 8B.08): HDR per monitor (iba hry/fullscreen
+alebo celá plocha), jas SDR v HDR, kalibračný sprievodca, oprava max. jasu pri zlom EDID; ICC zvlášť pre SDR a HDR (colord, ArgyllCMS);
+nočné svetlo v tom istom reťazci; VRR vyp/zap/fullscreen, frekvencia podľa aplikácie (overiť, či pleamar-wm mení režim za behu, inak `patches/issues/`).
+Nepodporované voľby zošedené.
+**8B.12** [ ] (19. 11.) **Monitor ako zariadenie LPnP** (E4; bod (2) z 8B.08): jas, kontrast, vstup cez DDC/CI (`ddcutil` 3.0.2 už na latte-lab),
+firmvér cez fwupd, quirks monitora v Atlase (10E.15); zostava aj vo Workfielde (10M.05).
+
 ### 8C. [~] Sklo a materiály
 Sklo okien (Hyprglass), materiály šálky.
 
@@ -3670,6 +3691,22 @@ vývojový server so stropom 6 GB); pôvodný agentes-chat vypnutý (dáta v ~/.
 používateľa (adresa a heslo v čate 18. 11., nie v gite). Vetva `agent-chats` lokálne (3 commity), nepushnutá. **Ďalej:** pozrieť web
 v prehliadači (ruky povolené), etapa 2 (F5–F6: priečinok kanála a pieskovisko agenta), slovenčina (F11), vlastná ikonka, zostavená
 verzia namiesto vývojového servera, inštalácia s LatteOS.
+  **19. 11. — Nastavenia a model projektov:** používateľ spresnil projekty podľa Claude Projects (projekt → podprojekty → čety; Pokyny,
+Kontext = súbory priečinka, Pamäť, Naplánované; podprojekt číta+zapisuje svoj priečinok, projekt iba číta, vyššie iba pamäť systému —
+`docs/goo/ROZHODNUTIA.md`). **Hotové:** LensAI › Projekty odstránené (CLI `latte-ai project…` zatiaľ ostáva pre zámok `latte-ai do`);
+LensAI › Nastavenia › **agentgram**: vypínač (vypnutý = položka v menu sivá, stránka vedie do Nastavení), lokálny / vzdialený server
+s adresou, identita domáca / iná, „Pripojiť tento počítač“ (runner forku, kód sa potvrdí v karte agentgramu, potom služba
+`agentgram-runner` s domácimi prihláseniami AI). `latte-ai agentgram [set KEY VALUE | pair | apply]`, stav v `~/.config/latteos/agentgram.json`.
+Overené: snímky zapnutý/vypnutý, `pair` dá kód. **Chýba:** potvrdenie kódu a prvý beh agenta cez runner forku (potvrdzuje používateľ
+na stránke agentgramu), iná identita na vzdialenom serveri nevyskúšaná (žiadny vzdialený server), etapa 2 (F5–F6 podľa nového modelu).
+  **19. 11. — zostavená verzia a etapa 2, krok 1 (Pokyny, Kontext, Naplánované):** agentgram beží zostavený (`apps/web/dist`, jeden proces
+na :5173, 0,6 GB namiesto 1,7 GB, `TELEMETRY=off` — v produkcii by inak posielal údaje agentes.chat); po zmene webu `bun run --filter
+'@agenteschat/web' build`. Vo forku (necommitnuté): `channels.instructions` (migrácia 0306), API a klient; agent dostane pri každom ťahu
+„# This project“ — pokyny projektu, potom podprojektu, a mená súborov Kontextu oboch (`projectBrief`, test v `latteos-projects.test.ts`);
+web: tlačidlo Projekt v hlavičke projektu/podprojektu → bočný panel ako Claude Projects (Pokyny s uložením, Kontext = súbory kanála
+na Drive + projektu, Pridať nahrá do kanála, Naplánované = rutiny kanála). **Chýba:** Pamäť projektu (`context_items` so scopeId kanála),
+priečinok a pieskovisko (F5–F6), čety podprojektu navzájom (nástroj na zoznam vlákien kanála), slovenčina (F11), pohľad na panel
+skutočnou snímkou (LensAI mal používateľ otvorený, neklikal som).
 
 ### 10C. [ ] Heidelberg
 
@@ -3857,6 +3894,23 @@ hnedom, skoro nečitateľné; položky bočného panela pôsobia ako vypnuté.
 
 **10E.13** [ ] **Chyba: angličtina v Správcovi zariadení** (používateľ 27. 10.): „a processor without AVX2… the eco tier“
 porušuje pravidlo 4 (texty cez preklad).
+
+**10E.14** [ ] (19. 11., používateľ) **LPnP — Latte Plug and Play** (návrh a kontrola: `docs/devices/LPNP-DISPLAYKIT.md`): zariadenie →
+databáza → najlepší komunitný ovládač/nástroj → jeho funkcie v jednom okne. LatteOS ovládače nepíše. UI = tento Správca zariadení
+(`apps/devices.qml`, `bin/latte-devices`), služba `lpnpd` (Rust, D-Bus `org.latteos.Lpnp1`). Spĺňa 10E.02, 10E.06–10E.11. Pred kódom:
+CachyOS chwd (GPL-3, kód sa smie prevziať), hw-probe/LKDDb, ukázať zdroj a cestu.
+**10E.15** [ ] (19. 11.) **E1 — Discovery a Atlas iba na čítanie**: udev → DeviceRecord (bus, vendor, product, ovládač, firmvér), Atlas ako TOML
+v `system/lpnp/atlas/` (SQLite a podpis až v E5), úroveň funkčnosti Nefunguje / Základná / Plná a návrh poskytovateľa na karte zariadenia; nič neinštaluje.
+**10E.16** [ ] (19. 11.) **E2 — inštalácia poskytovateľa s návratom**: `dnf … --noautoremove` po snímke snapper (nie ostree — 1C je odložené;
+adaptér pripraviť aj na ostree), Resolver zapne vždy iba jedného z konfliktných (OpenRazer × libratbag); prvých ~20 záznamov: NVIDIA, Logitech/Solaar,
+Razer/OpenRazer, libratbag, Xbox (xpadneo/xone), 8BitDo, Realtek USB Wi-Fi. Proprietárne iba z ich repozitárov, nikdy v obraze.
+**10E.17** [ ] (19. 11.) **Recovery v štyroch stupňoch**: snímka nastavenia funkcie → vypnutie poskytovateľa (stop + blacklist) → návrat systému po
+zlyhanej kontrole bootu (štýl greenboot; dnes snapper) → SAFE (kat. 5) a bezpečný displejový režim (8B.09).
+**10E.18** [ ] (19. 11.) **Feature Mapping a Configuration API**: spoločný slovník (`dpi`, `polling_rate`, `rgb`, `battery`, `buttons`, `profiles`, `firmware`),
+čítanie/zápis cez D-Bus OpenRazer, ratbagd, Solaar, OpenRGB SDK, ddcutil (iba volať, nespájať kód); firmvér iba cez fwupd. Posuvník DPI, farby, batéria priamo v Správcovi zariadení.
+**10E.19** [ ] (19. 11.) **E5 — GPU kanály a Atlas z upstreamu**: Stable / Tested (overené na latte-lab a hlavnom PC) / Bleeding (výslovný súhlas);
+nepodpísané nikdy samo, Secure Boot nikdy potichu vypnúť (akmods + MOK sprievodca); záložný poskytovateľ pre staré GPU (legacy NVIDIA, nouveau/NVK) s tým,
+čo sa stratí; import z hwdata, libratbag, OpenRazer, Solaar, OpenRGB, LKDDb, chwd, LVFS ako návrh na schválenie človekom; bez telemetrie.
 
 ### 10F. [x] GuardCorgi
 
