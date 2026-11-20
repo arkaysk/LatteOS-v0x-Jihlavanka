@@ -24,7 +24,10 @@ V repozitári sú iba naše záplaty a doplnky k nim (`patches/`) — tie sa ria
 | [Quickshell](https://github.com/quickshell-mirror/quickshell) | beh aplikácií LatteOS (QML) | LGPL-3.0 |
 | [labwc](https://github.com/labwc/labwc) | režim SAFE a prihlasovacia obrazovka | GPL-2.0 |
 | [Tabler Icons](https://github.com/tabler/tabler-icons) | ikony (písmo z Noctalie) | MIT |
+| [Phosphor Icons](https://github.com/phosphor-icons/core) (Helena Zhang, Tobias Fried) | ikony LatteOS, štýl duotone (písmo z `@phosphor-icons/web` 2.1.2, tabuľka `goo/lib/phosphor.luau`; aplikácie cez `Glyph`, agentgram cez `@phosphor-icons/react`) | MIT |
 | [Lobe Icons](https://github.com/lobehub/lobe-icons) | logá služieb AI v LensGoo a LensAI | MIT |
+| [Basic Memory](https://github.com/basicmachines-co/basic-memory) (Basic Machines) | voliteľný samostatný program (`uv tool`): pamäť AI v LensAI, poznámky v Markdowne; `latte-mcp` ho iba spúšťa | AGPL-3.0 |
+| [EverOS](https://github.com/EverMind-AI/EverOS) a [EverOS-MCP](https://github.com/EverMind-AI/EverOS-MCP) (EverMind) | voliteľná pamäť AI v LensAI › Nastavenia › Pamäť, samostatné programy (`latte-ai memory install everos`); `latte-mcp` ich iba spúšťa | Apache-2.0 / MIT |
 | [Loaf](https://github.com/m-uvex/loaf-fm) (Musa Murad a prispievatelia) | súvislé zvýraznenie výberu v mriežke DualBrew (`apps/files.qml`, `chosenShape`): prenesený `selectionCanvas` z `qml/FilePane.qml` | MIT |
 | [Google Sans Flex](https://fonts.google.com/specimen/Google+Sans+Flex) | písmo pozdravu Gemini | OFL 1.1 |
 | [Lora](https://fonts.google.com/specimen/Lora) | písmo pozdravu Claude | OFL 1.1 |
@@ -34,6 +37,7 @@ Priložené súbory s vlastnou licenciou:
 | Súbor | Pôvod | Licencia |
 |---|---|---|
 | `assets/fonts/tabler-icons.ttf` | Tabler Icons, písmo ikon 3.34.1 (vetva `v0.4-fresh`) | MIT (`assets/fonts/LICENSE-tabler-icons.txt`) |
+| `assets/fonts/Phosphor-Duotone.ttf` | Phosphor Icons, písmo duotone z `@phosphor-icons/web` 2.1.2 | MIT (`assets/fonts/LICENSE-phosphor-icons.txt`) |
 | `goo/ai/*.svg` | Lobe Icons, logá služieb AI (vetva `v0.4-fresh`) | MIT (`goo/ai/LICENSE-lobe-icons.txt`) |
 | `assets/fonts/GoogleSansFlex.ttf` | Google Sans Flex (vetva `v0.4-fresh`) | OFL 1.1 (`assets/fonts/OFL-GoogleSansFlex.txt`) |
 | `assets/fonts/Lora.ttf` | Lora (vetva `v0.4-fresh`) | OFL 1.1 (`assets/fonts/OFL-Lora.txt`) |

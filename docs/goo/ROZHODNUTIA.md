@@ -588,3 +588,12 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 - **agentgram kompatibilný s pôvodným agentes.chat** (19. 11., používateľ): fork nesmie príliš rozbiť pôvodnú aplikáciu;
   neforkovaný agentes.chat (klienti, runner) sa musí vedieť pripojiť, dať sa pridať a pozvať. Zmeny vo forku iba pridávajú.
   Dáta aplikácie (databáza, súbory, história) nepatria do domovského priečinka medzi dokumenty, ale k aplikácii (XDG).
+- **Pamäť LensAI a agentgramu oddelene** (20. 11., používateľ): LensAI a agentgram majú oddelené pamäte. agentgram si nechá
+  pôvodnú pamäť agentes.chat (`context_items`, Wiki); Wiki sa s pamäťou LensAI nezrkadlí (mení návrh 10B.78). Ostatok LensAI
+  (CLI, API, lokálne modely cez `latte-mcp`) používa **Basic Memory** ako predvolenú; v LensAI › Nastavenia si používateľ sám
+  vyberie, ktorú pamäť chce (Basic Memory, EverOS, žiadna).
+- **Anonymný projekt v agentgrame** (20. 11., používateľ): popri Offline a Online tretia voľba **Anonymný** — ako offline, ale jeho
+  pamäť sa nezapisuje do Wiki ani do pamäte agentgramu, iba do Markdownu v jeho priečinku; je úplne oddelený od každej inej pamäte,
+  von sa nedostane, a nikto iný (človek ani AI mimo projektu) k nemu nemá prístup. Šifrovanie zatiaľ nie, neskôr áno.
+- **Viac druhov projektov a farebné ikony** (20. 11., používateľ): ponuku druhov (kniha, kresba, 3D…) rozšíriť; krajšie farebné
+  ikony pre druhy aj celý agentgram.

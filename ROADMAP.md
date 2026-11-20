@@ -2703,6 +2703,13 @@ Hokusai — a voľnými písmami).
 Open Access (CC0, každý kus overiť), zlaté kudrlinky z ornamentov verejného diela (knihy vzorov 19. st., Openclipart),
 prefarbené na zlato šálky. Ako pri Sakure: veľké plochy biele, kresba v textúre.
 
+**9A.15** [~] 20. 11. **Ikony Phosphor duotone pre celý LatteOS** (používateľ 20. 11.: „vyzerajú dobre, daj ich k dispozícii celému
+LatteOS“; MIT): písmo `Phosphor-Duotone.ttf` (`@phosphor-icons/web` 2.1.2) do `/usr/share/fonts/latteos`, tabuľka `goo/lib/phosphor.luau`
+(všetkých 1 512 mien Phosphoru + naše mená z `icons.luau` na najbližšiu ikonu Phosphoru, 154 ručne), `Glyph` v aplikáciách kreslí
+dve vrstvy (výplň 20 %, čiara) — teda všetky aplikácie QML; agentgram cez `@phosphor-icons/react` (10B.82). Overené snímkou
+30 ikon (bez relácie, labwc). **Chýba:** scény Goo (pleamar: ikona = dve vrstvy textu, `goo/lib/icons.luau` → Phosphor), 9 miest
+s `Icons.of` mimo `Glyph` (Tabler), pohľad na každú aplikáciu po prihlásení, Phosphor pre ikony aplikácií na ploche nie (tie sú z témy ikon).
+
 ### 9B. [x] O tomto počítači
 Stránka Nastavenia › Systém › O tomto počítači, vrátane grafu vývoja LatteOS.
 
@@ -3748,7 +3755,8 @@ súborov v databáze do `files/` (súbor „Tajný Svet v1.0.docx“ overený st
 Viditeľné ostáva `~/LensAI/agentgram/` (projekty, `channels/`). Kópie súborov v databáze ostali ako záloha. Fork iba pridáva —
 pôvodný agentes.chat sa má vedieť pripojiť (rozhodnutie 19. 11.).
 
-**10B.78** [ ] 19. 11. **agentgram: Wiki a centrálna pamäť LensAI** (používateľ 19. 11.: „Wiki — informácie pre všetkých agentov
+**10B.78** [x] 20. 11. (rozhodnuté: pamäte oddelené, nič sa nezrkadlí — agentgram si nechá pôvodnú pamäť agentes.chat a Wiki,
+ostatok LensAI Basic Memory s výberom v Nastaveniach, 10B.80; `docs/goo/ROZHODNUTIA.md` 20. 11.) **agentgram: Wiki a centrálna pamäť LensAI** (používateľ 19. 11.: „Wiki — informácie pre všetkých agentov
 nezávisle od projektu; ako to prepojiť s centrálnou pamäťou LensAI“). Wiki agentgramu (ADR 0023): stránky Markdown s priečinkami,
 verziami a `[[odkazmi]]`, čítajú ju všetci agenti (relevantné stránky v každom behu, nad pamäťou), píšu len na pokyn osoby. Návrh:
 jedna pravda = centrálna pamäť LensAI (Basic Memory, priečinok Markdown, 10B.75; zvolená v `lensAIplan2.md` §8), Wiki jej zrkadlo
@@ -3772,6 +3780,31 @@ súbory) a Konflikty — obe strany proti spoločnému originálu, Vziať server
 Zlúčiť s AI (model súhrnov, osoba skontroluje); uloženie = merge commit. Overené: test s dvoma klonmi, naživo cez HTTP (clone, push,
 kolo runnera, konflikt cez API, vyriešenie). **Chýba:** Zlúčiť s AI naživo, pohľad na dialóg na obrazovke, git LFS pre veľké
 súbory, zamknutie súboru, náhľady obrázkov v konflikte, server inde (Kontext tam číta pracovný priečinok, nie históriu).
+
+**10B.80** [x] 20. 11. **Výber pamäte v LensAI** (používateľ 20. 11.: Basic Memory predvolená, používateľ si sám vyberie): LensAI ›
+Nastavenia › **Pamäť** — Basic Memory (predvolená, AGPL-3.0), EverOS (Apache-2.0, pamätá si sama: lokálny model z routera číta
+rozhovor, význam z e5-sk, server `latte-everos.service` iba na 127.0.0.1:8792 a iba kým je zvolený), Bez pamäte; Otvoriť priečinok,
+Inštalovať (`uv tool`). `latte-ai memory [set basic|everos|off | install everos | up]`, voľba v `~/.config/latteos/memory`;
+`latte-mcp memory_tools`/`memory` sa pri každom volaní pýtajú zvolenej (pri zmene spustia druhú). Overené: prepínanie basic → everos
+→ off → basic v jednej relácii latte-mcp (nástroje Basic Memory / 8 nástrojov EverOS-MCP / chyba „pamäť vypnutá“), snímka stránky.
+Tlačidlo Pamäť v Pomocníkovi otvorí túto stránku. **Chýba:** EverOS naostro — na latte-lab nejde (LanceDB potrebuje AVX2, procesor ho
+nemá; z latte-lab odstránený, v LensAI ostáva ako sivá voľba s vysvetlením — používateľ 20. 11.), overiť na hlavnom PC: inštalácia, `everos.toml` s lokálnym modelom (`json_object`), zápis
+a hľadanie. Prechod poznámok medzi pamäťami nie je (každá ostáva vo svojom priečinku).
+
+**10B.81** [~] 20. 11. **agentgram: Anonymný projekt** (používateľ 20. 11.; ADR 0201 forku, migrácia 0312): popri Offline a Online tretia
+voľba — iba pre toho, kto ho založil (ostatní ani správcovia ho nevidia, API 404), čety súkromné; pamäť iba do `MEMORY.md` v priečinku
+projektu (podprojekt svoj, rodičovský číta), nič do Wiki, `context_items`, hľadania, význam textu ani zhrnutia; agent v ňom nevidí pamäť
+tímu, Wiki ani iné projekty; nástroje pracovného priestoru odmietnuté; texty upozornení všeobecné; bez synchronizácie; len na serveri
+s priečinkom na tom istom počítači. Priečinok má značku `.agentgram-anonymous`, index rozhovorov LensAI relácie z neho nečíta
+(`latte-ai`). Testy `latteos-anonymous.test.ts`. **Chýba:** konektory MCP, e-mail/push úplne vypnúť, Online → Anonymný odmietnuť
+(pomocník robí), skúška naostro na stránke, šifrovanie (neskôr, používateľ). Zostávajú modely AI, ktoré v čete odpovedajú.
+
+**10B.82** [x] 20. 11. **agentgram: 26 druhov projektov a ikony Phosphor** (používateľ 20. 11.; migrácia 0311): k 7 druhom 19 nových
+(Písanie, Výskum, Štúdium, Video, Fotografia, Animácia, Hra, Web, Aplikácia, Dizajn, Podcast, Dáta, Podnikanie, Marketing, Financie,
+Domácnosť, Cestovanie, Udalosť, Zdravie a šport), každý s vlastnou farbou (pravidlo `accentPalette`, kontrast 4,5:1) na podfarbenej
+dlaždici, výber ako mriežka dlaždíc; celý agentgram kreslí ikony Phosphor duotone (`@phosphor-icons/react`, MIT; tabuľka
+`packages/ui/src/icons/phosphor.ts`, ~30 mien bez náhrady ostalo pôvodných). Chýba: typecheck mobilnej a desktopovej aplikácie padá
+na chýbajúcu `sk` v ich tabuľke jazykov (od F11, 19. 11.), portugalské texty.
 
 ### 10C. [ ] Heidelberg
 
@@ -5108,6 +5141,11 @@ mimo FILES — rozhodne používateľ), `latte-goo` 26 MB (ladiace symboly? `str
 **17.10** [ ] (17. 11., z 543) **Pamäť po novom načítaní scény:** každé načítanie `goo.plm` (nasadenie, úprava) alebo reštart Goo
 nechá v latte-goo ~40 MB a v pleamar-wm desiatky MB. V pokoji pamäť stojí, takže bežného používateľa to netrápi; zistiť, čo ostáva
 (textúry kariet, sklo, staré telá), a uvoľniť. Merané `bughunt/meranie-goo.sh`.
+
+**17.11** [ ] (20. 11., používateľ) **Počítač nikdy úplne nezamrzne** (latte-lab spadol na plnú RAM 18. a 20. 11.): optimalizovať systém
+a zaistiť, že pri nedostatku pamäte skončí najväčší žrút, nie celý počítač. Najprv nájsť hotové riešenia (systemd-oomd s tlakom pamäte
+— Fedora ho má, overiť nastavenie; earlyoom; zram; strop pamäte pre `app.slice` a služby AI/agentgramu `MemoryHigh`/`MemoryMax`;
+chránené Goo, pleamar-wm a prihlásenie `OOMScoreAdjust`), ukázať zdroj a cestu, potom nastaviť a overiť záťažou s návratom.
 
 ---
 

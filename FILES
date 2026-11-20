@@ -99,6 +99,7 @@
 /usr/share/latteos/goo/safe.plm                         <- goo/safe.plm
 /usr/share/latteos/goo/safe.luau                        <- goo/safe.luau
 /usr/share/latteos/goo/lib/icons.luau                   <- goo/lib/icons.luau
+/usr/share/latteos/goo/lib/phosphor.luau                <- goo/lib/phosphor.luau
 /usr/share/latteos/goo/lib/fold.luau                    <- goo/lib/fold.luau
 /usr/share/latteos/goo/lib/dangerous.luau               <- goo/lib/dangerous.luau
 /usr/share/latteos/goo/lib/clips.luau                   <- goo/lib/clips.luau
@@ -749,6 +750,8 @@
 /usr/share/latteos/wallpapers/latteos-4.jpg             <- assets/wallpapers/latteos-4.jpg
 /usr/share/fonts/latteos/tabler-icons.ttf               <- assets/fonts/tabler-icons.ttf
 /usr/share/licenses/latteos/LICENSE-tabler-icons.txt    <- assets/fonts/LICENSE-tabler-icons.txt
+/usr/share/fonts/latteos/Phosphor-Duotone.ttf           <- assets/fonts/Phosphor-Duotone.ttf
+/usr/share/licenses/latteos/LICENSE-phosphor-icons.txt  <- assets/fonts/LICENSE-phosphor-icons.txt
 /usr/share/fonts/latteos/GoogleSansFlex.ttf             <- assets/fonts/GoogleSansFlex.ttf
 /usr/share/fonts/latteos/Lora.ttf                       <- assets/fonts/Lora.ttf
 /usr/share/licenses/latteos/OFL-GoogleSansFlex.txt      <- assets/fonts/OFL-GoogleSansFlex.txt

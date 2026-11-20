@@ -39,8 +39,9 @@ ShellRoot {
         if (id === "cli") { svc.ask(["services"]); mcpq.running = true }
         if (id === "api") keyq.ask(["keys"])
         if (id === "hands") handsq.ask(["hands"])
+        if (id === "memory") memq.ask(["memory"])
         if (id === "agentgram") gramq.ask(["agentgram"])
-        else if (id !== "instructions" && id !== "hands") { modelq.ask(["models"]); agentsq.ask(["agents"]) }
+        else if (id !== "instructions" && id !== "hands" && id !== "memory") { modelq.ask(["models"]); agentsq.ask(["agents"]) }
     }
     // how an AI is reached: the mark after its name
     // the graphs' green, gold and red (Theme.heat), the gold fixed: a theme made from the wallpaper may have a red one
@@ -361,6 +362,11 @@ ShellRoot {
     // where the agent's own pointer and keyboard may go (Settings › Hands; `latte-ai hands`)
     property var hands: ({ mouse: { scope: "os", apps: [] }, keys: { scope: "os", apps: [] } })
     Ask { id: handsq; onDone: if (data && data.mouse) shell.hands = data }
+    // which memory the AIs keep (Settings › Memory; `latte-ai memory`): Basic Memory, EverOS or none
+    property var mem: ({ engine: "basic", engines: [] })
+    readonly property string memFolder: ((mem.engines || []).find(e => e.id === mem.engine) || { folder: "" }).folder
+    property string memError: ""
+    Ask { id: memq; onDone: if (data && data.engine) { shell.mem = data; shell.memError = data.error || "" } }
     Ask { id: modeler; onDone: { modelq.ask(["models"]); who.ask(["providers", "all"]) } }
     property var models: []                    // every model of every service, with the user's word on each
     // a key goes to latte-ai on its standard input, never on its command line, where anyone could read it
@@ -1094,9 +1100,7 @@ ShellRoot {
                             Label { text: I18n.tr("Helper"); font.pixelSize: 16; font.weight: 800; anchors.verticalCenter: parent.verticalCenter } }
                         Row { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; spacing: 8
                             // what the AI remembers: Markdown notes of the person's, read and changed by hand too (latte-mcp memory)
-                            Pill { implicitHeight: 32; icon: "book-2"; text: I18n.tr("Memory")
-                                   onPressed: Quickshell.execDetached(["sh", "-c", "mkdir -p \"$1\" && exec latte-app files \"$1\"", "sh",
-                                                                      (Quickshell.env("XDG_DATA_HOME") || Quickshell.env("HOME") + "/.local/share") + "/latteAI/lensai"]) }
+                            Pill { implicitHeight: 32; icon: "brain"; text: I18n.tr("Memory"); onPressed: shell.openSection("memory") }
                             Pill { implicitHeight: 32; icon: "history"; text: I18n.tr("All changes"); onPressed: Quickshell.execDetached(["latte-journal"]) } } }
                     ListView { ScrollGrip {} id: helperTalk; x: 18; y: 56; width: parent.width - 36; height: parent.height - 56 - 64; clip: true; spacing: 10
                                boundsBehavior: Flickable.StopAtBounds
@@ -1321,6 +1325,8 @@ ShellRoot {
                 { name: "Omarchy", what: I18n.tr("the services' limits, the agents' panel, help with crashes"), license: "MIT", url: "https://github.com/basecamp/omarchy" },
                 { name: "Ollama", what: I18n.tr("the rule for how much memory a model needs"), license: "MIT", url: "https://github.com/ollama/ollama" },
                 { name: "agentes.chat", what: "agentgram", license: "AGPL-3.0", url: "https://github.com/agentes-chat/agentes-chat" },
+                { name: "Basic Memory", what: I18n.tr("what the AIs remember, as notes in Markdown"), license: "AGPL-3.0", url: "https://github.com/basicmachines-co/basic-memory" },
+                { name: "EverOS", what: I18n.tr("a memory that remembers by itself (a choice)"), license: "Apache-2.0", url: "https://github.com/EverMind-AI/EverOS" },
                 { name: "Model Context Protocol", what: I18n.tr("one set of tools for every AI (latte-mcp)"), license: "MIT", url: "https://github.com/modelcontextprotocol/python-sdk" },
                 { name: "Agent Skills", what: I18n.tr("the format of the skills"), license: "Apache-2.0", url: "https://agentskills.io" },
                 { name: "Quickshell", what: I18n.tr("the window and its pages"), license: "LGPL-3.0", url: "https://github.com/quickshell-mirror/quickshell" },
@@ -1644,7 +1650,8 @@ ShellRoot {
             visible: shell.page === "lensai"
             Row { x: 22; y: 16; spacing: 8
                 Repeater { model: [{ id: "web", name: QT_TR_NOOP("Web"), icon: "world" }, { id: "cli", name: QT_TR_NOOP("CLI"), icon: "terminal-2" }, { id: "api", name: QT_TR_NOOP("API"), icon: "key" },
-                                   { id: "instructions", name: QT_TR_NOOP("Instructions"), icon: "file-text" }, { id: "hands", name: QT_TR_NOOP("Hands"), icon: "hand-finger" },
+                                   { id: "instructions", name: QT_TR_NOOP("Instructions"), icon: "file-text" }, { id: "memory", name: QT_TR_NOOP("Memory"), icon: "brain" },
+                                   { id: "hands", name: QT_TR_NOOP("Hands"), icon: "hand-finger" },
                                    { id: "agentgram", name: "agentgram", icon: "users-group" }]
                     Pill { required property var modelData; implicitHeight: 34; icon: modelData.icon; text: I18n.tr(modelData.name) + (shell.kinds[modelData.id] !== undefined ? "     " : ""); strong: shell.section === modelData.id
                            onPressed: shell.openSection(modelData.id)
@@ -1813,6 +1820,60 @@ ShellRoot {
                     Field { id: srvUrl; width: Math.min(380, apiSet.room - 380); icon: "world-www"; hint: "http://192.168.1.10:8080/v1" }
                     Pill { icon: "plus"; strong: true; text: I18n.tr("Add")
                            onPressed: if (/^https?:\/\/\S+$/.test(srvUrl.text.trim()) && srvName.text.trim() !== "") { keyer.ask(["server", "add", srvName.text.trim(), srvUrl.text.trim()]); srvName.text = ""; srvUrl.text = "" } } }
+            }
+
+            // ── which memory the AIs keep (the user, 20. 11.): Basic Memory by default, EverOS, or none. agentgram keeps its
+            // own (agentes.chat's), apart; latte-mcp asks for the chosen one at each call ──
+            Scroll {
+                id: memPage
+                visible: shell.section === "memory"
+                anchors.topMargin: 62
+                readonly property var about: ({
+                    basic: { icon: "notebook", what: QT_TR_NOOP("The AI writes what it should remember as notes in Markdown, which you read and change too. It needs no AI of its own and works offline.") },
+                    everos: { icon: "brain", what: QT_TR_NOOP("Remembers by itself: the local model reads each conversation and keeps facts, your profile and what worked, in Markdown too. Each saving takes the local AI's time.") } })
+                Label { width: memPage.room; wrapMode: Text.WordWrap; color: Theme.dim
+                        text: I18n.tr("What the AIs of LensAI remember about you and your work — Claude Code, Codex, Gemini, your keys and the local models, through LatteOS's connector. agentgram keeps a memory of its own for its projects.") }
+                Repeater { model: shell.mem.engines || []
+                    Rectangle { id: me
+                        required property var modelData
+                        readonly property bool on: shell.mem.engine === modelData.id
+                        readonly property bool can: modelData.installed && !modelData.cannot
+                        width: memPage.room; height: meCol.implicitHeight + 32; radius: 16; color: Theme.card; border.width: on ? 2 : 1; border.color: on ? Theme.gold : Theme.line
+                        opacity: modelData.cannot ? 0.5 : 1                // greyed: there as a choice, not on this computer
+                        Glyph { x: 18; y: 18; name: memPage.about[me.modelData.id].icon; font.pixelSize: 26; color: me.on ? Theme.gold : Theme.dim }
+                        Column { id: meCol; x: 58; y: 16; width: parent.width - 58 - 18 - mePick.width - 12; spacing: 6
+                            Row { spacing: 10
+                                Label { text: me.modelData.name; font.pixelSize: 17; font.weight: 800; anchors.verticalCenter: parent.verticalCenter }
+                                Label { text: me.modelData.license; color: Theme.faint; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
+                                Label { visible: me.modelData.id === "basic"; text: I18n.tr("default"); color: Theme.gold; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter } }
+                            Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13; text: I18n.tr(memPage.about[me.modelData.id].what) }
+                            Label { width: parent.width; wrapMode: Text.WordWrap; font.pixelSize: 13
+                                    color: Theme.faint
+                                    text: me.modelData.cannot === "avx2" ? I18n.tr("This processor cannot run it: its index needs AVX2.")
+                                        : !me.modelData.installed ? I18n.tr("Not installed.")
+                                        : me.on && me.modelData.id === "everos" ? (me.modelData.running ? I18n.tr("Running on this computer; it asks the local model.") : I18n.tr("Starting…"))
+                                        : me.modelData.folder.replace(Quickshell.env("HOME"), "~") }
+                            Row { spacing: 8; visible: me.on && me.modelData.installed
+                                Pill { implicitHeight: 30; icon: "folder"; text: I18n.tr("Open folder")
+                                       onPressed: Quickshell.execDetached(["sh", "-c", "mkdir -p \"$1\" && exec latte-app files \"$1\"", "sh", me.modelData.folder]) } } }
+                        Pill { id: mePick; anchors.right: parent.right; anchors.rightMargin: 18; y: 16; implicitHeight: 34
+                               visible: me.can || (!me.modelData.installed && !me.modelData.cannot)
+                               icon: me.on ? "check" : me.can ? "circle" : "download"; strong: me.on
+                               text: me.on ? I18n.tr("In use") : me.can ? I18n.tr("Use") : (memInstall.running ? I18n.tr("Installing…") : I18n.tr("Install"))
+                               onPressed: if (!me.on && !memInstall.running) { if (me.can) memq.ask(["memory", "set", me.modelData.id]); else memInstall.running = true } } } }
+                // none: the AIs remember nothing between conversations
+                Rectangle { width: memPage.room; height: 72; radius: 16; color: Theme.card; border.width: shell.mem.engine === "off" ? 2 : 1; border.color: shell.mem.engine === "off" ? Theme.gold : Theme.line
+                    Glyph { x: 18; name: "ban"; font.pixelSize: 24; color: shell.mem.engine === "off" ? Theme.gold : Theme.dim; anchors.verticalCenter: parent.verticalCenter }
+                    Column { x: 58; width: parent.width - 58 - 150; spacing: 2; anchors.verticalCenter: parent.verticalCenter
+                        Label { text: I18n.tr("No memory"); font.pixelSize: 17; font.weight: 800 }
+                        Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13; text: I18n.tr("The AIs remember nothing between conversations. What was kept stays in its folder.") } }
+                    Pill { anchors.right: parent.right; anchors.rightMargin: 18; anchors.verticalCenter: parent.verticalCenter; implicitHeight: 34
+                           icon: shell.mem.engine === "off" ? "check" : "circle"; strong: shell.mem.engine === "off"
+                           text: shell.mem.engine === "off" ? I18n.tr("In use") : I18n.tr("Use"); onPressed: memq.ask(["memory", "set", "off"]) } }
+                Label { visible: shell.memError !== ""; width: memPage.room; wrapMode: Text.WordWrap; color: Theme.red; font.pixelSize: 13
+                        text: shell.memError === "no-local-model" ? I18n.tr("EverOS needs a local model: download one in Local LLMs first.") : I18n.tr("It could not be switched on.") }
+                Process { id: memInstall; command: ["latte-ai", "memory", "install", "everos"]; onExited: memq.ask(["memory"]) }
+                Timer { running: memPage.visible && shell.mem.engine === "everos"; interval: 3000; repeat: true; onTriggered: memq.ask(["memory"]) }
             }
 
             // ── the agent's hands: a pointer and a keyboard of its own (pleamar-wm agent), apart from the user's; each goes

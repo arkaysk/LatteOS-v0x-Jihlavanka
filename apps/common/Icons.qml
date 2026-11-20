@@ -26,4 +26,22 @@ Singleton {
     }
 
     function of(name) { return root.table[name] || "" }
+
+    // Phosphor's duotone icons (the user, 20. 11.: LatteOS's icons): [behind at 20 %, before] by a Phosphor name or one
+    // of ours (goo/lib/phosphor.luau), or null; Glyph draws them, Tabler's stay for the names Phosphor has no icon for
+    property var duoTable: ({})
+    readonly property string duoFamily: duoFace.name
+    FontLoader { id: duoFace; source: "file://" + root.share + "/../fonts/latteos/Phosphor-Duotone.ttf" }
+    FileView {
+        path: root.share + "/goo/lib/phosphor.luau"
+        printErrors: false
+        onLoaded: {
+            const found = {}, cp = h => h ? String.fromCodePoint(parseInt(h, 16)) : ""
+            const line = /\["([\w-]+)"\] = \{ "(?:\\u\{([0-9A-Fa-f]+)\})?", "(?:\\u\{([0-9A-Fa-f]+)\})?" \}/g
+            const t = text()
+            for (let m = line.exec(t); m; m = line.exec(t)) found[m[1]] = [cp(m[2]), cp(m[3])]
+            root.duoTable = found
+        }
+    }
+    function duo(name) { return root.duoTable[name] || null }
 }

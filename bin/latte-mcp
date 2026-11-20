@@ -281,8 +281,9 @@ def serve(lazy=False, port=0):
         r = told(["latte-ai", "send", "new", provider, model, question, "--from", "ask"], timeout=310, LATTE_NO_TOOLS="1")
         return {k: r[k] for k in ("answer", "ok") if k in r} if isinstance(r, dict) and "answer" in r else r
 
-    # ── what the AI remembers (ROADMAP 10B.75, lensAIplan2.md 8): Basic Memory (AGPL-3.0, a program of its own), its notes
-    # Markdown files in ~/.local/share/latteAI/lensai that the person reads and changes too; started at the first call.
+    # ── what the AI remembers (ROADMAP 10B.75, lensAIplan2.md 8): the memory chosen in LensAI › Settings › Memory (ENGINES),
+    # Basic Memory by default (AGPL-3.0, a program of its own: Markdown notes in ~/.local/share/latteAI/lensai that the
+    # person reads and changes too); started at the first call.
     # Its twelve tools are ~6 300 tokens of forms, so they come behind two: what there is, and one to call
     @server.tool()
     @logged
@@ -291,18 +292,20 @@ def serve(lazy=False, port=0):
         with what it does and its arguments. Then call one with `memory`."""
         s = await memory_session()
         if not s:
-            return [{"error": "the memory is not there (Basic Memory is not installed)"}]
+            return [{"error": memory_missing()}]
         return [{"name": t.name, "does": t.description, "arguments": t.inputSchema} for t in (await s.list_tools()).tools]
 
     @server.tool(structured_output=False)
     @logged
     async def memory(tool: str, arguments: dict, ctx: Context) -> str:
-        """Calls one tool of the AI's memory (from memory_tools), e.g. tool "bm_search" {"query": "…"}, or "bm_write"
-        to keep a note. What is written is shown to the user in LensAI; deleting or moving a note they allow first."""
+        """Calls one tool of the AI's memory (from memory_tools), e.g. Basic Memory's "bm_search" {"query": "…"} or "bm_write"
+        to keep a note, EverOS's "search_memory" {"query": "…"} or "add_memory". What is written is shown to the user in
+        LensAI; deleting or moving a note they allow first."""
         s = await memory_session()
         if not s:
-            return json.dumps({"error": "the memory is not there (Basic Memory is not installed)"})
-        if tool in ("bm_delete", "bm_move", "bm_project"):
+            return json.dumps({"error": memory_missing()})
+        eng = ENGINES[BM["engine"]]
+        if tool in eng["ask"]:
             no = allowed(ctx, "memory", "%s %s" % (tool, json.dumps(arguments, ensure_ascii=False)[:300]))
             if no:
                 return json.dumps(no)
@@ -310,14 +313,14 @@ def serve(lazy=False, port=0):
         forms = {t.name: t.inputSchema for t in (await s.list_tools()).tools}
         if tool not in forms:
             return json.dumps({"error": "no memory tool " + tool + ": see memory_tools"})
-        if "project" in (forms[tool].get("properties") or {}) and not arguments.get("project") and not arguments.get("projects") and not arguments.get("all_projects"):
+        if BM["engine"] == "basic" and "project" in (forms[tool].get("properties") or {}) and not arguments.get("project") and not arguments.get("projects") and not arguments.get("all_projects"):
             arguments = dict(arguments, project="lensai")
         r = await s.call_tool(tool, arguments)
         out = "\n".join(getattr(c, "text", "") for c in r.content)
-        if tool in ("bm_write", "bm_edit", "bm_delete", "bm_move") and not r.isError:
-            what = arguments.get("title") or arguments.get("identifier") or arguments.get("path") or ""
-            told(["latte-ai", "journal", "add", json.dumps({"app": "LensAI", "ai": caller(ctx), "did": {"bm_write": "Remembered", "bm_edit": "Changed in memory",
-                  "bm_delete": "Forgotten", "bm_move": "Moved in memory"}[tool], "where": MEMORY, "items": [[str(what)]]}, ensure_ascii=False)])
+        if tool in eng["did"] and not r.isError:
+            what = arguments.get("title") or arguments.get("identifier") or arguments.get("path") or arguments.get("user_message") or ", ".join(arguments.get("memory_ids") or [])
+            told(["latte-ai", "journal", "add", json.dumps({"app": "LensAI", "ai": caller(ctx), "did": eng["did"][tool], "where": eng["where"],
+                  "items": [[str(what)[:300]]]}, ensure_ascii=False)])
         return out
 
     if lazy:
@@ -346,15 +349,52 @@ def serve(lazy=False, port=0):
     uvicorn.run(guarded, host="127.0.0.1", port=port, log_level="warning")
 
 
-MEMORY = os.path.join(os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share"), "latteAI", "lensai")
+DATA = os.path.join(os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share"), "latteAI")
+CHOSEN = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "memory")
+# the memories LensAI › Settings › Memory offers (latte-ai memory): the program, how its MCP server starts, which of its
+# tools the user allows first, and which go to the journal of what the AI changed
+ENGINES = {
+    "basic": {"name": "Basic Memory", "tool": "basic-memory", "args": ["mcp", "--project", "lensai"], "env": {}, "where": os.path.join(DATA, "lensai"),
+              "ask": ("bm_delete", "bm_move", "bm_project"),
+              "did": {"bm_write": "Remembered", "bm_edit": "Changed in memory", "bm_delete": "Forgotten", "bm_move": "Moved in memory"}},
+    # its server is latte-everos.service, on this computer only (latte-ai memory set everos)
+    "everos": {"name": "EverOS", "tool": "everos-mcp", "args": [], "where": os.path.join(DATA, "everos"),
+               "env": {"EVEROS_BASE_URL": "http://127.0.0.1:8792", "EVEROS_USER_ID": "me", "EVEROS_PROJECT_ID": "lensai"},
+               "ask": ("delete_session", "delete_memories"),
+               "did": {"add_memory": "Remembered", "record_trajectory": "Remembered", "delete_session": "Forgotten", "delete_memories": "Forgotten"}},
+}
 BM = {}
 
 
+def memory_chosen():
+    try:
+        with open(CHOSEN) as f:
+            word = f.read().strip()
+    except OSError:
+        word = ""
+    return word if word in ENGINES or word == "off" else "basic"
+
+
+def memory_missing():
+    on = memory_chosen()
+    return ("the memory is off (LensAI › Settings › Memory)" if on == "off"
+            else "the memory is not there (%s is not installed)" % ENGINES[on]["name"])
+
+
 async def memory_session():
-    """Basic Memory's MCP session, started the first time it is asked for and kept while this server runs — in a thread
-    and event loop of its own: a stdio client's task scope cannot outlive the one request that opened it."""
+    """The chosen memory's MCP session, started the first time it is asked for and kept while this server runs (again when
+    the user chose another) — in a thread and event loop of its own: a stdio client's task scope cannot outlive the one
+    request that opened it."""
+    on = memory_chosen()
+    if BM.get("engine") != on:
+        if "stop" in BM:
+            BM["loop"].call_soon_threadsafe(BM["stop"].set)
+        BM.clear()
+    if on == "off":
+        return None
     if "s" not in BM:
-        tool = shutil.which("basic-memory", path=SEARCH)
+        eng = ENGINES[on]
+        tool = shutil.which(eng["tool"], path=SEARCH)
         if not tool:
             return None
         import asyncio
@@ -365,12 +405,13 @@ async def memory_session():
 
         async def life():
             try:
-                async with stdio_client(StdioServerParameters(command=tool, args=["mcp", "--project", "lensai"]), errlog=open(os.devnull, "w")) as (r, w):
+                async with stdio_client(StdioServerParameters(command=tool, args=eng["args"], env=dict(os.environ, **eng["env"])),
+                                        errlog=open(os.devnull, "w")) as (r, w):
                     async with ClientSession(r, w) as s:
                         await s.initialize()
-                        BM["s"] = s
+                        BM["s"], BM["stop"], BM["engine"] = s, asyncio.Event(), on
                         ready.set()
-                        await asyncio.Event().wait()
+                        await BM["stop"].wait()
             finally:
                 ready.set()
         threading.Thread(target=lambda: loop.run_until_complete(life()), daemon=True).start()

@@ -124,6 +124,10 @@ No API key: the official tool of a service answers, with the account the user is
   latte-ai agentgram folder PATH   a project's folder (only under ~/LensAI/agentgram), opened in Files: {"path"}
   latte-ai agentgram pair [--link CODE]   connects this computer (its runner) to the server: {"url", "code"} to confirm
                             there, then {"ok"}; with agentgram's connect link, the person lets it join on that page
+  latte-ai memory           which memory the AIs keep: {"engine": basic|everos|off, "engines": [{"id", "name", "installed",
+                            "folder", "license", "cannot" (everos: "avx2" when this processor cannot run it), "running"}]}
+  latte-ai memory set basic|everos|off · install everos · up   choose it (EverOS's server runs only while chosen), get
+                            EverOS (uv tool), load the local models EverOS asks (its service does it before it starts)
   latte-ai memory-folder [CHANNEL [SUBCHANNEL]]   where the AI keeps what it has: latteAI/lensai, or latteAI/agentes/CHANNEL/SUB
   latte-ai project set DIR state|type|storage|name|remote|memory VALUE · set DIR ai ID…   a project's setting; ai: the
                             only agents allowed in it (none: all)
@@ -1843,6 +1847,17 @@ def embed(texts):
     return v / numpy.maximum(numpy.linalg.norm(v, axis=1, keepdims=True), 1e-9)
 
 
+def anonymous(folder):
+    """Whether a folder is in an anonymous project of agentgram (the user, 20. 11.: nothing of it leaves it, LensAI's index
+    neither): agentgram marks its folder and its subprojects' with .agentgram-anonymous."""
+    root, d = os.path.realpath(PROJECTS_DIR), os.path.realpath(folder) if folder else ""
+    while d.startswith(root + os.sep):
+        if os.path.exists(os.path.join(d, ".agentgram-anonymous")):
+            return True
+        d = os.path.dirname(d)
+    return False
+
+
 def forget_said(db, key):
     """A conversation's lines out of the index, with their meanings (a line's number may be given again later)."""
     db.execute("delete from vecs where id in (select rowid from said where key = ?)", (key,))
@@ -1899,6 +1914,10 @@ def index_update(db):
         db.execute("insert or replace into docs values (?, 'lensai', ?, ?, '', ?, ?)",
                    (key, os.path.basename(path)[:-5], c.get("title", ""), (c.get("messages") or [{}])[-1].get("at", ""), stamp))
     home = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~/.claude")
+    for key, folder in db.execute("select key, folder from docs where source = 'claude' and folder != ''").fetchall():
+        if anonymous(folder):                               # a project made anonymous after its agents' sessions were read
+            forget_said(db, key)
+            db.execute("update docs set title = '', folder = '' where key = ?", (key,))
     for path in glob.glob(os.path.join(home, "projects", "*", "*.jsonl")) + glob.glob(os.path.join(HELPER, "*.jsonl")):
         helper_log = path.startswith(HELPER)
         key, size = ("helper:" if helper_log else "claude:") + path, os.path.getsize(path)
@@ -1938,6 +1957,9 @@ def index_update(db):
                     if not title and d["type"] == "user":
                         title = text.strip().splitlines()[0][:120]
                     db.execute("insert into said values (?, ?, ?, ?)", (key, d["type"], at, text))
+        if not helper_log and anonymous(folder):            # an agent of agentgram's anonymous project: never indexed
+            forget_said(db, key)
+            title, folder, at = "", "", ""
         db.execute("insert into docs values (?, ?, ?, ?, ?, ?, ?) on conflict(key) do update set title = excluded.title, "
                    "folder = coalesce(nullif(excluded.folder, ''), docs.folder), at = coalesce(nullif(excluded.at, ''), docs.at), size = excluded.size",
                    (key, "helper" if helper_log else "claude", os.path.basename(path)[:-6], title, folder, at, start))
@@ -2077,6 +2099,69 @@ def ai_folder(*names):
     path = os.path.join(base, "lensai") if not names else os.path.join(base, "agentes", *map(slug, names))
     os.makedirs(path, exist_ok=True)
     return path
+
+
+# ── which memory LensAI's AIs keep (the user, 20. 11.): Basic Memory (the default), EverOS, or none; latte-mcp asks each
+# time. agentgram keeps its own (agentes.chat's), apart from this one.
+MEMORY_WORD = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "memory")
+EVEROS_ROOT = os.path.join(os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share"), "latteAI", "everos")
+EVEROS_PORT = 8792
+EVEROS_UNIT = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "systemd", "user", "latte-everos.service")
+
+
+def memory_engines():
+    """The memory chosen and those there are: whether each is installed, and why it cannot run here."""
+    on = chosen(MEMORY_WORD) or "basic"
+    ev = shutil.which("everos", path=SEARCH) and shutil.which("everos-mcp", path=SEARCH)
+    # EverOS's index (LanceDB) is built for processors with AVX2: without it, it stops at its first instruction
+    return {"engine": on if on in ("basic", "everos", "off") else "basic",
+            "engines": [{"id": "basic", "name": "Basic Memory", "installed": bool(shutil.which("basic-memory", path=SEARCH)),
+                         "folder": ai_folder(), "license": "AGPL-3.0"},
+                        {"id": "everos", "name": "EverOS", "installed": bool(ev), "folder": EVEROS_ROOT, "license": "Apache-2.0",
+                         "cannot": "" if hardware()["avx2"] else "avx2",
+                         "running": subprocess.run(["systemctl", "--user", "is-active", "--quiet", "latte-everos"]).returncode == 0}]}
+
+
+def everos_config():
+    """EverOS's settings: its root in latteAI, its server on this computer only, and the AI that reads what is said is the
+    local model here (llama.cpp's router), the meanings from e5-sk: nothing leaves the computer."""
+    os.makedirs(EVEROS_ROOT, exist_ok=True)
+    m, e = quick_model(), embedder()
+    if not m:
+        return False
+    url = "http://127.0.0.1:%d/v1" % LOCAL_PORT
+    text = ("[api]\nhost = \"127.0.0.1\"\nport = %d\n\n[llm]\nmodel = \"%s\"\napi_key = \"local\"\nbase_url = \"%s\"\ntimeout_seconds = 300.0\n"
+            "response_format_mode = \"json_object\"\n" % (EVEROS_PORT, local_name(m["id"]), url))
+    if e:
+        # e5-sk-small: 384 numbers a text; a slow local endpoint, one batch at a time
+        text += "\n[embedding]\nmodel = \"%s\"\napi_key = \"local\"\nbase_url = \"%s\"\ndim = 384\nbatch_size = 4\nmax_concurrent = 1\n" % (local_name(e), url)
+    with open(os.path.join(EVEROS_ROOT, "everos.toml"), "w") as f:
+        f.write(text)
+    unit = ("[Unit]\nDescription=EverOS, the memory LensAI's AIs keep\n\n[Service]\nEnvironment=EVEROS_ROOT=%s\n"
+            "ExecStartPre=-%s memory up\nExecStart=%s server start\nRestart=on-failure\nRestartSec=10\n\n[Install]\nWantedBy=default.target\n"
+            % (EVEROS_ROOT, os.path.realpath(sys.argv[0]), shutil.which("everos", path=SEARCH)))
+    os.makedirs(os.path.dirname(EVEROS_UNIT), exist_ok=True)
+    with open(EVEROS_UNIT, "w") as f:
+        f.write(unit)
+    subprocess.run(["systemctl", "--user", "daemon-reload"])
+    return True
+
+
+def memory_set(engine):
+    """The memory chosen: EverOS's server runs only while it is the one."""
+    if engine == "everos":
+        s = memory_engines()["engines"][1]
+        if not s["installed"] or s["cannot"]:
+            return dict(memory_engines(), error="everos-" + (s["cannot"] or "missing"))
+        if not everos_config():
+            return dict(memory_engines(), error="no-local-model")
+    os.makedirs(os.path.dirname(MEMORY_WORD), exist_ok=True)
+    with open(MEMORY_WORD, "w") as f:
+        f.write(engine + "\n")
+    if os.path.exists(EVEROS_UNIT):
+        subprocess.run(["systemctl", "--user", "enable" if engine == "everos" else "disable", "--now", "latte-everos"],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return memory_engines()
 
 
 AGENTGRAM = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "agentgram.json")
@@ -3336,6 +3421,21 @@ def main(a):
     if a[:2] == ["project", "new"] and len(a) in (5, 6) and a[4] in PROJECT_TYPES and (len(a) == 5 or a[5] in PROJECT_STORAGE):
         print(json.dumps(project_new(a[2], a[3], a[4], a[5] if len(a) == 6 else "offline"), ensure_ascii=False))
         return 0
+    if a == ["memory"]:
+        print(json.dumps(memory_engines()))
+        return 0
+    if a[:2] == ["memory", "set"] and len(a) == 3 and a[2] in ("basic", "everos", "off"):
+        print(json.dumps(memory_set(a[2])))
+        return 0
+    if a == ["memory", "install", "everos"]:
+        # EverOS (Apache-2.0) and its MCP server (MIT) as programs of their own, as Basic Memory is (uv tool)
+        ok = all(subprocess.run(["uv", "tool", "install", p], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+                 for p in ("everos", "everos-mcp")) if shutil.which("uv", path=SEARCH) else False
+        print(json.dumps(dict(memory_engines(), ok=ok)))
+        return 0 if ok else 1
+    if a == ["memory", "up"]:                    # before EverOS's server: the local models it asks are loaded
+        m, e = quick_model(), embedder()
+        return 0 if local_server() and m and local_start(m["id"]) and (not e or local_start(e)) else 1
     if a[:1] == ["memory-folder"] and len(a) <= 3:
         # LensAI's (none), or an Agent Chats channel's and its subchannel's
         print(json.dumps({"path": ai_folder(*a[1:])}))
