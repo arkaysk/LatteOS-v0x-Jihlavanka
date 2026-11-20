@@ -11,6 +11,8 @@ import {
   importPickedSkills,
   importSkillFromUrl,
   importSkillZip,
+  installLatteosSkill,
+  listLatteosSkills,
   listSkills,
   parseSkillMarkdown,
   reopenSkillUpdate,
@@ -409,6 +411,50 @@ export function skillRoutes(deps: AppDeps) {
         throw new ValidationError("zipBase64 is not valid base64");
       }
       return c.json(await importSkillZip(skills(), actor, orgId, zip, { personal: input.personal }), 201);
+    },
+  );
+
+  // ── LatteOS: the skills of this computer (ADR 0202) ──
+  const LatteosSkills = z
+    .object({
+      enabled: z.boolean(),
+      skills: z.array(
+        z.object({
+          folder: z.string(),
+          name: z.string(),
+          description: z.string(),
+          state: z.enum(["new", "installed", "update"]),
+          skillId: z.uuid().nullable(),
+        }),
+      ),
+    })
+    .openapi("LatteosSkills");
+  app.openapi(
+    createRoute({
+      method: "get",
+      path: "/organizations/{orgId}/latteos/skills",
+      tags,
+      security,
+      summary: "LatteOS: the skills in this computer's skills folder, and where each stands here",
+      request: { params: OrgParams },
+      responses: { 200: json(LatteosSkills), ...errors },
+    }),
+    async (c) => c.json(await listLatteosSkills({ db }, c.get("user").id, c.req.valid("param").orgId), 200),
+  );
+  app.openapi(
+    createRoute({
+      method: "post",
+      path: "/organizations/{orgId}/latteos/skills",
+      tags,
+      security,
+      summary: "LatteOS: install (or update) a skill from this computer's skills folder (who manages agents)",
+      request: { params: OrgParams, body: body(z.object({ folder: z.string().min(1).max(120) })) },
+      responses: { 201: json(z.object({ name: z.string(), id: z.uuid() }), "Installed"), ...errors },
+    }),
+    async (c) => {
+      const { orgId } = c.req.valid("param");
+      const saved = await installLatteosSkill(skills(), c.get("user").id, orgId, c.req.valid("json").folder);
+      return c.json({ name: saved.name, id: saved.id }, 201);
     },
   );
 

@@ -1,4 +1,5 @@
 import type {
+  LatteosSkill,
   Skill,
   SkillAgentChange,
   SkillChoice,
@@ -13,6 +14,8 @@ import {
   useCatalog,
   useConnections,
   useGitHubRepos,
+  useInstallLatteosSkill,
+  useLatteosSkills,
   useSkill,
   useSkillAction,
   useSkillSettings,
@@ -513,7 +516,7 @@ export function SkillPicker({
   );
 }
 
-type InstallTab = "github" | "zip" | "write";
+type InstallTab = "github" | "zip" | "write" | "latteos";
 
 /**
  * Where connecting GitHub from Instalar skill comes back to: Skills, with the link to read again. A link too long
@@ -590,6 +593,7 @@ export function InstallSkillDialog({
         ? t("skills.zipSending", { percent: formatPercent(i18n.language, sending * 100) })
         : t("skills.installStep.saving");
   const [tab, setTab] = useState<InstallTab>("github");
+  const latteos = useLatteosSkills(org.id, open);
   const [url, setUrl] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const tooBig = file !== null && file.size > SKILL_ZIP_BYTES;
@@ -791,6 +795,7 @@ export function InstallSkillDialog({
                   { value: "github", label: t("skills.tab.github") },
                   { value: "zip", label: t("skills.tab.zip") },
                   { value: "write", label: t("skills.tab.write") },
+                  ...(latteos.data?.enabled ? [{ value: "latteos" as const, label: t("skills.tab.latteos") }] : []),
                 ]}
               >
                 <TabPanel value="github">
@@ -967,8 +972,11 @@ export function InstallSkillDialog({
                     />
                   </Field>
                 </TabPanel>
+                <TabPanel value="latteos">
+                  <LatteosSkillList skills={latteos.data?.skills ?? []} mayInstall={admin} />
+                </TabPanel>
               </Tabs>
-              {startScope !== undefined && (
+              {startScope !== undefined && tab !== "latteos" && (
                 <ForWhom
                   label={t("skills.personal.forWhom")}
                   value={scope}
@@ -987,9 +995,11 @@ export function InstallSkillDialog({
             <Button type="button" onClick={() => onOpenChange(false)}>
               {t("common.cancel")}
             </Button>
-            <Button type="submit" variant="primary" disabled={busy || (tab === "zip" && tooBig)} loading={busy}>
-              {t("skills.installSubmit")}
-            </Button>
+            {tab !== "latteos" && (
+              <Button type="submit" variant="primary" disabled={busy || (tab === "zip" && tooBig)} loading={busy}>
+                {t("skills.installSubmit")}
+              </Button>
+            )}
           </DialogFooter>
         </form>
       )}
@@ -1633,5 +1643,66 @@ function EditSkill({ skill, onDone }: { skill: SkillDetail; onDone: () => void }
         </Button>
       </div>
     </form>
+  );
+}
+
+/** The skills of this computer's skills folder (ADR 0202): each with Install, "Installed", or Update when the folder changed. */
+function LatteosSkillList({ skills, mayInstall }: { skills: LatteosSkill[]; mayInstall: boolean }) {
+  const { t } = useTranslation();
+  const { org } = useOrg();
+  const toast = useToast();
+  const install = useInstallLatteosSkill(org.id);
+  const [q, setQ] = useState("");
+  const needle = q.trim().toLowerCase();
+  const shown = skills.filter((s) => !needle || `${s.name} ${s.description}`.toLowerCase().includes(needle));
+  return (
+    <div className="latteos-skills">
+      <p className="small muted">{t("skills.latteosHelp")}</p>
+      <SearchField
+        size="sm"
+        aria-label={t("skills.latteosSearch")}
+        placeholder={t("skills.latteosSearch")}
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        onClear={() => setQ("")}
+        clearLabel={t("filters.clearSearch")}
+      />
+      {shown.length === 0 ? (
+        <p className="small muted">{t("skills.latteosNone")}</p>
+      ) : (
+        <ul
+          className="latteos-skills__list"
+          style={{ maxBlockSize: 320, overflowY: "auto", margin: 0, padding: 0, listStyle: "none" }}
+        >
+          {shown.map((s) => (
+            <li key={s.folder} style={{ display: "flex", gap: 12, alignItems: "center", padding: "8px 0" }}>
+              <span style={{ flex: 1, minInlineSize: 0 }}>
+                <strong>{s.name}</strong>
+                <span className="small muted" style={{ display: "block" }}>
+                  {s.description}
+                </span>
+              </span>
+              {s.state === "installed" ? (
+                <Chip icon="check">{t("skills.latteosInstalled")}</Chip>
+              ) : (
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={!mayInstall || install.isPending}
+                  onClick={() =>
+                    install.mutate(s.folder, {
+                      onSuccess: () => toast.show(t("skills.latteosDone", { name: s.name })),
+                      onError: (e) => toast.show(errorText(t, e), "error"),
+                    })
+                  }
+                >
+                  {s.state === "update" ? t("skills.latteosUpdate") : t("skills.latteosInstall")}
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }

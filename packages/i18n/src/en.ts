@@ -4475,6 +4475,17 @@ export const en = {
     open: "Open in Proposals",
   },
   /** LatteOS (the user, 19. 11.): a category as a project, as Claude Projects. */
+  latteosMcp: {
+    title: "MCP LatteOS",
+    add: "Add MCP from LatteOS",
+    list: "MCP servers added from LatteOS",
+    none: "MCP servers you add from LatteOS's offer show here.",
+    search: "Search the MCP servers installed in LatteOS",
+    noneInstalled: "No MCP servers installed in LatteOS yet",
+    noneInstalledText: "Install one in LensAI on this computer and it shows here.",
+    added: "{{name}} is connected. Choose which agents may use it in Connectors.",
+    connected: "Connected",
+  },
   projectPage: {
     open: "Open the project",
     missing: "This project isn't here any more.",
@@ -10858,7 +10869,15 @@ export const en = {
     defaultForNew: "Turn on for new agents",
     editLinkNote: "This skill came from a link: “Update from link” replaces what you change here.",
     newVersion: "Saving creates a new version.",
-    tab: { github: "GitHub link", zip: "Upload .zip", write: "Write" },
+    tab: { github: "GitHub link", zip: "Upload .zip", write: "Write", latteos: "Skill from LensAI" },
+    latteosHelp:
+      "The skills of this computer. Installing copies the folder here as a team skill; it says Update when the folder changed.",
+    latteosSearch: "Search the skills of this computer",
+    latteosNone: "No skills found in this computer's skills folder.",
+    latteosInstall: "Install",
+    latteosUpdate: "Update",
+    latteosInstalled: "Installed",
+    latteosDone: "{{name}} is installed.",
     githubUrl: "GitHub link",
     githubHelp: "A skill's folder, or a repository with several to pick from.",
     githubInvalid: "Use a GitHub link (https://github.com/…).",
@@ -15893,6 +15912,8 @@ export const en = {
     channel: {
       membersForbidden: "Only the channel's creator or an admin can add or remove people.",
     },
+    /** `latteos.*`: what this computer offers (ADR 0202). */
+    latteos: { mcpConnected: "This MCP server is connected already." },
     /** `project.anonymous*`: an anonymous project's rules (ADR 0201). */
     project: {
       anonymousNeedsFolder:

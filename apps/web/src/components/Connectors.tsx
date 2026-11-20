@@ -74,6 +74,7 @@ import {
   DatabaseScopeDialog,
 } from "@/components/DatabaseConnect";
 import { GitHubAppPanel, GitHubAppServerCard } from "@/components/GitHubAppPanel";
+import { LatteosMcpCard } from "@/components/LatteosMcp";
 import { LoadingList } from "@/components/Loading";
 import {
   MailAddressesDialog,
@@ -119,6 +120,7 @@ export function ConnectorsSection({
   review,
   mail,
   account,
+  connector,
 }: {
   connected?: string;
   /** What the OAuth return did: `connected` (a new account), `reconnected` or `same_account`. */
@@ -127,6 +129,8 @@ export function ConnectorsSection({
   mail?: string;
   /** The mailbox Gmail/Outlook came back with. */
   account?: string;
+  /** LatteOS: a catalog connector to open the connect flow of, from LatteOS's store (ADR 0202). */
+  connector?: string;
 }) {
   const { t, i18n } = useTranslation();
   const { org, me } = useOrg();
@@ -184,6 +188,16 @@ export function ConnectorsSection({
     window.history.replaceState(null, "", window.location.pathname);
   }, [mail, account, mailAccounts.data, mailAccounts.isError, me.user.id, t, toast]);
   const defs = catalog.data?.connectors ?? [];
+  // LatteOS: its store's "Open in agentgram" opens this connector's flow once, as a tile pressed in Adicionar conector
+  const opened = useRef(false);
+  useEffect(() => {
+    if (!connector || opened.current || !catalog.data) return;
+    opened.current = true;
+    const def = defs.find((d) => d.id === connector);
+    if (def?.available) setFlow({ step: 0, def, personal: false });
+    else setAdding(true);
+    window.history.replaceState(null, "", window.location.pathname);
+  }, [connector, catalog.data, defs]);
   const everything = connectedItems(connections.data ?? [], servers.data ?? [], defs);
   const tabs = connectionTabs({
     items: everything,
@@ -412,6 +426,7 @@ export function ConnectorsSection({
           />
         )}
       </Card>
+      {!personal && <LatteosMcpCard />}
       <GitHubAppServerCard />
       <Card aria-labelledby="sec-mcp">
         <CardHeader

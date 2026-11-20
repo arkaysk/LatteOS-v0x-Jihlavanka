@@ -12,8 +12,11 @@ import { STORAGE_KEYS, storage } from "@/lib/storage";
  * `?open=devices` (the desktop app's expired pair link) goes on to Settings › Devices, where a new link is made.
  */
 export const Route = createFileRoute("/")({
-  validateSearch: (search: Record<string, unknown>): { open?: "jev" | "password" | "devices" } =>
-    search.open === "jev" || search.open === "password" || search.open === "devices" ? { open: search.open } : {},
+  validateSearch: (search: Record<string, unknown>): { open?: "jev" | "password" | "devices"; connector?: string } => ({
+    ...(search.open === "jev" || search.open === "password" || search.open === "devices" ? { open: search.open } : {}),
+    // LatteOS: its store opens a catalog connector's connect flow in the last workspace (ADR 0202)
+    ...(typeof search.connector === "string" ? { connector: search.connector } : {}),
+  }),
   beforeLoad: async ({ context, search, preload }) => {
     const me = await context.queryClient.ensureQueryData(meQuery(context.api));
     if (!me)
@@ -25,6 +28,13 @@ export const Route = createFileRoute("/")({
         to: "/org/$orgId/settings/$section",
         params: { orgId: landing.orgId, section: "usage" },
         hash: "jev",
+      });
+    }
+    if (search.connector) {
+      throw redirect({
+        to: "/org/$orgId/settings/$section",
+        params: { orgId: landing.orgId, section: "connectors" },
+        search: { connector: search.connector } as never,
       });
     }
     if (search.open === "devices") {

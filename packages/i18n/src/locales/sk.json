@@ -11428,7 +11428,8 @@
     "tab": {
       "github": "Odkaz na GitHub",
       "zip": "Nahrať .zip",
-      "write": "Napísať"
+      "write": "Napísať",
+      "latteos": "Skill z LensAI"
     },
     "githubUrl": "Odkaz na GitHub",
     "githubHelp": "Priečinok skillu alebo repozitár s viacerými, z ktorých si vyberieš.",
@@ -11592,7 +11593,14 @@
     "agentTitle": "Skilly",
     "agentSubtitle": "Čo môže {{name}} otvoriť, keď to potrebuje.",
     "agentEmpty": "{{name}} zatiaľ nemá žiadne skilly.",
-    "manage": "Spravovať skilly"
+    "manage": "Spravovať skilly",
+    "latteosHelp": "Skilly tohto počítača. Inštalácia skopíruje priečinok sem ako skill tímu; keď sa priečinok zmenil, ponúkne Aktualizovať.",
+    "latteosSearch": "Hľadaj medzi skillmi tohto počítača",
+    "latteosNone": "V priečinku skillov tohto počítača sa nič nenašlo.",
+    "latteosInstall": "Nainštalovať",
+    "latteosUpdate": "Aktualizovať",
+    "latteosInstalled": "Nainštalovaný",
+    "latteosDone": "{{name}} je nainštalovaný."
   },
   "edit": {
     "unsaved": "Neuložené zmeny",
@@ -16907,6 +16915,9 @@
       "anonymousCreator": "Anonymným alebo nie môže projekt urobiť len ten, kto ho vytvoril.",
       "anonymous": "Anonymný projekt patrí iba tvorcovi: je to celý projekt (nikdy samostatný podprojekt), offline a jeho čety majú iba teba.",
       "anonymousOnlineFirst": "Najprv ho prepni na Offline, potom na Anonymný."
+    },
+    "latteos": {
+      "mcpConnected": "Tento MCP server je už pripojený."
     }
   },
   "machines": {
@@ -23941,5 +23952,16 @@
         "YEARFRAC": "Podiel roka medzi dvoma dátumami"
       }
     }
+  },
+  "latteosMcp": {
+    "title": "MCP LatteOS",
+    "add": "Pridať MCP z LatteOS",
+    "list": "MCP servery pridané z LatteOS",
+    "none": "MCP servery, ktoré pridáš z ponuky LatteOS, sa zobrazia tu.",
+    "search": "Hľadaj medzi MCP servermi nainštalovanými v LatteOS",
+    "noneInstalled": "V LatteOS zatiaľ nie je nainštalovaný žiadny MCP server",
+    "noneInstalledText": "Nainštaluj ho v LensAI na tomto počítači a zobrazí sa tu.",
+    "added": "{{name}} je pripojený. V Konektoroch vyber, ktorí agenti ho smú používať.",
+    "connected": "Pripojený"
   }
 }

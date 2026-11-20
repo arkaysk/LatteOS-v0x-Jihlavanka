@@ -198,6 +198,8 @@ import type {
   JoinApproval,
   JoinClaim,
   JoinRequest,
+  LatteosMcp,
+  LatteosSkill,
   LearnedSkill,
   Machine,
   MachineAccess,
@@ -1452,6 +1454,13 @@ export interface ApiClient {
     refuse(orgId: string, proposalId: string): Promise<Proposal>;
     /** "Pedir a um admin" (ADR 0137): the person who asked sends a row they can't decide to whoever may, once. */
     ask(orgId: string, proposalId: string): Promise<Proposal>;
+  };
+  /** LatteOS: what this computer offers (ADR 0202). */
+  latteos: {
+    mcp(orgId: string): Promise<LatteosMcp>;
+    connectMcp(orgId: string, serverId: string): Promise<unknown>;
+    skills(orgId: string): Promise<{ enabled: boolean; skills: LatteosSkill[] }>;
+    installSkill(orgId: string, folder: string): Promise<{ id: string; name: string }>;
   };
   customConnectors: {
     /** The team's servers and the person's own. `others`: also everyone else's personal ones (who manages connectors gets them, as read-only rows). */

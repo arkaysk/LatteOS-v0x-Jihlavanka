@@ -61,6 +61,7 @@ const KNOWN = {
   "project.anonymous_needs_folder": "errors.project.anonymousNeedsFolder",
   "project.anonymous_creator": "errors.project.anonymousCreator",
   "project.anonymous": "errors.project.anonymous",
+  "latteos.mcp_connected": "errors.latteos.mcpConnected",
   "project.anonymous_online_first": "errors.project.anonymousOnlineFirst",
   "agent_proposal.not_requester": "errors.agentProposal.notRequester",
   "proposal.not_requester": "errors.agentProposal.notRequester",

@@ -153,9 +153,12 @@ function Settings({
   role,
   tab,
   create,
+  connector,
 }: {
   /** The section a link names; none (`/settings`): Geral for who opens it, else their first one. */
   section?: SettingsSection;
+  /** LatteOS: the catalog connector whose connect flow opens (`?connector=`, ADR 0202). */
+  connector?: string;
   connected?: string;
   /** Back from OAuth: what came in (`connected`, `reconnected`, `same_account`). */
   outcome?: string;
@@ -281,7 +284,14 @@ function Settings({
       {current === "voice" && <VoiceSettingsSection />}
       {current === "access" && <AccessMatrixSection />}
       {current === "connectors" && (
-        <ConnectorsSection connected={connected} outcome={outcome} review={review} mail={mail} account={account} />
+        <ConnectorsSection
+          connected={connected}
+          outcome={outcome}
+          review={review}
+          mail={mail}
+          account={account}
+          connector={connector}
+        />
       )}
       {current === "skills" && <SkillsSection install={install} connected={connected} skill={skill} agent={agent} />}
       {current === "storage" && <StorageSection />}

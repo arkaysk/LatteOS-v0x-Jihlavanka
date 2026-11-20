@@ -176,6 +176,8 @@ export * from "./jev-key";
 export * from "./jobs";
 export * from "./judge";
 export * from "./key-line";
+export * from "./latteos";
+export * from "./latteos-skills";
 export * from "./limits";
 export * from "./live";
 export * from "./machine-access";

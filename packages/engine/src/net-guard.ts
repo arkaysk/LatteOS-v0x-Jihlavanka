@@ -86,6 +86,8 @@ export async function assertPublicHttpsUrl(raw: string, resolve: ResolveHost = r
   } catch {
     throw new ValidationError("Invalid address", "url.invalid");
   }
+  // The one address the operator named for LatteOS's MCP gateway on this computer (ADR 0202): exactly its origin.
+  if (url.origin === localGatewayOrigin && !url.username && !url.password) return url;
   if (url.protocol !== "https:") throw new ValidationError("Use an https:// address", "url.https_required");
   if (url.username || url.password)
     throw new ValidationError("The address can't have a user or password", "url.credentials");
@@ -387,6 +389,17 @@ export function publicHttpsFetch(
 
 let privateOutbound = false;
 
+let localGatewayOrigin: string | null = null;
+
+/** The origin of LatteOS's MCP gateway (`LATTEOS_MCP_URL`), the only address besides public ones a connector may name. */
+export function setLocalGatewayOrigin(url: string | undefined) {
+  try {
+    localGatewayOrigin = url ? new URL(url).origin : null;
+  } catch {
+    localGatewayOrigin = null;
+  }
+}
+
 /**
  * Lets addresses a workspace names be fetched with plain `fetch`. Off unless the server turns it on at boot, where
  * its operator lets workspaces reach its own network (`allowsPrivateEndpoints`: self-hosted and closed to sign-up, or
@@ -408,6 +421,25 @@ const MAX_OWN_REDIRECTS = 3;
 export function outboundFetch(
   options: { resolveHost?: ResolveHost; ownRedirects?: boolean; request?: typeof httpsRequest } = {},
 ): typeof fetch {
+  const checked = guardedOutboundFetch(options);
+  // Not set (an unforked server): exactly the guarded fetch, as before.
+  if (!localGatewayOrigin) return checked;
+  // The gateway on this computer is reached directly (the same exact origin `assertPublicHttpsUrl` lets through).
+  return ((input: string | URL | Request, init?: RequestInit) => {
+    const at = typeof input === "string" || input instanceof URL ? input.toString() : input.url;
+    let origin: string | null = null;
+    try {
+      origin = new URL(at).origin;
+    } catch {}
+    return origin !== null && origin === localGatewayOrigin ? fetch(input, init) : checked(input, init);
+  }) as typeof fetch;
+}
+
+function guardedOutboundFetch(options: {
+  resolveHost?: ResolveHost;
+  ownRedirects?: boolean;
+  request?: typeof httpsRequest;
+}): typeof fetch {
   if (privateOutbound) return fetch;
   const { resolveHost } = options;
   const pinned = publicHttpsFetch({

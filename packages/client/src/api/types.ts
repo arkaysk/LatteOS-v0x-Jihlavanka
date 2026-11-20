@@ -1496,6 +1496,22 @@ export interface ChannelCategory {
   anonymous?: boolean;
 }
 
+/** LatteOS: the MCP servers of this computer's gateway, and the ones connected from them. */
+export interface LatteosMcp {
+  enabled: boolean;
+  available: { id: string; name: string; what: string }[];
+  connected: { id: string; label: string; serverUrl: string }[];
+}
+
+/** LatteOS: a skill of this computer's skills folder, and where it stands in the workspace. */
+export interface LatteosSkill {
+  folder: string;
+  name: string;
+  description: string;
+  state: "new" | "installed" | "update";
+  skillId: string | null;
+}
+
 /** LatteOS: a file in a project's folder (its Context). */
 export interface ProjectFile {
   path: string;

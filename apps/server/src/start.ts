@@ -78,6 +78,7 @@ import {
   retireHostTokens,
   retireMillionSendMailboxes,
   SURFACE_PREFIX,
+  setLatteosConfig,
   setMessageLinkBase,
   setRestrictionNotices,
   setSurface,
@@ -380,6 +381,12 @@ async function boot(
   // Addresses a workspace names (custom MCP servers, its own bucket, pages agents read) are pinned to public ones at
   // every request, except where the operator lets workspaces reach this server's network.
   allowPrivateOutbound(allowsPrivateEndpoints(config));
+  // LatteOS's gateway on this computer and its skills folder (ADR 0202): unset, none of it exists.
+  setLatteosConfig({
+    mcpUrl: config.LATTEOS_MCP_URL,
+    mcpTokenFile: config.LATTEOS_MCP_TOKEN_FILE,
+    skillsDir: config.LATTEOS_SKILLS_DIR,
+  });
   // Per-process caches for agent/org/channel config, scopes, connections, credential rows (30 s TTL).
   enableCaches();
   // A write in any process (the app, a worker) clears what every process cached of it.

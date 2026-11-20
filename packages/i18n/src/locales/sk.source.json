@@ -54728,5 +54728,59 @@
   },
   "errors.project.anonymousOnlineFirst": {
     "value": "Switch it to Offline first, then to Anonymous."
+  },
+  "latteosMcp.title": {
+    "value": "MCP LatteOS"
+  },
+  "latteosMcp.add": {
+    "value": "Add MCP from LatteOS"
+  },
+  "latteosMcp.list": {
+    "value": "MCP servers added from LatteOS"
+  },
+  "latteosMcp.none": {
+    "value": "MCP servers you add from LatteOS's offer show here."
+  },
+  "latteosMcp.search": {
+    "value": "Search the MCP servers installed in LatteOS"
+  },
+  "latteosMcp.noneInstalled": {
+    "value": "No MCP servers installed in LatteOS yet"
+  },
+  "latteosMcp.noneInstalledText": {
+    "value": "Install one in LensAI on this computer and it shows here."
+  },
+  "latteosMcp.added": {
+    "value": "{{name}} is connected. Choose which agents may use it in Connectors."
+  },
+  "latteosMcp.connected": {
+    "value": "Connected"
+  },
+  "skills.tab.latteos": {
+    "value": "Skill from LensAI"
+  },
+  "skills.latteosHelp": {
+    "value": "The skills of this computer. Installing copies the folder here as a team skill; it says Update when the folder changed."
+  },
+  "skills.latteosSearch": {
+    "value": "Search the skills of this computer"
+  },
+  "skills.latteosNone": {
+    "value": "No skills found in this computer's skills folder."
+  },
+  "skills.latteosInstall": {
+    "value": "Install"
+  },
+  "skills.latteosUpdate": {
+    "value": "Update"
+  },
+  "skills.latteosInstalled": {
+    "value": "Installed"
+  },
+  "skills.latteosDone": {
+    "value": "{{name}} is installed."
+  },
+  "errors.latteos.mcpConnected": {
+    "value": "This MCP server is connected already."
   }
 }

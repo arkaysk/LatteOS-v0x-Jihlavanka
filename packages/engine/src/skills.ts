@@ -1307,7 +1307,7 @@ function skillFolders<E>(files: ReadonlyMap<string, E>, folder: string) {
  * A skill folder (`inside`: its files), within the limits by their declared sizes before anything is read: binaries
  * past `SKILL_LIMITS.assetBytes` are listed, never read.
  */
-async function repositorySkill<E extends { size: number }>(
+export async function repositorySkill<E extends { size: number }>(
   read: (entry: E) => Promise<Uint8Array>,
   dir: string,
   inside: [string, E][],

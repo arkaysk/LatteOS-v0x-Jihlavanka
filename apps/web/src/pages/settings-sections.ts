@@ -150,6 +150,8 @@ export const settingsSearch = (
   create?: 1;
   /** Notificações, with the outside chat app's link dialog open (ADR 0187). */
   link?: 1;
+  /** LatteOS: Conectores, with this catalog connector's connect flow open (LatteOS's store links here, ADR 0202). */
+  connector?: string;
 } => ({
   connected: typeof search.connected === "string" ? search.connected : undefined,
   outcome: typeof search.outcome === "string" ? search.outcome : undefined,
@@ -165,4 +167,5 @@ export const settingsSearch = (
   person: typeof search.person === "string" ? search.person : undefined,
   create: search.create === undefined ? undefined : 1,
   link: search.link === undefined ? undefined : 1,
+  connector: typeof search.connector === "string" ? search.connector : undefined,
 });

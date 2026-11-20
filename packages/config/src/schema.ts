@@ -1033,6 +1033,33 @@ export const envVars = {
     section: "Storage",
     example: "/data/files",
   },
+  LATTEOS_MCP_URL: {
+    schema: z.url().optional(),
+    description:
+      "Address of LatteOS's MCP gateway `latte-mcp` on this computer (ADR 0202). With `LATTEOS_MCP_TOKEN_FILE`, Settings > Connectors shows a card to add the MCP servers installed in LensAI; the servers are reached at this address, the one address besides public https ones a connector may name. Unset (default): no card, nothing different from an unforked server.",
+    section: "Connectors",
+    example: "http://127.0.0.1:8791",
+  },
+  LATTEOS_MCP_TOKEN_FILE: {
+    schema: z
+      .string()
+      .regex(/^(\/|[A-Za-z]:[\\/]|\\\\)/, "must be an absolute path")
+      .optional(),
+    description:
+      "Absolute path of the file holding the master token of `latte-mcp` (see `LATTEOS_MCP_URL`). Read by the server each time the list of installed MCP servers is asked.",
+    section: "Connectors",
+    example: "/home/you/.config/latteos/mcp-token",
+  },
+  LATTEOS_SKILLS_DIR: {
+    schema: z
+      .string()
+      .regex(/^(\/|[A-Za-z]:[\\/]|\\\\)/, "must be an absolute path")
+      .optional(),
+    description:
+      'Absolute path of the folder of this computer\'s skills: each folder with a SKILL.md in it is offered in the Install skill dialog as "Skill from LensAI" (ADR 0202). Links that lead outside it are never followed. Unset (default): no such tab.',
+    section: "Connectors",
+    example: "/home/you/.agents/skills",
+  },
   S3_ENDPOINT: {
     schema: z.url().optional(),
     description:

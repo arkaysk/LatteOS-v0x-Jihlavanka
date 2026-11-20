@@ -5,10 +5,15 @@ import {
   type CustomDeps,
   composioConnectorsOf,
   connectCustomServer,
+  connectLatteosMcp,
   connectOverHttp,
   connectorIconFile,
   connectorListing,
+  latteosMcpConnections,
+  latteosMcpEnabled,
+  latteosMcpView,
   listCustomServers,
+  listLatteosMcp,
   MCP_PRESETS,
   mcpPreset,
   NotFoundError,
@@ -248,6 +253,56 @@ export function customConnectorRoutes(deps: AppDeps) {
         c.req.valid("json"),
       );
       return c.json(started, 200);
+    },
+  );
+
+  // ── LatteOS: the MCP servers installed in LensAI on this computer (ADR 0202) ──
+  const LatteosMcp = z
+    .object({
+      enabled: z.boolean(),
+      available: z.array(z.object({ id: z.string(), name: z.string(), what: z.string() })),
+      connected: z.array(z.object({ id: z.uuid(), label: z.string(), serverUrl: z.string() })),
+    })
+    .openapi("LatteosMcp");
+  app.openapi(
+    createRoute({
+      method: "get",
+      path: "/organizations/{orgId}/latteos/mcp",
+      tags,
+      security,
+      summary: "LatteOS: the MCP servers installed on this computer, and the ones connected from them",
+      description: "Not enabled (nothing set in `LATTEOS_MCP_URL`): an empty answer, as on an unforked server.",
+      request: { params: OrgParams },
+      responses: { 200: json(LatteosMcp), ...errors },
+    }),
+    async (c) => {
+      const { orgId } = c.req.valid("param");
+      await requirePermission(custom.db, c.get("user").id, orgId, "read");
+      if (!latteosMcpEnabled()) return c.json({ enabled: false, available: [], connected: [] }, 200);
+      const [servers, connected] = await Promise.all([listLatteosMcp(), latteosMcpConnections(custom.db, orgId)]);
+      return c.json(
+        {
+          enabled: true,
+          available: servers.map(latteosMcpView),
+          connected: connected.map((x) => ({ id: x.id, label: x.label, serverUrl: x.url })),
+        },
+        200,
+      );
+    },
+  );
+  app.openapi(
+    createRoute({
+      method: "post",
+      path: "/organizations/{orgId}/latteos/mcp/{serverId}",
+      tags,
+      security,
+      summary: "LatteOS: connect one of this computer's MCP servers as a custom connection (admins)",
+      request: { params: OrgParams.extend({ serverId: z.string().min(1).max(100) }) },
+      responses: { 200: json(ConnectStart), ...errors },
+    }),
+    async (c) => {
+      const { orgId, serverId } = c.req.valid("param");
+      return c.json(await connectLatteosMcp(custom, c.get("user").id, orgId, serverId), 200);
     },
   );
 

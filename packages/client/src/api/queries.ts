@@ -4327,6 +4327,45 @@ export function useCustomServerAction(orgId: string) {
   };
 }
 
+// ── LatteOS: the MCP servers and skills of this computer (ADR 0202) ──────────
+
+export const useLatteosMcp = (orgId: string) => {
+  const api = useApi();
+  return useQuery({ queryKey: ["latteos", orgId, "mcp"], queryFn: () => api.latteos.mcp(orgId) });
+};
+
+export function useConnectLatteosMcp(orgId: string) {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (serverId: string) => api.latteos.connectMcp(orgId, serverId),
+    onSuccess: () =>
+      Promise.all([
+        qc.invalidateQueries({ queryKey: ["latteos", orgId, "mcp"] }),
+        qc.invalidateQueries({ queryKey: keys.customServers(orgId) }),
+        qc.invalidateQueries({ queryKey: keys.access(orgId) }),
+      ]),
+  });
+}
+
+export const useLatteosSkills = (orgId: string, enabled = true) => {
+  const api = useApi();
+  return useQuery({ queryKey: ["latteos", orgId, "skills"], queryFn: () => api.latteos.skills(orgId), enabled });
+};
+
+export function useInstallLatteosSkill(orgId: string) {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (folder: string) => api.latteos.installSkill(orgId, folder),
+    onSuccess: () =>
+      Promise.all([
+        qc.invalidateQueries({ queryKey: ["latteos", orgId, "skills"] }),
+        qc.invalidateQueries({ queryKey: keys.skills(orgId) }),
+      ]),
+  });
+}
+
 // ── Memory and proposals (phase 5) ──────────────────────────────────────────
 
 export const useMemory = (orgId: string, agentId: string) => {

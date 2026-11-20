@@ -148,6 +148,8 @@ import type {
   JoinApproval,
   JoinClaim,
   JoinRequest,
+  LatteosMcp,
+  LatteosSkill,
   LearnedSkill,
   Machine,
   MachineAccess,
@@ -1988,6 +1990,13 @@ export function createHttpApi(options: TransportOptions = {}): HttpApi {
           method: "DELETE",
           ...(series ? { query: series } : {}),
         }),
+    },
+    latteos: {
+      mcp: (orgId) => request<LatteosMcp>(`${org(orgId)}/latteos/mcp`),
+      connectMcp: (orgId, serverId) => request<unknown>(`${org(orgId)}/latteos/mcp/${enc(serverId)}`, { json: {} }),
+      skills: (orgId) => request<{ enabled: boolean; skills: LatteosSkill[] }>(`${org(orgId)}/latteos/skills`),
+      installSkill: (orgId, folder) =>
+        request<{ id: string; name: string }>(`${org(orgId)}/latteos/skills`, { json: { folder } }),
     },
     customConnectors: {
       list: async (orgId, options) =>
