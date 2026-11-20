@@ -23,6 +23,7 @@ import {
   withoutContainers,
   withoutSignIns,
 } from "./accounts";
+import { isAnonymousFolder } from "./anonymous-mcp";
 import { CODEX_ROUTE_OFF } from "./brain-route";
 import {
   CODEX_WINDOWS_CONFIG,
@@ -480,6 +481,8 @@ export function codexTurnArgs(input: {
   profile?: CommandProfile;
   /** Protocol 41: the team's right hand. Read-only, none of the computer's config, rules or features. */
   chat?: boolean;
+  /** The turn is in an anonymous project: none of the owner's own config, so none of its MCP servers. */
+  ownMcpOff?: boolean;
   /**
    * Windows: the instructions go on stdin (`codexStdinPrompt`), never here; a `plan` or `work` turn names its
    * sandbox (`CODEX_WINDOWS_CONFIG`).
@@ -492,7 +495,8 @@ export function codexTurnArgs(input: {
     "exec",
     "--json",
     "--skip-git-repo-check",
-    ...(input.chat ? ["--ignore-user-config"] : []),
+    // Nor the owner's own MCP servers in an anonymous project's folder: a remote one would see the chat (ADR 0201).
+    ...(input.chat || input.ownMcpOff ? ["--ignore-user-config"] : []),
     // No one's own rules on any turn: an allow there runs a command outside the sandbox and asks nobody.
     "--ignore-rules",
     ...(input.chat
@@ -825,6 +829,8 @@ export interface CodexTurnInput {
   mcp: { token: string; url?: string; tools?: string };
   /** Protocol 10: folders allowed for the agent besides its own. */
   writableRoots?: string[];
+  /** In an anonymous project's folder (ADR 0201): none of the owner's own config, so none of its MCP servers. */
+  ownMcpOff?: boolean;
   /** Protocol 13: the account (its threads are its own) and its folder (`CODEX_HOME`). */
   account?: { id: string; home: string };
   effort?: BrainEffort;
@@ -888,7 +894,7 @@ export async function runCodexTurn(input: CodexTurnInput, opts: CodexTurnOptions
   // which a turn needs wherever Codex would load some (an allow there runs a command outside the sandbox, unasked).
   const appServer = !codexRulesNear(codexHomeOf(input.account), input.cwd);
   const run = (turn: CodexTurnInput, turnOpts: CodexTurnOptions) =>
-    turnOpts.app && !turn.chat && appServer
+    turnOpts.app && !turn.chat && !turn.ownMcpOff && appServer
       ? turnOpts.app.turn({ ...turn, version }, turnOpts, () => runCodexExec(turn, turnOpts))
       : runCodexExec(turn, turnOpts);
   const { speed: _speed, ...standard } = input;
@@ -941,6 +947,7 @@ async function runCodexExec(input: CodexTurnInput, opts: CodexTurnOptions): Prom
     ...(input.contextTokens ? { contextTokens: input.contextTokens } : {}),
     profile: input.profile ?? "work",
     ...(input.chat ? { chat: true } : {}),
+    ...(input.ownMcpOff ? { ownMcpOff: true } : {}),
     ...(windows ? { windows } : {}),
   });
   const base: NodeJS.ProcessEnv = {
@@ -1178,6 +1185,7 @@ export async function handleCodexBrainTurn(
         ...(req.permissions?.asks === "never" ? { asks: "never" as const } : {}),
         ...(req.keepAlive === false ? { keepAlive: false } : {}),
         ...(chat ? { chat } : {}),
+        ...(isAnonymousFolder(cwd) ? { ownMcpOff: true } : {}),
       },
       {
         threads,

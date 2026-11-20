@@ -10,14 +10,15 @@ import {
   buildRunContext,
   createChannel,
   createChannelCategory,
+  grantScopes,
   indexSource,
+  isLocalMcpUrl,
   listChannelCategories,
   listChannels,
   NotFoundError,
   notify,
   postPersonMessage,
   projectFolderOf,
-  refusedInAnonymous,
   renameChannelCategory,
   requireChannelAccess,
   ValidationError,
@@ -220,12 +221,10 @@ test("a run there reads its own MEMORY.md and its project's, never the team's me
   expect(other).toContain("Always greet in Latin.");
 });
 
-test("connected apps' tools are not offered or run there, an online project goes Offline first, and no push is queued", async () => {
+test("no connector is listed without a loopback address, an online project goes Offline first, and no push is queued", async () => {
   const { chat } = await world();
   const { ctx } = await runIn(chat.id, "use the app");
   if (!f.tools) throw new Error("no tools");
-  const app = { name: "crm_search", scope: "custom:x:read", connectionId: "5f0e0f9e-0000-4000-8000-000000000001" };
-  expect(refusedInAnonymous(app)).toBe(false);
   const listed = (await f.tools.granted(ctx)).filter((t) => t.connectionId);
   expect(listed).toEqual([]);
   // online first: refused with its own code
@@ -246,4 +245,59 @@ test("connected apps' tools are not offered or run there, an online project goes
   } as never);
   expect(await f.db.select().from(schema.notifications)).toHaveLength(1);
   expect((await f.db.select().from(schema.outbox)).filter((j) => j.kind === "push.send")).toEqual([]);
+});
+
+test("a connector on this computer is offered in an anonymous chat, a remote one is not", async () => {
+  expect(
+    ["http://127.0.0.1:8188/mcp", "http://localhost:3000", "http://[::1]:9/x", "http://127.9.8.7/"].map(isLocalMcpUrl),
+  ).toEqual([true, true, true, true]);
+  expect(
+    ["https://api.example.com/mcp", "http://127.0.0.1.evil.com/", "http://10.0.0.5/", "nonsense"].map(isLocalMcpUrl),
+  ).toEqual([false, false, false, false]);
+  const local = "5f0e0f9e-0000-4000-8000-0000000000a1";
+  const remote = "5f0e0f9e-0000-4000-8000-0000000000a2";
+  const tool = (name: string, connectionId: string) => ({
+    name,
+    description: name,
+    inputSchema: { type: "object" as const },
+    scope: "app:read",
+    connectionId,
+    execute: async () => ({ content: "ran" }),
+  });
+  await f.close();
+  f = await setup({
+    toolSources: [{ name: "apps", tools: async () => [tool("comfy_run", local), tool("cloud_run", remote)] }],
+  });
+  for (const [id, url, prefix] of [
+    [local, "http://127.0.0.1:8188/mcp", "comfy"],
+    [remote, "https://cloud.example.com/mcp", "cloud"],
+  ] as const)
+    await f.db.insert(schema.connectorConnections).values({
+      id,
+      orgId: f.org.id,
+      connector: prefix,
+      toolPrefix: prefix,
+      label: prefix,
+      serverUrl: url,
+      authType: "none",
+    });
+  for (const id of [local, remote])
+    await grantScopes(f.db, f.org.id, f.agent.id, [{ connectionId: id, scope: "app:read" }]);
+  root = mkdtempSync(`${tmpdir()}/latteos-anon-`);
+  process.env.LATTEOS_PROJECTS_DIR = root;
+  const { chat } = await world();
+  const { ctx } = await runIn(chat.id, "make a picture");
+  if (!f.tools) throw new Error("no tools");
+  const names = (await f.tools.granted(ctx)).map((t) => t.name);
+  expect(names).toContain("comfy_run");
+  expect(names).not.toContain("cloud_run");
+  const refused = await f.tools.invoke(ctx, { toolUseId: "c1", name: "cloud_run", input: {} });
+  expect(refused.type === "result" && refused.output.isError).toBe(true);
+  const ran = await f.tools.invoke(ctx, { toolUseId: "c2", name: "comfy_run", input: {} });
+  expect(ran.type === "result" && ran.output.content).toBe("ran");
+  // in an ordinary channel both are offered
+  const open = await runIn(f.general.id, "hi");
+  expect((await f.tools.granted(open.ctx)).map((t) => t.name)).toEqual(
+    expect.arrayContaining(["comfy_run", "cloud_run"]),
+  );
 });

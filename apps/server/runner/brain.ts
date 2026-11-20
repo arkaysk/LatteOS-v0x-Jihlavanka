@@ -58,6 +58,7 @@ import {
   withSignIn,
   yieldRoute,
 } from "./accounts";
+import { isAnonymousFolder, ownerLocalMcpServers } from "./anonymous-mcp";
 import { coAuthorLines } from "./co-authors";
 import { ownBranches } from "./command-gate";
 import { DELEGATED_RESULT_CHARS, type DelegatedBridge } from "./delegated-tools";
@@ -2281,7 +2282,10 @@ export class BrainManager {
     const systemFile = path.join(dir, "system.txt");
     const mode = req.permissions?.mode === "plan" || req.permissions?.mode === "chat" ? req.permissions.mode : "work";
     const asks = mode === "work" ? turnAsks(req.permissions?.asks) : undefined;
+    // In an anonymous project's folder the owner's MCP servers are only those on this computer (ADR 0201).
+    const anonymous = !delegated && req.personalMcp === true && mode === "work" && isAnonymousFolder(cwd);
     const launch = brainProfileLaunch(mode, req.personalMcp === true, delegated !== undefined, asks === "always");
+    if (anonymous) launch.strictMcp = true;
     const system = typeof req.system === "string" ? req.system : "";
     const ranKey = ranKeyOf(req, session);
     // A `chat` turn reads nothing of the folder, its CLAUDE.md included.
@@ -2390,6 +2394,15 @@ export class BrainManager {
         ),
         { mode: 0o600 },
       );
+      if (anonymous) {
+        const own = ownerLocalMcpServers(ctx.accountHome ?? os.homedir());
+        if (Object.keys(own).length > 0 && mcpConfigFile) {
+          const config = JSON.parse(readFileSync(mcpConfigFile, "utf8")) as { mcpServers: Record<string, unknown> };
+          writeFileSync(mcpConfigFile, JSON.stringify({ ...config, mcpServers: { ...own, ...config.mcpServers } }), {
+            mode: 0o600,
+          });
+        }
+      }
       this.bridge.set(id, {
         token,
         cwd,

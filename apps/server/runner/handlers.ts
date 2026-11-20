@@ -23,6 +23,7 @@ import { redactSecrets } from "@agenteschat/adapters/secret-box";
 import { realFoldersFor } from "./access";
 import type { AccountBrains } from "./account-brains";
 import type { AccountFolders, AccountGrant, AccountManager } from "./accounts";
+import { isAnonymousFolder } from "./anonymous-mcp";
 import { type BrainManager, brainKey } from "./brain";
 import { type AntigravityBrainTurnRequest, handleAntigravityBrainTurn } from "./brain-antigravity";
 import { type CodexBrainEvent, type CodexBrainTurnRequest, handleCodexBrainTurn } from "./brain-codex";
@@ -1246,6 +1247,18 @@ async function doBrainTurn(
   // A locked-down turn (protocol 41) gets neither the agent's secrets nor its folders, and stops at the first tool
   // that isn't our bridge's.
   const chat = req.permissions?.mode === "chat";
+  // These CLIs load the owner's own MCP servers by themselves and none can be filtered: not in an anonymous project's
+  // folder, where a remote server would see the chat (ADR 0201). Claude and Codex are filtered.
+  if (
+    cli &&
+    cli !== "codex" &&
+    typeof req.cwd === "string" &&
+    isAnonymousFolder(path.resolve(ctx.workspaceReal, req.cwd))
+  )
+    throw new RunnerError(
+      "unsupported",
+      "This AI can't be kept to the servers on this computer, so it doesn't work in an anonymous project. Use Claude Code or Codex there.",
+    );
   if (cli) return doCodexTurn(ctx, req, scope, runId, chat);
   if (!ctx.brains) throw new RunnerError("bad_request", "This runner runs no brain turns");
   const final = await ctx.brains.turn(req, {

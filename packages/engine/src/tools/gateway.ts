@@ -11,7 +11,7 @@ import { startInFlight } from "@agenteschat/adapters/in-flight";
 import { and, desc, eq, inArray, isNotNull, isNull, or, schema, sql } from "@agenteschat/db";
 import { auditsCall, callSubject, callTitle, recordToolCall, type ToolCallSubject } from "../agent-audit";
 import { getAgentCached } from "../agents";
-import { ANONYMOUS_REFUSAL, anonymousPlaceOf, refusedInAnonymous } from "../anonymous";
+import { ANONYMOUS_REFUSAL, anonymousPlaceOf, loopbackConnections, refusedInAnonymous } from "../anonymous";
 import {
   COMMAND_RULE_TOOL,
   coveringRules,
@@ -652,11 +652,19 @@ export function createToolGateway(deps: {
       creatorDecides(ctx, authority),
       ctx.channelId ? anonymousPlaceOf(ctx.db, ctx.orgId, ctx.channelId) : null,
     ]);
+    const local = anonymous
+      ? await loopbackConnections(
+          ctx.db,
+          ctx.orgId,
+          [...all.values()].flatMap((t) => (t.connectionId ? [t.connectionId] : [])),
+        )
+      : null;
     return (
       [...all.values()]
         .filter((t) => isAllowed(accessWithNeeds(keys, t).state))
-        // An anonymous project's chat is not offered what reads or writes the workspace's shared content (ADR 0201).
-        .filter((t) => !anonymous || (ownTool(t) && !refusedInAnonymous(t)))
+        // An anonymous project's chat is not offered what reads or writes the workspace's shared content, nor a connected
+        // app that is not on this computer (ADR 0201).
+        .filter((t) => !anonymous || (ownTool(t) ? !refusedInAnonymous(t) : local?.has(t.connectionId ?? "")))
         .flatMap((t) => {
           const decision = policyFor(authority, t, level, decides);
           if (decision.action !== "refuse") return [asListed(t, decision, unaskedAtNever(level, t, authority))];
@@ -1467,7 +1475,12 @@ export function createToolGateway(deps: {
           "refused",
         );
       }
-      if ((!ownTool(tool) || refusedInAnonymous(tool)) && (await anonymousPlaceOf(ctx.db, ctx.orgId, ctx.channelId))) {
+      if (
+        (await anonymousPlaceOf(ctx.db, ctx.orgId, ctx.channelId)) &&
+        (ownTool(tool)
+          ? refusedInAnonymous(tool)
+          : !(await loopbackConnections(ctx.db, ctx.orgId, [tool.connectionId ?? ""])).has(tool.connectionId ?? ""))
+      ) {
         return finish(
           { content: ANONYMOUS_REFUSAL, isError: true, data: { code: "tool.anonymous", refusal: "anonymous" } },
           "refused",

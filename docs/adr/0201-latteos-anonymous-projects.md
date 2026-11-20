@@ -57,8 +57,16 @@ the wiki, never reaching anything else.
    no messages), the Drive across channels and sharing (tools refused). Online sync and git history never include it.
 7. **Inherent.** The agents' own model calls: whatever an agent reads in the chat goes to the AI provider it thinks
    with (and the cheap models that route and choose its tools read the message), or the chat could not be answered.
-   The project's page says so. Connected apps' (MCP) tools of the workspace are not offered and are refused there; the agent's own
-   local tools on its computer stay. A project's name may show in the error "already exists"
+   The project's page says so. What runs on this computer may, what goes out may not: a workspace connector is offered in an anonymous chat only when its MCP
+   server's address is a loopback one (localhost, 127.0.0.0/8, ::1; the name only, no DNS), and every other connector is
+   refused with the message. The decision is the run's chat, so one agent may hold a connector in an ordinary project and
+   in an anonymous one. On the agent's computer (the runner), a Claude Code turn started in an anonymous project's folder
+   (the marker in it or above it, under the projects' folder) gets the owner's own MCP servers that are local only (stdio
+   commands, or http/sse at a loopback address, from the user config `.claude.json`), with `--strict-mcp-config`, plus our
+   bridge; a Codex turn there runs with `--ignore-user-config` (none of the owner's servers); Cursor, OpenCode, Grok and
+   Antigravity load the owner's servers themselves and cannot be filtered, so they are refused there. Not covered: MCP
+   servers the owner's Claude plugins or a project's `.mcp.json` add are not passed (strict config), and a stdio server
+   the owner started may itself call out. A project's name may show in the error "already exists"
    to someone who picks the same name in the same place.
 8. **Encryption** of the folder or the file is left out for now.
 

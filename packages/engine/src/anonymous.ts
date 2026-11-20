@@ -1,6 +1,6 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { and, type Executor, eq, type SQL, schema, sql } from "@agenteschat/db";
+import { and, type Executor, eq, inArray, type SQL, schema, sql } from "@agenteschat/db";
 
 /**
  * Anonymous projects (ADR 0201): a project that only its creator sees, whose memory is a Markdown file in its own
@@ -93,9 +93,30 @@ export function setAnonymousMarker(folder: string | null, on: boolean) {
   } else rmSync(marker, { force: true });
 }
 
+/** Whether an address is on this computer: localhost, 127.0.0.0/8 or ::1 (the name only; no DNS is asked). */
+export function isLocalMcpUrl(address: string): boolean {
+  try {
+    const host = new URL(address).hostname.toLowerCase().replace(/^\[|\]$/g, "");
+    return host === "localhost" || host === "::1" || /^127(\.\d{1,3}){3}$/.test(host);
+  } catch {
+    return false;
+  }
+}
+
+/** Which of these connections' MCP servers run on this computer (their address is a loopback one). */
+export async function loopbackConnections(db: Executor, orgId: string, ids: readonly string[]): Promise<Set<string>> {
+  const wanted = [...new Set(ids)];
+  if (wanted.length === 0) return new Set();
+  const rows = await db
+    .select({ id: schema.connectorConnections.id, url: schema.connectorConnections.serverUrl })
+    .from(schema.connectorConnections)
+    .where(and(eq(schema.connectorConnections.orgId, orgId), inArray(schema.connectorConnections.id, wanted)));
+  return new Set(rows.filter((r) => isLocalMcpUrl(r.url)).map((r) => r.id));
+}
+
 /** What a tool says when it is refused in an anonymous chat. */
 export const ANONYMOUS_REFUSAL =
-  "Refused: this chat is in an anonymous project. Connected apps are not used here. Nothing in it is shared with the workspace, its wiki, its search, its Drive or its other conversations, and nothing from there comes in. Work in this chat and in the project's folder; what is worth keeping goes to MEMORY.md with `remember`.";
+  "Refused: this chat is in an anonymous project. Connected apps on other computers are not used here. Nothing in it is shared with the workspace, its wiki, its search, its Drive or its other conversations, and nothing from there comes in. Work in this chat and in the project's folder; what is worth keeping goes to MEMORY.md with `remember`.";
 
 /** The built-in tools that read or write the workspace's shared content, by what they are granted for. */
 const SHARED_SCOPES = /^(context:read|wiki:|drive:|issues:|calendar:|schedule:|vault:|setup:)/;
