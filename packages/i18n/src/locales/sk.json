@@ -4504,7 +4504,26 @@
       "3d": "3D",
       "music": "Hudba",
       "comic": "Komiks",
-      "other": "Iné"
+      "other": "Iné",
+      "writing": "Písanie",
+      "research": "Výskum",
+      "study": "Štúdium",
+      "video": "Video",
+      "photo": "Fotografia",
+      "animation": "Animácia",
+      "game": "Hra",
+      "web": "Web",
+      "app": "Aplikácia",
+      "design": "Dizajn",
+      "podcast": "Podcast",
+      "data": "Dáta",
+      "business": "Podnikanie",
+      "marketing": "Marketing",
+      "finance": "Financie",
+      "home": "Domácnosť",
+      "travel": "Cestovanie",
+      "event": "Udalosť",
+      "health": "Zdravie a šport"
     },
     "states": {
       "active": "Aktívny",
@@ -4566,7 +4585,19 @@
     "fromProject": "z projektu {{name}}",
     "scheduled": "Naplánované",
     "noScheduled": "V týchto četoch nie je nič naplánované.",
-    "allScheduled": "Všetky rutiny"
+    "allScheduled": "Všetky rutiny",
+    "modes": {
+      "offline": "Offline",
+      "online": "Online",
+      "anonymous": "Anonymný"
+    },
+    "modeHelp": {
+      "offline": "Jeho priečinok žije iba na tomto počítači.",
+      "online": "Na serveri, s kópiou na každom počítači pracovného priestoru, udržiavanou v súlade.",
+      "anonymous": "Iba ty. Jeho pamäť ostáva v MEMORY.md v jeho priečinku; nič nejde do Wiki, do vyhľadávania ani do iných projektov."
+    },
+    "anonymousModels": "Agenti, ktorých pridáš do jeho četov, stále myslia cez svojho poskytovateľa AI: čo v čete čítajú, ide tomuto modelu a nikam inam.",
+    "memoryHintAnonymous": "Toto je MEMORY.md v priečinku projektu: iba tu, nikdy vo Wiki ani vo vyhľadávaní. Môžeš ho zmeniť."
   },
   "newChannel": {
     "open": "Vytvoriť kanál",
@@ -16870,6 +16901,12 @@
     "feedback": {
       "filesGone": "Súbor, ktorý si pridal, zmizol. Pridaj ho znova.",
       "filesPending": "Na odoslanie čaká príliš veľa súborov. Niektoré pošli alebo odstráň a skús to znova."
+    },
+    "project": {
+      "anonymousNeedsFolder": "Anonymný projekt drží pamäť v súbore vo svojom priečinku, preto potrebuje priečinok na vlastnom počítači tohto servera, a tento server ho nemá.",
+      "anonymousCreator": "Anonymným alebo nie môže projekt urobiť len ten, kto ho vytvoril.",
+      "anonymous": "Anonymný projekt patrí iba tvorcovi: je to celý projekt (nikdy samostatný podprojekt), offline a jeho čety majú iba teba.",
+      "anonymousOnlineFirst": "Najprv ho prepni na Offline, potom na Anonymný."
     }
   },
   "machines": {

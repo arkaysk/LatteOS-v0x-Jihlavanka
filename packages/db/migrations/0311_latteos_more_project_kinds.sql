@@ -1,0 +1,19 @@
+ALTER TYPE "public"."channel_project_type" ADD VALUE 'writing';--> statement-breakpoint
+ALTER TYPE "public"."channel_project_type" ADD VALUE 'research';--> statement-breakpoint
+ALTER TYPE "public"."channel_project_type" ADD VALUE 'study';--> statement-breakpoint
+ALTER TYPE "public"."channel_project_type" ADD VALUE 'video';--> statement-breakpoint
+ALTER TYPE "public"."channel_project_type" ADD VALUE 'photo';--> statement-breakpoint
+ALTER TYPE "public"."channel_project_type" ADD VALUE 'animation';--> statement-breakpoint
+ALTER TYPE "public"."channel_project_type" ADD VALUE 'game';--> statement-breakpoint
+ALTER TYPE "public"."channel_project_type" ADD VALUE 'web';--> statement-breakpoint
+ALTER TYPE "public"."channel_project_type" ADD VALUE 'app';--> statement-breakpoint
+ALTER TYPE "public"."channel_project_type" ADD VALUE 'design';--> statement-breakpoint
+ALTER TYPE "public"."channel_project_type" ADD VALUE 'podcast';--> statement-breakpoint
+ALTER TYPE "public"."channel_project_type" ADD VALUE 'data';--> statement-breakpoint
+ALTER TYPE "public"."channel_project_type" ADD VALUE 'business';--> statement-breakpoint
+ALTER TYPE "public"."channel_project_type" ADD VALUE 'marketing';--> statement-breakpoint
+ALTER TYPE "public"."channel_project_type" ADD VALUE 'finance';--> statement-breakpoint
+ALTER TYPE "public"."channel_project_type" ADD VALUE 'home';--> statement-breakpoint
+ALTER TYPE "public"."channel_project_type" ADD VALUE 'travel';--> statement-breakpoint
+ALTER TYPE "public"."channel_project_type" ADD VALUE 'event';--> statement-breakpoint
+ALTER TYPE "public"."channel_project_type" ADD VALUE 'health';

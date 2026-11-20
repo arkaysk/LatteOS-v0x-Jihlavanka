@@ -1,6 +1,7 @@
 import { and, asc, eq, inArray, isNotNull, isNull, rowsOf, schema, sql } from "@agenteschat/db";
 import { appLocale } from "@agenteschat/i18n/locale";
 import type { PlanModel } from "@agenteschat/providers/plans";
+import { anonymousPlaceOf } from "./anonymous";
 import { approvalCardThreads, approvalOriginOf, notifiedIds } from "./approvals";
 import { agentManagerIds } from "./audience";
 import { accountablePerson, runAuthorityById } from "./authority";
@@ -172,11 +173,13 @@ export async function notifyMessage(deps: NotificationDeps, orgId: string, messa
   const said = typeof meta.reminderText === "string" ? meta.reminderText : await quotedBody(deps, orgId, message);
   // A message of a confidential thread (ADR 0190) is told with no word of it: the inbox, the push and a mail that
   // quote this say only that there is something to open.
-  const text = isConfidential(meta) ? "" : notificationSnippet(readableBody(said, meta));
+  // An anonymous project's chat the same (ADR 0201): no word of it reaches an email or a push service.
+  const sealed = isConfidential(meta) || (await anonymousPlaceOf(db, orgId, message.channelId)) !== null;
+  const text = sealed ? "" : notificationSnippet(readableBody(said, meta));
   // Only a GIF or a sticker (ADR 0091): the apps and the push say which, in the person's language.
   const media = previewMediaKind(message.body, meta);
   // A body the server wrote: the apps say it in the reader's language, as the conversation lists do.
-  const written = isConfidential(meta) ? null : previewMeta(meta);
+  const written = sealed ? null : previewMeta(meta);
   // What the right hand posts by itself with a ring (`postFromLodi`) names its person on the message. Nobody asked,
   // so it is no reply: it rings as a message it sent them. Its stored text is already in their language, so the
   // inbox and the push quote it as it is.
@@ -346,10 +349,10 @@ async function threadTitle(deps: NotificationDeps, orgId: string, rootId: string
     .where(and(eq(threads.orgId, orgId), eq(threads.rootMessageId, rootId)));
   if (t?.title) return t.title;
   const [root] = await deps.db
-    .select({ body: messages.body, meta: messages.meta })
+    .select({ body: messages.body, meta: messages.meta, channelId: messages.channelId })
     .from(messages)
     .where(and(eq(messages.orgId, orgId), eq(messages.id, rootId)));
-  return root && !isConfidential(root.meta)
+  return root && !isConfidential(root.meta) && !(await anonymousPlaceOf(deps.db, orgId, root.channelId))
     ? notificationSnippet(readableBody(root.body, root.meta), 80) || undefined
     : undefined;
 }
@@ -402,7 +405,10 @@ export async function notifyReaction(
     },
     latest: {
       emojis,
-      quote: isConfidential(message.meta) ? "" : notificationSnippet(readableBody(message.body, message.meta), 140),
+      quote:
+        isConfidential(message.meta) || (await anonymousPlaceOf(deps.db, input.orgId, message.channelId))
+          ? ""
+          : notificationSnippet(readableBody(message.body, message.meta), 140),
     },
   });
 }

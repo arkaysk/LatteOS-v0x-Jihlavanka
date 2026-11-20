@@ -21,7 +21,7 @@ import { errorText } from "@agenteschat/client/lib/errors";
 import { fileIcon } from "@agenteschat/client/lib/files";
 import { relativeTime } from "@agenteschat/client/lib/format";
 import { can } from "@agenteschat/client/lib/permissions";
-import { Button, EmptyState, Icon, type IconName, Select, Textarea } from "@agenteschat/ui";
+import { Button, EmptyState, Icon, type IconName, Popover, Select, Textarea } from "@agenteschat/ui";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -30,7 +30,8 @@ import { UploadButton } from "@/components/artifacts/Upload";
 import { NewCategoryDialog } from "@/components/ChannelCategoryDialogs";
 import { toChannelName } from "@/components/NewChannelDialog";
 import { useOrg } from "@/components/org-context";
-import { isProject, PROJECT_ICONS, PROJECT_STATES, PROJECT_TYPES } from "@/components/project/kinds";
+import { KindPicker, KindTile, ModePicker, type ProjectMode } from "@/components/project/KindPicker";
+import { isProject, PROJECT_STATES } from "@/components/project/kinds";
 import { ProjectConflicts, ProjectHistory } from "@/components/project/ProjectGit";
 import { useDirectory } from "@/hooks/useDirectory";
 import { useToast } from "@/lib/toast";
@@ -82,8 +83,13 @@ export function ProjectPage({ categoryId }: { categoryId: string }) {
           </Link>
         )}
         <h1 className="project-page__title">
-          <Icon name={PROJECT_ICONS[(parent ?? project).projectType ?? "other"]} />
+          <KindTile type={(parent ?? project).projectType} size={40} />
           {project.name}
+          {project.anonymous && (
+            <span className="project-page__anon" title={t("projectPage.modeHelp.anonymous")}>
+              <Icon name="lock" size={14} /> {t("projectPage.modes.anonymous")}
+            </span>
+          )}
         </h1>
         <ProjectSettings project={project} />
         {project.folder && (
@@ -128,32 +134,54 @@ function ProjectSettings({ project }: { project: ChannelCategory }) {
   const toast = useToast();
   const update = useUpdateProject(org.id, project.id);
   if (!can(org, "manage_channels")) return null;
-  const change = (input: { projectType?: ProjectType; projectState?: ProjectState; online?: boolean }) =>
-    update.mutate(input, { onError: (e) => toast.show(errorText(t, e), "error") });
+  const change = (input: {
+    projectType?: ProjectType;
+    projectState?: ProjectState;
+    online?: boolean;
+    anonymous?: boolean;
+  }) => update.mutate(input, { onError: (e) => toast.show(errorText(t, e), "error") });
+  const mode: ProjectMode = project.anonymous ? "anonymous" : project.online ? "online" : "offline";
   return (
     <div className="project-page__settings">
       {!project.parentId && (
-        <Select
-          aria-label={t("projectPage.kind")}
-          value={project.projectType ?? "other"}
-          onValueChange={(v) => change({ projectType: v as ProjectType })}
-          options={PROJECT_TYPES.map((k) => ({
-            value: k,
-            label: t(`projectPage.types.${k}`),
-            leading: <Icon name={PROJECT_ICONS[k]} size={16} />,
-          }))}
-        />
+        <Popover
+          label={t("projectPage.kind")}
+          side="bottom"
+          align="end"
+          trigger={
+            <Button size="sm" type="button" aria-label={t("projectPage.kind")}>
+              <KindTile type={project.projectType} size={20} />{" "}
+              {t(`projectPage.types.${project.projectType ?? "other"}`)}
+            </Button>
+          }
+        >
+          <div className="project-page__pop">
+            <KindPicker value={project.projectType ?? "other"} onChange={(k) => k && change({ projectType: k })} />
+          </div>
+        </Popover>
       )}
       {!project.parentId && (
-        <Select
-          aria-label={t("projectPage.where")}
-          value={project.online ? "online" : "offline"}
-          onValueChange={(v) => change({ online: v === "online" })}
-          options={[
-            { value: "offline", label: t("projectPage.offline"), leading: <Icon name="lock" size={16} /> },
-            { value: "online", label: t("projectPage.online"), leading: <Icon name="cloud" size={16} /> },
-          ]}
-        />
+        <Popover
+          label={t("projectPage.where")}
+          side="bottom"
+          align="end"
+          trigger={
+            <Button size="sm" type="button" aria-label={t("projectPage.where")}>
+              <Icon name={mode === "anonymous" ? "lock" : mode === "online" ? "cloud" : "computer"} size={16} />{" "}
+              {t(`projectPage.modes.${mode}`)}
+            </Button>
+          }
+        >
+          <div className="project-page__pop">
+            <ModePicker
+              value={mode}
+              onChange={(m) =>
+                change(m === "anonymous" ? { anonymous: true } : { online: m === "online", anonymous: false })
+              }
+            />
+            <p className="project-page__hint">{t("projectPage.anonymousModels")}</p>
+          </div>
+        </Popover>
       )}
       <Select
         aria-label={t("projectPage.state")}
@@ -370,7 +398,9 @@ function Memory({ project, parent }: { project: ChannelCategory; parent?: Channe
       <h2 className="project-page__part-head">
         <Icon name="bulb" size={16} /> {t("projectPage.memory")}
       </h2>
-      <p className="project-page__hint">{t("projectPage.memoryHint")}</p>
+      <p className="project-page__hint">
+        {project.anonymous ? t("projectPage.memoryHintAnonymous") : t("projectPage.memoryHint")}
+      </p>
       <Textarea
         value={text}
         onChange={(e) => setText(e.target.value)}

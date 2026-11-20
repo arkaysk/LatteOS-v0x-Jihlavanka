@@ -15,6 +15,7 @@ import {
 } from "@agenteschat/db";
 import { modelInfo } from "@agenteschat/providers";
 import { recordAgentActions } from "../agent-actions";
+import { anonymousPlaceOf } from "../anonymous";
 import { steeredByOthers } from "../authority";
 import { isConfidentialRun, threadIsConfidential } from "../confidential";
 import { callLine, type LearnSignal, type RunCall, runCalls } from "../continuation";
@@ -217,6 +218,7 @@ export async function afterTurnDone(
     const { db } = deps;
     // Nothing is learned from a run of a confidential thread (ADR 0190): the job's model would read what it read.
     if (isConfidentialRun(run.id)) return false;
+    if (await anonymousPlaceOf(db, run.orgId, run.channelId)) return false;
     const cfg = learnConfig(deps);
     const [calls, { ids: usedHowTos, counted }] = await Promise.all([runCalls(db, run), injectedHowTos(db, run)]);
     // Once per run, however many turns it ends: a run that took more messages is still one reuse.
@@ -442,6 +444,8 @@ export async function learnRun(deps: ContextDeps, input: { orgId: string; runId:
     .from(agentRuns)
     .where(and(eq(agentRuns.orgId, input.orgId), eq(agentRuns.id, input.runId)));
   if (!run) return { ...out, skipped: "missing" };
+  // Nothing is learned from an anonymous project's chat (ADR 0201).
+  if (await anonymousPlaceOf(db, input.orgId, run.channelId)) return { ...out, skipped: "missing" };
   // Before the daily count: the run's last turn end finds the whole run, not just its first turn.
   if (run.status === "queued" || run.status === "running") return { ...out, skipped: "running" };
   const [busy] = await db

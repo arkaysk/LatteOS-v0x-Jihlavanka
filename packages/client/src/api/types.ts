@@ -1492,6 +1492,8 @@ export interface ChannelCategory {
   folder?: string | null;
   /** Its folder on the server too, every computer's copy kept in step; else only on the server's computer. */
   online?: boolean;
+  /** Only its creator's; its memory is MEMORY.md in its folder (a subproject has its project's). */
+  anonymous?: boolean;
 }
 
 /** LatteOS: a file in a project's folder (its Context). */
@@ -1533,11 +1535,38 @@ export interface ProjectInput {
   instructions?: string;
   memory?: string;
   online?: boolean;
+  anonymous?: boolean;
 }
 
 /** LatteOS: a category as a project — what kind of work, and where it stands. */
 export type ProjectState = "active" | "paused" | "done";
-export type ProjectType = "code" | "drawing" | "book" | "3d" | "music" | "comic" | "other";
+export type ProjectType =
+  | "code"
+  | "drawing"
+  | "book"
+  | "3d"
+  | "music"
+  | "comic"
+  | "other"
+  | "writing"
+  | "research"
+  | "study"
+  | "video"
+  | "photo"
+  | "animation"
+  | "game"
+  | "web"
+  | "app"
+  | "design"
+  | "podcast"
+  | "data"
+  | "business"
+  | "marketing"
+  | "finance"
+  | "home"
+  | "travel"
+  | "event"
+  | "health";
 
 /** A channel's latest top-level message, for the conversation list. */
 export interface ChannelLastMessage {

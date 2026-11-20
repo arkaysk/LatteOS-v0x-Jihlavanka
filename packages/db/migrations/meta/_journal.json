@@ -2143,6 +2143,20 @@
       "when": 1795113123124,
       "tag": "0310_latteos_project_online",
       "breakpoints": true
+    },
+    {
+      "idx": 308,
+      "version": "7",
+      "when": 1795185358001,
+      "tag": "0311_latteos_more_project_kinds",
+      "breakpoints": true
+    },
+    {
+      "idx": 309,
+      "version": "7",
+      "when": 1795185453637,
+      "tag": "0312_latteos_project_anonymous",
+      "breakpoints": true
     }
   ]
 }

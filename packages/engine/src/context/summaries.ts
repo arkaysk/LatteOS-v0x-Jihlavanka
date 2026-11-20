@@ -1,5 +1,6 @@
 import type { ErrorReporter, PubSub, SearchIndexResolver } from "@agenteschat/adapters";
 import { and, type Database, desc, eq, gte, inArray, isNull, lt, schema, sql } from "@agenteschat/db";
+import { anonymousPlaceOf } from "../anonymous";
 import { isConfidential } from "../confidential";
 import { cutText, cutTextEnd } from "../format";
 import type { ModelGateway } from "../gateway";
@@ -109,6 +110,8 @@ export async function loadThread(
     .where(and(eq(messages.orgId, orgId), eq(messages.id, threadRootId), isNull(messages.deletedAt)));
   // A confidential thread (ADR 0190) is nothing to summarize, reflect on or learn from: no other model reads it.
   if (!root || isConfidential(root.meta)) return null;
+  // Nor an anonymous project's: nothing is made from its chats (ADR 0201).
+  if (await anonymousPlaceOf(db, orgId, root.channelId)) return null;
   const replies = await db
     .select()
     .from(messages)
@@ -248,6 +251,7 @@ export async function ensurePeriodSummary(
   options: { minMessages?: number } = {},
 ): Promise<ContextItem | null> {
   const scopeId = channelId;
+  if (await anonymousPlaceOf(deps.db, orgId, channelId)) return null;
   const [existing] = await deps.db
     .select()
     .from(contextItems)

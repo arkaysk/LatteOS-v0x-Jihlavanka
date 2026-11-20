@@ -173,9 +173,11 @@ a.project-page__sub:hover {
   padding-inline-start: 12px;
 }
 .sidebar__project-mark {
-  display: inline-grid;
-  place-items: center;
-  inline-size: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-inline-size: 22px;
   block-size: 22px;
   border-radius: 6px;
   color: var(--ink-muted);
@@ -263,4 +265,118 @@ a.project-page__sub:hover {
 }
 .project-conflict__nav [aria-current="true"] {
   font-weight: 600;
+}
+
+/* The kinds: an icon in its own colour on a softly tinted tile (colours from `accentPalette`, see kinds.ts). */
+.kind-tile {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  inline-size: var(--kind-size, 28px);
+  block-size: var(--kind-size, 28px);
+  border-radius: 8px;
+  color: var(--kind-fg-light);
+  background: var(--kind-bg-light);
+}
+[data-theme="dark"] .kind-tile {
+  color: var(--kind-fg-dark);
+  background: var(--kind-bg-dark);
+}
+.kind-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 6px;
+  max-block-size: min(40vh, 320px);
+  overflow-y: auto;
+  padding: 2px;
+}
+.kind-pick,
+.mode-pick {
+  position: relative;
+  display: block;
+  cursor: pointer;
+}
+.kind-pick__input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: inherit;
+}
+.kind-pick__face,
+.mode-pick__face {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--line2);
+  background: var(--raised);
+  color: var(--ink);
+  font-size: 13px;
+}
+.kind-pick__label {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.kind-pick:hover .kind-pick__face,
+.mode-pick:hover .mode-pick__face {
+  background: var(--sunken);
+}
+.kind-pick__input:checked + .kind-pick__face,
+.kind-pick__input:checked + .mode-pick__face {
+  border-color: var(--agent);
+  box-shadow: 0 0 0 1px var(--agent);
+}
+.kind-pick__input:focus-visible + .kind-pick__face,
+.kind-pick__input:focus-visible + .mode-pick__face {
+  outline: 2px solid var(--focus-color, var(--agent));
+  outline-offset: 2px;
+}
+.kind-pick__input:disabled + .mode-pick__face {
+  opacity: 0.5;
+}
+.mode-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mode-pick__face {
+  align-items: flex-start;
+  padding: 8px 10px;
+}
+.mode-pick__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-inline-size: 0;
+}
+.mode-pick__text span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+.sidebar__anon-mark {
+  flex: none;
+  color: var(--muted);
+}
+.project-page__pop {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  inline-size: min(440px, 88vw);
+  padding: 4px;
+}
+.project-page__anon {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--plate);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
 }

@@ -1331,6 +1331,7 @@ export function useCreateChannelCategory(orgId: string) {
       channelIds?: string[];
       parentId?: string | null;
       projectType?: ProjectType | null;
+      anonymous?: boolean;
     }) => api.chat.createCategory(orgId, input),
     onSuccess: () => refreshLayout(qc, orgId),
   });

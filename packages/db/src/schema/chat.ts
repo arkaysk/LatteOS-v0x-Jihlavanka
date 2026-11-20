@@ -44,6 +44,26 @@ export const projectTypeEnum = pgEnum("channel_project_type", [
   "music",
   "comic",
   "other",
+  // LatteOS: more kinds, each with its own colour in the apps (ADR 0201)
+  "writing",
+  "research",
+  "study",
+  "video",
+  "photo",
+  "animation",
+  "game",
+  "web",
+  "app",
+  "design",
+  "podcast",
+  "data",
+  "business",
+  "marketing",
+  "finance",
+  "home",
+  "travel",
+  "event",
+  "health",
 ]);
 
 /**
@@ -89,6 +109,11 @@ export const channelCategories = pgTable(
      * its own copy in step (the runner); offline: only on the server's own computer.
      */
     online: boolean().notNull().default(false),
+    /**
+     * LatteOS: anonymous (ADR 0201): offline, and only its creator (`createdByUserId`) sees it; its memory lives in
+     * MEMORY.md in its folder, never in the database, the wiki or the search. A subproject has its project's value.
+     */
+    anonymous: boolean().notNull().default(false),
   },
   // a name once per place: two projects may each have an "Album 1"
   (t) => [unique().on(t.orgId, t.id), unique().on(t.orgId, t.parentId, t.name).nullsNotDistinct()],

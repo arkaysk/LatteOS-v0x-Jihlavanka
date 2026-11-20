@@ -20,6 +20,7 @@ import { resolveApps } from "../access";
 import { recordAgentActions } from "../agent-actions";
 import { agentsByHandle, handleOf } from "../agents";
 import { type AgentsDmReads, agentsDmReads, readerOfMessage, readerOfRun } from "../agents-dm-reads";
+import { anonymousPlaceOf } from "../anonymous";
 import { runAuthorityById, UUID } from "../authority";
 import { caches } from "../cache";
 import { addToProjectMemory } from "../channel-categories";
@@ -134,6 +135,10 @@ const str = (v: unknown) => (typeof v === "string" ? v : "");
 
 /** The tool that reopens what a history shows cut short (token-trim B9, `cutOldToolSteps`). */
 export const EXPAND_TOOL = "expand";
+
+/** What an anonymous project's chat is told when it reaches for the memory items of the database (ADR 0201). */
+const ANONYMOUS_MEMORY_FILE =
+  "This chat's memory is MEMORY.md in the project's folder, not items: change it by editing that file.";
 
 /** A call of the run whole, as `expand` returns it: its name, arguments and result (null: no such call). */
 function toolCallText(messages: ModelMessage[], id: string): string | null {
@@ -653,6 +658,13 @@ export function createContextToolSource(deps: ContextDeps): ToolSource {
       },
       async execute(input, ctx) {
         try {
+          // An anonymous project's chat: whatever it keeps, for whoever, is a line in its folder's MEMORY.md (ADR 0201).
+          if (await anonymousPlaceOf(ctx.db, ctx.orgId, ctx.channelId)) {
+            const line = str(input.title) ? `${str(input.title)}: ${str(input.content)}` : str(input.content);
+            return (await addToProjectMemory(ctx.db, ctx.orgId, ctx.channelId, line))
+              ? { content: "Kept in MEMORY.md in the project's folder, and nowhere else." }
+              : { content: "MEMORY.md is full or this project has no folder here.", isError: true };
+          }
           // What is kept for the whole team holds nothing of one person's: the right hand saves it where it was said.
           const kept = input.for === "team" || input.for === "project" ? { person: null } : await rightHandKeeps(ctx);
           if ("refused" in kept) return { content: kept.refused, isError: true };
@@ -795,6 +807,8 @@ export function createContextToolSource(deps: ContextDeps): ToolSource {
         additionalProperties: false,
       },
       async execute(input, ctx) {
+        if (await anonymousPlaceOf(ctx.db, ctx.orgId, ctx.channelId))
+          return { content: ANONYMOUS_MEMORY_FILE, isError: true };
         const requester = await personRequester(ctx);
         const item = await changeableItem(ctx, str(input.item_id), requester);
         if (typeof item === "string") return { content: item, isError: true };
@@ -872,6 +886,8 @@ export function createContextToolSource(deps: ContextDeps): ToolSource {
         additionalProperties: false,
       },
       async execute(input, ctx) {
+        if (await anonymousPlaceOf(ctx.db, ctx.orgId, ctx.channelId))
+          return { content: ANONYMOUS_MEMORY_FILE, isError: true };
         const requester = await personRequester(ctx);
         const item = await changeableItem(ctx, str(input.item_id), requester);
         if (typeof item === "string") return { content: item, isError: true };

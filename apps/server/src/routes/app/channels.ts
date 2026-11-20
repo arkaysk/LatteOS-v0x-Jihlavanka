@@ -11,6 +11,7 @@ import {
   listChannelCategories,
   listChannelOverrides,
   listPins,
+  PROJECT_TYPES,
   type ProjectState,
   type ProjectType,
   pinMessage,
@@ -63,6 +64,7 @@ const categoryJson = (r: {
   memory: string;
   folder: string | null;
   online: boolean;
+  anonymous: boolean;
 }) => ({
   id: r.id,
   name: r.name,
@@ -74,6 +76,7 @@ const categoryJson = (r: {
   memory: r.memory,
   folder: r.folder,
   online: r.online,
+  anonymous: r.anonymous,
 });
 const ProjectFields = {
   parentId: z
@@ -81,7 +84,11 @@ const ProjectFields = {
     .nullable()
     .optional()
     .openapi({ description: "LatteOS: a subproject of this category; null: its own." }),
-  projectType: z.enum(["code", "drawing", "book", "3d", "music", "comic", "other"]).nullable().optional(),
+  projectType: z.enum(PROJECT_TYPES).nullable().optional(),
+  anonymous: z
+    .boolean()
+    .optional()
+    .openapi({ description: "LatteOS: only its creator's, its memory a file in its folder (never the wiki)." }),
 };
 const OverrideTarget = z.object({
   type: z.enum(["role", "person"]),
@@ -645,8 +652,8 @@ export function channelRoutes(deps: AppDeps) {
     async (c) => {
       const { orgId, categoryId } = c.req.valid("param");
       const r = await renameChannelCategory(db, c.get("user").id, orgId, categoryId, c.req.valid("json"), opts);
-      // LatteOS: made online, its history starts on the server
-      if (r.online) await ensureProjectRepo(r.id);
+      // LatteOS: made online, its history starts on the server (an anonymous project has none, ADR 0201)
+      if (r.online && !r.anonymous) await ensureProjectRepo(r.id);
       return c.json(categoryJson(r), 200);
     },
   );

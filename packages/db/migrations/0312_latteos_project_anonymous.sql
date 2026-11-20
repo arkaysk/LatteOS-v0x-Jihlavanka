@@ -1,0 +1,1 @@
+ALTER TABLE "channel_categories" ADD COLUMN "anonymous" boolean DEFAULT false NOT NULL;

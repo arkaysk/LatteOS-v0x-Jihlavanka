@@ -23,6 +23,7 @@ import {
   sql,
 } from "@agenteschat/db";
 import type { EmbeddingResult } from "@agenteschat/providers";
+import { anonymousPlaceOf, inAnonymousProjectSql } from "./anonymous";
 import { agentIdsSeen, isPlaybook } from "./audience";
 import { caches } from "./cache";
 import { CONFIDENTIAL_STUB, isConfidential } from "./confidential";
@@ -102,12 +103,26 @@ export async function enqueueIndex(tx: Executor, input: { orgId: string; kind: S
   });
 }
 
+/**
+ * Which of `channelIds` are chats of an anonymous project (ADR 0201): what they hold is never indexed, so it is never
+ * sent to the embeddings provider either.
+ */
+async function anonymousAmong(db: Database, orgId: string, channelIds: readonly string[]) {
+  if (channelIds.length === 0) return new Set<string>();
+  const rows = await db
+    .select({ id: channels.id })
+    .from(channels)
+    .where(and(eq(channels.orgId, orgId), inArray(channels.id, [...new Set(channelIds)]), inAnonymousProjectSql()));
+  return new Set(rows.map((r) => r.id));
+}
+
 /** Job `search.index`: builds the document (or removes it), embeds it if possible, upserts. */
 export async function indexSource(deps: SearchDeps, input: { orgId: string; kind: SearchKind; sourceId: string }) {
   const builder = builders.get(input.kind);
   if (!builder) return;
   const index = await deps.search.forOrg(input.orgId);
-  const doc = await builder(deps.db, input.orgId, input.sourceId);
+  const built = await builder(deps.db, input.orgId, input.sourceId);
+  const doc = built && (await anonymousAmong(deps.db, input.orgId, built.channelIds)).size === 0 ? built : null;
   if (!doc) {
     await index.delete([{ kind: input.kind, sourceId: input.sourceId }]);
     return;
@@ -119,7 +134,13 @@ export async function indexSource(deps: SearchDeps, input: { orgId: string; kind
  * Upserts documents, with vectors for the kinds that get them (`EMBEDDINGS_KINDS`). When the vectors fail, the
  * documents still go in, found by their words, and the failure is thrown so the job tries them again.
  */
-async function upsertWithEmbeddings(deps: SearchDeps, orgId: string, docs: SearchDocument[]) {
+async function upsertWithEmbeddings(deps: SearchDeps, orgId: string, all: SearchDocument[]) {
+  const hidden = await anonymousAmong(
+    deps.db,
+    orgId,
+    all.flatMap((d) => d.channelIds),
+  );
+  const docs = hidden.size === 0 ? all : all.filter((d) => !d.channelIds.some((c) => hidden.has(c)));
   if (docs.length === 0) return;
   const withVectors: SearchDocument[] = [];
   let failed = false;
@@ -286,6 +307,8 @@ export async function agentSearchChannels(
       .innerJoin(channels, eq(channels.id, channelMembers.channelId))
       .where(and(eq(channelMembers.orgId, orgId), eq(channelMembers.agentId, agentId), isNull(channels.archivedAt))),
   )) as { id: string; visibility: string; kind: string; dmKey: string | null }[];
+  // An anonymous project's chat reads only itself (ADR 0201).
+  if (await anonymousPlaceOf(db, orgId, currentChannelId)) return [currentChannelId];
   const room = rows.find((r) => r.id === currentChannelId && isRoutineRoomKey(r.dmKey));
   const reports = room?.dmKey && !files ? await routineReportChannel(db, orgId, agentId, room.dmKey) : null;
   return rows

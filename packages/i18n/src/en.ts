@@ -4493,7 +4493,37 @@ export const en = {
       music: "Music",
       comic: "Comic",
       other: "Other",
+      writing: "Writing",
+      research: "Research",
+      study: "Study",
+      video: "Video",
+      photo: "Photo",
+      animation: "Animation",
+      game: "Game",
+      web: "Web",
+      app: "App",
+      design: "Design",
+      podcast: "Podcast",
+      data: "Data",
+      business: "Business",
+      marketing: "Marketing",
+      finance: "Finance",
+      home: "Home",
+      travel: "Travel",
+      event: "Event",
+      health: "Health & sport",
     },
+    modes: { offline: "Offline", online: "Online", anonymous: "Anonymous" },
+    modeHelp: {
+      offline: "Its folder lives only on this computer.",
+      online: "On the server, with a copy on every computer of the workspace, kept in step.",
+      anonymous:
+        "Only you. Its memory stays in MEMORY.md in its folder; nothing goes to the wiki, the search or other projects.",
+    },
+    anonymousModels:
+      "The agents you add to its chats still think with their AI provider: what they read in a chat goes to that model, and nowhere else.",
+    memoryHintAnonymous:
+      "This is MEMORY.md in the project's folder: only here, never in the wiki or the search. You may change it.",
     states: { active: "Active", paused: "Paused", done: "Done" },
     newChat: "Start a new chat…",
     agent: "Who answers",
@@ -15862,6 +15892,15 @@ export const en = {
     },
     channel: {
       membersForbidden: "Only the channel's creator or an admin can add or remove people.",
+    },
+    /** `project.anonymous*`: an anonymous project's rules (ADR 0201). */
+    project: {
+      anonymousNeedsFolder:
+        "An anonymous project keeps its memory in a file in its folder, so it needs the folder on this server's own computer, and this server has none.",
+      anonymousCreator: "Only the person who made a project can make it anonymous or not.",
+      anonymousOnlineFirst: "Switch it to Offline first, then to Anonymous.",
+      anonymous:
+        "An anonymous project is only its creator's: it is a whole project (never a subproject of its own), offline, and its chats have only you.",
     },
     handle: {
       invalid: "An @ has {{min}} to {{max}} lowercase letters, numbers, - or _.",

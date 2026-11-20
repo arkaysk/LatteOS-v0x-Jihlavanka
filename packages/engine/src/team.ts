@@ -2,6 +2,7 @@ import { and, asc, type Database, desc, eq, gte, inArray, isNotNull, isNull, or,
 import { type AgentStatusView, lineInEnglish, loadAgentStatuses } from "./agent-status";
 import { currentHandles } from "./agents";
 import { type AiStatusDeps, agentAiStates } from "./ai-status";
+import { inAnonymousProjectSql } from "./anonymous";
 import type { AgentAppearance } from "./appearance";
 import {
   canTalkTo,
@@ -572,7 +573,7 @@ export async function getTeam(db: Database, actorId: string, orgId: string) {
               eq(channels.kind, "channel"),
               isNull(channels.archivedAt),
               isNull(channels.deletedAt),
-              sql`(${channels.visibility} = 'public' or exists (select 1 from ${channelMembers} me where me.channel_id = ${channels.id} and me.user_id = ${actorId}) or ${channelAudienceSql("channels", sql`${actorId}`)} or ${maySql(sql`${orgId}::uuid`, sql`${actorId}::text`, "administrator")})`,
+              sql`(${channels.visibility} = 'public' or exists (select 1 from ${channelMembers} me where me.channel_id = ${channels.id} and me.user_id = ${actorId}) or ${channelAudienceSql("channels", sql`${actorId}`)} or (${maySql(sql`${orgId}::uuid`, sql`${actorId}::text`, "administrator")} and not ${inAnonymousProjectSql()}))`,
             ),
           )
           .orderBy(asc(channels.position), asc(channels.name)),

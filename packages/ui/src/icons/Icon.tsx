@@ -2,6 +2,7 @@ import { type CSSProperties, createElement, type SVGProps } from "react";
 import { PixelSpinner } from "../components/PixelSpinner";
 import { cx } from "../cx";
 import { extraIcons } from "./extra";
+import { PHOSPHOR } from "./phosphor";
 import { sourceIcons } from "./source";
 import type { IconShape } from "./types";
 
@@ -37,6 +38,23 @@ export function Icon({ name, size = 20, label, inline, className, style, ...rest
     return <PixelSpinner size={size === 14 ? 14 : 16} label={label} className={cx("ac-icon--orbit", className)} />;
   }
   const sized = size === 20 ? style : { width: size, height: size, ...style };
+  // Phosphor's duotone drawing where the table has one (its second layer is the glyph at 20% opacity, in currentColor).
+  const Duotone = Object.hasOwn(PHOSPHOR, name) ? PHOSPHOR[name] : undefined;
+  if (Duotone) {
+    return (
+      <Duotone
+        weight="duotone"
+        size={size}
+        className={cx("ac-icon", inline && "ac-icon--inline", className)}
+        style={inline ? ({ "--glyph": `${size}px`, ...sized } as CSSProperties) : sized}
+        aria-hidden={label ? undefined : true}
+        role={label ? "img" : undefined}
+        aria-label={label}
+        focusable="false"
+        {...(rest as object)}
+      />
+    );
+  }
   return (
     <svg
       viewBox="0 0 20 20"

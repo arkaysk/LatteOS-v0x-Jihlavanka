@@ -21,6 +21,7 @@ import { CHANNEL_REF } from "@agenteschat/ui/channel-refs";
 import { plainLine } from "@agenteschat/ui/markdown";
 import { type AgentActionView, actionsFor } from "./agent-actions";
 import { currentHandles } from "./agents";
+import { inAnonymousProjectSql } from "./anonymous";
 import { withDeletedArtifacts } from "./artifacts";
 import { audienceSql, notifyBlocked } from "./audience";
 import { postRefusal, requireChannelAccess } from "./channels";
@@ -536,7 +537,7 @@ export async function unreachedPeople(
         and (om.handle = any(${`{${handles.join(",")}}`}::text[])
           or (strpos(${schema.users.name}, ' ') > 0 and strpos(lower(${input.body}::text), lower('@' || ${schema.users.name})) > 0))
         and not exists (select 1 from ${channelMembers} cm where cm.channel_id = c.id and cm.user_id = om.user_id)
-        and not (c.kind = 'channel' and ${maySql(sql`om.org_id`, sql`om.user_id`, "administrator")})
+        and not (c.kind = 'channel' and not ${inAnonymousProjectSql(sql`c.category_id`)} and ${maySql(sql`om.org_id`, sql`om.user_id`, "administrator")})
         and not (c.kind = 'task' and ${taskReaderSql(sql`c.id`, sql`om.user_id`)})
         and not (c.kind = 'file' and ${fileConversationReaderSql(sql`c.id`, sql`om.user_id`)})`),
   );
@@ -872,7 +873,8 @@ export async function insertMessageWithRuns(
           and ((pcm.id is not null and (om.handle = any(${handles}::text[]) or exists (select 1 from everyone)))
             -- Named, an administrator hears it from a channel they read without being in it (ADR 0151).
             or (om.handle = any(${handles}::text[])
-              and exists (select 1 from ${channels} mc where mc.id = ${input.channelId}::uuid and mc.kind = 'channel')
+              and exists (select 1 from ${channels} mc where mc.id = ${input.channelId}::uuid and mc.kind = 'channel'
+                and not ${inAnonymousProjectSql(sql`mc.category_id`)})
               and ${maySql(sql`om.org_id`, sql`om.user_id`, "administrator")}))
       ), answered as (
         -- A person's reply where an agent asked something (same channel and thread) answers it, unless it is for

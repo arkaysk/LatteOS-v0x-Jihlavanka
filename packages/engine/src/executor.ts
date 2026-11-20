@@ -46,6 +46,7 @@ import { TECHNICAL_STYLE_LINE } from "./agent-style";
 import { type Agent, getAgentCached } from "./agents";
 import { agentsDmReads, readerOfRun } from "./agents-dm-reads";
 import { type AgentAi, agentAiState, noAiReasonOf, ownNotSignedIn } from "./ai-status";
+import { anonymousPlaceOf } from "./anonymous";
 import { heldBehind, markNotRun, notRunAfter, notRunText, wakeLine } from "./approval-order";
 import { deciderName, publishApproval } from "./approvals";
 import { accountablePerson, fedByRoutine, personOfMessage, runAuthority } from "./authority";
@@ -1977,7 +1978,8 @@ async function executeRunInner(
   judging?.catch(() => {});
   // What the agent shows it is doing (ADR 0084 §8–9): lines from facts everyone may see, picked by Jev in a request
   // of its own, beside the run and never in its way: its statements count apart from the run's.
-  if (needsContext) {
+  // Not for an anonymous project's chat: its message goes to no second model call (ADR 0201).
+  if (needsContext && !(await anonymousPlaceOf(db, run.orgId, run.channelId))) {
     void queryTrace
       .run({ count: 0 }, async () => {
         const lines = await statusCandidates(db, run, granted);
@@ -2382,6 +2384,8 @@ async function executeRunInner(
     const [workApplies, choicesApply] = every
       ? await Promise.all([workMayStart(ctx), someoneAnswers(ctx)])
       : [true, true];
+    // An anonymous project's chat reads no memory, wiki page or rule of the workspace (ADR 0201): its own folder only.
+    const anonymousChat = (await anonymousPlaceOf(db, run.orgId, run.channelId)) !== null;
     const [context, memory, wikiPages, rules] = await Promise.all([
       buildRunContext(db, run, agent, {
         maxMessages: deps.contextMessages,
@@ -2423,7 +2427,7 @@ async function executeRunInner(
         workspaceComputer: deps.workspaceComputer,
         unseal: brainOf(agent.brain) === "model",
       }),
-      contextDeps
+      contextDeps && !anonymousChat
         ? // A person's own message already names who is behind the run: no read for it.
           (trigger?.authorUserId ? Promise.resolve(trigger.authorUserId) : personBehind().catch(() => null))
             .then((personId) =>
@@ -2442,7 +2446,7 @@ async function executeRunInner(
             .catch(() => ({ text: "", itemIds: [] as string[], matchedIds: [] as string[] }))
         : Promise.resolve({ text: "", itemIds: [] as string[], matchedIds: [] as string[] }),
       // A routine's instructions name what it checks; the wiki stays one `read_wiki_page` away.
-      readsWiki && !viaRoutine
+      readsWiki && !viaRoutine && !anonymousChat
         ? retrieveWikiForRun(
             { db, search: contextDeps },
             {
@@ -2457,7 +2461,9 @@ async function executeRunInner(
             },
           ).catch(() => ({ text: "", pageIds: [] as string[], held: false }))
         : Promise.resolve({ text: "", pageIds: [] as string[], held: false }),
-      rulesForRun(db, run, agent).catch(() => ({ text: "", itemIds: [] as string[] })),
+      anonymousChat
+        ? Promise.resolve({ text: "", itemIds: [] as string[] })
+        : rulesForRun(db, run, agent).catch(() => ({ text: "", itemIds: [] as string[] })),
     ]);
     await judging;
     // Its thread turned confidential after the claim read the message that asked: it is a run of that thread now.
@@ -2468,7 +2474,7 @@ async function executeRunInner(
     const issueId = context.issueId;
     if (issueId) later(() => linkRunToIssue({ db, pubsub: deps.pubsub }, run, issueId));
     const system: ContextBlock[] = [...context.system];
-    if (contextDeps && context.stats.truncated) {
+    if (contextDeps && context.stats.truncated && !anonymousChat) {
       // Long thread: the summary stands in for what didn't fit.
       const found = await ensureThreadSummary(contextDeps, run.orgId, run.threadRootId, { force: true }).catch(
         () => null,

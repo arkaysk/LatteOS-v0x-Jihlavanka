@@ -479,6 +479,7 @@ export { HOVERLESS, matchesNow, TOUCH, useMatchMedia } from "./hooks/useMatchMed
 export { useNow } from "./hooks/useNow";
 export { type ScrollSides, useScrollSides } from "./hooks/useScrollSides";
 export { Icon, type IconName, type IconProps, iconNames, icons } from "./icons/Icon";
+export { PROJECT_GLYPHS } from "./icons/phosphor";
 export { driveFolder, initialsOf, isIdHandle } from "./names";
 export {
   BGS as PERSON_BACKGROUNDS,

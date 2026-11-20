@@ -11,6 +11,7 @@ import { startInFlight } from "@agenteschat/adapters/in-flight";
 import { and, desc, eq, inArray, isNotNull, isNull, or, schema, sql } from "@agenteschat/db";
 import { auditsCall, callSubject, callTitle, recordToolCall, type ToolCallSubject } from "../agent-audit";
 import { getAgentCached } from "../agents";
+import { ANONYMOUS_REFUSAL, anonymousPlaceOf, refusedInAnonymous } from "../anonymous";
 import {
   COMMAND_RULE_TOOL,
   coveringRules,
@@ -644,21 +645,26 @@ export function createToolGateway(deps: {
     known?: Map<string, ToolDefinition>,
     heldBack?: string[],
   ): Promise<ToolDefinition[]> {
-    const [keys, all, level, decides] = await Promise.all([
+    const [keys, all, level, decides, anonymous] = await Promise.all([
       grantedScopeKeys(ctx.db, ctx.orgId, ctx.agentId),
       known ?? allTools(ctx),
       approvalsLevelOf(ctx.db, ctx.orgId, ctx.agentId),
       creatorDecides(ctx, authority),
+      ctx.channelId ? anonymousPlaceOf(ctx.db, ctx.orgId, ctx.channelId) : null,
     ]);
-    return [...all.values()]
-      .filter((t) => isAllowed(accessWithNeeds(keys, t).state))
-      .flatMap((t) => {
-        const decision = policyFor(authority, t, level, decides);
-        if (decision.action !== "refuse") return [asListed(t, decision, unaskedAtNever(level, t, authority))];
-        heldBack?.push(t.name);
-        return [];
-      })
-      .sort((a, b) => a.name.localeCompare(b.name));
+    return (
+      [...all.values()]
+        .filter((t) => isAllowed(accessWithNeeds(keys, t).state))
+        // An anonymous project's chat is not offered what reads or writes the workspace's shared content (ADR 0201).
+        .filter((t) => !anonymous || (ownTool(t) && !refusedInAnonymous(t)))
+        .flatMap((t) => {
+          const decision = policyFor(authority, t, level, decides);
+          if (decision.action !== "refuse") return [asListed(t, decision, unaskedAtNever(level, t, authority))];
+          heldBack?.push(t.name);
+          return [];
+        })
+        .sort((a, b) => a.name.localeCompare(b.name))
+    );
   }
 
   /**
@@ -1458,6 +1464,12 @@ export function createToolGateway(deps: {
       if (surfaceNo) {
         return finish(
           { content: surfaceNo, isError: true, data: { code: "tool.surface", refusal: "surface" } },
+          "refused",
+        );
+      }
+      if ((!ownTool(tool) || refusedInAnonymous(tool)) && (await anonymousPlaceOf(ctx.db, ctx.orgId, ctx.channelId))) {
+        return finish(
+          { content: ANONYMOUS_REFUSAL, isError: true, data: { code: "tool.anonymous", refusal: "anonymous" } },
           "refused",
         );
       }

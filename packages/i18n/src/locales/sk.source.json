@@ -54635,5 +54635,98 @@
   },
   "live.sheet.fn.YEARFRAC": {
     "value": "The share of a year between two dates"
+  },
+  "projectPage.types.writing": {
+    "value": "Writing"
+  },
+  "projectPage.types.research": {
+    "value": "Research"
+  },
+  "projectPage.types.study": {
+    "value": "Study"
+  },
+  "projectPage.types.video": {
+    "value": "Video"
+  },
+  "projectPage.types.photo": {
+    "value": "Photo"
+  },
+  "projectPage.types.animation": {
+    "value": "Animation"
+  },
+  "projectPage.types.game": {
+    "value": "Game"
+  },
+  "projectPage.types.web": {
+    "value": "Web"
+  },
+  "projectPage.types.app": {
+    "value": "App"
+  },
+  "projectPage.types.design": {
+    "value": "Design"
+  },
+  "projectPage.types.podcast": {
+    "value": "Podcast"
+  },
+  "projectPage.types.data": {
+    "value": "Data"
+  },
+  "projectPage.types.business": {
+    "value": "Business"
+  },
+  "projectPage.types.marketing": {
+    "value": "Marketing"
+  },
+  "projectPage.types.finance": {
+    "value": "Finance"
+  },
+  "projectPage.types.home": {
+    "value": "Home"
+  },
+  "projectPage.types.travel": {
+    "value": "Travel"
+  },
+  "projectPage.types.event": {
+    "value": "Event"
+  },
+  "projectPage.types.health": {
+    "value": "Health & sport"
+  },
+  "projectPage.modes.offline": {
+    "value": "Offline"
+  },
+  "projectPage.modes.online": {
+    "value": "Online"
+  },
+  "projectPage.modes.anonymous": {
+    "value": "Anonymous"
+  },
+  "projectPage.modeHelp.offline": {
+    "value": "Its folder lives only on this computer."
+  },
+  "projectPage.modeHelp.online": {
+    "value": "On the server, with a copy on every computer of the workspace, kept in step."
+  },
+  "projectPage.modeHelp.anonymous": {
+    "value": "Only you. Its memory stays in MEMORY.md in its folder; nothing goes to the wiki, the search or other projects."
+  },
+  "projectPage.anonymousModels": {
+    "value": "The agents you add to its chats still think with their AI provider: what they read in a chat goes to that model, and nowhere else."
+  },
+  "projectPage.memoryHintAnonymous": {
+    "value": "This is MEMORY.md in the project's folder: only here, never in the wiki or the search. You may change it."
+  },
+  "errors.project.anonymousNeedsFolder": {
+    "value": "An anonymous project keeps its memory in a file in its folder, so it needs the folder on this server's own computer, and this server has none."
+  },
+  "errors.project.anonymousCreator": {
+    "value": "Only the person who made a project can make it anonymous or not."
+  },
+  "errors.project.anonymous": {
+    "value": "An anonymous project is only its creator's: it is a whole project (never a subproject of its own), offline, and its chats have only you."
+  },
+  "errors.project.anonymousOnlineFirst": {
+    "value": "Switch it to Offline first, then to Anonymous."
   }
 }

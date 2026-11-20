@@ -14,6 +14,7 @@ import {
   sql,
 } from "@agenteschat/db";
 import { outageIn, waitSinceIn, workStateOf } from "./agent-work";
+import { inAnonymousProjectSql } from "./anonymous";
 import { decidableBySql } from "./approvals";
 import { recordAudit } from "./audit";
 import { caches } from "./cache";
@@ -1135,7 +1136,8 @@ async function queryThreads(
   // One channel's list: an administrator reads it without being in it (ADR 0151). The Threads page stays their own.
   const inList = input.channelId
     ? sql`c.id = ${input.channelId}::uuid and (cm.id is not null
-        or (c.kind = 'channel' and ${maySql(sql`${orgId}::uuid`, sql`${userId}::text`, "administrator")}))`
+        or (c.kind = 'channel' and not ${inAnonymousProjectSql(sql`c.category_id`)}
+          and ${maySql(sql`${orgId}::uuid`, sql`${userId}::text`, "administrator")}))`
     : sql`cm.id is not null`;
   const rows = rowsOf<ThreadSqlRow>(
     await db.execute(sql`with visible as (

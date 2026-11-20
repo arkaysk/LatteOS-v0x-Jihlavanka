@@ -20,6 +20,7 @@ import { agentStyleLine, agentStyleOf, isAgentStyle } from "./agent-style";
 import type { Agent } from "./agents";
 import { readerOf, readerOfMessage } from "./agents-dm-reads";
 import type { AiStatusDeps } from "./ai-status";
+import { type AnonymousPlace, anonymousPlaceOf, readMemoryFile } from "./anonymous";
 import { canTalkTo, NO_PERSON, speakerFor, viaAgent } from "./audience";
 import { runAuthority, UUID } from "./authority";
 import { type BlockSpecReader, blockStateNotes } from "./block-state";
@@ -699,6 +700,9 @@ export async function buildRunContext(
     teamMemoryForPrompt(db, run.orgId).catch(() => ""),
   ]);
   const personal = mode === "personal";
+  // An anonymous project's chat reads nothing from outside it: no team memory, no tasks, hand-offs or work of other
+  // conversations (ADR 0201).
+  const anonymous = await anonymousPlaceOf(db, run.orgId, run.channelId);
   // A range from another channel counts only while everyone here can still see it (re-checked, cached).
   const rawRange = threadInfo?.range ?? null;
   const range =
@@ -728,16 +732,19 @@ export async function buildRunContext(
     : null;
   // A routine's run keeps to its own task, as with "Your recent work" below.
   const openTasks =
-    options.routine || run.background
+    options.routine || run.background || anonymous
       ? null
       : openTasksBrief(db, run.orgId, agent.id, run.channelId, options.issueTools === true, personal).catch(() => null);
   // Its background work in this conversation (ADR 0121): a new run knows it, to pass messages on or stop it.
-  const works = options.routine || run.background || run.workId ? null : workBrief(db, run).catch(() => null);
+  const works =
+    options.routine || run.background || run.workId || anonymous ? null : workBrief(db, run).catch(() => null);
   const trigger = triggerRows[0];
   if (!org || !channel || !trigger) throw new Error("run context is incomplete (org, channel or trigger missing)");
   // Like the open tasks: not for a routine's own task, and not between agents (that run answers one agent).
   const handOffs =
-    options.routine || run.background || isAgentOnlyDm(channel) ? null : handOffsFrom(db, run).catch(() => null);
+    options.routine || run.background || anonymous || isAgentOnlyDm(channel)
+      ? null
+      : handOffsFrom(db, run).catch(() => null);
 
   // What was here when it was asked: a trigger placed before its post (`PLACE_KEPT_MS`) has what people sent before it
   // was posted after it.
@@ -745,7 +752,7 @@ export async function buildRunContext(
   const rootIsTrigger = run.threadRootId === trigger.id;
   // Asked in the main timeline: the run answers there, not in a thread.
   const flat = rootIsTrigger;
-  const heldElsewhere = run.background ? null : heldHere(db, run).catch(() => null);
+  const heldElsewhere = run.background || anonymous ? null : heldHere(db, run).catch(() => null);
   const surface = surfaceOn();
   const surfaceTurn =
     surface && channel.kind === "dm" && !run.background ? surfaceOfRun(db, run.orgId, run.id).catch(() => null) : null;
@@ -1110,7 +1117,8 @@ export async function buildRunContext(
   // A routine's background run: its routine block, time line and where it reports (ADR 0053 §4).
   const routine = background ? await routineContext(db, run, agent, trigger, zone, personal) : null;
   // LatteOS: the project this chat is in — its instructions, its Context's files, its other chats (Claude Projects)
-  const projectText = !routine && channel?.kind === "channel" ? await projectBrief(db, run.orgId, channel) : "";
+  const projectText =
+    !routine && channel?.kind === "channel" ? await projectBrief(db, run.orgId, channel, anonymous) : "";
   const previous = history[history.findIndex((m) => m.id === trigger.id) - 1];
   const nowFor: NonNullable<ContextBlock["now"]> = routine
     ? { zone: routine.zone, who: null, gapMs: null }
@@ -1200,7 +1208,7 @@ export async function buildRunContext(
           ? `You work in "${org.name}" on agentes.chat, a personal workspace: one person, and maybe their family, with the AI agents that help them with their life and work. The app shows its channels to them as group conversations.`
           : `You work in "${org.name}" on agentes.chat, a workspace where people and AI agents work together.`,
         org.context.trim() ? `# About ${personal ? "the person" : "the organization"}\n${org.context.trim()}` : "",
-        teamMemory,
+        anonymous ? "" : teamMemory,
         options.workspaceComputer ? workspaceComputerText(options.workspaceComputer) : "",
       ]
         .filter(Boolean)
@@ -2069,7 +2077,12 @@ export function getOrgCached(db: Database, orgId: string) {
  * folders (its own to write in, the project's to read) with the files in them, and the other chats of both (to read
  * with `read_conversation`). A plain category says nothing.
  */
-export async function projectBrief(db: Database, orgId: string, channel: typeof schema.channels.$inferSelect) {
+export async function projectBrief(
+  db: Database,
+  orgId: string,
+  channel: typeof schema.channels.$inferSelect,
+  anonymous: AnonymousPlace | null = null,
+) {
   if (!channel.categoryId) return "";
   const cats = schema.channelCategories;
   const [here] = await db
@@ -2085,20 +2098,25 @@ export async function projectBrief(db: Database, orgId: string, channel: typeof 
     : [];
   const places = parent ? [parent, here] : [here];
   const ids = places.map((c) => c.id);
-  const chats = await db
-    .select({ name: schema.channels.name, categoryId: schema.channels.categoryId })
-    .from(schema.channels)
-    .where(
-      and(
-        eq(schema.channels.orgId, orgId),
-        inArray(schema.channels.categoryId, ids),
-        eq(schema.channels.kind, "channel"),
-        isNull(schema.channels.archivedAt),
-        ne(schema.channels.id, channel.id),
-      ),
-    )
-    .orderBy(asc(schema.channels.position), asc(schema.channels.name))
-    .limit(60);
+  // An anonymous project's chats do not know each other (ADR 0201).
+  const chats = anonymous
+    ? []
+    : await db
+        .select({ name: schema.channels.name, categoryId: schema.channels.categoryId })
+        .from(schema.channels)
+        .where(
+          and(
+            eq(schema.channels.orgId, orgId),
+            inArray(schema.channels.categoryId, ids),
+            eq(schema.channels.kind, "channel"),
+            isNull(schema.channels.archivedAt),
+            ne(schema.channels.id, channel.id),
+          ),
+        )
+        .orderBy(asc(schema.channels.position), asc(schema.channels.name))
+        .limit(60);
+  // Anonymous: the memory is its folder's MEMORY.md, the project's own read-only for a subproject (ADR 0201).
+  const memoryOf = (c: (typeof places)[number]) => (c.anonymous ? readMemoryFile(c.folder) : c.memory);
   const parts = places.map((c) => {
     const what = c === parent || !parent ? `Project "${c.name}"` : `Subproject "${c.name}"`;
     // its folder is its Context: what the person put there is the agents' from the start
@@ -2108,7 +2126,7 @@ export async function projectBrief(db: Database, orgId: string, channel: typeof 
     const talks = chats.filter((t) => t.categoryId === c.id).map((t) => `#${t.name}`);
     return [
       c.instructions.trim() ? `## ${what}: its instructions\n${c.instructions.trim()}` : "",
-      c.memory.trim() ? `## ${what}: its memory (what its chats learnt)\n${c.memory.trim()}` : "",
+      memoryOf(c).trim() ? `## ${what}: its memory (what its chats learnt)\n${memoryOf(c).trim()}` : "",
       c.folder
         ? `## ${what}: its folder ${agentPath(c.folder)}${c === here ? " (yours to read and write)" : " (only to read)"}${own.length ? `\nIn it: ${own.join(", ")}` : "\nEmpty for now."}`
         : "",
@@ -2119,7 +2137,7 @@ export async function projectBrief(db: Database, orgId: string, channel: typeof 
   });
   const where = parent ? `the subproject "${here.name}" of the project "${parent.name}"` : `the project "${here.name}"`;
   return [
-    `# This project\nThis conversation is one chat of ${where}. Keep to its instructions in all your work here${parent ? " (the project's are for every subproject; the subproject's add to them)" : ""}. Its folder on the computer is its Context: read its files there, and write what the work makes in this ${parent ? "subproject's" : "project's"} own folder. Read another chat with \`read_conversation\` when the work needs it. What this ${parent ? "subproject's" : "project's"} next chats should know goes to its memory: \`remember\` with for: "project".${parent ? " The project's own files, chats and memory are only to read from here." : ""}`,
+    `# This project\nThis conversation is one chat of ${where}. Keep to its instructions in all your work here${parent ? " (the project's are for every subproject; the subproject's add to them)" : ""}. Its folder on the computer is its Context: read its files there, and write what the work makes in this ${parent ? "subproject's" : "project's"} own folder. Read another chat with \`read_conversation\` when the work needs it. What this ${parent ? "subproject's" : "project's"} next chats should know goes to its memory: \`remember\` with for: "project".${anonymous ? " This project is anonymous: its memory is MEMORY.md in its folder and nothing of it, nor of this chat, goes to the wiki, the search or any other conversation." : ""}${parent ? " The project's own files, chats and memory are only to read from here." : ""}`,
     ...parts.filter(Boolean),
   ].join("\n\n");
 }

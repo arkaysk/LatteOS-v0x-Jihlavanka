@@ -29,7 +29,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@/lib/toast";
 import { useOrg } from "./org-context";
-import { PROJECT_ICONS, PROJECT_TYPES } from "./project/kinds";
+import { KindPicker, ModePicker, type ProjectMode } from "./project/KindPicker";
 
 /** Categories are named as typed, at most this long (the server's CATEGORY_NAME_MAX). */
 const NAME_MAX = 40;
@@ -75,6 +75,8 @@ export function NewCategoryDialog({
   const [touched, setTouched] = useState(false);
   // LatteOS: what kind of project it is; none: a plain category
   const [projectType, setProjectType] = useState<ProjectType | null>(null);
+  // LatteOS: offline, online or anonymous (a project's subproject has its project's)
+  const [mode, setMode] = useState<ProjectMode>("offline");
   const parent = parentId ? categories.data?.find((c) => c.id === parentId) : undefined;
   const onlyName = nameOnly || Boolean(parentId);
   const nameField = useRef<HTMLInputElement>(null);
@@ -88,6 +90,7 @@ export function NewCategoryDialog({
     setPicked(new Set(withChannel ? [withChannel] : []));
     setTouched(false);
     setProjectType(null);
+    setMode("offline");
     create.reset();
   }, [open]);
   const categoryName = new Map((categories.data ?? []).map((c) => [c.id, c.name]));
@@ -114,7 +117,11 @@ export function NewCategoryDialog({
       {
         name: name.trim(),
         channelIds: onlyName ? undefined : channelIds,
-        ...(parentId ? { parentId } : projectType ? { projectType } : {}),
+        ...(parentId
+          ? { parentId }
+          : projectType
+            ? { projectType, ...(mode === "anonymous" ? { anonymous: true } : {}) }
+            : {}),
       },
       {
         onSuccess: (category) => {
@@ -176,21 +183,16 @@ export function NewCategoryDialog({
             </Field>
             {!parentId && (
               <Field label={t("projectPage.kind")} id="category-project">
-                <Select
-                  id="category-project"
-                  value={projectType ?? "none"}
-                  onValueChange={(v) => setProjectType(v === "none" ? null : (v as ProjectType))}
-                  options={[
-                    { value: "none", label: t("projectPage.notAProject") },
-                    ...PROJECT_TYPES.map((k) => ({
-                      value: k,
-                      label: t(`projectPage.types.${k}`),
-                      leading: <Icon name={PROJECT_ICONS[k]} size={16} />,
-                    })),
-                  ]}
-                />
+                <KindPicker value={projectType} onChange={setProjectType} none={t("projectPage.notAProject")} />
               </Field>
             )}
+            {!parentId && projectType && (
+              <Field label={t("projectPage.where")} id="category-mode">
+                <ModePicker value={mode} onChange={setMode} off={["online"]} />
+                {mode === "anonymous" && <p className="project-page__hint">{t("projectPage.anonymousModels")}</p>}
+              </Field>
+            )}
+            {parent?.anonymous && <p className="project-page__hint">{t("projectPage.modeHelp.anonymous")}</p>}
             {!onlyName && <span className="ac-field__label">{t("channelCategories.channels")}</span>}
           </DialogBody>
           {!onlyName && (

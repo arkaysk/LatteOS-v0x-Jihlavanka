@@ -1,7 +1,16 @@
 import { mkdirSync, readdirSync, renameSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import type { PubSub } from "@agenteschat/adapters";
-import { and, asc, type Database, type Executor, eq, inArray, isNull, schema, sql } from "@agenteschat/db";
+import { and, asc, type Database, type Executor, eq, inArray, isNull, or, schema, sql } from "@agenteschat/db";
+import {
+  anonymousPlaceOf,
+  appendMemoryLine,
+  PROJECT_MEMORY_MAX,
+  readMemoryFile,
+  setAnonymousMarker,
+  writeMemoryFile,
+} from "./anonymous";
+import { caches } from "./cache";
 import { managesChannel } from "./channels";
 import { ConflictError, ForbiddenError, isUniqueViolation, NotFoundError, ValidationError } from "./errors";
 import { publishOrgEvent } from "./events";
@@ -12,7 +21,35 @@ const { channelCategories, channels } = schema;
 export type ChannelCategory = typeof channelCategories.$inferSelect;
 
 /** LatteOS: a category as a project (Claude Projects): its kind (null: a plain category) and where it stands. */
-export type ProjectType = "code" | "drawing" | "book" | "3d" | "music" | "comic" | "other";
+export const PROJECT_TYPES = [
+  "code",
+  "drawing",
+  "book",
+  "3d",
+  "music",
+  "comic",
+  "other",
+  "writing",
+  "research",
+  "study",
+  "video",
+  "photo",
+  "animation",
+  "game",
+  "web",
+  "app",
+  "design",
+  "podcast",
+  "data",
+  "business",
+  "marketing",
+  "finance",
+  "home",
+  "travel",
+  "event",
+  "health",
+] as const;
+export type ProjectType = (typeof PROJECT_TYPES)[number];
 export type ProjectState = "active" | "paused" | "done";
 
 /** A category's name as people see it in the sidebar. */
@@ -59,24 +96,45 @@ async function requireFreeName(
   if (row && row.id !== except) throw new ConflictError(`The category ${name} already exists`);
 }
 
-async function requireCategory(db: Executor, orgId: string, categoryId: string) {
+/**
+ * A category of the org. With `actorId`, an anonymous project is found only by its creator: for anyone else it does
+ * not exist (ADR 0201).
+ */
+async function requireCategory(db: Executor, orgId: string, categoryId: string, actorId?: string) {
   const [row] = await db
     .select()
     .from(channelCategories)
     .where(and(eq(channelCategories.orgId, orgId), eq(channelCategories.id, categoryId)));
-  if (!row) throw new NotFoundError("Category not found");
+  if (!row || (actorId && row.anonymous && row.createdByUserId !== actorId))
+    throw new NotFoundError("Category not found");
   return row;
 }
 
-/** The org's categories, in sidebar order. */
+/** An anonymous project's memory is its folder's MEMORY.md, not the column: what the apps read as its memory. */
+const shown = (row: ChannelCategory): ChannelCategory =>
+  row.anonymous ? { ...row, memory: readMemoryFile(row.folder) } : row;
+
+/** Anonymous needs the folder on this server's own computer (ADR 0201). */
+const ANONYMOUS_NEEDS_FOLDER = "project.anonymous_needs_folder";
+
+/** The org's categories, in sidebar order; an anonymous project only for its creator. */
 export async function listChannelCategories(db: Database, actorId: string, orgId: string): Promise<ChannelCategory[]> {
   await requirePermission(db, actorId, orgId, "read");
-  return db
+  const rows = await db
     .select()
     .from(channelCategories)
-    .where(eq(channelCategories.orgId, orgId))
+    .where(
+      and(
+        eq(channelCategories.orgId, orgId),
+        or(eq(channelCategories.anonymous, false), eq(channelCategories.createdByUserId, actorId)),
+      ),
+    )
     .orderBy(asc(channelCategories.position), asc(channelCategories.name));
+  return rows.map(shown);
 }
+
+/** One category as the apps read it (an anonymous one with its memory file). */
+export const categoryView = shown;
 
 /**
  * The channels of one category (null: those with none), in sidebar order. Only named channels that aren't
@@ -239,7 +297,7 @@ export const CHANNELS_FOLDER = "channels";
 /** A project's folder for its page (who reads the workspace). */
 export async function projectFolderOf(db: Database, actorId: string, orgId: string, categoryId: string) {
   await requirePermission(db, actorId, orgId, "read");
-  const category = await requireCategory(db, orgId, categoryId);
+  const category = await requireCategory(db, orgId, categoryId, actorId);
   return category.folder;
 }
 
@@ -247,9 +305,15 @@ export async function projectFolderOf(db: Database, actorId: string, orgId: stri
  * LatteOS: a subproject goes under a project one level deep: the parent is a category of the org that is not a
  * subproject itself, and a category that has subprojects goes under no one.
  */
-async function requireProjectParent(db: Executor, orgId: string, parentId: string, childId: string | null) {
+async function requireProjectParent(
+  db: Executor,
+  orgId: string,
+  parentId: string,
+  childId: string | null,
+  actorId: string,
+) {
   if (childId && parentId === childId) throw new ValidationError("A project can't be its own subproject");
-  const parent = await requireCategory(db, orgId, parentId);
+  const parent = await requireCategory(db, orgId, parentId, actorId);
   if (parent.parentId) throw new ValidationError("A subproject can't have subprojects of its own");
   if (childId) {
     const [sub] = await db
@@ -259,11 +323,48 @@ async function requireProjectParent(db: Executor, orgId: string, parentId: strin
       .limit(1);
     if (sub) throw new ValidationError("A project with subprojects can't become a subproject");
   }
+  return parent;
+}
+
+/**
+ * Makes chats private to their creator: only the person stays in them (an anonymous project's chats are only theirs, and
+ * the agents in them leave: the person adds the ones they want), open to no role. ADR 0201.
+ */
+async function isolateChats(db: Executor, orgId: string, categoryIds: string[], personId: string) {
+  const chats = await db
+    .select({ id: channels.id })
+    .from(channels)
+    .where(and(eq(channels.orgId, orgId), inArray(channels.categoryId, categoryIds)));
+  await isolateChat(
+    db,
+    orgId,
+    chats.map((c) => c.id),
+    personId,
+  );
+}
+
+async function isolateChat(db: Executor, orgId: string, chatIds: string | string[], personId: string) {
+  const ids = Array.isArray(chatIds) ? chatIds : [chatIds];
+  if (ids.length === 0) return;
+  await db
+    .update(channels)
+    .set({ visibility: "private", audienceRoleIds: [] })
+    .where(and(eq(channels.orgId, orgId), inArray(channels.id, ids)));
+  await db
+    .delete(schema.channelMembers)
+    .where(
+      and(
+        inArray(schema.channelMembers.channelId, ids),
+        or(sql`${schema.channelMembers.agentId} is not null`, sql`${schema.channelMembers.userId} <> ${personId}`),
+      ),
+    );
+  for (const id of ids) caches.channelMembers.delete(`${orgId}:${id}`);
+  caches.scopes.deletePrefix(`${orgId}:`);
 }
 
 /** A category a channel may be put in: it belongs to the org. */
-export async function requireCategoryInOrg(db: Executor, orgId: string, categoryId: string) {
-  return requireCategory(db, orgId, categoryId);
+export async function requireCategoryInOrg(db: Executor, orgId: string, categoryId: string, actorId?: string) {
+  return requireCategory(db, orgId, categoryId, actorId);
 }
 
 /**
@@ -274,13 +375,30 @@ export async function createChannelCategory(
   db: Database,
   actorId: string,
   orgId: string,
-  input: { name: string; channelIds?: string[]; parentId?: string | null; projectType?: ProjectType | null },
+  input: {
+    name: string;
+    channelIds?: string[];
+    parentId?: string | null;
+    projectType?: ProjectType | null;
+    /** Only its creator's, its memory a file in its folder (ADR 0201): a project, never a subproject by itself. */
+    anonymous?: boolean;
+  },
   options: Options = {},
 ): Promise<ChannelCategory> {
   await requirePermission(db, actorId, orgId, "manage_channels");
   const name = cleanName(input.name);
   const parentId = input.parentId ?? null;
-  if (parentId) await requireProjectParent(db, orgId, parentId, null);
+  const parent = parentId ? await requireProjectParent(db, orgId, parentId, null, actorId) : null;
+  // A subproject has its project's anonymity; a project takes it only with a kind (it is a project) and a folder.
+  if (input.anonymous && parent && !parent.anonymous)
+    throw new ValidationError("A subproject is anonymous only with its project");
+  const anonymous = parent ? parent.anonymous : input.anonymous === true;
+  if (anonymous && input.channelIds?.length)
+    throw new ValidationError("An anonymous project starts with no chats of others", "project.anonymous");
+  if (anonymous && !parent && !input.projectType)
+    throw new ValidationError("Only a project can be anonymous", "project.anonymous");
+  if (anonymous && !projectsDir())
+    throw new ValidationError("An anonymous project needs this server's own folder", ANONYMOUS_NEEDS_FOLDER);
   await requireFreeName(db, orgId, name, undefined, parentId);
   try {
     const category = await db.transaction(async (tx) => {
@@ -297,14 +415,13 @@ export async function createChannelCategory(
           createdByUserId: actorId,
           parentId,
           projectType: input.projectType ?? null,
+          anonymous,
           // a project's folder is made with it (the user, 19. 11.)
-          folder:
-            parentId || input.projectType
-              ? makeFolder(name, parentId ? await requireCategory(tx, orgId, parentId) : null)
-              : null,
+          folder: parentId || input.projectType ? makeFolder(name, parent) : null,
         })
         .returning();
       if (!row) throw new Error("category insert returned nothing");
+      if (anonymous) setAnonymousMarker(row.folder, true);
       const wanted = [...new Set(input.channelIds ?? [])];
       if (wanted.length) {
         const found = await tx
@@ -320,11 +437,12 @@ export async function createChannelCategory(
           );
         if (found.length !== wanted.length) throw new NotFoundError("Channel not found");
         await writeOrder(tx, orgId, row.id, wanted);
+        if (anonymous) await isolateChats(tx, orgId, [row.id], actorId);
       }
       return row;
     });
     await layoutChanged(orgId, options);
-    return category;
+    return shown(category);
   } catch (error) {
     if (isUniqueViolation(error)) throw new ConflictError(`The category ${name} already exists`);
     throw error;
@@ -350,14 +468,40 @@ export async function renameChannelCategory(
     memory?: string;
     /** Its folder also on the server, every computer's copy kept in step. */
     online?: boolean;
+    /** Only its creator's, its memory a file in its folder (ADR 0201). */
+    anonymous?: boolean;
   },
   options: Options = {},
 ): Promise<ChannelCategory> {
   await requirePermission(db, actorId, orgId, "manage_channels");
-  const now = await requireCategory(db, orgId, categoryId);
-  if (input.parentId) await requireProjectParent(db, orgId, input.parentId, categoryId);
+  const now = await requireCategory(db, orgId, categoryId, actorId);
+  const newParent = input.parentId ? await requireProjectParent(db, orgId, input.parentId, categoryId, actorId) : null;
   const name = input.name !== undefined ? cleanName(input.name) : now.name;
   const parentId = input.parentId !== undefined ? input.parentId : now.parentId;
+  // Anonymity (ADR 0201): switched on and off by its creator alone; a subproject has its project's, a project's switch
+  // goes to its subprojects; an anonymous project is never online.
+  const creator = now.createdByUserId === actorId;
+  if (input.anonymous !== undefined && input.anonymous !== now.anonymous) {
+    if (!creator)
+      throw new ForbiddenError("Only its creator changes whether a project is anonymous", "project.anonymous_creator");
+    if (now.parentId) throw new ValidationError("A subproject has its project's anonymity", "project.anonymous");
+    if (input.anonymous && now.online)
+      throw new ValidationError("Switch it to Offline first, then to Anonymous", "project.anonymous_online_first");
+    if (input.anonymous && !now.projectType)
+      throw new ValidationError("Only a project can be anonymous", "project.anonymous");
+    if (input.anonymous && (!projectsDir() || !now.folder))
+      throw new ValidationError("An anonymous project needs this server's own folder", ANONYMOUS_NEEDS_FOLDER);
+  }
+  if (now.anonymous && input.anonymous !== false && parentId !== now.parentId)
+    throw new ValidationError("An anonymous project stays where it is", "project.anonymous");
+  if (newParent && newParent.anonymous !== now.anonymous && now.anonymous)
+    throw new ValidationError("A subproject has its project's anonymity", "project.anonymous");
+  const anonymous = newParent
+    ? newParent.anonymous
+    : parentId !== now.parentId
+      ? false
+      : (input.anonymous ?? now.anonymous);
+  if (anonymous && input.online) throw new ValidationError("An anonymous project is never online", "project.anonymous");
   if (name !== now.name || parentId !== now.parentId) await requireFreeName(db, orgId, name, categoryId, parentId);
   try {
     const [row] = await db
@@ -365,10 +509,14 @@ export async function renameChannelCategory(
       .set({
         name,
         parentId,
+        anonymous,
+        ...(anonymous ? { online: false } : {}),
+        // moved under an anonymous project, it is its creator's
+        ...(anonymous && newParent ? { createdByUserId: newParent.createdByUserId } : {}),
         ...(input.projectType !== undefined ? { projectType: input.projectType } : {}),
         ...(input.projectState !== undefined ? { projectState: input.projectState } : {}),
         ...(input.instructions !== undefined ? { instructions: input.instructions } : {}),
-        ...(input.memory !== undefined ? { memory: input.memory } : {}),
+        ...(input.memory !== undefined && !anonymous ? { memory: input.memory } : {}),
         ...(input.online !== undefined ? { online: input.online } : {}),
         // a plain category made a project gets its folder then; renamed or moved, its folder goes with it (the user)
         ...(!now.folder && (input.projectType || parentId)
@@ -380,14 +528,26 @@ export async function renameChannelCategory(
       .where(and(eq(channelCategories.orgId, orgId), eq(channelCategories.id, categoryId)))
       .returning();
     if (!row) throw new NotFoundError("Category not found");
+    // An anonymous project's memory is the file in its folder, never the column (ADR 0201).
+    if (anonymous && input.memory !== undefined && row.folder) writeMemoryFile(row.folder, input.memory);
     // its subprojects' folders were inside the one that moved
     if (now.folder && row.folder && row.folder !== now.folder)
       await db
         .update(channelCategories)
         .set({ folder: sql`${row.folder} || substr(${channelCategories.folder}, ${now.folder.length + 1})` })
         .where(and(eq(channelCategories.orgId, orgId), eq(channelCategories.parentId, categoryId)));
+    // Its anonymity went to its subprojects, and its chats' (and theirs) went private to its creator.
+    if (anonymous !== now.anonymous) {
+      const subs = await db
+        .update(channelCategories)
+        .set({ anonymous, ...(anonymous ? { online: false, createdByUserId: row.createdByUserId } : {}) })
+        .where(and(eq(channelCategories.orgId, orgId), eq(channelCategories.parentId, categoryId)))
+        .returning({ folder: channelCategories.folder, id: channelCategories.id });
+      for (const place of [row.folder, ...subs.map((x) => x.folder)]) setAnonymousMarker(place, anonymous);
+      if (anonymous) await isolateChats(db, orgId, [row.id, ...subs.map((x) => x.id)], actorId);
+    } else if (anonymous && newParent && row.folder) setAnonymousMarker(row.folder, true);
     await layoutChanged(orgId, options);
-    return row;
+    return shown(row);
   } catch (error) {
     if (isUniqueViolation(error)) throw new ConflictError(`The category ${name} already exists`);
     throw error;
@@ -403,7 +563,7 @@ export async function deleteChannelCategory(
   options: Options = {},
 ) {
   await requirePermission(db, actorId, orgId, "manage_channels");
-  await requireCategory(db, orgId, categoryId);
+  await requireCategory(db, orgId, categoryId, actorId);
   await db.transaction(async (tx) => {
     // LatteOS: a project's subprojects go with it (cascade); their chats join the loose ones too
     const subs = await tx
@@ -431,9 +591,9 @@ export async function placeChannelCategory(
   options: Options = {},
 ) {
   await requirePermission(db, actorId, orgId, "manage_channels");
-  await requireCategory(db, orgId, categoryId);
+  await requireCategory(db, orgId, categoryId, actorId);
   if (input.beforeCategoryId === categoryId) return;
-  if (input.beforeCategoryId) await requireCategory(db, orgId, input.beforeCategoryId);
+  if (input.beforeCategoryId) await requireCategory(db, orgId, input.beforeCategoryId, actorId);
   await db.transaction(async (tx) => {
     const ordered = (
       await tx
@@ -484,25 +644,34 @@ export async function placeChannel(
   if (!(await managesChannel(db, membership, actorId, channel))) {
     throw new ForbiddenError("Only the channel's creator or an admin can move it");
   }
-  if (input.categoryId) await requireCategory(db, orgId, input.categoryId);
+  const target = input.categoryId ? await requireCategory(db, orgId, input.categoryId, actorId) : null;
+  // Into an anonymous project it becomes private and its creator's alone (ADR 0201); only they move chats in.
+  if (target?.anonymous) {
+    if (channel.createdByUserId !== actorId)
+      throw new ValidationError("Only a chat's creator moves it into an anonymous project", "project.anonymous");
+  }
   if (input.beforeChannelId === channelId) return;
   await db.transaction(async (tx) => {
     const ids = (await channelsIn(tx, orgId, input.categoryId)).filter((id) => id !== channelId);
     const at = input.beforeChannelId ? ids.indexOf(input.beforeChannelId) : -1;
     ids.splice(at >= 0 ? at : ids.length, 0, channelId);
     await writeOrder(tx, orgId, input.categoryId, ids);
+    if (target?.anonymous) await isolateChat(tx, orgId, channelId, actorId);
   });
   await layoutChanged(orgId, options);
 }
 
 /** A project's memory stays short enough to read whole in every chat. */
-export const PROJECT_MEMORY_MAX = 20_000;
+export { PROJECT_MEMORY_MAX };
 
 /**
  * LatteOS: an agent keeps what it learnt in its chat's project (the subproject it is in, never the project above it):
- * one line at the memory's end. False when the chat is in no project or the memory is full.
+ * one line at the memory's end. An anonymous project keeps it as a line of MEMORY.md in its folder instead of the
+ * database (ADR 0201). False when the chat is in no project or the memory is full.
  */
 export async function addToProjectMemory(db: Database, orgId: string, channelId: string, line: string) {
+  const anonymous = await anonymousPlaceOf(db, orgId, channelId);
+  if (anonymous) return anonymous.folder ? appendMemoryLine(anonymous.folder, line) : false;
   const [here] = await db
     .select({
       id: channelCategories.id,
@@ -543,7 +712,13 @@ export async function onlineProjects(db: Executor, orgId: string) {
   const rows = await db
     .select({ id: channelCategories.id, folder: channelCategories.folder })
     .from(channelCategories)
-    .where(and(eq(channelCategories.orgId, orgId), eq(channelCategories.online, true)));
+    .where(
+      and(
+        eq(channelCategories.orgId, orgId),
+        eq(channelCategories.online, true),
+        eq(channelCategories.anonymous, false),
+      ),
+    );
   return rows.flatMap((r) => {
     const rel = r.folder ? path.relative(root, r.folder) : "";
     return rel && !rel.startsWith("..") && !path.isAbsolute(rel)

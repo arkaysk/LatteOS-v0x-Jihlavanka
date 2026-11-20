@@ -17,6 +17,7 @@ import {
   sql,
 } from "@agenteschat/db";
 import { plainLine } from "@agenteschat/ui/markdown";
+import { anonymousPlaceOf } from "./anonymous";
 import { decidableBySql } from "./approvals";
 import { NotFoundError, ValidationError } from "./errors";
 import { publishUserEvent } from "./events";
@@ -603,6 +604,10 @@ export async function notify(deps: NotificationDeps, input: NotifyInput): Promis
     .from(organizationMembers)
     .where(and(eq(organizationMembers.orgId, input.orgId), inArray(organizationMembers.userId, wanted)));
   const out: NotificationView[] = [];
+  // From an anonymous project's chat the inbox only: nothing goes to a push service or a mailbox (ADR 0201).
+  const sealed = input.source?.channelId
+    ? (await anonymousPlaceOf(deps.db, input.orgId, input.source.channelId)) !== null
+    : false;
   for (const member of members) {
     const { userId } = member;
     const row = await upsertOne(deps, input, userId);
@@ -621,7 +626,7 @@ export async function notify(deps: NotificationDeps, input: NotifyInput): Promis
     await publishCounts(deps, input.orgId, userId);
     // Their phone and browsers too (ADR 0035, 0071), through the outbox; never undoes the notification. A group pushes
     // once while unread: only the event that opened its row.
-    if (row.count === 1) await enqueuePush(deps.db, row, nowOf(deps), prefs).catch(() => false);
+    if (row.count === 1 && !sealed) await enqueuePush(deps.db, row, nowOf(deps), prefs).catch(() => false);
   }
   return out;
 }

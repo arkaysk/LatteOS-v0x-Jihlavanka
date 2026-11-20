@@ -984,7 +984,13 @@ export interface ApiClient {
     /** Admins: a category at the end, optionally taking `channelIds` along. */
     createCategory(
       orgId: string,
-      input: { name: string; channelIds?: string[]; parentId?: string | null; projectType?: ProjectType | null },
+      input: {
+        name: string;
+        channelIds?: string[];
+        parentId?: string | null;
+        projectType?: ProjectType | null;
+        anonymous?: boolean;
+      },
     ): Promise<ChannelCategory>;
     renameCategory(orgId: string, categoryId: string, name: string): Promise<ChannelCategory>;
     /** LatteOS: a category as a project — its name, project, kind, state, instructions; only what is given. */

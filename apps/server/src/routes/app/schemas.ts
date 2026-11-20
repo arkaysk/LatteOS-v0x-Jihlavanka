@@ -8,6 +8,7 @@ import {
   CHAT_TONES,
   MAX_PHOTO_DIM,
   ONBOARDING_STEPS,
+  PROJECT_TYPES,
   STANDING_STATES,
   START_PAGES,
   WALLPAPER_HUES,
@@ -664,7 +665,7 @@ export const ChannelCategory = z
       description: "LatteOS: the project this category is a subproject of (one level); null: a category of its own.",
     }),
     projectType: z
-      .enum(["code", "drawing", "book", "3d", "music", "comic", "other"])
+      .enum(PROJECT_TYPES)
       .nullable()
       .optional()
       .openapi({ description: "LatteOS: what kind of project; null: a plain category." }),
@@ -679,6 +680,10 @@ export const ChannelCategory = z
       .boolean()
       .optional()
       .openapi({ description: "LatteOS: its folder on the server too, every computer's copy in step." }),
+    anonymous: z
+      .boolean()
+      .optional()
+      .openapi({ description: "LatteOS: only its creator's; its memory is MEMORY.md in its folder." }),
   })
   .openapi("ChannelCategory");
 

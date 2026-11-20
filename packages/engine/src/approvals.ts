@@ -17,6 +17,7 @@ import {
   schema,
   sql,
 } from "@agenteschat/db";
+import { anonymousPlaceOf, hiddenFromSql } from "./anonymous";
 import { type ActiveCover, activeCoversFrom, activeCoversTo } from "./approval-covers";
 import { resumeHeldRuns, wakeLine } from "./approval-order";
 import { addApprovalRules, addRoutineOwnActions, type RememberedKind, rememberedKindOf } from "./approval-rules";
@@ -673,7 +674,7 @@ export function coveredFor(approval: Coverable, actorId: string, covers: ActiveC
 }
 
 type Askable = Pick<Approval, "orgId" | "ownerUserId"> &
-  Partial<Pick<Approval, "agentId" | "tool" | "approvers" | "params" | "requestedByUserId" | "highRisk">>;
+  Partial<Pick<Approval, "agentId" | "channelId" | "tool" | "approvers" | "params" | "requestedByUserId" | "highRisk">>;
 
 /**
  * The people asked to decide (the card's badge, the live Aprovações list): whoever holds its `decidingKeys` (ADR 0085)
@@ -682,6 +683,9 @@ type Askable = Pick<Approval, "orgId" | "ownerUserId"> &
  * `required` its people: only them. `notified`: who is told (inbox, push, email), `notifiedIds`.
  */
 export async function approverIds(db: Database, approval: Askable, notified = false) {
+  // An anonymous project's chat: its creator alone is asked, and alone decides (ADR 0201).
+  const anonymous = approval.channelId ? await anonymousPlaceOf(db, approval.orgId, approval.channelId) : null;
+  if (anonymous) return anonymous.creatorId ? [anonymous.creatorId] : [];
   const keys = decidingKeys({ tool: approval.tool ?? "", params: approval.params ?? {} });
   // An access request's `manage_agents` counts on its own agent only (`managesAgentSql`, ADR 0085 addendum of
   // 2026-11-17): a private agent's request never goes to who merely holds the key.
@@ -991,6 +995,12 @@ export async function decideApproval(
     .where(and(eq(approvals.id, approvalId), eq(approvals.orgId, orgId)));
   if (!current) throw new NotFoundError("Approval not found");
   const membership = await requirePermission(db, actorId, current.orgId, "read");
+  // An anonymous project's approvals are its creator's alone (ADR 0201).
+  const [hidden] = await db
+    .select({ id: approvals.id })
+    .from(approvals)
+    .where(and(eq(approvals.id, current.id), sql`${hiddenFromSql(sql`${approvals.channelId}`, actorId)}`));
+  if (hidden) throw new NotFoundError("Approval not found");
   const asking = await askingAgents(db, orgId, [current]);
   const direct = decides(current, actorId, membership, asking.get(current.agentId) ?? null);
   const forUserId = direct ? null : coveredFor(current, actorId, await activeCoversTo(db, orgId, actorId, at));
@@ -1097,7 +1107,15 @@ export async function decideApprovals(
 ): Promise<{ approvals: ApprovalView[]; skipped: string[] }> {
   const { db } = deps;
   const at = deps.now?.() ?? new Date();
-  const ids = [...new Set(input.ids)];
+  const asked = [...new Set(input.ids)];
+  const hiddenRows =
+    asked.length === 0
+      ? []
+      : await db
+          .select({ id: approvals.id })
+          .from(approvals)
+          .where(and(inArray(approvals.id, asked), sql`${hiddenFromSql(sql`${approvals.channelId}`, actorId)}`));
+  const ids = asked.filter((id) => !hiddenRows.some((h) => h.id === id));
   const vias = new Map<string, string | null>();
   if (input.via) for (const id of ids) vias.set(id, await approvalCardVia(db, orgId, input.via, id));
   const membership = await requirePermission(db, actorId, orgId, "read");
@@ -1523,6 +1541,7 @@ export async function listApprovals(
         options.messageId ? eq(approvals.messageId, options.messageId) : undefined,
         admin ? undefined : seenBy(db, orgId, actorId),
         personalSeenBy(db, orgId, actorId),
+        sql`not ${hiddenFromSql(sql`${approvals.channelId}`, actorId)}`,
       ),
     )
     .orderBy(desc(approvals.createdAt))

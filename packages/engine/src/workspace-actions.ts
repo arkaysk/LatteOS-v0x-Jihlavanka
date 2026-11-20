@@ -10,6 +10,7 @@ import {
 } from "./agent-actions";
 import type { AgentDeletionDeps } from "./agent-deletion";
 import { agentsByHandle } from "./agents";
+import { anonymousPlaceOf } from "./anonymous";
 import { recordAudit } from "./audit";
 import { cancelRun } from "./cancel";
 import { deleteChannel } from "./channel-deletion";
@@ -1083,6 +1084,8 @@ async function seesChannel(
   person: string,
   c: { id: string; visibility: string; audienceRoleIds: string[] },
 ) {
+  const anonymous = await anonymousPlaceOf(db, orgId, c.id);
+  if (anonymous) return anonymous.creatorId === person;
   if (c.visibility === "public" || can(await getMembership(db, person, orgId), "administrator")) return true;
   const roles = await memberRoleIds(db, orgId, person);
   if (c.audienceRoleIds.some((id) => roles.includes(id))) return true;

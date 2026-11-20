@@ -14,6 +14,7 @@ import {
   sql,
 } from "@agenteschat/db";
 import { modelForTier, modelInfo } from "@agenteschat/providers";
+import { inAnonymousProjectSql } from "./anonymous";
 import { listApprovals } from "./approvals";
 import { DIGEST_FROM, digestWaitingOn } from "./approvals-digest";
 import { editContextItem, howToSql } from "./context/items";
@@ -350,7 +351,8 @@ export async function buildTeamWeek(db: Database, w: Window): Promise<BuiltCard 
   const budgetOf = (b: number | string | null | undefined) => (b == null ? defaultBudget : Number(b));
   const visible = sql`(c.visibility = 'public' or exists (select 1 from channel_members vm
     where vm.channel_id = c.id and vm.user_id = ${w.userId})
-    or (c.kind = 'channel' and ${maySql(w.orgId, sql`${w.userId}::text`, "administrator")}))`;
+    or (c.kind = 'channel' and not ${inAnonymousProjectSql(sql`c.category_id`)}
+      and ${maySql(w.orgId, sql`${w.userId}::text`, "administrator")}))`;
   const teamRuns = sql`r.org_id = ${w.orgId} and r.created_at >= ${start}::timestamptz and r.created_at < ${end}::timestamptz
     and r.agent_id in (select id from agents where org_id = ${w.orgId} and builtin is null)`;
   const admin = w.admin !== false;

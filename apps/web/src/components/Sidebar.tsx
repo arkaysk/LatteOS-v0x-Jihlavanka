@@ -164,7 +164,8 @@ import { ArchivedChannelsDialog } from "./ArchivedChannelsDialog";
 import { ChangeAvatarDialog } from "./AvatarBuilder";
 import { FeedbackMark } from "./arrival/FeedbackDialog";
 import { MoveChannelDialog, NewCategoryDialog, RenameCategoryDialog } from "./ChannelCategoryDialogs";
-import { isProject, PROJECT_ICONS } from "./project/kinds";
+import { KindTile } from "./project/KindPicker";
+import { isProject } from "./project/kinds";
 import "./project/project.css";
 import { openPalette } from "./CommandMenu";
 import { DeleteAccountDialog } from "./DeleteAccount";
@@ -1211,7 +1212,8 @@ function ProjectMark({ category, orgId }: { category: ChannelCategory; orgId: st
       aria-label={t("projectPage.open")}
       onClick={(e) => e.stopPropagation()}
     >
-      <Icon name={PROJECT_ICONS[category.projectType ?? "other"]} size={14} />
+      {category.anonymous && <Icon name="lock" size={14} className="sidebar__anon-mark" />}
+      <KindTile type={category.projectType} size={20} />
     </Link>
   );
 }

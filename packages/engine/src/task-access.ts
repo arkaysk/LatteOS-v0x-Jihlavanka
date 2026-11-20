@@ -1,4 +1,5 @@
 import { and, type Executor, eq, isNotNull, rowsOf, type SQL, schema, sql } from "@agenteschat/db";
+import { inAnonymousProjectSql } from "./anonymous";
 import { caches } from "./cache";
 import { maySql } from "./permissions";
 
@@ -12,7 +13,8 @@ export const AUDIENCE_MAX = 200;
 
 /** A row of `channels` an administrator reads without being in it (ADR 0151): every channel, never a DM. */
 export const adminChannelSql = (orgId: unknown, userId: unknown) =>
-  and(eq(channels.kind, "channel"), maySql(orgId, userId, "administrator"));
+  // Never an anonymous project's chat: only its creator reads it (ADR 0201).
+  and(eq(channels.kind, "channel"), maySql(orgId, userId, "administrator"), sql`not ${inAnonymousProjectSql()}`);
 
 /**
  * Whether `userId` sees the `issues` row `alias` (ADR 0151): an administrator always; a limited task, who it names; else
@@ -68,7 +70,7 @@ export const conversationReaderSql = (channelId: SQL, userId: SQL) =>
 export const channelReaderSql = (channelId: SQL, userId: SQL, depth = FILE_CONVERSATION_DEPTH): SQL => sql`(exists (
     select 1 from ${channelMembers} rm where rm.channel_id = ${channelId} and rm.user_id = ${userId})
   or exists (select 1 from ${channels} rc where rc.id = ${channelId}
-    and ((rc.kind = 'channel' and ${maySql(sql`rc.org_id`, userId, "administrator")})
+    and ((rc.kind = 'channel' and not ${inAnonymousProjectSql(sql`rc.category_id`)} and ${maySql(sql`rc.org_id`, userId, "administrator")})
       or (rc.kind = 'task' and ${taskReaderSql(channelId, userId)})${
         depth > 0
           ? sql`

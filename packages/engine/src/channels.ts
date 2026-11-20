@@ -15,6 +15,7 @@ import {
   sql,
 } from "@agenteschat/db";
 import { resolveChannelAgentAsks } from "./admin-asks";
+import { anonymousPlaceOf, inAnonymousProjectSql } from "./anonymous";
 import { managesAgent, REACH_COLUMNS } from "./audience";
 import { caches } from "./cache";
 import { endOfCategory, requireCategoryInOrg } from "./channel-categories";
@@ -191,14 +192,16 @@ export async function createChannel(
   await requirePermission(db, actorId, orgId, "create_channels");
   // Whoever may create a channel may put it in an existing category (arranging categories is for admins).
   const categoryId = input.categoryId ?? null;
-  if (categoryId) await requireCategoryInOrg(db, orgId, categoryId);
+  const category = categoryId ? await requireCategoryInOrg(db, orgId, categoryId, actorId) : null;
+  // An anonymous project's chat is private and only its creator's (ADR 0201).
+  const anonymous = category?.anonymous === true;
   const name = input.name.trim().toLowerCase();
   if (name.startsWith("dm-")) throw new ValidationError("Channel names can't start with dm-");
   if (!CHANNEL_NAME_PATTERN.test(name)) {
     throw new ValidationError("channel name: lower-case letters, digits, - or _ (max 80)");
   }
-  const visibility = input.visibility ?? "public";
-  const audienceRoleIds = await channelRoleIds(db, orgId, visibility, input.audienceRoleIds);
+  const visibility = anonymous ? "private" : (input.visibility ?? "public");
+  const audienceRoleIds = await channelRoleIds(db, orgId, visibility, anonymous ? [] : input.audienceRoleIds);
   try {
     const made = await db.transaction(async (tx) => {
       const [channel] = await tx
@@ -381,7 +384,8 @@ export async function listChannels(db: Database, userId: string, orgId: string):
       ) un on true
       where c.org_id = ${orgId}::uuid and c.archived_at is null and c.kind = 'channel'
         and (c.visibility = 'public' or cm.id is not null or ${channelAudienceSql("c", sql`${userId}`)}
-          or ${maySql(sql`${orgId}::uuid`, sql`${userId}::text`, "administrator")})
+          or (${maySql(sql`${orgId}::uuid`, sql`${userId}::text`, "administrator")}
+            and not ${inAnonymousProjectSql(sql`c.category_id`)}))
       order by c.position asc, c.name asc`),
   );
   return rows.map((r) => {
@@ -467,7 +471,8 @@ export async function channelCard(
   }>(
     await db.execute(sql`select c.id, c.name, c.topic, c.visibility, c.audience_role_ids,
         (c.archived_at is not null) as archived, ${channelAudienceSql("c", sql`${userId}`)} as by_role,
-        ${maySql(sql`${orgId}::uuid`, sql`${userId}::text`, "administrator")} as admin,
+        (${maySql(sql`${orgId}::uuid`, sql`${userId}::text`, "administrator")}
+          and not ${inAnonymousProjectSql(sql`c.category_id`)}) as admin,
         exists (select 1 from ${channelMembers} m where m.channel_id = c.id and m.user_id = ${userId}) as is_member,
         (select count(*) from ${channelMembers} m where m.channel_id = c.id and m.user_id is not null) as people,
         (select count(*) from ${channelMembers} m join ${agents} a on a.id = m.agent_id
@@ -616,6 +621,7 @@ export async function requireChannelAccess(db: Database, userId: string, orgId: 
       overrides: channelOverridesSql(organizationMembers.orgId, sql`${channelId}::uuid`, organizationMembers.userId),
       taskReader: sql<boolean>`${channels.kind} = 'task' and ${taskReaderSql(sql`${channelId}::uuid`, sql`${userId}::text`)}`,
       fileReader: sql<boolean>`${channels.kind} = 'file' and ${fileConversationReaderSql(sql`${channelId}::uuid`, sql`${userId}::text`)}`,
+      anonymous: sql<boolean>`${inAnonymousProjectSql()}`,
     })
     .from(organizationMembers)
     .innerJoin(organizations, eq(organizations.id, organizationMembers.orgId))
@@ -632,6 +638,9 @@ export async function requireChannelAccess(db: Database, userId: string, orgId: 
   const channel = row.channel;
   if (!channel || channel.archivedAt) throw new NotFoundError("Channel not found");
   const permissions = resolvePermissions(row.role === "owner", row.keys);
+  // An anonymous project's chat does not exist for anyone but its one member (ADR 0201): not even for an administrator.
+  const anonymous = row.anonymous === true || String(row.anonymous) === "t";
+  if (anonymous && !row.memberId) throw new NotFoundError("Channel not found");
   const reads = row.memberId || (channel.kind === "channel" && permissions.has("administrator"));
   // A task's conversation is read by whoever sees the task (ADR 0145), a live file's by whoever reads the file (ADR
   // 0199), always checked again: people are never their members.
@@ -681,10 +690,12 @@ export async function joinChannel(
       kind: channels.kind,
       visibility: channels.visibility,
       byRole: channelAudienceSql("channels", sql`${userId}`),
+      anonymous: sql<boolean>`${inAnonymousProjectSql()}`,
     })
     .from(channels)
     .where(and(eq(channels.id, channelId), eq(channels.orgId, orgId)));
-  if (!channel) throw new NotFoundError("Channel not found");
+  if (!channel || channel.anonymous === true || String(channel.anonymous) === "t")
+    throw new NotFoundError("Channel not found");
   const admin = channel.kind === "channel" && can(membership, "administrator");
   // A live file's conversation is read by whoever reads the file, never by membership (ADR 0199 §2).
   if (
@@ -736,6 +747,9 @@ export async function managesChannel(
   actorId: string,
   channel: { id: string; orgId: string; createdByUserId: string | null },
 ) {
+  // An anonymous project's chat is managed by its creator alone (ADR 0201).
+  const anonymous = await anonymousPlaceOf(db, channel.orgId, channel.id);
+  if (anonymous && anonymous.creatorId !== actorId) return false;
   if (can(membership, "manage_channels")) return true;
   const [row] = rowsOf<{ member: boolean; overrides: Parameters<typeof parseOverrides>[0] }>(
     await db.execute(sql`select exists (select 1 from ${channelMembers} cm where cm.org_id = ${channel.orgId}::uuid
@@ -814,6 +828,12 @@ export async function addChannelMember(
     .from(channels)
     .where(and(eq(channels.id, channelId), eq(channels.orgId, orgId), isNull(channels.archivedAt)));
   if (!channel) throw new NotFoundError("Channel not found");
+  // An anonymous project's chat: only its creator adds agents to it, and nobody else joins (ADR 0201).
+  const anonymous = await anonymousPlaceOf(db, orgId, channelId);
+  if (anonymous) {
+    if (anonymous.creatorId !== actorId) throw new NotFoundError("Channel not found");
+    if ("userId" in member) throw new ValidationError("An anonymous project's chat is only yours", "project.anonymous");
+  }
   if (channel.kind === "dm") throw new ValidationError("A direct conversation keeps its participants");
   // A live file's conversation (ADR 0199 §2): read by whoever reads the file, never by membership (a member would read
   // it after losing the file, in search and notifications), and agents join it only when they may work on the file
