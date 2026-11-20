@@ -3790,6 +3790,9 @@ Inštalovať (`uv tool`). `latte-ai memory [set basic|everos|off | install evero
 Tlačidlo Pamäť v Pomocníkovi otvorí túto stránku. **Chýba:** EverOS naostro — na latte-lab nejde (LanceDB potrebuje AVX2, procesor ho
 nemá; z latte-lab odstránený, v LensAI ostáva ako sivá voľba s vysvetlením — používateľ 20. 11.), overiť na hlavnom PC: inštalácia, `everos.toml` s lokálnym modelom (`json_object`), zápis
 a hľadanie. Prechod poznámok medzi pamäťami nie je (každá ostáva vo svojom priečinku).
+  20. 11.: agent agentgramu s lokálnym modelom = API kľúč › Iný poskytovateľ, OpenAI, `http://127.0.0.1:8790/v1`, kľúč `none`;
+`latte-ai local up` spustí iba router (~100 MB), robí to aj zapnutý agentgram; model sa načíta na žiadosť (Qwen 4B s nástrojom overený,
+1 min 46 s s načítaním na procesore). Odporúčané okno ≥ 32 768 tokenov.
 
 **10B.81** [~] 20. 11. **agentgram: Anonymný projekt** (používateľ 20. 11.; ADR 0201 forku, migrácia 0312): popri Offline a Online tretia
 voľba — iba pre toho, kto ho založil (ostatní ani správcovia ho nevidia, API 404), čety súkromné; pamäť iba do `MEMORY.md` v priečinku
@@ -3797,7 +3800,9 @@ projektu (podprojekt svoj, rodičovský číta), nič do Wiki, `context_items`, 
 tímu, Wiki ani iné projekty; nástroje pracovného priestoru odmietnuté; texty upozornení všeobecné; bez synchronizácie; len na serveri
 s priečinkom na tom istom počítači. Priečinok má značku `.agentgram-anonymous`, index rozhovorov LensAI relácie z neho nečíta
 (`latte-ai`). Konektory (MCP) odmietnuté, upozornenia iba v schránke (bez push a e-mailu), Online → Anonymný iba cez Offline.
-Testy `latteos-anonymous.test.ts` (7, prešli); fork commit 9a0dbe84c. **Chýba:** skúška naostro na stránke, šifrovanie (neskôr,
+Konektory MCP iba tie, čo bežia na tomto počítači (loopback; vlastné servery agenta prefiltrované pre Claude Code, Codex bez nastavení
+majiteľa, Cursor/OpenCode/Grok/Antigravity v anonymnom priečinku odmietnuté); `latte-mcp` v anonymnom priečinku a cez HTTP bez pamäte,
+rozhovorov LensAI a `ask`. Testy `latteos-anonymous.test.ts` (8) a `anonymous-mcp.test.ts` (2) prešli. **Chýba:** skúška naostro na stránke, šifrovanie (neskôr,
 používateľ). Zostávajú modely AI, ktoré v čete odpovedajú; v schránke ostáva meno četu ako štítok.
 
 **10B.82** [x] 20. 11. **agentgram: 26 druhov projektov a ikony Phosphor** (používateľ 20. 11.; migrácia 0311): k 7 druhom 19 nových

@@ -323,6 +323,12 @@ def serve(lazy=False, port=0):
                   "items": [[str(what)[:300]]]}, ensure_ascii=False)])
         return out
 
+    # LensAI's memory and conversations stay LensAI's (the user, 20. 11.: agentgram keeps a memory of its own): over HTTP
+    # (agentgram's connector) and in an anonymous project's folder (agentgram's agents with their own MCP servers) the
+    # tools that read or keep them, or carry a question to another AI's history, are not there
+    if port or anonymous(os.getcwd()):
+        for name in APART:
+            server.remove_tool(name)
     if lazy:
         server = lazily(server)
     if not port:
@@ -347,6 +353,21 @@ def serve(lazy=False, port=0):
             return
         await app(scope, receive, send)
     uvicorn.run(guarded, host="127.0.0.1", port=port, log_level="warning")
+
+
+APART = ("conversations", "conversation", "search_chats", "ask", "memory_tools", "memory")
+PROJECTS_DIR = os.path.expanduser("~/LensAI/agentgram")
+
+
+def anonymous(folder):
+    """Whether a folder is in an anonymous project of agentgram, which marks its folders with .agentgram-anonymous (as
+    latte-ai's index reads it): nothing of it may reach another memory, nor another memory it."""
+    root, d = os.path.realpath(PROJECTS_DIR), os.path.realpath(folder)
+    while d.startswith(root + os.sep):
+        if os.path.exists(os.path.join(d, ".agentgram-anonymous")):
+            return True
+        d = os.path.dirname(d)
+    return False
 
 
 DATA = os.path.join(os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share"), "latteAI")
