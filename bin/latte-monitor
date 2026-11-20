@@ -12,6 +12,11 @@
                                      mine: it can be switched here, with no password, and back again;
                                      took: milliseconds it added to the last start, where the system says
   latte-monitor startup-set ID on|off    switches one of the user's own (kind "app" or "user")
+  latte-monitor services             what listens on TCP and the services of the catalog (system/services.json):
+                                     [{"id", "name", "what", "kind" web|mcp|ai|other, "state" running|stopped|failed, "unit",
+                                     "pids", "ports", "url", "rss", "cpu", "exe", "cwd", "unitFile", "enabled", "by", "app"}]
+  latte-monitor service ID start|stop|restart|enable|disable
+                                     {"ok", "error"}: units through systemctl --user; a program without a unit only stops
   latte-monitor sensors              [{"chip", "name", "value", "unit"}]: temperatures, fans, voltages, power
                                      each reading also has a stable "id" and a "source"
   latte-monitor hardware             {"schema": 1, "groups": [{"id", "name", "items": [… ]}, …]}:
@@ -262,6 +267,187 @@ def startup_set(ident, on):
         with open(mine, "w") as f:
             f.write(text.rstrip("\n") + "\nHidden=true\n")
     return 0
+
+
+# ── services: what listens on this computer, and what stands behind it ───────────────────────────────────────
+def catalog():
+    for p in ("/usr/share/latteos/services.json", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "system", "services.json")):
+        try:
+            with open(p) as f:
+                return json.load(f)
+        except (OSError, ValueError):
+            pass
+    return {"deny": [], "services": []}
+
+
+def cmdline(pid):
+    return read("/proc/%d/cmdline" % pid).replace("\0", " ").strip()
+
+
+def probe(port):
+    """The address of a page this port serves over HTTP (0.5 s), or None."""
+    import http.client
+    try:
+        c = http.client.HTTPConnection("127.0.0.1", port, timeout=0.5)
+        c.request("GET", "/", headers={"Accept": "text/html"})
+        r = c.getresponse()
+        page = r.status < 400 and "html" in (r.getheader("Content-Type") or "")
+        c.close()
+        return "http://127.0.0.1:%d/" % port if page else None
+    except (OSError, http.client.HTTPException):
+        return None
+
+
+def listeners(mine):
+    """{pid: [ports]} of this user's processes that listen on TCP."""
+    found = {}
+    for l in out("ss", "-ltnpH").splitlines():
+        cols = l.split()
+        if len(cols) < 5:
+            continue
+        port = int(cols[3].rsplit(":", 1)[1])
+        for pid in re.findall(r"pid=(\d+)", l):
+            if int(pid) in mine and port not in found.setdefault(int(pid), []):
+                found[int(pid)].append(port)
+    return found
+
+
+def unit_of(pid):
+    last = read("/proc/%d/cgroup" % pid).strip().rsplit("/", 1)[-1]
+    return last[:-8] if last.endswith(".service") and not last.startswith("user@") else None
+
+
+def units_info(names):
+    info = {}
+    if not names:
+        return info
+    for block in out("systemctl", "--user", "show", "-p", "Id,Description,FragmentPath,ActiveState,UnitFileState,LoadState,WorkingDirectory", *[n + ".service" for n in names]).strip().split("\n\n"):
+        f = dict(l.split("=", 1) for l in block.splitlines() if "=" in l)
+        if f.get("Id"):
+            info[f["Id"][:-8]] = f
+    return info
+
+
+def services(quick=False):
+    cat = catalog()
+    deny, denycmd = set(cat.get("deny", [])), re.compile(cat.get("denyCmd") or "(?!)")
+    me = os.getuid()
+    before = processes()
+    mine = {p for p, v in before.items() if v[4] == me}
+    kids = {}
+    for p in mine:
+        kids.setdefault(before[p][1], []).append(p)
+
+    def family(pid):
+        found, todo = [], [pid]
+        while todo:
+            p = todo.pop()
+            found.append(p)
+            todo += kids.get(p, [])
+        return found
+
+    listen = listeners(mine)
+    entries, claimed = [], set()
+    unitnames = {u for c in cat["services"] for u in c.get("unit", [])}
+    for pid in listen:
+        u = unit_of(pid)
+        if u:
+            unitnames.add(u)
+    info = units_info(sorted(unitnames))
+
+    def add(c, unit, pids):
+        pids = [p for p in pids if p in mine and p not in claimed]
+        claimed.update(pids)
+        entries.append({"c": c, "unit": unit, "pids": pids})
+
+    for c in cat["services"]:
+        for u in c.get("unit", []):
+            i = info.get(u, {})
+            if i.get("LoadState") != "loaded":         # installed, running or not: a stopped one can be started here
+                continue
+            pids = [int(x) for x in read("/sys/fs/cgroup" + out("systemctl", "--user", "show", "-p", "ControlGroup", "--value", u + ".service").strip() + "/cgroup.procs").split()] if i.get("ActiveState") == "active" else []
+            add(c, u, pids)
+            break
+    for c in cat["services"]:
+        if c.get("match") and not any(e["c"] is c for e in entries):
+            rx = re.compile(c["match"])
+            top = [p for p in sorted(listen) if p not in claimed and rx.search(cmdline(p)) and before[p][1] not in listen]
+            if top:
+                add(c, None, [q for p in top for q in family(p)])
+    for pid in sorted(listen):                             # what is left: named by its program
+        if pid in claimed or before[pid][0] in deny or denycmd.search(cmdline(pid)):
+            continue
+        u = unit_of(pid)
+        same = [p for p in listen if p not in claimed and before[p][0] == before[pid][0] and unit_of(p) == u]
+        add({"id": ("unit:" + u) if u else "proc:" + before[pid][0], "name": u or before[pid][0], "what": "", "kind": "other"}, u, [q for p in same for q in family(p)])
+    t = time.time()
+    if not quick:
+        time.sleep(0.25)
+    after = before if quick else processes()
+    dt = max(time.time() - t, 0.01)
+    ncpu = os.cpu_count() or 1
+    result = []
+    for e in entries:
+        c, pids = e["c"], [p for p in e["pids"] if p in after]
+        i = info.get(e["unit"], {}) if e["unit"] else {}
+        ports = sorted({q for p in pids for q in listen.get(p, [])})
+        lead = pids[0] if pids else None
+        exe = os.path.realpath("/proc/%d/exe" % lead) if lead and os.access("/proc/%d/exe" % lead, os.R_OK) else ""
+        try:
+            cwd = os.readlink("/proc/%d/cwd" % lead) if lead else ""
+        except OSError:
+            cwd = ""
+        unitfile = i.get("FragmentPath", "")
+        app = c.get("app")
+        by = "you" if app == "you" else ("app" if app else ("LatteOS" if "latte" in os.path.basename(unitfile) or "latte-" in cmdline(lead or 0) else "you"))
+        result.append({"id": c["id"], "name": c["name"], "what": c.get("what", ""), "kind": c.get("kind", "other"),
+                       "state": "failed" if i.get("ActiveState") == "failed" else ("running" if pids else "stopped"),
+                       "unit": (e["unit"] + ".service") if e["unit"] else None, "pids": pids, "ports": ports,
+                       "url": c.get("url") or ("probe" if not quick and ports else None), "path": c.get("path", ""),
+                       "rss": sum(after[p][3] for p in pids),
+                       "cpu": round(sum(max(0, after[p][2] - before[p][2]) for p in pids if p in before) / TICK / dt / ncpu * 100, 1) if not quick else 0,
+                       "exe": exe, "cwd": cwd or i.get("WorkingDirectory", ""), "unitFile": unitfile,
+                       "enabled": i.get("UnitFileState") == "enabled", "by": by, "app": app if app not in (None, "you") else ""})
+    if not quick:                                          # one short look at each port, all at once
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(8) as pool:
+            for r in result:
+                if r["url"] == "probe":
+                    r["url"] = next((u for u in pool.map(probe, r["ports"][:6]) if u), None)
+    for r in result:
+        if r["url"] == "probe":
+            r["url"] = None
+    return result
+
+
+def service_do(ident, action):
+    found = next((s for s in services(quick=True) if s["id"] == ident), None)
+    if not found:
+        return {"ok": False, "error": "unknown service"}
+    if found["unit"]:
+        if action not in ("start", "stop", "restart", "enable", "disable"):
+            return {"ok": False, "error": "unknown action"}
+        r = subprocess.run(["systemctl", "--user", action, found["unit"]], capture_output=True, text=True)
+        return {"ok": r.returncode == 0, "error": r.stderr.strip()}
+    if action != "stop":
+        return {"ok": False, "error": "a program without a service can only be stopped"}
+    pids = [p for p in found["pids"] if os.path.exists("/proc/%d" % p) and os.stat("/proc/%d" % p).st_uid == os.getuid()]
+    for p in pids:
+        try:
+            os.kill(p, signal.SIGTERM)
+        except OSError:
+            pass
+    for _ in range(50):
+        if not any(os.path.exists("/proc/%d" % p) for p in pids):
+            break
+        time.sleep(0.1)
+    for p in pids:
+        if os.path.exists("/proc/%d" % p):
+            try:
+                os.kill(p, signal.SIGKILL)
+            except OSError:
+                pass
+    return {"ok": True, "error": ""}
 
 
 # ── what the sensors say ─────────────────────────────────────────────────────────────────────────────────────
@@ -554,6 +740,10 @@ def main(a):
         print(json.dumps(startup(), ensure_ascii=False))
     elif len(a) == 3 and a[0] == "startup-set" and a[2] in ("on", "off"):
         return startup_set(a[1], a[2] == "on")
+    elif a == ["services"]:
+        print(json.dumps(services(), ensure_ascii=False))
+    elif len(a) == 3 and a[0] == "service":
+        print(json.dumps(service_do(a[1], a[2]), ensure_ascii=False))
     elif a == ["sensors"]:
         print(json.dumps(sensors(), ensure_ascii=False))
     elif a == ["hardware"]:

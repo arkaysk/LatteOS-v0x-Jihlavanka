@@ -597,3 +597,9 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
   von sa nedostane, a nikto iný (človek ani AI mimo projektu) k nemu nemá prístup. Šifrovanie zatiaľ nie, neskôr áno.
 - **Viac druhov projektov a farebné ikony** (20. 11., používateľ): ponuku druhov (kniha, kresba, 3D…) rozšíriť; krajšie farebné
   ikony pre druhy aj celý agentgram.
+- **LensAI Store, karta MCP LatteOS, skilly, Monitor › Služby** (20. 11., používateľ): LensAI › Konektory je Store pre MCP so širším
+  výberom ako agentgram: odporúčané od LatteOS, **celá ponuka agentgramu (agentes.chat) vždy dostupná** a hľadanie v oficiálnom
+  registri MCP. MCP inštaluje používateľ sám. agentgram sa nemení (jeho Store ostáva pôvodný); pribudne karta „MCP LatteOS“ so Store
+  iba zo serverov LensAI a povoľovaním po agentoch — nie jeden spoločný konektor („dizajnérovi iba ComfyUI, Blender, Krita“).
+  Skilly zdieľané v `~/.agents/skills` (`npx skills`); v agentgrame záložka „Skill z LensAI“ v okne Nainštalovať skill.
+  Monitor dostane stránku **Služby**: MCP a webové rozhrania na localhoste — čo sú, kde na disku, kto ich zapol, otvoriť, ukončiť.

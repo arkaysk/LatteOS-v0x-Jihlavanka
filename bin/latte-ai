@@ -124,6 +124,9 @@ No API key: the official tool of a service answers, with the account the user is
   latte-ai agentgram folder PATH   a project's folder (only under ~/LensAI/agentgram), opened in Files: {"path"}
   latte-ai agentgram pair [--link CODE]   connects this computer (its runner) to the server: {"url", "code"} to confirm
                             there, then {"ok"}; with agentgram's connect link, the person lets it join on that page
+  latte-ai skills find WORDS · skills official · skills add SOURCE SKILL · skills remove NAME   the skills' store:
+                            {"skillssh", "clawhub"} for WORDS, Anthropic's own; installed once into ~/.agents/skills for Codex,
+                            Claude Code and Gemini CLI (Vercel's `skills`, or ClawHub's for SOURCE @owner/slug; no telemetry), removed
   latte-ai memory           which memory the AIs keep: {"engine": basic|everos|off, "engines": [{"id", "name", "installed",
                             "folder", "license", "cannot" (everos: "avx2" when this processor cannot run it), "running"}]}
   latte-ai memory set basic|everos|off · install everos · up   choose it (EverOS's server runs only while chosen), get
@@ -1849,6 +1852,92 @@ def embed(texts):
     return v / numpy.maximum(numpy.linalg.norm(v, axis=1, keepdims=True), 1e-9)
 
 
+# ── the skills' store (ROADMAP 10B.85; the user, 20. 11.): skills.sh's search, installed by Vercel's `skills` (MIT) once
+# into ~/.agents/skills, which Codex reads, linked for Claude Code and Gemini CLI; agentgram offers them in "Skill from LensAI"
+SKILL_AGENTS = ["codex", "claude-code", "gemini-cli"]
+
+
+def skills_find(words):
+    """skills.sh's skills for these words, the most installed first: [{"source", "skill", "name", "installs", "url"}]."""
+    import urllib.parse
+    import urllib.request
+    try:
+        got = json.load(urllib.request.urlopen(urllib.request.Request(
+            "https://skills.sh/api/search?" + urllib.parse.urlencode({"q": words}), headers={"User-Agent": "LatteOS"}), timeout=15))
+    except (OSError, ValueError):
+        return []
+    rows = [x for x in got.get("skills") or [] if not x.get("isDuplicate") and x.get("source") and x.get("skillId")]
+    return [{"source": x["source"], "skill": x["skillId"], "name": x.get("name") or x["skillId"], "installs": x.get("installs", 0),
+             "url": "https://skills.sh/" + x.get("id", "")} for x in sorted(rows, key=lambda x: -x.get("installs", 0))[:40]]
+
+
+def skills_official():
+    """Anthropic's own skills (github.com/anthropics/skills, their licenses in each folder), the list kept a day."""
+    import time
+    import urllib.request
+    cache = os.path.join(os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"), "latteos", "skills-anthropic.json")
+    try:
+        if os.path.exists(cache) and time.time() - os.path.getmtime(cache) < 86400:
+            with open(cache) as f:
+                return json.load(f)
+        got = json.load(urllib.request.urlopen(urllib.request.Request("https://api.github.com/repos/anthropics/skills/contents/skills",
+                                                                      headers={"User-Agent": "LatteOS"}), timeout=15))
+        rows = [{"source": "anthropics/skills", "skill": x["name"], "name": x["name"], "installs": 0, "from": "anthropic",
+                 "url": "https://github.com/anthropics/skills/tree/main/skills/" + x["name"]} for x in got if x.get("type") == "dir"]
+        os.makedirs(os.path.dirname(cache), exist_ok=True)
+        with open(cache, "w") as f:
+            json.dump(rows, f)
+        return rows
+    except (OSError, ValueError, KeyError, TypeError):
+        return []
+
+
+def skills_clawhub(words):
+    """ClawHub's skills (OpenClaw's registry) for these words, those it does not mark suspicious; each links back to its
+    page there, as ClawHub asks of directories that show its catalog."""
+    import urllib.parse
+    import urllib.request
+    try:
+        got = json.load(urllib.request.urlopen(urllib.request.Request("https://clawhub.ai/api/v1/search?" + urllib.parse.urlencode(
+            {"q": words, "limit": 30, "nonSuspiciousOnly": "true"}), headers={"User-Agent": "LatteOS"}), timeout=15))
+    except (OSError, ValueError):
+        return []
+    return [{"source": "@" + x["ownerHandle"] + "/" + x["slug"], "skill": x["slug"], "name": x.get("displayName") or x["slug"],
+             "what": x.get("summary", ""), "installs": (x.get("metrics") or {}).get("downloads") or x.get("downloads") or 0, "from": "clawhub",
+             "url": "https://clawhub.ai" + (x.get("canonicalUrl") or "")}
+            for x in got.get("results") or [] if x.get("slug") and x.get("ownerHandle")
+            and (x.get("trust") or {}).get("installability", "installable") == "installable"]
+
+
+def skills_clawhub_run(args):
+    """ClawHub's own tool (npx clawhub, MIT) on the shared folder ~/.agents/skills, asking nothing, telling nothing back;
+    a skill it put there is linked for Claude Code as Vercel's `skills` links them."""
+    try:
+        r = subprocess.run(["npx", "-y", "clawhub", "--workdir", os.path.expanduser("~/.agents"), "--dir", "skills", "--no-input"] + args,
+                           capture_output=True, text=True, timeout=600, env=dict(os.environ, PATH=SEARCH, CLAWHUB_DISABLE_TELEMETRY="1"))
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    name = args[-1].split("/")[-1]
+    link = os.path.expanduser("~/.claude/skills/" + name)
+    if r.returncode == 0 and args[0] == "install" and os.path.isdir(os.path.expanduser("~/.claude")) and not os.path.lexists(link):
+        os.makedirs(os.path.dirname(link), exist_ok=True)
+        os.symlink("../../.agents/skills/" + name, link)
+    if r.returncode == 0 and args[0] == "uninstall" and os.path.islink(link):
+        os.remove(link)
+    return r.returncode == 0
+
+
+def skills_cli(args):
+    """Vercel's `skills` (through npx), for this user, for every agent's tool, asking nothing and telling nothing back."""
+    agents = [x for a in SKILL_AGENTS for x in ("-a", a)] if args[0] == "add" else []      # removed: from all, the shared copy too
+    try:
+        r = subprocess.run(["npx", "-y", "skills"] + args + ["-g"] + agents + ["-y"], capture_output=True, text=True, timeout=600,
+                           env=dict(os.environ, PATH=SEARCH, DISABLE_TELEMETRY="1", DO_NOT_TRACK="1"))
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return r.returncode == 0
+
+
 def anonymous(folder):
     """Whether a folder is in an anonymous project of agentgram (the user, 20. 11.: nothing of it leaves it, LensAI's index
     neither): agentgram marks its folder and its subprojects' with .agentgram-anonymous."""
@@ -3512,6 +3601,19 @@ def main(a):
     if a == ["skills"]:
         print(json.dumps(skills_all(), ensure_ascii=False))
         return 0
+    if a[:2] == ["skills", "find"] and len(a) == 3:
+        print(json.dumps({"skillssh": skills_find(a[2]), "clawhub": skills_clawhub(a[2])}, ensure_ascii=False))
+        return 0
+    if a == ["skills", "official"]:
+        print(json.dumps(skills_official(), ensure_ascii=False))
+        return 0
+    if a[:2] in (["skills", "add"], ["skills", "remove"]) and len(a) == (4 if a[1] == "add" else 3):
+        clawhub = a[2].startswith("@")                      # ClawHub's @owner/slug, else skills.sh's owner/repo
+        ok = (skills_clawhub_run(["install", a[2]] if a[1] == "add" else ["uninstall", "--yes", a[2]]) if clawhub or
+              (a[1] == "remove" and os.path.exists(os.path.expanduser("~/.agents/skills/" + a[2] + "/.clawhub")))
+              else skills_cli(["add", a[2], "--skill", a[3]] if a[1] == "add" else ["remove", a[2]]))
+        print(json.dumps({"ok": ok}))
+        return 0 if ok else 1
     if a == ["stop"]:
         subprocess.run(["pkill", "-f", "llama-server.*--port %d" % LOCAL_PORT])
         return 0

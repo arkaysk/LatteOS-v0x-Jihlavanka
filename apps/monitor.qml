@@ -1,10 +1,11 @@
 //@ pragma AppId latteos-monitor
 // Monitor: what the computer is doing, what runs on it, what starts by itself and why, and what its sensors say.
 // The whole machine is latte-stats's to tell (processor, memory, graphics, once a second); the programs, the
-// network and the disks latte-monitor's (every two seconds).   latte-app monitor [processes | startup | sensors]
+// network and the disks latte-monitor's (every two seconds).   latte-app monitor [processes | services | startup | sensors]
 //
 // The pages: the overview (four live pictures and the most demanding programs) · processes (the programs with a
-// window, then the rest; one can be ended) · startup (everything that starts by itself, with what it is, where
+// window, then the rest; one can be ended) · services (what listens on this computer: web pages, MCP servers, the
+// AI models; opened, restarted or stopped) · startup (everything that starts by itself, with what it is, where
 // it comes from and how long it took; the user's own can be switched off, and on again) · sensors.
 import QtQuick
 import QtQuick.Shapes
@@ -17,7 +18,7 @@ ShellRoot {
     readonly property var words: (Quickshell.env("LATTE_APP_ARGS") || "").split("\n").filter(w => w !== "")
     property string page: "overview"
     readonly property var pages: [{ id: "overview", name: QT_TR_NOOP("Overview"), icon: "compass" }, { id: "processes", name: QT_TR_NOOP("Processes"), icon: "apps" },
-                                  { id: "startup", name: QT_TR_NOOP("Startup"), icon: "rocket" }, { id: "sensors", name: QT_TR_NOOP("Sensors"), icon: "activity" }]
+                                  { id: "startup", name: QT_TR_NOOP("Startup"), icon: "rocket" }, { id: "services", name: QT_TR_NOOP("Services"), icon: "plug-connected" }, { id: "sensors", name: QT_TR_NOOP("Sensors"), icon: "activity" }]
 
     // ── what is known, and the last minute of it ──────────────────────────────────────────────────────────
     property var now: ({})                     // latte-stats's last line
@@ -50,6 +51,18 @@ ShellRoot {
     }
     Ask { id: starts }
     Ask { id: sense }
+    Ask { id: svc }
+    property string openService: ""            // the service whose details are shown
+    property string askStop: ""                // the service whose stopping waits for a yes
+    property string doing: ""                  // the service an action is running for
+    Timer { interval: 3000; repeat: true; running: shell.page === "services"; triggeredOnStart: true; onTriggered: if (shell.doing === "") svc.ask(["services"]) }
+    Process { id: svcdo; stdout: StdioCollector { id: svcout }
+              onExited: { shell.doing = ""; svc.ask(["services"]) } }
+    function service(id, action) { shell.doing = id; shell.askStop = ""; svcdo.running = false; svcdo.command = ["latte-monitor", "service", id, action]; svcdo.running = true }
+    Process { id: opener }
+    function openUrl(url) { opener.running = false; opener.command = ["xdg-open", url]; opener.running = true }
+    function byText(s) { return s.by === "app" ? I18n.tr("the app {app}", { app: s.app }) : (s.by === "you" ? I18n.tr("you") : "LatteOS") }
+    readonly property var kindIcons: ({ web: "world", mcp: "plug-connected", ai: "brain", other: "server" })
     Process { id: doer; onExited: starts.ask(["startup"]) }
     function act(args) { doer.running = false; doer.command = ["latte-monitor"].concat(args); doer.running = true }
     // the user's programs GuardCorgi keeps running (bin/latte-guardcorgi keep): asked for while the processes are shown
@@ -216,6 +229,72 @@ ShellRoot {
                     Repeater { model: ScriptModel { values: part.rows.map(p => p.name + "\n" + p.pids[0]) }
                         Line { required property string modelData; width: procs.room
                                what: part.rows.find(p => p.name + "\n" + p.pids[0] === modelData) || { name: "", pids: [], cpu: 0, mem: 0 } } } } }
+        }
+
+        // ── services: what listens here ───────────────────────────────────────────────────────────────────
+        Scroll {
+            id: serv
+            visible: shell.page === "services"
+            Waiting { visible: !svc.data; text: I18n.tr("Looking…"); width: serv.room; topPadding: 160 }
+            Label { visible: svc.data && svc.data.length === 0; text: I18n.tr("No service is listening on this computer."); color: Theme.dim; width: serv.room }
+            Column { width: serv.room; spacing: 6; visible: !!svc.data && svc.data.length > 0
+                Label { text: I18n.tr("Web pages, MCP servers and AI models running here. Open one, restart it or stop it."); color: Theme.dim; font.pixelSize: 12; width: parent.width; wrapMode: Text.WordWrap; bottomPadding: 6 }
+                Repeater { model: ScriptModel { values: (svc.data || []).map(s => s.id) }
+                    Rectangle { id: srow
+                        required property string modelData
+                        readonly property var s: (svc.data || []).find(x => x.id === modelData) || { id: "", name: "", what: "", kind: "other", state: "stopped", pids: [], ports: [], rss: 0, cpu: 0, by: "you", app: "" }
+                        readonly property bool open: shell.openService === s.id
+                        readonly property bool busy: shell.doing === s.id
+                        width: serv.room; radius: 16; color: Theme.card; clip: true
+                        height: head.height + (open ? body.height + 16 : 0)
+                        Behavior on height { NumberAnimation { duration: 140 } }
+                        Item { id: head; width: parent.width; height: 64
+                            HoverHandler { id: srowHit }
+                            Rectangle { anchors.fill: parent; radius: 16; color: srowHit.hovered ? Qt.alpha(Theme.raised, 0.5) : "transparent" }
+                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { shell.openService = srow.open ? "" : srow.s.id; shell.askStop = "" } }
+                            Glyph { x: 16; name: shell.kindIcons[srow.s.kind] || "server"; font.pixelSize: 24; color: srow.s.state === "running" ? Theme.gold : Theme.faint; anchors.verticalCenter: parent.verticalCenter }
+                            Rectangle { x: 54; width: 10; height: 10; radius: 5; anchors.verticalCenter: parent.verticalCenter
+                                        color: srow.s.state === "running" ? Theme.ok : (srow.s.state === "failed" ? Theme.red : Theme.faint) }
+                            Column { x: 76; width: parent.width - 76 - cols.width - 40; anchors.verticalCenter: parent.verticalCenter; spacing: 3
+                                Label { text: I18n.tr(srow.s.name); font.weight: 600; width: parent.width; elide: Text.ElideRight }
+                                Label { text: srow.s.what !== "" ? I18n.tr(srow.s.what) : I18n.tr("Not known to LatteOS"); color: Theme.dim; font.pixelSize: 12; width: parent.width; elide: Text.ElideRight } }
+                            Row { id: cols; anchors.right: parent.right; anchors.rightMargin: 36; anchors.verticalCenter: parent.verticalCenter; spacing: 12
+                                Label { width: 110; text: srow.s.ports.length > 0 ? ":" + srow.s.ports.slice(0, 2).join(" :") + (srow.s.ports.length > 2 ? " …" : "") : "—"; color: Theme.dim; font.pixelSize: 12; elide: Text.ElideRight; horizontalAlignment: Text.AlignRight }
+                                Label { width: 66; text: srow.s.state === "running" ? shell.bytes(srow.s.rss) : "—"; color: Theme.dim; horizontalAlignment: Text.AlignRight }
+                                Label { width: 50; text: srow.s.state === "running" ? srow.s.cpu.toFixed(1) + " %" : "—"; color: srow.s.cpu >= 25 ? Theme.gold : Theme.dim; horizontalAlignment: Text.AlignRight } }
+                            Glyph { anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter; name: srow.open ? "chevron-up" : "chevron-down"; color: Theme.dim; font.pixelSize: 16 }
+                        }
+                        Column { id: body; x: 16; y: head.height; width: parent.width - 32; spacing: 8; visible: srow.open
+                            Label { text: srow.s.what !== "" ? I18n.tr(srow.s.what) : ""; visible: text !== ""; width: parent.width; wrapMode: Text.WordWrap }
+                            Repeater { model: [{ k: QT_TR_NOOP("Address"), v: srow.s.url || (srow.s.ports.length > 0 ? "127.0.0.1:" + srow.s.ports[0] : "") },
+                                               { k: QT_TR_NOOP("Program"), v: srow.s.exe }, { k: QT_TR_NOOP("Folder"), v: srow.s.cwd },
+                                               { k: QT_TR_NOOP("Service file"), v: srow.s.unitFile || "" }, { k: QT_TR_NOOP("Processes"), v: srow.s.pids.join(", ") },
+                                               { k: QT_TR_NOOP("Turned on by"), v: shell.byText(srow.s) }].filter(f => f.v !== "")
+                                Row { required property var modelData; width: body.width; spacing: 12
+                                    Label { text: I18n.tr(parent.modelData.k); color: Theme.faint; font.pixelSize: 12; width: 100 }
+                                    Label { text: parent.modelData.v; color: Theme.dim; font.pixelSize: 12; width: parent.width - 112; elide: Text.ElideMiddle } } }
+                            Row { spacing: 12; visible: srow.s.unit !== null && srow.s.unit !== undefined
+                                Label { text: I18n.tr("Starts when you log in"); anchors.verticalCenter: parent.verticalCenter }
+                                Rectangle { width: 46; height: 26; radius: 13; color: srow.s.enabled ? Theme.gold : Theme.raised; anchors.verticalCenter: parent.verticalCenter
+                                    Behavior on color { ColorAnimation { duration: 140 } }
+                                    Rectangle { width: 20; height: 20; radius: 10; y: 3; x: srow.s.enabled ? 23 : 3; color: srow.s.enabled ? Theme.ground : Theme.dim; Behavior on x { NumberAnimation { duration: 140 } } }
+                                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shell.service(srow.s.id, srow.s.enabled ? "disable" : "enable") } } }
+                            // stopping asks first, and says what stops working
+                            Rectangle { visible: shell.askStop === srow.s.id; width: parent.width; height: ask.height + 20; radius: 12; color: Theme.raised; border.color: Theme.red
+                                Column { id: ask; x: 14; y: 10; width: parent.width - 28; spacing: 10
+                                    Label { width: parent.width; wrapMode: Text.WordWrap; text: I18n.tr("Stop {name}? What uses it stops working until it is started again.", { name: srow.s.name }) }
+                                    Row { spacing: 8
+                                        Pill { text: I18n.tr("Stop"); danger: true; icon: "player-stop"; onPressed: shell.service(srow.s.id, "stop") }
+                                        Pill { text: I18n.tr("Cancel"); onPressed: shell.askStop = "" } } } }
+                            Flow { width: parent.width; spacing: 8; visible: shell.askStop !== srow.s.id
+                                Pill { visible: !!srow.s.url; strong: true; icon: "external-link"; text: I18n.tr("Open in browser"); onPressed: shell.openUrl(srow.s.url) }
+                                Pill { visible: srow.s.unit && srow.s.state !== "running"; strong: !srow.s.url; icon: "player-play"; text: I18n.tr("Start"); busy: srow.busy; onPressed: shell.service(srow.s.id, "start") }
+                                Pill { visible: !!srow.s.unit && srow.s.state === "running"; icon: "refresh"; text: I18n.tr("Restart"); busy: srow.busy; onPressed: shell.service(srow.s.id, "restart") }
+                                Pill { visible: srow.s.state === "running"; danger: true; icon: "player-stop"; text: I18n.tr("Stop"); busy: srow.busy; onPressed: shell.askStop = srow.s.id } }
+                        }
+                    }
+                }
+            }
         }
 
         // ── what starts by itself ─────────────────────────────────────────────────────────────────────────

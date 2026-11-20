@@ -1,0 +1,20 @@
+{
+  "deny": ["pleamar-wm", "pleamar", "latte-goo", "quickshell", "qs", "pipewire", "wireplumber", "pipewire-pulse", "xdg-desktop-portal", "xdg-document-portal", "MainThread", "claude", "node", "Xwayland", "dbus-daemon", "systemd", "cupsd", "gvfsd", "greetd", "ssh", "sshd", "smbd", "nmbd", "chrome", "firefox", "code"],
+  "denyCmd": "\\.vscode-server|/code-|claude-code|/\\.claude/|pleamar|quickshell|latte-goo",
+  "services": [
+    {"id": "agentgram", "name": "agentgram", "what": "The chat server where your AI agents talk to you and to each other.", "kind": "web", "unit": ["agentgram"], "match": "apps/server/src/main\\.ts", "app": "LensAI", "path": "/"},
+    {"id": "agentgram-runner", "name": "agentgram runner", "what": "Runs the agents of agentgram: answers the messages with the AI models.", "kind": "ai", "unit": ["agentgram-runner"], "app": "LensAI"},
+    {"id": "latte-mcp", "name": "LatteOS MCP server", "what": "Gives AI agents LatteOS's tools over MCP: the windows, the agents at work, small settings.", "kind": "mcp", "unit": ["latte-mcp"], "match": "latte-mcp", "app": "LensAI"},
+    {"id": "llama-router", "name": "Local AI models (llama.cpp)", "what": "Loads the local AI models and answers LensAI and the agents; one process per loaded model.", "kind": "ai", "match": "llama-server.*--models-preset", "app": "LensAI", "path": "/"},
+    {"id": "comfyui", "name": "ComfyUI", "what": "Node-based image and video generation with local models.", "kind": "web", "unit": ["comfyui"], "match": "ComfyUI|comfyui", "app": "LensAI", "path": "/"},
+    {"id": "latte-everos", "name": "EverOS", "what": "Long-term memory for the AI agents.", "kind": "ai", "unit": ["latte-everos"], "match": "everos", "app": "LensAI"},
+    {"id": "agentes-server", "name": "agentes server", "what": "The original agentes.chat server (the unforked one).", "kind": "web", "unit": ["agentes-server"], "app": "you"},
+    {"id": "agentes-runner", "name": "agentes runner", "what": "Runs the agents of the original agentes.chat.", "kind": "ai", "unit": ["agentes-runner"], "app": "you"},
+    {"id": "home-assistant", "name": "Home Assistant", "what": "Smart-home dashboard and automations.", "kind": "web", "unit": ["home-assistant", "homeassistant"], "match": "homeassistant|hass\\b|home-assistant", "path": "/"},
+    {"id": "zima", "name": "Zima / CasaOS dashboard", "what": "Home-server dashboard for files and apps.", "kind": "web", "unit": ["casaos", "zimaos"], "match": "casaos|zimaos|zima", "path": "/"},
+    {"id": "sunshine", "name": "Sunshine", "what": "Game-stream host for Moonlight; its settings page is on port 47990.", "kind": "web", "unit": ["app-dev.lizardbyte.app.Sunshine"], "match": "sunshine", "url": "https://localhost:47990/"},
+    {"id": "ollama", "name": "Ollama", "what": "Runs local AI models and offers them over an API.", "kind": "ai", "unit": ["ollama"], "match": "ollama"},
+    {"id": "lm-studio", "name": "LM Studio server", "what": "The local model server of LM Studio.", "kind": "ai", "match": "lm-studio|LM Studio|\\.lmstudio"},
+    {"id": "open-webui", "name": "Open WebUI", "what": "A chat page for local and remote AI models.", "kind": "web", "unit": ["open-webui"], "match": "open-webui|open_webui", "path": "/"}
+  ]
+}

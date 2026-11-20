@@ -3812,6 +3812,45 @@ dlaždici, výber ako mriežka dlaždíc; celý agentgram kreslí ikony Phosphor
 `packages/ui/src/icons/phosphor.ts`, ~30 mien bez náhrady ostalo pôvodných). Chýba: typecheck mobilnej a desktopovej aplikácie padá
 na chýbajúcu `sk` v ich tabuľke jazykov (od F11, 19. 11.), portugalské texty.
 
+**10B.83** [~] 20. 11. (hotové a nasadené: LensAI › Konektory › Store — 4 odporúčané (`system/ai/mcp-store.json`: ComfyUI, Blender,
+Playwright, Home Assistant), 79 z ponuky agentgramu s ich logami a slovenskými opismi (`bun` číta `presets.ts` raz na commit forku),
+hľadanie v registri MCP; Nainštalované s prepínačmi Claude Code / Codex / Gemini; `latte-mcp store|add|give|remove`, zoznam
+`~/.config/latteos/mcp-servers.json` (0600); `latte-mcp http` dáva každý lokálny server na `/mcp/ID` s vlastným tokenom a `/servers`
+pre agentgram — overené falošným serverom echo; pridanie a odobratie cloudovej služby do Claude Code overené (Linear). Chýba:
+inštalácia lokálneho servera naostro (robí používateľ; pypi/npm cesta neskúšaná), lokálne modely ako príjemca, Codex s hlavičkou
+tokenu, kontrola GuardCorgi pred inštaláciou z registra, prompts/resources cez bránu.
+20. 11. večer (používateľ: „Google Kalendár → Otvoriť v agentgrame otvorí agentgram, ale nie inštaláciu“): fork vie
+`/?connector=ID` → Nastavenia › Konektory s otvoreným pripojením toho konektora (ADR 0202); LensAI „Pripojiť v agentgrame“ ho
+otvorí v karte agentgramu. Služby cez Composio (Google, Slack…) sa na tomto serveri pripojiť nedajú (chýba platený
+`COMPOSIO_API_KEY`) — LensAI to povie a ponúkne lokálnu náhradu: Google Calendar (nspady/google-calendar-mcp, MIT) s vlastným
+kľúčom Google Cloud, súbor sa vyberá cez Prehľadávať…
+20. 11. noc (používateľ: „rozšír Store o skôr spomínané obchody“): MCP + **Docker MCP Catalog** (MIT, jeden `catalog.yaml`, 268 serverov
+skontrolovaných Dockerom, obraz cez podman, tajomstvá ako polia; bez hľadania 30 najsťahovanejších); skilly + **oficiálne od Anthropic**
+(GitHub, deň v pamäti) a **ClawHub** (OpenClaw, MIT, iba „nie podozrivé“, odkaz na ich stránku; inštalácia `npx clawhub` do
+`~/.agents/skills` + odkaz pre Claude Code). Glama, Smithery a PulseMCP chcú vlastný kľúč API (Glama aj viditeľné uvedenie) — zatiaľ
+nie; SkillMD nemá verejné API. Neoverené naostro: inštalácia z Dockera (podman) a z ClawHubu.) **LensAI Store pre MCP** (používateľ 20. 11.: všetko na jednom mieste, LensAI ponúka širší výber ako agentgram):
+LensAI › Konektory = Store v troch vrstvách — (1) odporúčané od LatteOS (kategórie, slovenské opisy, ikony Phosphor), (2) **celá
+ponuka agentgramu/agentes.chat automaticky** (`packages/engine/src/connectors/presets.ts` forku; nová verzia forku = nové položky),
+(3) hľadanie v [oficiálnom registri MCP](https://github.com/modelcontextprotocol/registry) (Apache-2.0, API `v0.1/servers` s údajmi
+o inštalácii) so značkou „neoverené“ a kontrolou GuardCorgi. Inštaluje používateľ sám (nie Claude; ComfyUI na latte-lab nie). Lokálne
+servery bežia raz za `latte-mcp` (vlastná adresa a kľúč pre každý), pri každom výber Claude Code / Codex / Gemini / lokálne modely;
+cloudové sa zapíšu do CLI s prihlásením. agentgram sa nemení, jeho Store ostáva pôvodný.
+
+**10B.84** [~] 20. 11. (hotové a nasadené vo forku, ADR 0202: karta a Store, pripojenie tokenom servera, ktorý do prehliadača
+nejde; výnimka z https iba pre presný pôvod `LATTEOS_MCP_URL`; premenné v `agentgram.service`; testy `latteos-offer.test.ts`;
+spojenie overené cez engine falošným serverom echo. Chýba: preklik v okne agentgramu, skutočný server z LensAI.) **agentgram: karta MCP LatteOS** (návrh používateľa so snímkou): Nastavenia › Konektory a MCP — karta „MCP
+LatteOS“ s „Pridať MCP z LatteOS“ → Store v štýle agentgramu iba so servermi z LensAI; pripojenie = obyčajné MCP pripojenie
+(neforkovaný agentes.chat ho vidí v sekcii MCP), povolenie po agentoch ako doteraz; výnimka z „iba https“ iba pre adresu `latte-mcp`.
+
+**10B.85** [~] 20. 11. (LensAI › Skilly › Store hotový a nasadený: hľadanie skills.sh (`latte-ai skills find`), inštalácia
+`npx skills add … -g -a codex -a claude-code -a gemini-cli -y` bez telemetrie do `~/.agents/skills` (+ odkaz pre Claude Code),
+odobratie aj zdieľanej kópie — overené na anthropics/skills brand-guidelines a vrátené. agentgram: záložka „Skill z LensAI“ v okne
+Nainštalovať skill (`LATTEOS_SKILLS_DIR`), inštalácia cestou nahraného .zip, Nainštalované/Aktualizovať podľa podpisu priečinka,
+odkazy mimo priečinka sa nečítajú; overené testom, nie v okne.)
+**Zdieľané skilly** (používateľ 20. 11.): jeden priečinok `~/.agents/skills` cez
+[`npx skills`](https://github.com/vercel-labs/skills) (MIT, skills.sh, ~80 nástrojov), Store skillov v LensAI › Skilly; v agentgrame
+v okne „Nainštalovať skill“ nová záložka **Skill z LensAI** (vedľa Odkaz na GitHub, Nahrať .zip, Napísať) s rolovacím zoznamom.
+
 ### 10C. [ ] Heidelberg
 
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví
@@ -3940,6 +3979,13 @@ od odhadov; história podlieha súhlasu, nastaveniu uchovávania a možnosti vym
 **10D.19** [ ] **Karta GPU z GPU Taskman** (používateľ 17. 11.: zavedieme; [GPU Taskman](https://github.com/shanselman/gputaskman), MIT,
 Python): VRAM a aktivita GPU po procesoch, načítané LLM modely a ich KV-cache; NVIDIA všade, AMD a Intel na Linuxe.
 Karta, ktorá v Mission Center chýba (10D.17), aj panel pre PowerGoo. Overiť na RX 640 (latte-lab) a RTX 3060. Zdroj: `inspo/LatteOS novinky – november 2026.md`.
+
+**10D.20** [x] 20. 11. (`latte-monitor services|service`, `system/services.json` s 14 známymi službami, stránka Služby v Monitore; nasadené, snímka
+v živom okne; aj zastavené nainštalované (ComfyUI, pôvodný agentes) na spustenie; dočasná služba spustená/zastavená príkazom. Chýba:
+Home Assistant/Zima/EverOS naživo, kontajnery podmanu (port drží `rootlessport`), konkrétne „čo prestane fungovať“ pri Zastaviť)  **Stránka Služby** (používateľ 20. 11.): všetky MCP servery a webové rozhrania na tomto počítači (ComfyUI, Home
+Assistant, Zima dashboard, EverOS, agentgram, latte-mcp, router modelov…): čo je zač, adresa, stav, RAM/CPU, kde je na disku, kto
+ju zapol (aplikácia LatteOS alebo používateľ), Otvoriť v prehliadači, Zastaviť/Spustiť/Reštartovať, spúšťanie pri prihlásení.
+Ako karta Služby v Správcovi úloh Windows 11; súvisí so 17.11 (kto koľko RAM berie).
 
 ### 10E. [~] DeviceManager
 

@@ -11,6 +11,12 @@ It knows nothing itself: each tool is a thin cover over a command that is there 
                             where it may look on the web only when the person allows it there (bin/latte-ai claude)
   latte-mcp install|remove  writes it into, or takes it out of, the agents installed here, for this user
   latte-mcp status          {"ai", "agents": [{"id", "name", "installed", "has"}]}: which agents have it
+  latte-mcp store [WORDS]   LensAI's MCP store: {"latteos": LatteOS's picks, "agentgram": agentgram's whole offer, "docker":
+                            Docker's checked catalog (images run with podman; the most pulled, or for WORDS), "registry":
+                            the official MCP registry's servers for WORDS, "mine": those installed, each with the tools it is given to}
+  latte-mcp add ID          installs one (stdin: {"entry" (a registry one as the store gave it), "values": the fields it asks})
+  latte-mcp give ID claude|chatgpt|gemini on|off   gives an installed one to that agent's tool, or takes it back
+  latte-mcp remove ID       takes it back from every tool, uninstalls and forgets it
   latte-mcp servers         every MCP server the agents are given (their user settings), by name: [{"name", "how" (the
                             command line or the URL), "clients": ["Claude Code", "Codex", "Gemini CLI"]}]; never env or headers
 
@@ -175,6 +181,317 @@ def servers():
             row = found.setdefault(name, {"name": name, "how": how, "clients": []})
             row["clients"].append(client)
     return sorted(found.values(), key=lambda s: s["name"].lower())
+
+
+# ── LensAI's MCP store (ROADMAP 10B.83; the user, 20. 11.): LatteOS's own picks (system/ai/mcp-store.json), the whole of
+# agentgram's (agentes.chat's) offer read from its source, and a search of the official MCP registry. What the user
+# installs is kept in mcp-servers.json and given to each agent's tool the user chooses, under its own name.
+STORE = os.path.join(os.environ.get("LATTE_SHARE") or "/usr/share/latteos", "ai", "mcp-store.json")
+MINE = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "mcp-servers.json")
+AGENTGRAM_SRC = os.path.expanduser("~/src/agentes-chat")      # ponytail: the fork's source until a built agentgram ships
+REGISTRY = "https://registry.modelcontextprotocol.io/v0.1/servers"
+GIVEN = {"claude": ("Claude Code", "claude"), "chatgpt": ("Codex", "codex"), "gemini": ("Gemini", "gemini")}
+
+
+def store_latteos():
+    try:
+        with open(STORE) as f:
+            return [dict(x, source="latteos") for x in json.load(f)["servers"]]      # "home": its project's page
+    except (OSError, ValueError, KeyError):
+        return []
+
+
+def store_agentgram():
+    """agentgram's offer with whether each connects there now: Composio's only when its server has Composio's key (the
+    local server's .env)."""
+    try:
+        with open(os.path.expanduser("~/.local/share/agentgram/server/.env")) as f:
+            ready = any(line.startswith("COMPOSIO_API_KEY=") and line.strip() != "COMPOSIO_API_KEY=" for line in f)
+    except OSError:
+        ready = False
+    return [dict(e, ready=ready or e.get("via") != "composio") for e in agentgram_offer()]
+
+
+def agentgram_offer():
+    """agentgram's offer as its authors keep it (presets.ts), read by bun once per commit of the fork: services reached at
+    an address (each signs in on its own page), and those only agentgram reaches (through Composio, its own GitHub app)."""
+    import re
+    head = run("git", ["-C", AGENTGRAM_SRC, "rev-parse", "HEAD"])
+    if not head or head.returncode:
+        return []
+    cache = os.path.join(os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"), "latteos", "agentgram-store.json")
+    try:
+        with open(cache) as f:
+            got = json.load(f)
+        if got["head"] == head.stdout.strip():
+            return got["servers"]
+    except (OSError, ValueError, KeyError):
+        pass
+    bun = shutil.which("bun", path=SEARCH + os.pathsep + os.path.expanduser("~/.bun/bin"))
+    code = ('import {MCP_PRESETS, composioToolkitOf} from "./packages/engine/src/connectors/presets.ts";'
+            'console.log(JSON.stringify(MCP_PRESETS.map(p => ({id: p.id, name: p.label, what: p.description, category: p.category,'
+            'icon: p.icon, url: p.serverUrl, soon: !!p.soon, composio: !!composioToolkitOf(p.serverUrl)}))))')
+    try:
+        r = subprocess.run([bun, "-e", code], cwd=AGENTGRAM_SRC, capture_output=True, text=True, timeout=60) if bun else None
+        presets = json.loads(r.stdout) if r and r.returncode == 0 else []
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        presets = []
+    pub = os.path.join(AGENTGRAM_SRC, "apps", "web", "public")
+    try:
+        with open(os.path.join(AGENTGRAM_SRC, "packages", "engine", "src", "connectors", "listing.ts")) as f:
+            brands = dict(re.findall(r'^\s+"?([\w-]+)"?: \{ file: "([\w-]+)"', f.read(), re.M))
+    except OSError:
+        brands = {}
+    # its own words for them in the user's language (agentgram's locale), where it has one
+    lang = (os.environ.get("LANG") or "en")[:2]
+    try:
+        with open(os.path.join(AGENTGRAM_SRC, "packages", "i18n", "src", "locales", lang + ".json")) as f:
+            here = json.load(f)["connectors"]["descriptions"]
+    except (OSError, ValueError, KeyError):
+        here = {}
+    out = []
+    for p in presets:
+        f = brands.get(p["icon"], p["icon"])
+        logo = next((x for x in (os.path.join(pub, "connectors", f + ".svg"), os.path.join(pub, "brands", f + ".svg")) if os.path.exists(x)), "")
+        out.append({"id": "agentgram-" + p["id"], "name": p["name"], "what": p["what"], "here": here.get(p["id"], ""), "category": p["category"], "logo": logo,
+                    "source": "agentgram", "license": "", "only": "agentgram" if p["composio"] else "",
+                    "via": "composio" if p["composio"] else "",
+                    "soon": p["soon"], "install": {"kind": "remote", "url": p["url"]}})
+    out.append({"id": "agentgram-github", "name": "GitHub", "what": "Code, pull requests, issues and Actions.", "here": here.get("github", ""), "category": "dev",
+                "logo": os.path.join(pub, "connectors", "github.svg"), "source": "agentgram", "license": "", "only": "agentgram",
+                "soon": False, "install": {"kind": "remote", "url": ""}})
+    try:
+        os.makedirs(os.path.dirname(cache), exist_ok=True)
+        with open(cache, "w") as f:
+            json.dump({"head": head.stdout.strip(), "servers": out}, f)
+    except OSError:
+        pass
+    return out
+
+
+def store_registry(words, most=30):
+    """The official MCP registry's servers for these words, their latest versions: each as the store shows it, with how
+    it installs (pypi or npm on stdio, or an address); what this cannot install here says so (`cannot`)."""
+    import urllib.parse
+    import urllib.request
+    url = REGISTRY + "?" + urllib.parse.urlencode({"search": words, "limit": most, "version": "latest"})
+    try:
+        got = json.load(urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "LatteOS"}), timeout=15))
+    except (OSError, ValueError):
+        return []
+    out = []
+    for item in got.get("servers") or []:
+        s = item.get("server") or {}
+        pkg = next((p for p in s.get("packages") or [] if p.get("registryType") in ("pypi", "npm")
+                    and (p.get("transport") or {}).get("type") == "stdio"), None)
+        remote = next((r for r in s.get("remotes") or [] if r.get("type") in ("streamable-http", "sse") and r.get("url")), None)
+        if pkg:
+            fields = [{"id": e["name"], "label": e.get("description") or e["name"], "secret": bool(e.get("isSecret")),
+                       "default": e.get("default") or "", "required": bool(e.get("isRequired"))} for e in pkg.get("environmentVariables") or [] if e.get("name")]
+            how = {"kind": pkg["registryType"], "package": pkg["identifier"], "version": pkg.get("version") or "", "args": [],
+                   "env": {f["id"]: "{%s}" % f["id"] for f in fields}, "fields": fields}
+        elif remote and "{" not in remote["url"]:
+            how = {"kind": "remote", "url": remote["url"]}
+        else:
+            how = {"kind": "other"}
+        out.append({"id": "registry-" + s.get("name", "").replace("/", "-").lower(), "name": s.get("title") or s.get("name", "").split("/")[-1],
+                    "registry": s.get("name", ""), "what": s.get("description", ""), "version": s.get("version", ""),
+                    "source": "registry", "url": (s.get("repository") or {}).get("url") or s.get("websiteUrl") or "",
+                    "category": "", "license": "", "unchecked": True, "install": how, "cannot": "" if how["kind"] != "other" else "kind"})
+    return out
+
+
+DOCKER_CATALOG = "https://desktop.docker.com/mcp/catalog/v2/catalog.yaml"
+
+
+def store_docker(words=""):
+    """Docker's MCP catalog (docker/mcp-registry, MIT): servers Docker builds and checks, each a container image run with
+    podman here, or an address. One file, kept a day; with no words the most pulled."""
+    import time
+    import urllib.request
+    cache = os.path.join(os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"), "latteos", "docker-mcp-catalog.yaml")
+    try:
+        if not os.path.exists(cache) or time.time() - os.path.getmtime(cache) > 86400:
+            body = urllib.request.urlopen(urllib.request.Request(DOCKER_CATALOG, headers={"User-Agent": "LatteOS"}), timeout=30).read()
+            os.makedirs(os.path.dirname(cache), exist_ok=True)
+            with open(cache + ".new", "wb") as f:
+                f.write(body)
+            os.replace(cache + ".new", cache)
+        import yaml
+        with open(cache) as f:
+            reg = (yaml.safe_load(f) or {}).get("registry") or {}
+    except (OSError, ValueError, ImportError, Exception):          # a bad download or YAML: no Docker section this time
+        return []
+    out = []
+    for name, v in reg.items():
+        meta = v.get("metadata") or {}
+        fields = [{"id": x["env"], "label": x.get("description") or x["env"], "secret": True} for x in v.get("secrets") or [] if x.get("env")]
+        if v.get("type") == "server" and v.get("image"):
+            first = v["image"].split("/")[0]
+            image = v["image"] if "/" in v["image"] and ("." in first or ":" in first) else "docker.io/" + v["image"]      # podman wants the registry
+            env = {x["name"]: str(x.get("value", "")) for x in v.get("env") or [] if x.get("name") and "{" not in str(x.get("value", ""))}
+            env.update({f["id"]: "{%s}" % f["id"] for f in fields})
+            how = {"kind": "oci", "image": image, "env": env, "fields": fields}
+        elif v.get("type") == "remote" and (v.get("remote") or {}).get("url"):
+            r = v["remote"]
+            how = {"kind": "remote", "url": r["url"], "fields": fields,
+                   "headers": {k: str(h).replace("${", "{") for k, h in (r.get("headers") or {}).items()}}
+        else:
+            continue
+        out.append({"id": "docker-" + name, "name": v.get("title") or name, "what": v.get("description", ""), "category": "",
+                    "kind_of": meta.get("category", ""), "logo": v.get("icon", ""), "license": meta.get("license", ""),
+                    "home": v.get("source") or v.get("upstream") or "", "source": "docker", "pulls": meta.get("pulls", 0), "install": how})
+    if words:
+        w = words.lower().split()
+        out = [e for e in out if all(x in (e["name"] + " " + e["what"] + " " + e["kind_of"]).lower() for x in w)]
+    return sorted(out, key=lambda e: -e["pulls"])[:30 if not words else 60]
+
+
+def mine():
+    try:
+        with open(MINE) as f:
+            got = json.load(f)
+            return got if isinstance(got, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def mine_write(m):
+    os.makedirs(os.path.dirname(MINE), exist_ok=True)
+    with open(os.open(MINE + ".new", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w") as f:      # values may be tokens
+        json.dump(m, f, indent=1, ensure_ascii=False)
+    os.replace(MINE + ".new", MINE)
+
+
+def fill(text, values):
+    for k, v in values.items():
+        text = text.replace("{%s}" % k, v)
+    return text
+
+
+def store_add(entry, values):
+    """Installs one server of the store: a pypi package as a uv tool, an npm one into ~/.local, an address as it is; then
+    kept in mcp-servers.json, given to no tool yet. {"ok"} or {"error"}."""
+    how = entry.get("install") or {}
+    kind, have = how.get("kind"), mine()
+    missing = [f["id"] for f in how.get("fields") or [] if (f.get("required", True)) and not values.get(f["id"])]
+    if missing:
+        return {"error": "missing", "fields": missing}
+    s = {"name": entry["name"], "source": entry["source"], "kind": "remote" if kind == "remote" else "local", "what": entry.get("what", ""),
+         "from": entry.get("registry") or entry.get("source"), "given": {}, "values": {k: v for k, v in values.items() if v}}
+    if kind == "pypi":
+        spec = how["package"] + ("==" + how["version"] if how.get("version") else "")
+        r = subprocess.run(["uv", "tool", "install", "--force", spec], capture_output=True, text=True, timeout=900, env=dict(os.environ, PATH=SEARCH))
+        if r.returncode:
+            return {"error": "install", "detail": r.stderr[-400:]}
+        lst = subprocess.run(["uv", "tool", "list"], capture_output=True, text=True, env=dict(os.environ, PATH=SEARCH)).stdout.splitlines()
+        i = next((n for n, line in enumerate(lst) if line.split(" ")[0].lower() == how["package"].lower()), None)
+        bins = [line[2:].strip() for line in lst[i + 1:] if line.startswith("- ")] if i is not None else []
+        s["command"] = shutil.which(how.get("bin") or (bins[0] if bins else how["package"]), path=SEARCH) or ""
+    elif kind == "npm":
+        spec = how["package"] + ("@" + how["version"] if how.get("version") else "")
+        prefix = os.path.expanduser("~/.local")
+        r = subprocess.run(["npm", "install", "-g", "--prefix", prefix, spec], capture_output=True, text=True, timeout=900, env=dict(os.environ, PATH=SEARCH))
+        if r.returncode:
+            return {"error": "install", "detail": r.stderr[-400:]}
+        if not how.get("bin"):
+            v = subprocess.run(["npm", "view", spec, "bin", "--json"], capture_output=True, text=True, timeout=60, env=dict(os.environ, PATH=SEARCH))
+            try:
+                b = json.loads(v.stdout or "{}")
+                how = dict(how, bin=next(iter(b)) if isinstance(b, dict) and b else how["package"].split("/")[-1])
+            except ValueError:
+                how = dict(how, bin=how["package"].split("/")[-1])
+        s["command"] = os.path.join(prefix, "bin", how["bin"])
+    elif kind == "oci":
+        podman = shutil.which("podman", path=SEARCH)
+        if not podman:
+            return {"error": "install", "detail": "podman is not installed"}
+        r = subprocess.run([podman, "pull", how["image"]], capture_output=True, text=True, timeout=1800)
+        if r.returncode:
+            return {"error": "install", "detail": r.stderr[-400:]}
+        s["command"] = podman
+        how = dict(how, args=["run", "-i", "--rm"] + [x for k in (how.get("env") or {}) for x in ("-e", k)] + [how["image"]])
+    elif kind == "remote":
+        if not how.get("url"):
+            return {"error": "only-agentgram"}
+        s["url"] = fill(how["url"], values)
+        s["headers"] = {k: fill(v, values) for k, v in (how.get("headers") or {}).items()}
+    else:
+        return {"error": "kind"}
+    if s["kind"] == "local":
+        if not s["command"] or not os.path.exists(s["command"]):
+            return {"error": "install", "detail": "no program after the install"}
+        s["args"] = [fill(a, values) for a in how.get("args") or []]
+        s["env"] = {k: fill(v, values) for k, v in (how.get("env") or {}).items() if fill(v, values)}
+        s["package"] = how.get("package") or how.get("image", "")
+        s["installer"] = kind
+    s["values"] = {}                                            # what was asked is in the command line, env or headers now
+    if s["kind"] == "local":
+        import secrets
+        s["token"] = secrets.token_urlsafe(32)
+    have[entry["id"]] = s
+    mine_write(have)
+    subprocess.run(["systemctl", "--user", "try-restart", "latte-mcp"], capture_output=True)      # its /mcp/ID for agentgram
+    return {"ok": True}
+
+
+def store_give(ident, tool, on):
+    """Gives an installed server to one agent's tool (Claude Code, Codex, Gemini) under its own name, or takes it back."""
+    have = mine()
+    s = have.get(ident)
+    if not s or tool not in GIVEN:
+        return {"error": "unknown"}
+    exe = GIVEN[tool][1]
+    run(exe, {"claude": ["mcp", "remove", "--scope", "user", ident], "chatgpt": ["mcp", "remove", ident],
+              "gemini": ["mcp", "remove", "--scope", "user", ident]}[tool])
+    if on:
+        env = [x for k, v in (s.get("env") or {}).items() for x in (("--env" if tool == "chatgpt" else "-e"), "%s=%s" % (k, v))]
+        hdr = [x for k, v in (s.get("headers") or {}).items() for x in ("--header", "%s: %s" % (k, v))]
+        if tool == "chatgpt" and hdr:
+            return {"error": "headers"}                     # ponytail: Codex takes a server's token only from an env variable
+        if s["kind"] == "local":
+            argv = {"claude": ["mcp", "add", "--scope", "user"] + env + [ident, "--", s["command"]] + s.get("args", []),
+                    "chatgpt": ["mcp", "add"] + env + [ident, "--", s["command"]] + s.get("args", []),
+                    "gemini": ["mcp", "add", "--scope", "user"] + env + [ident, s["command"]] + s.get("args", [])}[tool]
+        else:
+            argv = {"claude": ["mcp", "add", "--scope", "user", "--transport", "http"] + hdr + [ident, s["url"]],
+                    "chatgpt": ["mcp", "add", ident, "--url", s["url"]],
+                    "gemini": ["mcp", "add", "--scope", "user", "--transport", "http"] + hdr + [ident, s["url"]]}[tool]
+        r = run(exe, argv)
+        if not r or r.returncode:
+            return {"error": "give", "detail": (r.stderr if r else "")[-300:]}
+    s.setdefault("given", {})[tool] = bool(on)
+    mine_write(have)
+    return {"ok": True}
+
+
+def store_remove(ident):
+    """Takes a server back from every tool, uninstalls its program and forgets it."""
+    have = mine()
+    s = have.get(ident)
+    if not s:
+        return {"error": "unknown"}
+    for tool, on in (s.get("given") or {}).items():
+        if on:
+            store_give(ident, tool, False)
+    if s.get("installer") == "pypi" and s.get("package"):
+        subprocess.run(["uv", "tool", "uninstall", s["package"]], capture_output=True, env=dict(os.environ, PATH=SEARCH))
+    elif s.get("installer") == "oci" and s.get("package"):
+        subprocess.run(["podman", "rmi", s["package"]], capture_output=True, env=dict(os.environ, PATH=SEARCH))
+    elif s.get("installer") == "npm" and s.get("package"):
+        subprocess.run(["npm", "uninstall", "-g", "--prefix", os.path.expanduser("~/.local"), s["package"]], capture_output=True, env=dict(os.environ, PATH=SEARCH))
+    have = mine()
+    have.pop(ident, None)
+    mine_write(have)
+    subprocess.run(["systemctl", "--user", "try-restart", "latte-mcp"], capture_output=True)
+    return {"ok": True}
+
+
+def store_mine():
+    """The installed servers as LensAI shows them: never their env, headers or values."""
+    tools = {t: shutil.which(GIVEN[t][1], path=SEARCH) is not None for t in GIVEN}
+    return [{"id": k, "name": v["name"], "what": v.get("what", ""), "source": v.get("source"), "kind": v["kind"],
+             "given": {t: bool((v.get("given") or {}).get(t)) for t in GIVEN}, "tools": tools} for k, v in sorted(mine().items())]
 
 
 def serve(lazy=False, port=0):
@@ -345,14 +662,89 @@ def serve(lazy=False, port=0):
     with open(path) as f:
         token = f.read().strip()
     app = server.streamable_http_app()
+    # each server installed from LensAI's store that runs here, at /mcp/ID with a token of its own (agentgram's card MCP
+    # LatteOS connects them one by one, each agent gets only those it is allowed); /servers lists them for the master token
+    import contextlib
+    import re
+    from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
+    have = mine()
+    for v in have.values():
+        if v.get("kind") == "local" and not v.get("token"):
+            v["token"] = secrets.token_urlsafe(32)
+    mine_write(have)
+    local = {k: v for k, v in have.items() if v.get("kind") == "local" and v.get("command")}
+    managers = {k: StreamableHTTPSessionManager(app=proxied(k, v)) for k, v in local.items()}
+
+    async def answer(send, status, body, kind=b"text/plain"):
+        await send({"type": "http.response.start", "status": status, "headers": [(b"content-type", kind)]})
+        await send({"type": "http.response.body", "body": body})
 
     async def guarded(scope, receive, send):
-        if scope["type"] == "http" and not secrets.compare_digest(dict(scope["headers"]).get(b"authorization", b""), b"Bearer " + token.encode()):
-            await send({"type": "http.response.start", "status": 401, "headers": [(b"content-type", b"text/plain")]})
-            await send({"type": "http.response.body", "body": b"latte-mcp: the token of ~/.config/latteos/mcp-token is needed"})
+        if scope["type"] == "lifespan":
+            async with contextlib.AsyncExitStack() as stack:
+                for m in managers.values():
+                    await stack.enter_async_context(m.run())
+                await app(scope, receive, send)
             return
+        said = dict(scope.get("headers") or []).get(b"authorization", b"")
+        own = re.match(r"^/mcp/([\w.-]+)/?$", scope.get("path", ""))
+        if scope["type"] == "http" and own:
+            ident = own.group(1)
+            if ident not in managers or not secrets.compare_digest(said, b"Bearer " + local[ident]["token"].encode()):
+                return await answer(send, 401, b"latte-mcp: this server's own token is needed")
+            return await managers[ident].handle_request(scope, receive, send)
+        if scope["type"] == "http" and not secrets.compare_digest(said, b"Bearer " + token.encode()):
+            return await answer(send, 401, b"latte-mcp: the token of ~/.config/latteos/mcp-token is needed")
+        if scope["type"] == "http" and scope.get("path") == "/servers":
+            rows = [{"id": k, "name": v["name"], "what": v.get("what", ""), "path": "/mcp/" + k, "token": v["token"]} for k, v in sorted(local.items())]
+            return await answer(send, 200, json.dumps(rows, ensure_ascii=False).encode(), b"application/json")
         await app(scope, receive, send)
     uvicorn.run(guarded, host="127.0.0.1", port=port, log_level="warning")
+
+
+def proxied(ident, spec):
+    """One installed server over HTTP: a server of the low level that hands each list and call to the program itself,
+    started on stdio at the first request and kept while latte-mcp runs."""
+    import asyncio
+    from mcp import ClientSession, StdioServerParameters
+    from mcp.client.stdio import stdio_client
+    from mcp.server.lowlevel import Server
+    srv, held, lock = Server(ident), {}, asyncio.Lock()
+
+    async def session():
+        async with lock:
+            if "s" not in held:
+                ready = asyncio.Event()
+
+                async def life():
+                    try:
+                        params = StdioServerParameters(command=spec["command"], args=spec.get("args") or [],
+                                                       env=dict(os.environ, PATH=SEARCH, **(spec.get("env") or {})))
+                        async with stdio_client(params, errlog=open(os.devnull, "w")) as (r, w):
+                            async with ClientSession(r, w) as s:
+                                await s.initialize()
+                                held["s"] = s
+                                ready.set()
+                                await asyncio.Event().wait()
+                    finally:
+                        held.pop("s", None)
+                        ready.set()
+                held["task"] = asyncio.create_task(life())
+                await ready.wait()
+            return held.get("s")
+
+    @srv.list_tools()
+    async def tools():
+        s = await session()
+        return (await s.list_tools()).tools if s else []
+
+    @srv.call_tool(validate_input=False)
+    async def call(name, arguments):
+        s = await session()
+        if not s:
+            raise RuntimeError("%s did not start" % spec["name"])
+        return await s.call_tool(name, arguments)                # its result whole: error, text and structured output
+    return srv
 
 
 APART = ("conversations", "conversation", "search_chats", "ask", "memory_tools", "memory")
@@ -543,6 +935,25 @@ def main(a):
         return 0
     if a == ["servers"]:
         print(json.dumps(servers(), ensure_ascii=False))
+        return 0
+    if a[:1] == ["store"] and len(a) <= 2:
+        words = a[1].strip() if len(a) == 2 else ""
+        print(json.dumps({"latteos": store_latteos(), "agentgram": store_agentgram(), "docker": store_docker(words),
+                          "registry": store_registry(words) if words else [], "mine": store_mine()}, ensure_ascii=False))
+        return 0
+    if a[:1] == ["add"] and len(a) == 2:                     # the store's entry as JSON on stdin: {"entry", "values"}
+        got = json.load(sys.stdin)
+        entry = got.get("entry") or {}
+        known = {e["id"]: e for e in store_latteos() + store_agentgram()}
+        entry = known.get(a[1]) or next((e for e in store_docker() + store_docker(entry.get("name", "")) if e["id"] == a[1]), None) \
+            or (entry if entry.get("source") == "registry" and entry.get("id") == a[1] else None)
+        print(json.dumps(store_add(entry, got.get("values") or {}) if entry else {"error": "unknown"}))
+        return 0
+    if a[:1] == ["give"] and len(a) == 4 and a[3] in ("on", "off"):
+        print(json.dumps(store_give(a[1], a[2], a[3] == "on")))
+        return 0
+    if a[:1] == ["remove"] and len(a) == 2:
+        print(json.dumps(store_remove(a[1])))
         return 0
     if a in (["install"], ["remove"]):
         for s in status()["agents"]:

@@ -1,0 +1,117 @@
+{
+ "_": "LensAI's own picks for its MCP store (ROADMAP 10B.83): servers that run on this computer or at home. Each says how it is installed (pypi: uv tool, npm: npm into ~/.local, remote: an address), what it needs first, and its fields ({id} in args, env, url and headers). Names and descriptions are English: the app translates them.",
+ "servers": [
+  {
+   "id": "comfyui",
+   "name": "ComfyUI",
+   "category": "creative",
+   "icon": "image",
+   "what": "Generates images and video with the ComfyUI on this computer: runs workflows, watches jobs, builds new ones.",
+   "needs": "ComfyUI running on this computer (port 8188).",
+   "license": "AGPL-3.0",
+   "home": "https://github.com/Comfy-Org/comfy-mcp",
+   "registry": "io.github.Comfy-Org/comfy-mcp",
+   "install": {
+    "kind": "pypi",
+    "package": "comfy-mcp",
+    "bin": "comfy-mcp",
+    "args": [],
+    "env": {
+     "COMFYUI_URL": "http://127.0.0.1:8188"
+    }
+   }
+  },
+  {
+   "id": "blender",
+   "name": "Blender",
+   "category": "creative",
+   "icon": "cube",
+   "what": "Builds and changes 3D scenes in Blender: objects, materials, the camera, renders.",
+   "needs": "Blender with the add-on of Blender MCP switched on.",
+   "license": "MIT",
+   "home": "https://github.com/ahujasid/mcp-for-blender",
+   "install": {
+    "kind": "pypi",
+    "package": "blender-mcp",
+    "bin": "blender-mcp",
+    "args": [],
+    "env": {}
+   }
+  },
+  {
+   "id": "google-calendar",
+   "name": "Google Calendar",
+   "category": "product",
+   "icon": "calendar",
+   "replaces": [
+    "google-calendar"
+   ],
+   "what": "Your Google Calendar: events, schedules, free time; adds and changes events you ask for.",
+   "needs": "A key of your own from Google Cloud (OAuth client of the type Desktop app, with the Calendar API on). The first time, ask the AI to sign in to Google Calendar: your browser opens Google's page.",
+   "license": "MIT",
+   "home": "https://github.com/nspady/google-calendar-mcp",
+   "install": {
+    "kind": "npm",
+    "package": "@cocal/google-calendar-mcp",
+    "bin": "google-calendar-mcp",
+    "args": [],
+    "env": {
+     "GOOGLE_OAUTH_CREDENTIALS": "{credentials}"
+    },
+    "fields": [
+     {
+      "id": "credentials",
+      "label": "Google's key file (gcp-oauth.keys.json)",
+      "file": true
+     }
+    ]
+   }
+  },
+  {
+   "id": "playwright",
+   "name": "Playwright",
+   "category": "web",
+   "icon": "browser",
+   "what": "A browser of its own for the agent: opens pages, clicks, fills forms and reads what is there.",
+   "needs": "",
+   "license": "Apache-2.0",
+   "home": "https://github.com/microsoft/playwright-mcp",
+   "install": {
+    "kind": "npm",
+    "package": "@playwright/mcp",
+    "bin": "playwright-mcp",
+    "args": [],
+    "env": {}
+   }
+  },
+  {
+   "id": "home-assistant",
+   "name": "Home Assistant",
+   "category": "home",
+   "icon": "house",
+   "what": "Your home through Home Assistant: lights, heating, sensors and scenes it lets the AI use.",
+   "needs": "Home Assistant with the integration Model Context Protocol Server, and a long-lived access token from your profile there.",
+   "license": "Apache-2.0",
+   "home": "https://www.home-assistant.io/integrations/mcp_server/",
+   "install": {
+    "kind": "remote",
+    "url": "{address}/api/mcp",
+    "headers": {
+     "Authorization": "Bearer {token}"
+    },
+    "fields": [
+     {
+      "id": "address",
+      "label": "Address of Home Assistant",
+      "default": "http://homeassistant.local:8123"
+     },
+     {
+      "id": "token",
+      "label": "Access token",
+      "secret": true
+     }
+    ]
+   }
+  }
+ ]
+}

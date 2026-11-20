@@ -125,6 +125,7 @@
 /usr/share/latteos/goo/chapolera-settings.plm          <- goo/chapolera-settings.plm
 /usr/share/latteos/goo/chapolera-settings.luau         <- goo/chapolera-settings.luau
 /usr/share/latteos/goo/lib/cup.luau                     <- goo/lib/cup.luau
+/usr/share/latteos/services.json                       <- system/services.json
 /usr/share/latteos/cups.json                            <- system/cups.json
 /usr/share/latteos/gooengine.json                       <- system/gooengine.json
 /usr/share/latteos/namedays.json                      <- system/namedays.json
@@ -770,6 +771,7 @@
 /etc/mise/conf.d/latteos-tools.toml                     <- system/mise/latteos-tools.toml
 /etc/mise/conf.d/latteos.toml                           <- system/mise/latteos.toml
 /usr/share/latteos/ai/local-models.json                 <- system/ai/local-models.json
+/usr/share/latteos/ai/mcp-store.json                    <- system/ai/mcp-store.json
 /usr/share/plymouth/themes/latteos/latteos.plymouth     <- system/plymouth/latteos.plymouth
 /usr/share/plymouth/themes/latteos/watermark.png        <- system/plymouth/watermark.png
 /usr/share/plymouth/themes/latteos/                     <- system:/usr/share/plymouth/themes/spinner/*.png
