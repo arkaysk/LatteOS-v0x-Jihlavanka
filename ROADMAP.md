@@ -3796,8 +3796,9 @@ voľba — iba pre toho, kto ho založil (ostatní ani správcovia ho nevidia, A
 projektu (podprojekt svoj, rodičovský číta), nič do Wiki, `context_items`, hľadania, význam textu ani zhrnutia; agent v ňom nevidí pamäť
 tímu, Wiki ani iné projekty; nástroje pracovného priestoru odmietnuté; texty upozornení všeobecné; bez synchronizácie; len na serveri
 s priečinkom na tom istom počítači. Priečinok má značku `.agentgram-anonymous`, index rozhovorov LensAI relácie z neho nečíta
-(`latte-ai`). Testy `latteos-anonymous.test.ts`. **Chýba:** konektory MCP, e-mail/push úplne vypnúť, Online → Anonymný odmietnuť
-(pomocník robí), skúška naostro na stránke, šifrovanie (neskôr, používateľ). Zostávajú modely AI, ktoré v čete odpovedajú.
+(`latte-ai`). Konektory (MCP) odmietnuté, upozornenia iba v schránke (bez push a e-mailu), Online → Anonymný iba cez Offline.
+Testy `latteos-anonymous.test.ts` (7, prešli); fork commit 9a0dbe84c. **Chýba:** skúška naostro na stránke, šifrovanie (neskôr,
+používateľ). Zostávajú modely AI, ktoré v čete odpovedajú; v schránke ostáva meno četu ako štítok.
 
 **10B.82** [x] 20. 11. **agentgram: 26 druhov projektov a ikony Phosphor** (používateľ 20. 11.; migrácia 0311): k 7 druhom 19 nových
 (Písanie, Výskum, Štúdium, Video, Fotografia, Animácia, Hra, Web, Aplikácia, Dizajn, Podcast, Dáta, Podnikanie, Marketing, Financie,
