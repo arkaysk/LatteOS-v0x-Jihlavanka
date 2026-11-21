@@ -46,6 +46,8 @@ No API key: the official tool of a service answers, with the account the user is
                             {"services": [{"id", "name", "plan", "signed", "login", "limits": [{"label", "used", "resets",
                             "scope" (one model's own), "note" (a sum: the extra usage), "off", "bar" (false: a sum alone)}], "asked"}],
                             "stats": {"week", "today", "model", "busiest", "prompts", "sessions", "days": [{"day", "tokens"}]}}
+  latte-ai sandbox-args [DIR]  bubblewrap's words of the agents' sandbox (SEALED, HIDDEN, no D-Bus) as JSON, without
+                            the closing "--": agentgram's runner puts its projects' CLIs in the same one
   latte-ai skill install|reset|path   LatteOS's skill for the agents (Claude Code, Codex, Gemini): the user's copy in
                             ~/.config/latteos/skills/latteos, linked into each agent's skills; reset brings back LatteOS's own
   latte-ai skills           every agent skill on this computer, once by its real SKILL.md: [{"name", "description", "path",
@@ -4298,6 +4300,11 @@ def main(a):
         return 0 if ok else 1
     if a == ["stop"]:
         subprocess.run(["pkill", "-f", "llama-server.*--port %d" % LOCAL_PORT])
+        return 0
+    # the same sandbox for agentgram's runner (its projects' AI CLIs, security S7): bubblewrap's words as JSON, without
+    # the closing "--", for it to add its own projects' folders after them
+    if a[:1] == ["sandbox-args"] and len(a) <= 2:
+        print(json.dumps(sandbox("", a[1] if len(a) == 2 else "", True)[:-1]))
         return 0
     if a == ["services"]:
         print(json.dumps(services(), ensure_ascii=False))

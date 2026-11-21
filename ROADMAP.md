@@ -79,11 +79,16 @@ LatteOS:2.x xxx
 >
 > **B. Inštalácia na prvý PC**, keď pôjde, **potom na druhý (hlavné PC, RTX 3060, dva monitory)**. Všetky opravy z A a bezpečnosti nižšie
 > **musia byť hotové pred druhým PC.**
-> 11. Sandbox agenta (SECURITY S1): bez zbernice D-Bus používateľa, domov iba na čítanie okrem pracovného priečinka, chránené aj cesty,
+> 11. [x] 21. 11. (prvá časť): runtime priečinok prázdny okrem `latteos` (iba čítanie) a pleamar → bez D-Bus; zapečatené aj
+>     `~/.bun/bin`, `~/.cargo/bin`, mise, `~/.toolhive`, `~/.local/share/systemd`, agentgram, nastavenia a skilly Claude (chýbajúce
+>     priečinky sa vytvoria); skryté tokeny `latte-mcp`, rozhovory LensAI, kľúčenky, `.env` agentgramu, súkromné kľúče `~/.ssh`;
+>     overené vnútri (busctl zlyhá, zápisy odmietnuté, claude a codex štartujú). agentgram: CLI projektov v tom istom sandboxe
+>     (`latte-ai sandbox-args`) a `.claude/settings*.json` projektu sa nespúšťajú (S7). **Ostáva:** sieť podľa úlohy.
+>     Pôvodne: Sandbox agenta (SECURITY S1): bez zbernice D-Bus používateľa, domov iba na čítanie okrem pracovného priečinka, chránené aj cesty,
 >     ktoré ešte neexistujú (`~/.config/autostart`, `~/.local/share/systemd`…), sieť podľa úlohy; tá istá funkcia pre projekty agentgramu (S7).
 > 12. ACP Registry (S4): `npm install --ignore-scripts`, premenné z registra iba povolené, sha256 povinné, cache mimo dosahu sandboxu.
 > 13. Povolenia (S5, S6): krok agenta podľa skutočného príkazu, nie podľa mena od agenta; povolenie relácie MCP viazané na token, nie na meno.
-> 14. `latte-open` iba http(s) a súbory (S9); zvyšok SECURITY S10–S15.
+> 14. [x] 21. 11. `latte-open` iba http, https, mailto (S9). Pôvodne: `latte-open` iba http(s) a súbory (S9); zvyšok SECURITY S10–S15.
 > 15. Heslo sudo: na latte-lab ostáva zámerne čitateľné pre agenta (testovací PC, nie súkromný); na novom PC súkromné heslo, nie v súbore.
 >
 > **0.6+:** `latte-ai` (4 285 riadkov) a veľké QML deliť podľa zodpovedností — po kúskoch pri opravách (vytiahnutá časť s testom), celé až po 0.6.
