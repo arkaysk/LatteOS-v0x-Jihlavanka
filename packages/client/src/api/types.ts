@@ -1501,6 +1501,8 @@ export interface LatteosMcp {
   enabled: boolean;
   available: { id: string; name: string; what: string }[];
   connected: { id: string; label: string; serverUrl: string }[];
+  /** This computer's own models, an OpenAI-compatible address (LatteOS), or null. */
+  localModels?: string | null;
 }
 
 /** LatteOS: a skill of this computer's skills folder, and where it stands in the workspace. */

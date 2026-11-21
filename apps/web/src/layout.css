@@ -12888,6 +12888,18 @@ html:not([data-pointer]) .sidebar__section-toggle:focus-visible {
   flex: none;
   overflow: visible;
 }
+/* LatteOS: with the project's kind and place the fields outgrow a short window: they scroll then, so Create stays
+   on screen (the list under them keeps its own minimum). */
+.channel-category__fields--project {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+/* …one scroll there, not a second one inside the kinds */
+.channel-category__fields--project .kind-grid {
+  max-block-size: none;
+  overflow: visible;
+}
 .channel-category__add {
   margin-top: 4px;
 }

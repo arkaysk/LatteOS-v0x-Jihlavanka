@@ -11108,7 +11108,10 @@
     "done": "Hotovo",
     "models": "Modely",
     "modelsTitle": "Modely: {{name}}",
-    "budgetUnpriced": "Model tohto agenta nemá cenu, takže jeho rozpočet nevie počítať, koľko míňa. Počítajú sa jeho tokeny."
+    "budgetUnpriced": "Model tohto agenta nemá cenu, takže jeho rozpočet nevie počítať, koľko míňa. Počítajú sa jeho tokeny.",
+    "thisComputer": "Použiť modely tohto počítača",
+    "thisComputerText": "LatteOS má na tomto počítači vlastné modely (Lokálne LLM v LensAI): nič neodchádza preč a netreba kľúč. Potom zapni modely, ktoré smú agenti používať.",
+    "thisComputerName": "Tento počítač (LatteOS)"
   },
   "timezone": {
     "search": "Hľadať časové pásmo",
@@ -23956,12 +23959,17 @@
   "latteosMcp": {
     "title": "MCP LatteOS",
     "add": "Pridať MCP z LatteOS",
-    "list": "MCP servery pridané z LatteOS",
-    "none": "MCP servery, ktoré pridáš z ponuky LatteOS, sa zobrazia tu.",
-    "search": "Hľadaj medzi MCP servermi nainštalovanými v LatteOS",
-    "noneInstalled": "V LatteOS zatiaľ nie je nainštalovaný žiadny MCP server",
-    "noneInstalledText": "Nainštaluj ho v LensAI na tomto počítači a zobrazí sa tu.",
-    "added": "{{name}} je pripojený. V Konektoroch vyber, ktorí agenti ho smú používať.",
-    "connected": "Pripojený"
+    "list": "MCP servery a skupiny ToolHive pridané z LatteOS",
+    "none": "MCP servery, ktoré pridáš z LatteOS (ToolHive), sa zobrazia tu: jeden server samostatne alebo skupina serverov ako jeden konektor.",
+    "search": "Hľadať servery a skupiny",
+    "noneInstalled": "Zatiaľ žiadny MCP server v ToolHive",
+    "noneInstalledText": "V ToolHive Studio (LensAI › ToolHive Studio) spusti MCP server; zobrazí sa tu samostatne a skupina serverov (napríklad „dizajn“) ako jeden konektor.",
+    "added": "{{name}} je pripojená. V Konektoroch vyber, ktorí agenti ju smú používať.",
+    "connected": "Pripojený",
+    "groups": "Skupiny",
+    "servers": "Servery",
+    "inGroup": "Server zo skupiny {{group}}",
+    "where": "Pridané odtiaľto sú v zozname MCP nižšie: tam vyberieš, ktorí agenti ich používajú, a tam ich aj odpojíš.",
+    "loading": "{{name}} načítava {{model}} · {{percent}} %"
   }
 }

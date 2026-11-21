@@ -4478,13 +4478,21 @@ export const en = {
   latteosMcp: {
     title: "MCP LatteOS",
     add: "Add MCP from LatteOS",
-    list: "MCP servers added from LatteOS",
-    none: "MCP servers you add from LatteOS's offer show here.",
-    search: "Search the MCP servers installed in LatteOS",
-    noneInstalled: "No MCP servers installed in LatteOS yet",
-    noneInstalledText: "Install one in LensAI on this computer and it shows here.",
+    list: "MCP servers and ToolHive groups added from LatteOS",
+    none: "MCP servers you add from LatteOS (ToolHive) show here: one server alone, or a group of them as one connector.",
+    search: "Search servers and groups",
+    noneInstalled: "No MCP server in ToolHive yet",
+    noneInstalledText:
+      "In ToolHive Studio (LensAI › ToolHive Studio), run an MCP server; it shows here alone, and a group of servers (for example “design”) as one connector.",
     added: "{{name}} is connected. Choose which agents may use it in Connectors.",
     connected: "Connected",
+    groups: "Groups",
+    servers: "Servers",
+    inGroup: "A server of the group {{group}}",
+    where:
+      "Added from here, they are listed under MCP below: there you choose which agents use each one, and disconnect it.",
+    /** An agent on one of this computer's models waits while it loads (LatteOS's estimate). */
+    loading: "{{name}} is loading {{model}} \u00b7 {{percent}} %",
   },
   projectPage: {
     open: "Open the project",
@@ -10585,6 +10593,10 @@ export const en = {
     picks: "{{provider}} · Good picks",
   },
   endpoint: {
+    thisComputer: "Use this computer's models",
+    thisComputerText:
+      "LatteOS runs its own models on this computer (Local LLM in LensAI): nothing leaves it, no key needed. Then switch on the models your agents may use.",
+    thisComputerName: "This computer (LatteOS)",
     option: "Other provider",
     optionSub: "OpenAI- or Claude-compatible: a gateway, Ollama, vLLM, LM Studio, LiteLLM",
     name: "Name",

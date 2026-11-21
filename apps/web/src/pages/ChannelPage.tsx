@@ -329,6 +329,7 @@ import { useLeaveChannelWithUndo } from "@/components/LeaveChannelDialog";
 import { useUploadFailed } from "@/components/Limits";
 import { LiveCodeToggle, type SteerNote } from "@/components/LiveCode";
 import { ErrorState, LoadingConversation } from "@/components/Loading";
+import { useLocalModelLoad } from "@/components/LocalModelLoad";
 import { LiveQuoteBar, LiveRefLine } from "@/components/live/TalkBits";
 import { useFileTalk } from "@/components/live/talk";
 import { AwayPill, WaitingCard } from "@/components/MachineOutages";
@@ -4135,6 +4136,8 @@ function ActivityBar({
   const away = ask ? undefined : waiting[0];
   const awayAgent = away?.asker?.type === "agent" ? dir.anyAgent(away.asker.id) : undefined;
   const pill = !ask && !away && active;
+  // LatteOS: its model of this computer still loading: "Ada loads Qwen3.5 4B · 45 %"
+  const load = useLocalModelLoad(firstAgent ? dir.agentById.get(firstAgent.id)?.model : undefined, pill);
   // Nobody at work and nothing waiting on the reader: the soonest return rests in the same box (ADR 0037 addendum).
   const rest = !ask && !away && !active && returns.length > 0;
   // One agent's question or hand-off still out (ADR 0095 addendum): the consulted agent's state, its sky, its time, and
@@ -4241,7 +4244,9 @@ function ActivityBar({
             <WorkingStack entries={entries} />
             {/* The phrase turns: the old one leaves upward, the new one comes from below. Names in ink. */}
             <span className="ac-typing__text" title={consultTip}>
-              {step !== null && firstAgent ? (
+              {load && firstAgent ? (
+                t("latteosMcp.loading", { name: firstAgent.name, model: load.model, percent: load.percent })
+              ) : step !== null && firstAgent ? (
                 <BarStep name={firstAgent.name} step={step} />
               ) : (
                 <BarPhrase entries={entries} />

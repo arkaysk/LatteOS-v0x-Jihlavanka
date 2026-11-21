@@ -54736,19 +54736,19 @@
     "value": "Add MCP from LatteOS"
   },
   "latteosMcp.list": {
-    "value": "MCP servers added from LatteOS"
+    "value": "MCP servers and ToolHive groups added from LatteOS"
   },
   "latteosMcp.none": {
-    "value": "MCP servers you add from LatteOS's offer show here."
+    "value": "MCP servers you add from LatteOS (ToolHive) show here: one server alone, or a group of them as one connector."
   },
   "latteosMcp.search": {
-    "value": "Search the MCP servers installed in LatteOS"
+    "value": "Search servers and groups"
   },
   "latteosMcp.noneInstalled": {
-    "value": "No MCP servers installed in LatteOS yet"
+    "value": "No MCP server in ToolHive yet"
   },
   "latteosMcp.noneInstalledText": {
-    "value": "Install one in LensAI on this computer and it shows here."
+    "value": "In ToolHive Studio (LensAI › ToolHive Studio), run an MCP server; it shows here alone, and a group of servers (for example “design”) as one connector."
   },
   "latteosMcp.added": {
     "value": "{{name}} is connected. Choose which agents may use it in Connectors."
@@ -54782,5 +54782,29 @@
   },
   "errors.latteos.mcpConnected": {
     "value": "This MCP server is connected already."
+  },
+  "latteosMcp.groups": {
+    "value": "Groups"
+  },
+  "latteosMcp.servers": {
+    "value": "Servers"
+  },
+  "latteosMcp.inGroup": {
+    "value": "A server of the group {{group}}"
+  },
+  "latteosMcp.where": {
+    "value": "Added from here, they are listed under MCP below: there you choose which agents use each one, and disconnect it."
+  },
+  "endpoint.thisComputer": {
+    "value": "Use this computer's models"
+  },
+  "endpoint.thisComputerText": {
+    "value": "LatteOS runs its own models on this computer (Local LLM in LensAI): nothing leaves it, no key needed. Then switch on the models your agents may use."
+  },
+  "endpoint.thisComputerName": {
+    "value": "This computer (LatteOS)"
+  },
+  "latteosMcp.loading": {
+    "value": "{{name}} is loading {{model}} · {{percent}} %"
   }
 }

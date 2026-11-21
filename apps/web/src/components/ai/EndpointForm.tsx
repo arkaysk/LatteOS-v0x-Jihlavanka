@@ -1,5 +1,5 @@
 import type { Credential, EndpointCheck, EndpointStyle } from "@agenteschat/client";
-import { useAddCredential, useEndpointModels, useSetEndpointModels } from "@agenteschat/client";
+import { useAddCredential, useEndpointModels, useLatteosMcp, useSetEndpointModels } from "@agenteschat/client";
 import {
   CHECK_VIEW,
   CUSTOM_PROVIDER,
@@ -82,6 +82,24 @@ export function EndpointForm({
   const searching = draft.models.length > ENDPOINT_SEARCH_FROM;
   const shown = searching ? modelsShown(draft.models, query, pinned) : draft.models;
   const list = useEndpointModels(orgId);
+  // LatteOS: this computer's own models (llama.cpp's router), offered in one click
+  const here = useLatteosMcp(orgId).data?.localModels ?? null;
+  const useHere = () => {
+    if (!here) return;
+    setDraft((d) => ({ ...d, name: d.name.trim() || t("endpoint.thisComputerName"), style: "openai", baseURL: here }));
+    list.mutate(
+      { style: "openai", baseURL: here },
+      {
+        // every model for talking switched on (the agents pick one each; the list follows what is downloaded later)
+        onSuccess: (r) =>
+          setDraft((d) => {
+            const next = withListedModels(d, r.models);
+            const talks = (id: string) => !/(^|[-_.])(e5|embed|bge|gte|rerank|whisper|minilm)/i.test(id);
+            return { ...next, baseURL: r.baseURL, models: next.models.map((m) => ({ ...m, on: talks(m.id) })) };
+          }),
+      },
+    );
+  };
   const add = useAddCredential(orgId);
   const change = useSetEndpointModels(orgId);
   const editing = credential !== undefined;
@@ -188,6 +206,18 @@ export function EndpointForm({
       <Locked when={saving}>
         <Body>
           {lead}
+          {!editing && here && draft.models.length === 0 && (
+            <SettingNote
+              icon="computer"
+              action={
+                <Button size="sm" loading={list.isPending} onClick={useHere}>
+                  {t("endpoint.thisComputer")}
+                </Button>
+              }
+            >
+              {t("endpoint.thisComputerText")}
+            </SettingNote>
+          )}
           {!editing && (
             <>
               <Field label={t("endpoint.name")} id={`${ids}-name`}>

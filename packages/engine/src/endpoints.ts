@@ -14,6 +14,7 @@ import { recordAudit } from "./audit";
 import { caches } from "./cache";
 import { NotFoundError, ValidationError } from "./errors";
 import type { ModelGateway } from "./gateway";
+import { isLatteosLocal, latteosLocalModels } from "./latteos-local";
 import { assertPublicHttpsUrl, publicHttpsFetch, type ResolveHost } from "./net-guard";
 import { requirePermission } from "./organizations";
 import { isAgentesCloud } from "./telemetry";
@@ -134,12 +135,19 @@ export async function loadEndpointModels(db: Executor, orgId: string) {
         ),
       ),
   )) as { id: string; label: string; options: { endpoint?: StoredEndpoint } }[];
+  // LatteOS: the key of this computer's own models offers every model downloaded here, as LM Studio's list does (none
+  // is loaded: the router loads the one an agent asks for), not only those picked when the key was saved
+  const live = rows.some((r) => r.options.endpoint && isLatteosLocal(r.options.endpoint.baseURL))
+    ? await latteosLocalModels()
+    : null;
+  const modelsOf = (r: (typeof rows)[number]): EndpointModel[] =>
+    live && r.options.endpoint && isLatteosLocal(r.options.endpoint.baseURL)
+      ? live.map((m) => ({ id: m.id, label: m.label, check: m.tools ? "ok" : "no_tools" }))
+      : (r.options.endpoint?.models ?? []);
   setCustomModels(
     orgId,
     Object.fromEntries(
-      rows.flatMap((r) =>
-        (r.options.endpoint?.models ?? []).map((m) => [customModelId(r.id, m.id), infoOf(r.label, m)] as const),
-      ),
+      rows.flatMap((r) => modelsOf(r).map((m) => [customModelId(r.id, m.id), infoOf(r.label, m)] as const)),
     ),
   );
 }
@@ -178,6 +186,18 @@ const CHECK_TOOL: ToolSpec = {
   inputSchema: { type: "object", properties: { ok: { type: "boolean" } }, required: ["ok"] },
 };
 const CHECK_TIMEOUT_MS = 60_000;
+// ponytail: several local models switched on at once can still outlast the request (Bun's 255 s); the checks are saved anyway
+const LOCAL_CHECK_TIMEOUT_MS = 120_000;
+
+/** Whether an endpoint's address is this computer itself (loopback). */
+export function onThisComputer(baseURL: string): boolean {
+  try {
+    const host = new URL(baseURL).hostname.replace(/^\[|\]$/g, "");
+    return host === "localhost" || host === "::1" || /^127\./.test(host);
+  } catch {
+    return false;
+  }
+}
 
 /**
  * One small call per model of an endpoint (admins), through the Model Gateway (recorded as a `summary` call with its
@@ -201,25 +221,40 @@ export async function checkEndpoint(
   const [row] = await db.select().from(schema.providerCredentials).where(where);
   const endpoint = row?.options.endpoint;
   if (!row || !endpoint) throw new NotFoundError("Credential not found");
-  const results = await Promise.all(
-    endpoint.models.map(async (m): Promise<EndpointCheck> => {
-      try {
-        const r = await gateway.complete({
-          orgId,
-          kind: "summary",
-          model: customModelId(credentialId, m.id),
-          system: "You are checking that a connection works.",
-          messages: [{ role: "user", content: "Call the report_status tool with ok set to true." }],
-          maxTokens: 1024,
-          tools: [CHECK_TOOL],
-          signal: AbortSignal.timeout(CHECK_TIMEOUT_MS),
-        });
-        return { model: m.id, check: r.content.some((b) => b.type === "tool_use") ? "ok" : "no_tools" };
-      } catch (error) {
-        return { model: m.id, check: "failed", error: error instanceof Error ? error.message : String(error) };
-      }
-    }),
-  );
+  // LatteOS: a server on this computer (llama.cpp's router) loads one model at a time, slowly on a small graphics card:
+  // its models are tested one after another and given longer, or each test evicts the one before and they all time out
+  const here = onThisComputer(endpoint.baseURL);
+  // LatteOS's own models: what each can do is in its file (tools in its chat template), so none is loaded to be tested
+  const live = isLatteosLocal(endpoint.baseURL) ? await latteosLocalModels() : null;
+  const one = async (m: EndpointModel): Promise<EndpointCheck> => {
+    try {
+      const r = await gateway.complete({
+        orgId,
+        kind: "summary",
+        model: customModelId(credentialId, m.id),
+        system: "You are checking that a connection works.",
+        messages: [{ role: "user", content: "Call the report_status tool with ok set to true." }],
+        maxTokens: 1024,
+        tools: [CHECK_TOOL],
+        signal: AbortSignal.timeout(here ? LOCAL_CHECK_TIMEOUT_MS : CHECK_TIMEOUT_MS),
+      });
+      return { model: m.id, check: r.content.some((b) => b.type === "tool_use") ? "ok" : "no_tools" };
+    } catch (error) {
+      return { model: m.id, check: "failed", error: error instanceof Error ? error.message : String(error) };
+    }
+  };
+  const results: EndpointCheck[] = [];
+  if (live)
+    for (const m of endpoint.models) {
+      const known = live.find((x) => x.id === m.id);
+      results.push(
+        known
+          ? { model: m.id, check: known.tools ? "ok" : "no_tools" }
+          : { model: m.id, check: "failed", error: "Not downloaded on this computer" },
+      );
+    }
+  else if (here) for (const m of endpoint.models) results.push(await one(m));
+  else results.push(...(await Promise.all(endpoint.models.map(one))));
   const models = endpoint.models.map((m) => ({ ...m, check: results.find((r) => r.model === m.id)?.check ?? m.check }));
   await db
     .update(schema.providerCredentials)

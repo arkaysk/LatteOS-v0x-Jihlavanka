@@ -386,6 +386,7 @@ async function boot(
     mcpUrl: config.LATTEOS_MCP_URL,
     mcpTokenFile: config.LATTEOS_MCP_TOKEN_FILE,
     skillsDir: config.LATTEOS_SKILLS_DIR,
+    localLlmUrl: config.LATTEOS_LOCAL_LLM_URL,
   });
   // Per-process caches for agent/org/channel config, scopes, connections, credential rows (30 s TTL).
   enableCaches();
@@ -641,7 +642,8 @@ async function boot(
         port: config.PORT,
         // Bun's default (10 s) cuts a request still waiting on its answer: opening a site in an agent's
         // browser waits for the page, and a closed browser starts first (up to 90 s on the computer).
-        idleTimeout: 120,
+        // LatteOS: 255 (Bun's most), as saving an endpoint of this computer's models tests them one after another
+        idleTimeout: 255,
         // LatteOS: a file put in a project's folder may be up to 1 GB (each route keeps its own limit, body-limit.ts)
         maxRequestBodySize: 1100 * 1024 * 1024,
         fetch: (req, srv) => ownHostAnswer(req) ?? realtime.fetch(req, srv, (r) => app.fetch(r)),

@@ -31,3 +31,25 @@ offer; unset, nothing of it shows and nothing changes.
    times) in `source_hash`, so the row says Installed and offers Update when the folder changed. Only who manages agents
    installs. A link or folder that resolves outside the skills folder (or, inside a skill, outside that skill) is never
    followed.
+
+## Addendum: the gateway lists ToolHive's groups
+
+LatteOS manages its MCP servers with ToolHive (Stacklok, Apache-2.0) instead of a store of its own. The gateway's `GET /servers`
+now returns ToolHive's groups that hold servers (`what` names their servers), and `/mcp/{group}` reaches the group as one MCP
+server (ToolHive's virtual MCP server, started on first use, with its tool search). The card's texts say "groups"; the API,
+the connection and the per-agent assignment are unchanged.
+
+Also each server alone (21. 11.): an agent that should have one server need not get a group. `GET /servers` lists every
+ToolHive server that speaks streamable HTTP as well, id and path `one.<name>` (a dot is never in a ToolHive group's name),
+forwarded to that server's own proxy with a token of its own. The add dialog is laid out as the Connectors catalog (kinds
+beside the grid: All, Connected, Groups, Servers). The card no longer repeats what is connected: those are ordinary custom
+connections, listed under MCP with their agents and Disconnect, and the card says so.
+
+## Addendum: this computer's own models in Other provider (21. 11.)
+
+With `LATTEOS_LOCAL_LLM_URL` (LatteOS's llama.cpp router, `http://127.0.0.1:8790/v1`), Connect AI › Other provider shows
+"Use this computer's models": one click fills the name, the OpenAI style and the address and lists the models; the user
+switches on those agents may use. The address comes in `GET …/latteos/mcp` as `localModels` (null when unset). An endpoint on
+loopback has its models tested one after another with 120 s each (`onThisComputer` in endpoints.ts): run together, each test
+made the router evict the model the previous one loaded and they all failed at 60 s, which is why local models could not be
+given to agents. Bun's `idleTimeout` is 255 s (its most) so the saving request outlives a couple of such tests.

@@ -1993,6 +1993,8 @@ export function createHttpApi(options: TransportOptions = {}): HttpApi {
     },
     latteos: {
       mcp: (orgId) => request<LatteosMcp>(`${org(orgId)}/latteos/mcp`),
+      localProgress: (orgId, model) =>
+        request<{ state: string; percent: number }>(`${org(orgId)}/latteos/local/progress?model=${enc(model)}`),
       connectMcp: (orgId, serverId) => request<unknown>(`${org(orgId)}/latteos/mcp/${enc(serverId)}`, { json: {} }),
       skills: (orgId) => request<{ enabled: boolean; skills: LatteosSkill[] }>(`${org(orgId)}/latteos/skills`),
       installSkill: (orgId, folder) =>

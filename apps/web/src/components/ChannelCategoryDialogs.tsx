@@ -144,7 +144,8 @@ export function NewCategoryDialog({
       title={parent ? t("projectPage.newSubprojectIn", { name: parent.name }) : t("channelCategories.newCategory")}
       description={parent ? t("projectPage.newSubprojectDesc") : t("channelCategories.newCategoryDesc")}
       closeLabel={t("common.close")}
-      width={480}
+      // LatteOS: wider with the project's kind and place, so the kinds sit in five columns and the footer stays in view
+      width={parentId ? 480 : 760}
       // Not autoFocus: it also opens over Criar canal and over the channel's details.
       initialFocus={nameField}
     >
@@ -156,7 +157,11 @@ export function NewCategoryDialog({
         }}
       >
         <Locked when={create.isPending}>
-          <DialogBody className="channel-category__fields">
+          <DialogBody
+            className={
+              parentId ? "channel-category__fields" : "channel-category__fields channel-category__fields--project"
+            }
+          >
             <Field
               label={t("channelCategories.name")}
               id="category-name"

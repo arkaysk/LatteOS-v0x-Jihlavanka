@@ -45,7 +45,7 @@ export function Icon({ name, size = 20, label, inline, className, style, ...rest
       <Duotone
         weight="duotone"
         size={size}
-        className={cx("ac-icon", inline && "ac-icon--inline", className)}
+        className={cx("ac-icon", "ac-icon--duo", inline && "ac-icon--inline", className)}
         style={inline ? ({ "--glyph": `${size}px`, ...sized } as CSSProperties) : sized}
         aria-hidden={label ? undefined : true}
         role={label ? "img" : undefined}

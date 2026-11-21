@@ -1458,6 +1458,8 @@ export interface ApiClient {
   /** LatteOS: what this computer offers (ADR 0202). */
   latteos: {
     mcp(orgId: string): Promise<LatteosMcp>;
+    /** How far this computer's router is with loading a model (LatteOS's estimate). */
+    localProgress(orgId: string, model: string): Promise<{ state: string; percent: number }>;
     connectMcp(orgId: string, serverId: string): Promise<unknown>;
     skills(orgId: string): Promise<{ enabled: boolean; skills: LatteosSkill[] }>;
     installSkill(orgId: string, folder: string): Promise<{ id: string; name: string }>;

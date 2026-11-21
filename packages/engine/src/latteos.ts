@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { and, type Database, eq, isNull, schema } from "@agenteschat/db";
 import { type CustomConnectStart, type CustomDeps, connectCustomServer } from "./connectors/custom";
 import { NotFoundError, ValidationError } from "./errors";
+import { setLatteosLocal } from "./latteos-local";
 import { setLocalGatewayOrigin } from "./net-guard";
 
 /**
@@ -15,17 +16,22 @@ export interface LatteosConfig {
   mcpTokenFile?: string;
   /** The folder of this computer's skills (`LATTEOS_SKILLS_DIR`). */
   skillsDir?: string;
+  /** This computer's own models, an OpenAI-compatible address (`LATTEOS_LOCAL_LLM_URL`). */
+  localLlmUrl?: string;
 }
 
 let config: LatteosConfig = {};
 
 export function setLatteosConfig(next: LatteosConfig) {
   config = next;
+  setLatteosLocal({ mcpUrl: next.mcpUrl, mcpTokenFile: next.mcpTokenFile, localLlmUrl: next.localLlmUrl });
   setLocalGatewayOrigin(next.mcpUrl && next.mcpTokenFile ? next.mcpUrl : undefined);
 }
 
 export const latteosMcpEnabled = () => Boolean(config.mcpUrl && config.mcpTokenFile);
 export const latteosSkillsDir = () => config.skillsDir ?? null;
+export const latteosLocalLlmUrl = () => config.localLlmUrl ?? null;
+export { isLatteosLocal, type LatteosLocalModel, latteosLocalModels, latteosLocalProgress } from "./latteos-local";
 
 /** One MCP server of LatteOS's gateway, running on this computer. */
 export interface LatteosMcpServer {

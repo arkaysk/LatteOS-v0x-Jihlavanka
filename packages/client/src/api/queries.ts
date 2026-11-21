@@ -4334,6 +4334,17 @@ export const useLatteosMcp = (orgId: string) => {
   return useQuery({ queryKey: ["latteos", orgId, "mcp"], queryFn: () => api.latteos.mcp(orgId) });
 };
 
+/** While an agent on one of this computer's models waits for it to load: how far it is, asked every second. */
+export const useLatteosLocalProgress = (orgId: string, model: string | null) => {
+  const api = useApi();
+  return useQuery({
+    queryKey: ["latteos", orgId, "local-progress", model],
+    queryFn: () => api.latteos.localProgress(orgId, model as string),
+    enabled: model !== null,
+    refetchInterval: 1000,
+  });
+};
+
 export function useConnectLatteosMcp(orgId: string) {
   const api = useApi();
   const qc = useQueryClient();

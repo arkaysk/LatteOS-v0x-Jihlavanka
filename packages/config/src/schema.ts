@@ -1040,6 +1040,13 @@ export const envVars = {
     section: "Connectors",
     example: "http://127.0.0.1:8791",
   },
+  LATTEOS_LOCAL_LLM_URL: {
+    schema: z.url().optional(),
+    description:
+      "Address of the OpenAI-compatible server of this computer's own models (LatteOS's llama.cpp router, ADR 0202). Other provider in Connect AI then offers it in one click, and its models are tested one after another (a local server holds one model at a time). Unset (default): nothing different from an unforked server.",
+    section: "Connectors",
+    example: "http://127.0.0.1:8790/v1",
+  },
   LATTEOS_MCP_TOKEN_FILE: {
     schema: z
       .string()

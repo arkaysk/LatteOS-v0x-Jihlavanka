@@ -9,6 +9,8 @@ import {
   connectOverHttp,
   connectorIconFile,
   connectorListing,
+  latteosLocalLlmUrl,
+  latteosLocalProgress,
   latteosMcpConnections,
   latteosMcpEnabled,
   latteosMcpView,
@@ -262,6 +264,10 @@ export function customConnectorRoutes(deps: AppDeps) {
       enabled: z.boolean(),
       available: z.array(z.object({ id: z.string(), name: z.string(), what: z.string() })),
       connected: z.array(z.object({ id: z.uuid(), label: z.string(), serverUrl: z.string() })),
+      localModels: z
+        .string()
+        .nullable()
+        .openapi({ description: "This computer's own models (`LATTEOS_LOCAL_LLM_URL`), offered in Other provider." }),
     })
     .openapi("LatteosMcp");
   app.openapi(
@@ -278,18 +284,39 @@ export function customConnectorRoutes(deps: AppDeps) {
     async (c) => {
       const { orgId } = c.req.valid("param");
       await requirePermission(custom.db, c.get("user").id, orgId, "read");
-      if (!latteosMcpEnabled()) return c.json({ enabled: false, available: [], connected: [] }, 200);
+      const localModels = latteosLocalLlmUrl();
+      if (!latteosMcpEnabled()) return c.json({ enabled: false, available: [], connected: [], localModels }, 200);
       const [servers, connected] = await Promise.all([listLatteosMcp(), latteosMcpConnections(custom.db, orgId)]);
       return c.json(
         {
           enabled: true,
           available: servers.map(latteosMcpView),
           connected: connected.map((x) => ({ id: x.id, label: x.label, serverUrl: x.url })),
+          localModels,
         },
         200,
       );
     },
   );
+  app.openapi(
+    createRoute({
+      method: "get",
+      path: "/organizations/{orgId}/latteos/local/progress",
+      tags,
+      security,
+      summary: "LatteOS: how far this computer's router is with loading a model (an estimate in percent)",
+      description:
+        "`loading` with the percent LatteOS estimates (llama.cpp's router says only that it loads), `loaded` at 100, or the model's other state; `none` where `LATTEOS_LOCAL_LLM_URL` is not set.",
+      request: { params: OrgParams, query: z.object({ model: z.string().min(1).max(200) }) },
+      responses: { 200: json(z.object({ state: z.string(), percent: z.number() })), ...errors },
+    }),
+    async (c) => {
+      const { orgId } = c.req.valid("param");
+      await requirePermission(custom.db, c.get("user").id, orgId, "read");
+      return c.json(await latteosLocalProgress(c.req.valid("query").model), 200);
+    },
+  );
+
   app.openapi(
     createRoute({
       method: "post",
