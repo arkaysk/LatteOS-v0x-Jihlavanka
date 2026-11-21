@@ -22,7 +22,7 @@ scene Safe {
         keyboard: on_demand
     }
     permissions {
-        run: "foot", "latte-safe", "latte-stats", "labwc", "systemctl", "date"
+        run: "foot", "latte-safe", "latte-stats", "labwc", "systemctl", "date", "latte-app"
         services: "window", "window.*", "battery", "network", "apps", "apps.launch", "clock"
     }
 
@@ -46,10 +46,12 @@ scene Safe {
     // The bar's own icons are glyphs of the font LatteOS brings: SAFE must not depend on an icon theme being found.
     text g_power = ""
     text g_term = ""
+    text g_ai = ""
     text g_search = ""
     text g_prompt = ""
     event menu ->                              // the SAFE button
     event terminal ->
+    event ai_help ->                           // the AI's help window
     event machine ->                           // the power menu: 0 log out, 1 sleep, 2 restart, 3 shut down
     event window ->                            // a window's chip, by its place
     event entered ->                           // Enter in the row
@@ -76,25 +78,31 @@ scene Safe {
     zone box z_term { from: 440, 6; size: 36, 36; cursor: pointer; label: "Terminal" }
     on press z_term { emit terminal }
 
-    // ── the typing row: its mode (a press or Tab changes it) and the field ──────────────────────────────────
+    // help from the AI the person is already signed in to (LensAI's small window for SAFE, apps/safehelp.qml)
     ellipse { at: 504, 24; radius: 18; color: coffee }
-    text pick(mode, g_search, g_prompt) { at: 504, 24; anchor: center; size: 19; color: ink; family: "tabler-icons" }
-    zone box z_mode { from: 486, 6; size: 36, 36; cursor: pointer; label: "Search mode" }
+    text g_ai { at: 504, 24; anchor: center; size: 19; color: ink; family: "tabler-icons" }
+    zone box z_ai { from: 486, 6; size: 36, 36; cursor: pointer; label: "Ask the AI for help" }
+    on press z_ai { emit ai_help }
+
+    // ── the typing row: its mode (a press or Tab changes it) and the field ──────────────────────────────────
+    ellipse { at: 550, 24; radius: 18; color: coffee }
+    text pick(mode, g_search, g_prompt) { at: 550, 24; anchor: center; size: 19; color: ink; family: "tabler-icons" }
+    zone box z_mode { from: 532, 6; size: 36, 36; cursor: pointer; label: "Search mode" }
     on press z_mode { mode = mod(mode + 1, 2) }
     on key Tab { mode = mod(mode + 1, 2) }
-    box { from: 532, 8; size: 316, 32; corner: 16; color: coffee }
-    text pick(mode, "Search apps…", "Run a Linux command…") { at: 548, 24; anchor: left center; size: 13.5; color: ink; opacity: 45%; width: 290; lines: 1; show: not typing }
-    input q { at: 548, 14; width: 290; size: 13.5; color: ink; selection: #5a463a }
-    zone box z_row { from: 532, 8; size: 316, 32; cursor: text }
+    box { from: 578, 8; size: 316, 32; corner: 16; color: coffee }
+    text pick(mode, "Search apps…", "Run a Linux command…") { at: 594, 24; anchor: left center; size: 13.5; color: ink; opacity: 45%; width: 290; lines: 1; show: not typing }
+    input q { at: 594, 14; width: 290; size: 13.5; color: ink; selection: #5a463a }
+    zone box z_row { from: 578, 8; size: 316, 32; cursor: text }
     on press z_row { focus q }
     on submit q { emit entered }
     on key Escape { power_open = false; emit cleared }
 
     // ── the open windows: a press shows one, or puts the one in front away ──────────────────────────────────
     repeat i in 0..3 {
-        box { from: 860 + i * 130, 8; size: 124, 32; corner: 16; color: coffee; opacity: if(wins.$i.active, 100%, 85%); show: i < wins.count and 990 + i * 130 < screen.width - 260 }
-        text wins.$i.title { at: 872 + i * 130, 24; anchor: left center; size: 12.5; width: 96; lines: 1; color: ink; show: i < wins.count and 990 + i * 130 < screen.width - 260 }
-        zone box z_win.$i { from: 860 + i * 130, 8; size: 124, 32; cursor: pointer; active: i < wins.count and 990 + i * 130 < screen.width - 260 }
+        box { from: 906 + i * 130, 8; size: 124, 32; corner: 16; color: coffee; opacity: if(wins.$i.active, 100%, 85%); show: i < wins.count and 1036 + i * 130 < screen.width - 260 }
+        text wins.$i.title { at: 918 + i * 130, 24; anchor: left center; size: 12.5; width: 96; lines: 1; color: ink; show: i < wins.count and 1036 + i * 130 < screen.width - 260 }
+        zone box z_win.$i { from: 906 + i * 130, 8; size: 124, 32; cursor: pointer; active: i < wins.count and 1036 + i * 130 < screen.width - 260 }
         on press z_win.$i { emit window(i) }
     }
 
@@ -107,7 +115,7 @@ scene Safe {
     surface found {
         size: 460, 310
         anchor: bottom_left
-        margin: 0, 0, 54, 528
+        margin: 0, 0, 54, 574
         level: overlay
         reserve: -1
         open: results.count > 0

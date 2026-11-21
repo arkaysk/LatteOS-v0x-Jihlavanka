@@ -138,6 +138,7 @@
 /usr/share/latteos/goo/side.plm                         <- goo/side.plm
 /usr/share/latteos/goo/side.luau                        <- goo/side.luau
 /usr/share/latteos/apps/aicenter.qml                    <- apps/aicenter.qml
+/usr/share/latteos/apps/safehelp.qml                    <- apps/safehelp.qml
 /usr/share/latteos/apps/aicenter/WebTabs.qml            <- apps/aicenter/WebTabs.qml
 /usr/share/latteos/apps/aicenter/ReadmeView.qml         <- apps/aicenter/ReadmeView.qml
 /usr/share/latteos/apps/aicenter/marked.umd.js          <- apps/aicenter/marked.umd.js

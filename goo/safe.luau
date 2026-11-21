@@ -6,12 +6,14 @@ local icons = require("lib/icons")
 local open = require("lib/open")
 
 text.g_power, text.g_term, text.g_search, text.g_prompt = icons["power"], icons["terminal-2"], icons["search"], icons["prompt"]
+text.g_ai = icons["sparkles"] or icons["message"]
 
 local function go(cmd, args) run(cmd, args or {}, nil, { output = false }) end
 local function trim(s) return (tostring(s or ""):gsub("^%s+", ""):gsub("%s+$", "")) end
 
 on("menu", function() open.in_terminal("LatteOS SAFE", "latte-safe") end)
 on("terminal", open.terminal)
+on("ai_help", function() go("latte-app", { "safehelp" }) end)
 
 -- in the order the power menu draws them
 local MACHINE = { [0] = { "labwc", { "--exit" } }, { "systemctl", { "suspend" } }, { "systemctl", { "reboot" } },
