@@ -62,6 +62,11 @@ LatteOS:2.x xxx
 >     (b) [x] `latte-mcp` spoločný `CALLER` pri súbežných volaniach (`:640`) → `contextvars`; (c) [x] 21. 11. `latte-skill` vyberá zariadenie podľa časti
 >     mena oboma smermi (`:184`) → presná alebo jediná zhoda, inak sa opýtať, potom ID.
 > 10b. Slovenská klávesnica: prepínač rozloženia v TrayShore (Pobrežie), pravý klik na ňom ponúkne aj mapu znakov (už nainštalovaná).
+>     21. 11. zistené: rozloženia **sk,us** už platia (localectl → `latte-session` → pleamar-wm, prepína Alt+Shift aj Win+Space), mapa znakov
+>     je **gucharmap**. Chýba iba znak v TrayShore: pleamar-wm (ani 0.6.33) scéne nehovorí, ktoré rozloženie je zapnuté, a nemá akciu
+>     „ďalšie rozloženie“. Riešenie: záplata `patches/pleamar-wm-keyboard-layout.patch` (fakt `keys.layout` + text s menami rozložení,
+>     udalosť `next_layout`) spolu s dobehnutím v pondelok; potom v `goo/parts/shore.plm` znak „SK/US“ (klik = ďalšie, pravý klik =
+>     ponuka: rozloženia, Mapa znakov, Nastavenia › Klávesnica).
 >
 > **Stav 21. 11. (večer):** [x] **A1** `latte-mcp` (tokeny skupín pri kontrole iba čítané, prázdny token 401, port s procesom,
 > `thv` 10 s v pamäti a mimo slučky, hlavný token bez obsahu = stop) + **10a(b)** `CALLER` ako `contextvars`; test `tests/test_mcp.py`
