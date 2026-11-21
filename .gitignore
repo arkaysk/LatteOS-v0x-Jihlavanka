@@ -30,3 +30,6 @@ CLAUDE.md
 
 # the name-day table while it is being built (bin/latte-nameday build)
 system/namedays.json.part
+
+# súkromné poznámky o počítačoch používateľa (disky, hardvér) — nie na verejný GitHub (používateľ 21. 11. 2026)
+docs/private/

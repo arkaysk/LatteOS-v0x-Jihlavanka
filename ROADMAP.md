@@ -47,7 +47,9 @@ LatteOS:2.x xxx
 >  6. Odstrániť widgety z Chaldea (6B.41, `apps/widgets/`, `apps/widgets.qml`, FILES, TRETIE-STRANY) — pre LatteOS nevhodné.
 >  7. Dokumentácia: prejsť `docs/` a README, odstrániť zastarané (Hyprland, Noctalia, `session/` v `docs/ARCHITECTURE.md` a
 >     `docs/README.md`, „licencia nie je“ oproti GPL-3) a údaje, ktoré si navzájom odporujú.
->  8. Osobné súbory: prejsť, čo je na GitHube (snímky s e-mailom, osobné poznámky, cesty), odobrať z repa (a pridať do `.gitignore`).
+>  8. [x] 21. 11.: súpis diskov a hardvéru hlavného PC (`docs/instalator/HLAVNE-PC.md`, kroky v `manual-inst.md`) presunutý do
+>     `docs/private/` (v `.gitignore`); snímky v repe prejdené OCR — e-mail ani adresy nie sú. V **histórii gitu** súbor ostáva
+>     (vymazať z histórie = prepísať vetvu a force push, iba na pokyn). Pôvodne: Osobné súbory: prejsť, čo je na GitHube (snímky s e-mailom, osobné poznámky, cesty), odobrať z repa (a pridať do `.gitignore`).
 >  9. Pred inštaláciou: skontrolovať najnovšie verzie potrebného softvéru a či treba záplatu; **pleamar a agentgram sa dobiehajú
 >     a záplatujú raz týždenne, v pondelok večer** (1D.17).
 > 10. Nainštalovať pomocníka CSO z gstack (`gstack-cso-launcher`) a spustiť `/cso` znova, so skenermi (Gitleaks, OSV, Semgrep).
@@ -392,7 +394,7 @@ možno spoľahlivo dokončiť v alpha rozsahu.
     súbežne so zostavovaním pleamaru; pri Secure Boot kľúč `kmodgenca` pred zostavením a `mokutil --import` s heslom z písmen bez y/z
     (MokManager má QWERTY), ktoré sprievodca ukáže na konci. Staršie NVIDIA zatiaľ nouveau (ovládač 580xx neskôr). Zdroj: rpmfusion.org/Howto/NVIDIA, Howto/Secure Boot.
 **2.11** [~] (19. 11., používateľ) **Hlavné PC pripravené na inštaláciu** (RTX 3060 bez iGPU, ASUS B560, periférie Logitech/Razer/NZXT/
-Corsair/ASUS Aura/Ajazz, Acer Z301C 144 Hz + dotykový ViewSonic TD2760): kontrola a postup `docs/instalator/HLAVNE-PC.md`.
+Corsair/ASUS Aura/Ajazz, Acer Z301C 144 Hz + dotykový ViewSonic TD2760): kontrola a postup súkromne v `docs/private/HLAVNE-PC.md` (nie v gite).
 19. 11.: overené `akmod-nvidia` 615.78.08 pre F45 v RPM Fusion (sám zakáže nouveau a nova_core); pridané súčasti **solaar** a **openrgb**,
 sprievodca ich zaškrtne podľa pripojených USB výrobcov (`/sys/bus/usb/devices/*/idVendor`). Doplnené (používateľ: „všetko vrátane periférnych programov“): **OpenRazer + Polychromatic** (OBS hardware:razer, DKMS podpísaný
 kľúčom MOK ako NVIDIA, `plugdev`), **CoolerControl** (COPR, `coolercontrold`), **OpenDeck** + doplnok Ajazz AKP03 (vydania na GitHube,
