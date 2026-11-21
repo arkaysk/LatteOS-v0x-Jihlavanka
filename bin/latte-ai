@@ -44,7 +44,7 @@ No API key: the official tool of a service answers, with the account the user is
   latte-ai server remove ID
   latte-ai agents           what the services tell of the accounts and what was used, for LensAI's agents panel:
                             {"services": [{"id", "name", "plan", "signed", "login", "limits": [{"label", "used", "resets",
-                            "scope" (one model's own), "note" (a sum: the extra usage), "off"}], "asked"}],
+                            "scope" (one model's own), "note" (a sum: the extra usage), "off", "bar" (false: a sum alone)}], "asked"}],
                             "stats": {"week", "today", "model", "busiest", "prompts", "sessions", "days": [{"day", "tokens"}]}}
   latte-ai skill install|reset|path   LatteOS's skill for the agents (Claude Code, Codex, Gemini): the user's copy in
                             ~/.config/latteos/skills/latteos, linked into each agent's skills; reset brings back LatteOS's own
@@ -1619,6 +1619,14 @@ def claude_usage():
             spent, cap = float(x.get("used_credits") or 0) / 10 ** places, float(x["monthly_limit"]) / 10 ** places
             out["extra"] = {"used": round(spent / cap, 4) if cap else 0, "resets": 0,
                             "note": "%.2f / %.0f %s" % (spent, cap, x.get("currency") or ""), "off": not x.get("is_enabled")}
+            # the credits bought and not spent yet, as claude.ai's "Usage credits left" says first: the balance, 0 when it ran out
+            bal = (d.get("spend") or {}).get("balance")
+            if isinstance(bal, dict) and bal.get("amount_minor") is not None:
+                left = float(bal["amount_minor"]) / 10 ** int(bal.get("exponent") or 2)
+            else:
+                left = 0.0 if x.get("disabled_reason") == "out_of_credits" else None
+            if left is not None:
+                out["left"] = {"note": "%.2f %s" % (left, x.get("currency") or "")}
         # credits given for free now and then (a promotion), told while there are any
         promo = d.get("promo_credits")
         if isinstance(promo, dict) and promo.get("utilization") is not None:
@@ -3320,14 +3328,17 @@ def agents():
             rows.append({"label": N("Credits (week)") if c.get("week") else N("Credits (month)"), "used": c.get("used", 0), "resets": c.get("resets", 0)})
         if isinstance(told.get("promo"), dict):
             rows.append({"label": N("Free credits"), "used": told["promo"]["used"], "resets": told["promo"]["resets"]})
+        if isinstance(told.get("left"), dict):
+            rows.append({"label": N("Usage credits left"), "used": 0, "resets": 0, "note": told["left"]["note"], "bar": False})
         if isinstance(told.get("extra"), dict):
             e = told["extra"]
-            rows.append({"label": N("Extra usage (credits)"), "used": e["used"], "resets": 0, "note": e["note"], "off": e["off"]})
+            rows.append({"label": N("Monthly spend limit"), "used": e["used"], "resets": 0, "note": e["note"], "off": e["off"]})
         plan = told.get("plan") or (s["account"].split(" · ")[-1] if " · " in s["account"] else "")
         out.append({"id": s["id"], "name": s["name"], "style": s["style"], "plan": plan, "account": s["account"], "signed": s["signed"],
                     "login": s["login"], "limits": rows, "asked": asked_this_month(s["id"])})
     today = datetime.date.today()
-    week = {str(today - datetime.timedelta(days=i)) for i in range(7)}
+    monday = today - datetime.timedelta(days=today.weekday())        # the week begins on Monday, as in Europe (the user, 21. 11.)
+    week = {str(monday + datetime.timedelta(days=i)) for i in range(today.weekday() + 1)}
     by_day, by_model, prompts, sessions = {}, {}, 0, 0
     for f in claude_stats().values():
         touched = False
@@ -3342,8 +3353,8 @@ def agents():
     stats = {"week": sum(by_day.values()), "today": by_day.get(str(today), 0),
              "model": max(by_model, key=by_model.get) if by_model else "", "busiest": max(by_day, key=by_day.get) if by_day else "",
              "prompts": prompts, "sessions": sessions,
-             # the week day by day, the oldest first: the overview draws it
-             "days": [{"day": str(today - datetime.timedelta(days=i)), "tokens": by_day.get(str(today - datetime.timedelta(days=i)), 0)} for i in range(6, -1, -1)]}
+             # this week day by day, Monday to Sunday (the days to come at 0): the overview draws it
+             "days": [{"day": str(monday + datetime.timedelta(days=i)), "tokens": by_day.get(str(monday + datetime.timedelta(days=i)), 0)} for i in range(7)]}
     can = doers()
     return {"services": out, "stats": stats, "doers": [{"id": i, "name": doer_name(i), "chosen": i == chosen(AGENT_WORD)} for i in can],
             "ideas": IDEAS}

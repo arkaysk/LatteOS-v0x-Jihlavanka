@@ -3961,6 +3961,10 @@ a vstup dialógov), iba vstreknutý štýl v záložke LensAI — fork sa nemen�
 (`limits[].scope` z /api/oauth/usage), **Navyše (kredity)** so sumou (35.37 / 50 EUR) a kredity zadarmo, keď ich služba hlási;
 týždeň tokenov Claude Code ako stĺpcový graf (Theme.heat), najrušnejší deň zvýraznený (`stats.days`). agentgram (fork):
 plus, krížik, fajka, „…“ a úchyt bez štvorca výplne (Phosphor regular namiesto duotone).
+  **[x] 21. 11. (siedma dávka):** Nastavenia › **Agenti cez ACP** ako samostatná sekcia (z CLI preč); Claude: „Zostávajúce kredity“
+(`spend.balance`, 0 pri `out_of_credits`) pred „Mesačný limit výdavkov“; týždeň od pondelka (graf po–ne, budúce dni bledé, „tokeny
+tento týždeň“ od pondelka); ponuka ToolHive služby rastie z miesta kliku (`text shore_tray toolhive,X,Y` z `hyprctl cursorpos`),
+nie od tray. **Ostáva:** Mistral (kredit zadarmo) — Vibe ani API nemajú overený zdroj zostatku; preveriť s kľúčom v Nastavenia › API.
 
 **10B.89** [ ] 21. 11. **Agent má vlastný prehliadač, ktorý pracuje aj mimo obrazovky** (používateľ 21. 11.; k vlastnému kurzoru
 a klávesnici z 10B.58): stránky otvára, číta a kliká v prehliadači bez okna navrchu (headless), používateľ ho môže kedykoľvek

@@ -206,7 +206,7 @@ end
 local function open_menu(t)
     local ok, items = pcall(sys.ask, "tray.menu", t.key)
     -- Electron's tray says no title, only "App_status_icon_1": its name without the rest
-    local name = (t.title or "") ~= "" and t.title or ((t.id or ""):gsub("_status_icon_%d+$", ""))
+    local name = (((t.title or "") ~= "" and t.title or t.id or ""):gsub("_status_icon_%d+$", ""))
     local rows = { back(), { head = true, label = name, line = true } }
     for _, r in ipairs(ok and menu_rows(t.key, items) or {}) do rows[#rows + 1] = r end
     showing = "menu"
@@ -333,14 +333,26 @@ function M.start()
     on("shore_wheel", function(v) if (v or 0) // 2 == 1 then call("audio.step", ((v or 0) % 2 == 1 and 1 or -1) * 0.05) end end)
     on("shore_bg", function(j) local t = shown_bg[(j or 0) + 1] if t then call("tray.activate", t.key) end end)
     on("shore_bg_right", function(j) local t = shown_bg[(j or 0) + 1] if t then open_menu(t) end end)
-    -- the same menu for one kept out of the plate (ToolHive: its place is in LensAI), asked by its id; emptied again so the
-    -- next press asks anew
+    -- the same menu for one kept out of the plate (ToolHive: its place is in LensAI), asked by its id and where it was pressed
+    -- ("toolhive,X,Y", the pointer then): the card grows from there, not from the shore; emptied so the next press asks anew
     on("text:shore_tray", function()
-        local want = string.lower(text.shore_tray or "")
-        if want == "" then return end
+        local want, x, y = string.match(string.lower(text.shore_tray or ""), "^([%w_-]+),?(%-?[%d.]*),?(%-?[%d.]*)")
+        if not want or want == "" then return end
         text.shore_tray = ""
         for _, t in ipairs(tray) do
-            if string.find(string.lower(t.id or ""), want, 1, true) then open_menu(t) return end
+            if string.find(string.lower(t.id or ""), want, 1, true) then
+                if tonumber(x) and tonumber(y) then
+                    local ok, items = pcall(sys.ask, "tray.menu", t.key)
+                    local name = (((t.title or "") ~= "" and t.title or t.id or ""):gsub("_status_icon_%d+$", ""))
+                    local rows = { { head = true, label = name, line = true } }
+                    for _, r in ipairs(ok and menu_rows(t.key, items) or {}) do rows[#rows + 1] = r end
+                    fact["tap.x"], fact["tap.y"] = tonumber(x), tonumber(y)
+                    card.open(rows, { id = "traymenu", width = 320 })
+                else
+                    open_menu(t)
+                end
+                return
+            end
         end
     end)
     on("shore_hover", function(what) text.tip = tip_for(what or 0) end)

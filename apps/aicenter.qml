@@ -622,7 +622,8 @@ ShellRoot {
                 // menu its right click opened in the tray — Goo's card by the shore (goo/lib/shore.luau, text shore_tray)
                 Nav { width: parent.width; text: I18n.tr("ToolHive service"); icon: "server"; visible: !!shell.thTray
                       image: shell.thTray ? String(shell.thTray.icon || "") : ""; dot: shell.thRunning ? Theme.ok : "transparent"
-                      onPressed: Quickshell.execDetached(["latte-say", "text shore_tray toolhive"]) }
+                      // where the pointer is (pleamar-wm's, through the hyprctl shim): the card opens there, by the press
+                      onPressed: Quickshell.execDetached(["sh", "-c", "p=$(hyprctl cursorpos 2>/dev/null | tr -d ' '); latte-say \"text shore_tray toolhive,$p\""]) }
                 QsMenuOpener { id: thMenu; menu: shell.thTray ? shell.thTray.menu : null }      // its first row says whether it runs
                 Nav { width: parent.width; text: I18n.tr("Local LLMs"); icon: "cpu"; on: shell.page === "local"; onPressed: shell.go("local") }
                 Nav { width: parent.width; text: I18n.tr("Settings"); icon: "settings"; on: shell.page === "lensai"; onPressed: shell.openSection(shell.section) }
@@ -1159,7 +1160,7 @@ ShellRoot {
                                     Item { required property var modelData; width: us.width; height: 22
                                         Label { width: 190; elide: Text.ElideRight; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter; opacity: modelData.off ? 0.55 : 1
                                                 text: I18n.tr(us.modelData.name) + " · " + I18n.tr(modelData.label || "") + (modelData.scope ? " · " + modelData.scope : "") }
-                                        DotBar { x: 198; width: parent.width - 198 - 132; height: 9; segments: 20; value: modelData.used; anchors.verticalCenter: parent.verticalCenter; opacity: modelData.off ? 0.55 : 1 }
+                                        DotBar { x: 198; width: parent.width - 198 - 132; height: 9; segments: 20; value: modelData.used; anchors.verticalCenter: parent.verticalCenter; opacity: modelData.off ? 0.55 : 1; visible: modelData.bar !== false }
                                         // the short form, as on the Agents page: "25 % · 3 h"; the whole sentence in the tooltip
                                         Label { id: usedText; anchors.right: parent.right; width: 124; horizontalAlignment: Text.AlignRight; elide: Text.ElideRight; font.pixelSize: 12; color: Theme.dim; anchors.verticalCenter: parent.verticalCenter
                                                 // the extra usage says its sum (35.37 / 50 EUR), the windows when they come back
@@ -1176,17 +1177,18 @@ ShellRoot {
                                 Repeater { model: parent.parent.days
                                     Item { required property var modelData; required property int index; width: (weekBars.width - 6 * 8) / 7; height: weekBars.height
                                         readonly property real t: modelData.tokens / parent.parent.most
+                                        readonly property bool later: modelData.day > Qt.formatDate(new Date(), "yyyy-MM-dd")      // the days to come this week
                                         readonly property bool busiest: modelData.tokens > 0 && modelData.tokens === parent.parent.most
                                         Rectangle { anchors.bottom: parent.bottom; anchors.bottomMargin: 18; width: parent.width; radius: 4; height: Math.max(3, (parent.height - 34) * parent.t)
-                                                    color: Theme.heat(parent.t); opacity: parent.busiest ? 1 : 0.75
+                                                    color: Theme.heat(parent.t); opacity: parent.busiest ? 1 : parent.later ? 0.18 : 0.75
                                             Behavior on height { NumberAnimation { duration: 400; easing.type: Easing.OutCubic } } }
                                         Label { anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.bottom; font.pixelSize: 11; font.weight: parent.busiest ? 800 : 400
-                                                color: parent.busiest ? Theme.cream : Theme.dim; text: Qt.formatDate(new Date(modelData.day), "ddd") }
+                                                color: parent.busiest ? Theme.cream : Theme.dim; text: I18n.tr([QT_TR_NOOP("Mo"), QT_TR_NOOP("Tu"), QT_TR_NOOP("We"), QT_TR_NOOP("Th"), QT_TR_NOOP("Fr"), QT_TR_NOOP("Sa"), QT_TR_NOOP("Su")][index]) }      // Monday first, as the calendar
                                         Label { visible: parent.busiest; anchors.horizontalCenter: parent.horizontalCenter; y: parent.height - 18 - (parent.height - 34) * parent.t - 16; font.pixelSize: 10; font.weight: 700
                                                 color: Theme.cream; text: shell.tokens(modelData.tokens) }
                                         MouseArea { id: dayHit; anchors.fill: parent; hoverEnabled: true }
                                         QQC.ToolTip.visible: dayHit.containsMouse; QQC.ToolTip.delay: 300
-                                        QQC.ToolTip.text: Qt.formatDate(new Date(modelData.day), "dddd d. M.") + ": " + I18n.tr("{n} tokens", { n: shell.tokens(modelData.tokens) }) } } }
+                                        QQC.ToolTip.text: Qt.formatDate(new Date(modelData.day), "d. M.") + ": " + I18n.tr("{n} tokens", { n: shell.tokens(modelData.tokens) }) } } }
                             Label { anchors.bottom: parent.bottom; width: parent.width; elide: Text.ElideRight; color: Theme.faint; font.pixelSize: 11
                                     text: I18n.tr("Counted from Claude Code's own records on this computer, LensAI's questions included.") } }
                         Label { width: parent.width; wrapMode: Text.WordWrap; text: shell.statLines[shell.turn % shell.statLines.length]; font.pixelSize: 13; font.weight: 700; color: Theme.cream } }
@@ -1770,7 +1772,7 @@ ShellRoot {
             visible: shell.page === "lensai"
             // the sections in a list on the left, as Windows 11's Settings has them (audit 21. 11.), the dot of each service kind by it
             Column { id: setChips; x: 16; y: 16; width: 220; spacing: 4
-                Repeater { model: [{ id: "web", name: QT_TR_NOOP("Web"), icon: "world" }, { id: "cli", name: QT_TR_NOOP("CLI"), icon: "terminal-2" }, { id: "api", name: QT_TR_NOOP("API"), icon: "key" },
+                Repeater { model: [{ id: "web", name: QT_TR_NOOP("Web"), icon: "world" }, { id: "cli", name: QT_TR_NOOP("CLI"), icon: "terminal-2" }, { id: "api", name: QT_TR_NOOP("API"), icon: "key" }, { id: "acp", name: QT_TR_NOOP("Agents through ACP"), icon: "plug" },
                                    { id: "instructions", name: QT_TR_NOOP("Instructions"), icon: "file-text" }, { id: "memory", name: QT_TR_NOOP("Memory"), icon: "brain" },
                                    { id: "agents", name: QT_TR_NOOP("Agents"), icon: "robot" }, { id: "hands", name: QT_TR_NOOP("Hands"), icon: "hand-finger" },
                                    { id: "agentgram", name: "agentgram", icon: "users-group" }]
@@ -2000,8 +2002,15 @@ ShellRoot {
                                            onPressed: { shell.inTerminal(card.modelData.logout); later.restart() } } } }
                             ModelRows { width: parent.width; pid: card.modelData.id } } } }
 
+            }
+
+            // ── agents through ACP: a section of their own (the user, 21. 11.), out of CLI ──
+            Scroll {
+                id: acpSet
+                visible: shell.section === "acp"
+                anchors.topMargin: 8; anchors.leftMargin: 244
                 // ── the agents of the ACP Registry (ROADMAP 10B.87): installed here for the Helper, as Zed installs them ──
-                Column { id: acpBox; width: cliSet.room; spacing: 10
+                Column { id: acpBox; width: acpSet.room; spacing: 10
                     property string words: ""
                     onVisibleChanged: if (visible && shell.acpAgents.length === 0 && !acpq.running) acpq.ask(["acp", "list"])
                     Component.onCompleted: if (visible) acpq.ask(["acp", "list"])
