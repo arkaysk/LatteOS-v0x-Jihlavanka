@@ -29,11 +29,11 @@ export function projectSandbox(cwd: string, projects: string, base: string[] = [
       if (e.isDirectory() && e.name !== sub) args.push("--tmpfs", path.join(project, e.name));
   }
   args.push("--bind", own, own);
-  // a project's own Claude settings can name hooks, commands run on this computer; an online project's come from its other
+  // a project's own Claude settings can name hooks and its .mcp.json servers, commands run on this computer; an online project's come from its other
   // members' computers too: none of them is run here (security audit S7)
   for (const dir of sub ? [project, own] : [own])
-    for (const f of ["settings.json", "settings.local.json"])
-      if (existsSync(path.join(dir, ".claude", f))) args.push("--ro-bind", "/dev/null", path.join(dir, ".claude", f));
+    for (const f of [".claude/settings.json", ".claude/settings.local.json", ".mcp.json"])
+      if (existsSync(path.join(dir, f))) args.push("--ro-bind", "/dev/null", path.join(dir, f));
   args.push("--chdir", cwd, "--die-with-parent");
   return args;
 }
