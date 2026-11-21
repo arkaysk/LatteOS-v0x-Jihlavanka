@@ -102,7 +102,8 @@ LatteOS:2.x xxx
 >
 > **C. [~] 21. 11.:** `apps/safehelp.qml` „Požiadať AI o pomoc“ — jedno okno (kto odpovedá, rozhovor, pole), `latte-ai send` cez
 > už prihlásené CLI/API, prvá veta hovorí AI, že ide o SAFE; v lište SAFE nové tlačidlo vedľa Terminálu (`goo/safe.plm`, posun o 46).
-> Okno overené v bežnej relácii; **v skutočnom SAFE (labwc, kreslenie procesorom) a odoslanie otázky ešte neoverené.**
+> Overené v bežnej relácii aj v labwc bez obrazovky s kreslením procesorom (pixman, ako SAFE): tlačidlo v lište aj okno;
+> **odoslanie otázky v SAFE ešte neoverené.**
 > **C. LatteSafe: zjednodušený LensAI** — jednoduché okno s chatom cez CLI/API, ktoré už sú prihlásené (bez nového prihlasovania), aby
 > človek v SAFE režime mohol požiadať AI o pomoc (patrí k SAFE, nie nová funkcia mimo neho).
 
