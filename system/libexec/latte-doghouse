@@ -38,10 +38,14 @@ def note(uid, what, text):
         lines = []
     try:
         os.makedirs(os.path.dirname(LOG), exist_ok=True)
-        with open(LOG + ".tmp", "w") as f:
+        # a fresh temporary file of its own (O_EXCL, a random name): the folder is the latte group's, and a link left
+        # there under a known name would have root write through it (security S14)
+        import tempfile
+        fd, tmp = tempfile.mkstemp(prefix=".doghouse.", dir=os.path.dirname(LOG))
+        with os.fdopen(fd, "w") as f:
             f.write("\n".join(lines + [line]) + "\n")
-        os.chmod(LOG + ".tmp", 0o644)
-        os.replace(LOG + ".tmp", LOG)
+        os.chmod(tmp, 0o644)
+        os.replace(tmp, LOG)
     except OSError:
         pass
 
