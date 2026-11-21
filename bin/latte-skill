@@ -350,7 +350,8 @@ def allow(ident, detail, by, once=False):
     AI looking on the web: only on request)."""
     if ident not in READS:
         return {"ok": False, "answer": "invalid"}
-    key = by + "|" + ident
+    key = by + "|" + ident                 # the run's own name (latte-mcp: "Claude Code#3fa9…"): a yes holds for that run
+    by = by.split("#", 1)[0]               # the person reads the name alone
     if not once and key in grants():
         journal(by, ident, {"detail": detail[:400]}, "allowed for the session")
         return {"ok": True, "answer": "yes", "session": True}

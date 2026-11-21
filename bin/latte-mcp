@@ -67,10 +67,21 @@ CALLER = contextvars.ContextVar("latte_mcp_caller", default="")
 
 
 def caller(ctx):
+    """Who asks, for the person and for what they allowed for the session. The client names itself in `initialize`, so
+    the name alone binds nothing (security S6): a run LatteOS started carries its own LATTE_MCP_RUN (latte-acp), and the
+    session's yes holds for that run; any other says who it claims to be, marked so, and is asked again; over HTTP it is
+    agentgram, whatever it says."""
     try:
-        return CALLER.get() or ctx.session.client_params.clientInfo.name
+        said = CALLER.get() or ctx.session.client_params.clientInfo.name
     except (AttributeError, ValueError):
-        return "AI"
+        said = "AI"
+    if HTTP_CALLER:
+        return HTTP_CALLER
+    run = os.environ.get("LATTE_MCP_RUN", "")
+    return "%s#%s" % (said, run[:16]) if re.fullmatch(r"[0-9a-f]{8,64}", run) else "%s (self-named)" % said
+
+
+HTTP_CALLER = ""          # set when serving over HTTP: agentgram
 
 
 def logged(f):
@@ -445,6 +456,8 @@ def serve(lazy=False, port=0):
             f.write(secrets.token_urlsafe(32))
     with open(path) as f:
         token = f.read().strip()
+    global HTTP_CALLER
+    HTTP_CALLER = "agentgram"
     if len(token) < 16:                                # an emptied file would let "Bearer " alone in
         sys.exit("latte-mcp: %s holds no token; remove it and start again" % path)
     app = server.streamable_http_app()

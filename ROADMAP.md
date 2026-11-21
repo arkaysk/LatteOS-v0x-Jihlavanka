@@ -88,7 +88,10 @@ LatteOS:2.x xxx
 >     ktoré ešte neexistujú (`~/.config/autostart`, `~/.local/share/systemd`…), sieť podľa úlohy; tá istá funkcia pre projekty agentgramu (S7).
 > 12. [x] 21. 11. npm `--ignore-scripts`, uv `--no-build`, sha256 povinné (bez neho sa nestiahne), premenné iba obyčajné mená
 >     (`acp_env`: bez LD_*, PATH, NODE_OPTIONS…), cache registra zapečatená pred sandboxom; test. Pôvodne: ACP Registry (S4): `npm install --ignore-scripts`, premenné z registra iba povolené, sha256 povinné, cache mimo dosahu sandboxu.
-> 13. Povolenia (S5, S6): krok agenta podľa skutočného príkazu, nie podľa mena od agenta; povolenie relácie MCP viazané na token, nie na meno.
+> 13. [x] 21. 11. S5: človek vidí druh kroku, príkaz alebo vstup a cesty, nielen názov od agenta; súhlas bez ponuky „raz“ sa
+>     nezmení na „vždy“ (E15, povie sa to). S6: `latte-acp` dá každému behu vlastný `LATTE_MCP_RUN`, povolenie na reláciu platí
+>     pre ten beh; meno bez neho je „(self-named)“, cez HTTP vždy agentgram. **Ostáva:** dvojité potvrdenie pre execute/delete.
+>     Pôvodne: Povolenia (S5, S6): krok agenta podľa skutočného príkazu, nie podľa mena od agenta; povolenie relácie MCP viazané na token, nie na meno.
 > 14. [x] 21. 11. `latte-open` iba http, https, mailto (S9). Pôvodne: `latte-open` iba http(s) a súbory (S9); zvyšok SECURITY S10–S15.
 > 15. Heslo sudo: na latte-lab ostáva zámerne čitateľné pre agenta (testovací PC, nie súkromný); na novom PC súkromné heslo, nie v súbore.
 >

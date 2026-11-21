@@ -14,7 +14,7 @@
 use agent_client_protocol::schema::ProtocolVersion;
 use agent_client_protocol::v1::ConnectionTo;
 use agent_client_protocol::v1::schema::{
-    AuthenticateRequest, ContentBlock, InitializeRequest, McpServer, McpServerStdio, NewSessionRequest, PermissionOptionKind, PromptRequest,
+    AuthenticateRequest, ContentBlock, EnvVariable, InitializeRequest, McpServer, McpServerStdio, NewSessionRequest, PermissionOptionKind, PromptRequest,
     RequestPermissionOutcome, RequestPermissionRequest, RequestPermissionResponse, SelectedPermissionOutcome,
     SessionNotification, SetSessionModeRequest, TextContent,
 };
@@ -128,13 +128,32 @@ async fn main() {
         )
         .on_receive_request(
             async move |r: RequestPermissionRequest, responder, _c| {
-                let title = r.tool_call.fields.title.clone().unwrap_or_else(|| "a step of its work".into());
+                // what the person decides on is what the step does, not only the title the agent gave it: its kind, its
+                // command or input, the paths it touches (security S5 — "Read README.md" could be `rm -rf ~/Documents`)
+                let f = serde_json::to_value(&r.tool_call.fields).unwrap_or(Value::Null);
+                let named = f.get("title").and_then(Value::as_str).unwrap_or("a step of its work").to_string();
+                let kind = f.get("kind").and_then(Value::as_str).unwrap_or("");
+                let raw = f.get("rawInput").map(|v| match v.get("command").or_else(|| v.get("cmd")) {
+                    Some(Value::String(c)) => c.clone(),
+                    Some(Value::Array(a)) => a.iter().filter_map(Value::as_str).collect::<Vec<_>>().join(" "),
+                    _ => v.to_string(),
+                }).unwrap_or_default();
+                let paths: Vec<String> = f.get("locations").and_then(Value::as_array).map(|a| a.iter()
+                    .filter_map(|l| l.get("path").and_then(Value::as_str).map(String::from)).collect()).unwrap_or_default();
+                let mut title = named.clone();
+                if !kind.is_empty() { title = format!("{title} · {kind}"); }
+                if !raw.is_empty() && raw != "null" && raw != "{}" { title = format!("{title}: {}", raw.chars().take(400).collect::<String>()); }
+                if !paths.is_empty() { title = format!("{title} [{}]", paths.join(", ")); }
                 let (t, n) = (title.clone(), who.clone());
                 let yes = tokio::task::spawn_blocking(move || ask_person(&t, &n)).await.unwrap_or(false);
                 say(json!({"t": "ask", "title": title, "answer": if yes { "yes" } else { "no" }}));
                 // once, never "always": the next step is asked again
                 let want = if yes { PermissionOptionKind::AllowOnce } else { PermissionOptionKind::RejectOnce };
                 let pick = r.options.iter().find(|o| o.kind == want).map(|o| o.option_id.clone());
+                if yes && pick.is_none() {
+                    // the agent offers no "this once": a yes for always is not given in the person's name (engineering 15)
+                    say(json!({"t": "ask", "title": named, "answer": "cancelled", "why": "the agent offers no allow-once"}));
+                }
                 responder.respond(RequestPermissionResponse::new(match pick {
                     Some(id) => RequestPermissionOutcome::Selected(SelectedPermissionOutcome::new(id)),
                     None => RequestPermissionOutcome::Cancelled,
@@ -151,7 +170,12 @@ async fn main() {
                     c.send_request(AuthenticateRequest::new(m)).block_task().await?;
                 }
             }
-            let tools = McpServer::Stdio(McpServerStdio::new("latteos", "latte-mcp"));
+            // who calls latte-mcp, as LatteOS names it for this run, not as the client says it in `initialize` (anyone could
+            // say "claude-code"): what the person allowed for the session holds for this run alone (security S6)
+            let mut nonce = [0u8; 8];
+            let _ = std::fs::File::open("/dev/urandom").and_then(|mut f| std::io::Read::read_exact(&mut f, &mut nonce));
+            let run = nonce.iter().map(|b| format!("{b:02x}")).collect::<String>();
+            let tools = McpServer::Stdio(McpServerStdio::new("latteos", "latte-mcp").env(vec![EnvVariable::new("LATTE_MCP_RUN", run)]));
             let s = c
                 .send_request(NewSessionRequest::new(std::path::PathBuf::from(&d2)).mcp_servers(vec![tools]))
                 .block_task()
