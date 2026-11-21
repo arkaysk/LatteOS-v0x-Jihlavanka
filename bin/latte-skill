@@ -362,7 +362,12 @@ def allow(ident, detail, by, once=False):
     if not once and key in grants():
         journal(by, ident, {"detail": detail[:400]}, "allowed for the session")
         return {"ok": True, "answer": "yes", "session": True}
-    answer = wait({"label": T(READS[ident]), "what": detail[:400], "from": None, "to": None}, by, ident, {"detail": detail[:400]})
+    said = {"label": T(READS[ident]), "what": detail[:400], "from": None, "to": None}
+    # an agent's step that runs a command or deletes (latte-acp names its kind): confirmed twice, as a risky skill is
+    kind = re.search(r" · (execute|delete)\b", detail) if ident == "agent" else None
+    if kind:
+        said.update(risky=True, warn=T("It runs a command on this computer.") if kind.group(1) == "execute" else T("It deletes files."))
+    answer = wait(said, by, ident, {"detail": detail[:400]})
     if answer == "yes" and not once:
         g = dict(grants(), **{key: time.time()})
         os.makedirs(RUN, exist_ok=True)

@@ -90,7 +90,7 @@ LatteOS:2.x xxx
 >     (`acp_env`: bez LD_*, PATH, NODE_OPTIONS…), cache registra zapečatená pred sandboxom; test. Pôvodne: ACP Registry (S4): `npm install --ignore-scripts`, premenné z registra iba povolené, sha256 povinné, cache mimo dosahu sandboxu.
 > 13. [x] 21. 11. S5: človek vidí druh kroku, príkaz alebo vstup a cesty, nielen názov od agenta; súhlas bez ponuky „raz“ sa
 >     nezmení na „vždy“ (E15, povie sa to). S6: `latte-acp` dá každému behu vlastný `LATTE_MCP_RUN`, povolenie na reláciu platí
->     pre ten beh; meno bez neho je „(self-named)“, cez HTTP vždy agentgram. **Ostáva:** dvojité potvrdenie pre execute/delete.
+>     pre ten beh; meno bez neho je „(self-named)“, cez HTTP vždy agentgram; krok execute/delete sa potvrdzuje dvakrát.
 >     Pôvodne: Povolenia (S5, S6): krok agenta podľa skutočného príkazu, nie podľa mena od agenta; povolenie relácie MCP viazané na token, nie na meno.
 > 14. [x] 21. 11. `latte-open` iba http, https, mailto (S9); príkaz AI v Lens sa pri „Naozaj spustiť?“ ukáže celý (S10); karta
 >     modelu nesmie svoje zobrazenie presmerovať (S11, overené: README sa ukáže); S8 [x] iba organizácia spárovaného runnera
