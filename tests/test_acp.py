@@ -92,4 +92,6 @@ with tempfile.TemporaryDirectory() as d:
     with contextlib.redirect_stdout(io.StringIO()) as said:
         assert ai.main(["acp", "remove", "nobody"]) == 1 and ai.main(["acp", "install", "../x"]) == 1
     assert json.loads(said.getvalue().splitlines()[0]) == {"ok": False, "error": "not installed"}
+# what a registry may set in an agent's environment (security S4): plain names, never how programs load
+assert ai.acp_env({"ANTHROPIC_MODEL": "x", "LD_PRELOAD": "/tmp/e.so", "PATH": "/tmp", "NODE_OPTIONS": "-r x", "lower": "1"}) == {"ANTHROPIC_MODEL": "x"}
 print("acp: ok")

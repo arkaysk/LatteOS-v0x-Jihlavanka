@@ -86,7 +86,8 @@ LatteOS:2.x xxx
 >     (`latte-ai sandbox-args`) a `.claude/settings*.json` projektu sa nespúšťajú (S7). **Ostáva:** sieť podľa úlohy.
 >     Pôvodne: Sandbox agenta (SECURITY S1): bez zbernice D-Bus používateľa, domov iba na čítanie okrem pracovného priečinka, chránené aj cesty,
 >     ktoré ešte neexistujú (`~/.config/autostart`, `~/.local/share/systemd`…), sieť podľa úlohy; tá istá funkcia pre projekty agentgramu (S7).
-> 12. ACP Registry (S4): `npm install --ignore-scripts`, premenné z registra iba povolené, sha256 povinné, cache mimo dosahu sandboxu.
+> 12. [x] 21. 11. npm `--ignore-scripts`, uv `--no-build`, sha256 povinné (bez neho sa nestiahne), premenné iba obyčajné mená
+>     (`acp_env`: bez LD_*, PATH, NODE_OPTIONS…), cache registra zapečatená pred sandboxom; test. Pôvodne: ACP Registry (S4): `npm install --ignore-scripts`, premenné z registra iba povolené, sha256 povinné, cache mimo dosahu sandboxu.
 > 13. Povolenia (S5, S6): krok agenta podľa skutočného príkazu, nie podľa mena od agenta; povolenie relácie MCP viazané na token, nie na meno.
 > 14. [x] 21. 11. `latte-open` iba http, https, mailto (S9). Pôvodne: `latte-open` iba http(s) a súbory (S9); zvyšok SECURITY S10–S15.
 > 15. Heslo sudo: na latte-lab ostáva zámerne čitateľné pre agenta (testovací PC, nie súkromný); na novom PC súkromné heslo, nie v súbore.
