@@ -35,6 +35,11 @@ def windows(kind):
 
 
 def main(url):
+    # web addresses and mail only: a link in a model's README or a page (file:, steam:, vscode:…) must not start a program
+    # through its scheme without a word (security audit S9)
+    if url.split(":", 1)[0].lower() not in ("http", "https", "mailto"):
+        print("latte-open: only http, https and mailto: " + url.split(":", 1)[0], file=sys.stderr)
+        return 2
     on_wm = os.environ.get("XDG_CURRENT_DESKTOP") == "pleamar" and os.environ.get("PLEAMAR_SOCKETS")
     kind = browser_class() if on_wm else ""
     before = windows(kind) if kind else {}
