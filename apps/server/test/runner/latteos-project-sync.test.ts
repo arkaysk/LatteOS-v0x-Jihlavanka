@@ -34,7 +34,7 @@ test("two computers keep a project in step; a conflict waits for the person's re
         new Response(proc.stderr).text(),
         proc.exited,
       ]);
-      return { code, out: out + err };
+      return { code, out: (out + err).replaceAll(repo, http) };      // and back: the clone's origin reads as the server's
     };
     const fetch = async () => Response.json({ projects: [{ id, path: "magna" }] });
     const round = (name: string) =>
@@ -85,3 +85,30 @@ test("two computers keep a project in step; a conflict waits for the person's re
     else process.env.LATTEOS_PROJECTS_DIR = before;
   }
 });
+
+test("a folder that is already someone's own repository is neither committed nor pushed", async () => {
+  const folder = `${root}/own/magna`;
+  const sh = (args: string[]) => Bun.spawnSync(["git", ...args], { cwd: folder });
+  Bun.spawnSync(["mkdir", "-p", folder]);
+  sh(["init", "-q", "--initial-branch", "main"]);
+  sh(["remote", "add", "origin", "https://github.com/someone/private.git"]);
+  writeFileSync(`${folder}/.env`, "SECRET=1\n");
+  const calls: string[][] = [];
+  const git = async (args: string[], cwd: string) => {
+    calls.push(args);
+    const proc = Bun.spawn(["git", ...args], { cwd, stdout: "pipe", stderr: "pipe" });
+    const [out, code] = await Promise.all([new Response(proc.stdout).text(), proc.exited]);
+    return { code, out };
+  };
+  await syncOnlineProjects({
+    server: "https://agentgram.example",
+    token: "agm_x",
+    projects: `${root}/own`,
+    stateFile: `${root}/own.json`,
+    name: "c",
+    fetch: async () => Response.json({ projects: [{ id: "99999999-2222-3333-4444-555555555555", path: "magna" }] }),
+    git,
+  });
+  expect(calls.some((a) => a.includes("add") || a.includes("commit") || a.includes("push"))).toBe(false);
+});
+

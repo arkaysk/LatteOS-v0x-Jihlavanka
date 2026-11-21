@@ -70,6 +70,13 @@ export async function syncOnlineProjects(o: ProjectSyncOptions) {
         await run(["remote", "add", "origin", `${base}/${project.id}/git`]);
         writeFileSync(path.join(folder, ".git", "info", "exclude"), `${EXCLUDE}\n`);
       }
+      // a folder that is already someone's own repository (its origin elsewhere) is never committed nor pushed: not
+      // their files to this server, nor this server's token to their remote (engineering audit 3)
+      const origin = (await git(["remote", "get-url", "origin"], folder)).out.trim();
+      if (origin !== `${base}/${project.id}/git`) {
+        o.log?.(`project ${project.path}: its git belongs elsewhere (${origin || "no origin"}), not synced`);
+        continue;
+      }
       if (waiting[project.id]) {
         // still waiting while its conflict is on the server
         if ((await run(["ls-remote", "origin", conflictRef])).out.trim()) continue;

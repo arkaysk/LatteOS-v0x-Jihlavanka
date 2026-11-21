@@ -329,6 +329,8 @@ export function customConnectorRoutes(deps: AppDeps) {
     }),
     async (c) => {
       const { orgId, serverId } = c.req.valid("param");
+      // LatteOS: this computer's tools only by those who may manage the workspace's connectors (security audit S8)
+      await requirePermission(custom.db, c.get("user").id, orgId, "manage_connectors");
       return c.json(await connectLatteosMcp(custom, c.get("user").id, orgId, serverId), 200);
     },
   );
