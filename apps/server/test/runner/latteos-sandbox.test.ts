@@ -34,3 +34,11 @@ test("a chat in no project is not boxed; a subproject's box hides its siblings a
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("LatteOS's own sandbox goes first, the projects' folders after it (security S7)", () => {
+  const base = ["--ro-bind", "/", "/", "--tmpfs", "/run/user/1000"];
+  const args = projectSandbox("/home/u/LensAI/agentgram/kniha", "/home/u/LensAI/agentgram", base) as string[];
+  expect(args.slice(0, base.length)).toEqual(base);
+  expect(args).not.toContain("--dev-bind");
+  expect(args.slice(base.length, base.length + 2)).toEqual(["--tmpfs", "/home/u/LensAI/agentgram"]);
+});

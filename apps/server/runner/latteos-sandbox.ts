@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 import type { Spawn } from "./scope-gate";
@@ -14,21 +14,27 @@ import type { Spawn } from "./scope-gate";
 export const BWRAP = "/usr/bin/bwrap";
 
 /** bubblewrap's words for a CLI started in `cwd`, or null when `cwd` is in no project (nothing to keep apart). */
-export function projectSandbox(cwd: string, projects: string): string[] | null {
+export function projectSandbox(cwd: string, projects: string, base: string[] = ["--dev-bind", "/", "/"]): string[] | null {
   const rel = path.relative(projects, cwd);
   if (!rel || rel.startsWith("..") || path.isAbsolute(rel)) return null;
   const [top, sub] = rel.split(path.sep);
   if (!top) return null;
   const project = path.join(projects, top);
   const own = sub ? path.join(project, sub) : project;
-  const args = ["--dev-bind", "/", "/", "--tmpfs", projects];
+  const args = [...base, "--tmpfs", projects];
   if (sub) {
     // the project to read, its other subprojects gone
     args.push("--ro-bind", project, project);
     for (const e of readdirSync(project, { withFileTypes: true }))
       if (e.isDirectory() && e.name !== sub) args.push("--tmpfs", path.join(project, e.name));
   }
-  args.push("--bind", own, own, "--chdir", cwd, "--die-with-parent");
+  args.push("--bind", own, own);
+  // a project's own Claude settings can name hooks, commands run on this computer; an online project's come from its other
+  // members' computers too: none of them is run here (security audit S7)
+  for (const dir of sub ? [project, own] : [own])
+    for (const f of ["settings.json", "settings.local.json"])
+      if (existsSync(path.join(dir, ".claude", f))) args.push("--ro-bind", "/dev/null", path.join(dir, ".claude", f));
+  args.push("--chdir", cwd, "--die-with-parent");
   return args;
 }
 
@@ -36,12 +42,27 @@ export function projectSandbox(cwd: string, projects: string): string[] | null {
  * The runner's spawn for AI CLIs with the projects kept apart (`LATTEOS_PROJECTS_DIR`): one started in a project's
  * folder runs in bubblewrap, the rest as before. Without the folder or bubblewrap, `inner` as it is.
  */
+/**
+ * LatteOS's own sandbox of the agents (`latte-ai sandbox-args`, security audit S7): the system read-only, no session bus,
+ * what runs later and what holds secrets sealed or hidden. Without latte-ai, the rest of the computer as before.
+ */
+export function latteosBase(): string[] | undefined {
+  try {
+    const r = spawnSync("latte-ai", ["sandbox-args"], { encoding: "utf8", timeout: 10_000 });
+    const words = r.status === 0 ? (JSON.parse(r.stdout) as unknown) : undefined;
+    return Array.isArray(words) && words.every((w) => typeof w === "string") ? (words as string[]).slice(1) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function withProjectSandbox(inner: Spawn | undefined): Spawn | undefined {
   const projects = process.env.LATTEOS_PROJECTS_DIR?.trim();
   if (!projects || !existsSync(BWRAP)) return inner;
+  const base = latteosBase();
   const run: Spawn = inner ?? ((file, args, options) => spawn(file, args, options));
   return (file, args, options) => {
-    const box = typeof options.cwd === "string" ? projectSandbox(options.cwd, projects) : null;
+    const box = typeof options.cwd === "string" ? projectSandbox(options.cwd, projects, base) : null;
     return box ? run(BWRAP, [...box, "--", file, ...args], options) : run(file, args, options);
   };
 }
