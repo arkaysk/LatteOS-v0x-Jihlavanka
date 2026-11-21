@@ -3059,24 +3059,53 @@ def helper(most=60):
     return sorted(out, key=lambda t: t.get("at", ""))[-most:]
 
 
-# what an agent never writes, even where the person's files are: what runs at the next login or holds a secret, and
-# LatteOS's own rules — a change there could outlive the task without the person seeing it
+# what an agent never writes, even where the person's files are: what runs at the next login or outside the sandbox later
+# (the tools of the person's own programs and services, their settings), what holds a secret, and LatteOS's own rules — a
+# change there could outlive the task without the person seeing it. A folder of these that is not there yet is made
+# (empty) so it can be sealed: else the agent could make it itself (security audit S1: ~/.config/autostart)
 SEALED = ["~/.ssh", "~/.gnupg", "~/.bashrc", "~/.bash_profile", "~/.profile", "~/.zshrc", "~/.config/autostart", "~/.config/systemd",
           "~/.config/environment.d", "~/.config/pleamar", "~/.config/latteos", "~/.local/share/keyrings", "~/.local/share/applications",
-          "~/.local/bin", "~/.local/share/latteos/acp"]          # acp: the agents installed from the ACP Registry
+          "~/.local/bin", "~/.local/share/latteos/acp",          # acp: the agents installed from the ACP Registry
+          "~/.local/share/systemd", "~/.local/share/mise", "~/.config/mise", "~/.bun/bin", "~/.cargo/bin", "~/.toolhive",
+          "~/.claude/settings.json", "~/.claude/skills", "~/.agents/skills", "~/.config/latteos-skills", "~/src/agentes-chat"]
+SEALED_DIRS = {"~/.config/autostart", "~/.config/systemd", "~/.config/environment.d", "~/.local/share/systemd", "~/.local/bin"}
+# what an agent never reads: keys and tokens, the person's conversations (LensAI asks before handing any over), and the
+# server of agentgram's own secrets
+HIDDEN = ["~/.config/latteos/mcp-token", "~/.config/latteos/mcp-groups.json", "~/.local/state/latteos/ai/chats",
+          "~/.local/share/keyrings", "~/src/agentes-chat/.env", "~/.gnupg/private-keys-v1.d"]
 
 
 def sandbox(who, work, net):
     """The agent in bubblewrap (as Flatpak and Claude Code's own sandbox-runtime run things; the policy is LatteOS's):
     the system to read; the person's home to write, since every change is asked in LensAI first (the user, 18. 11.: a file
-    on the desktop allowed three times and still refused was the read-only home), except what is SEALED; a /tmp of its
-    own; no network unless it was allowed. The person's answers and what they allowed are in the session's runtime
-    folder, read-only here: an agent cannot allow itself anything."""
+    on the desktop allowed three times and still refused was the read-only home), except what is SEALED, and what is
+    HIDDEN not even to read; a /tmp of its own; no network unless it was allowed. The session's runtime folder is empty
+    but for LatteOS's (the person's answers, read-only: an agent cannot allow itself anything) and pleamar's (the agent's
+    own hands, which pleamar-wm's gate.rules hold): no D-Bus, so no `systemd-run --user` out of it (security audit S1)."""
     home = os.path.expanduser("~")
+    run = os.environ.get("XDG_RUNTIME_DIR") or "/run/user/%d" % os.getuid()
     out = [shutil.which("bwrap"), "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc", "--tmpfs", "/tmp", "--die-with-parent",
-           "--bind", home, home]
-    for p in [p for p in map(os.path.expanduser, SEALED) if os.path.exists(p)]:
-        out += ["--ro-bind", p, p]
+           "--bind", home, home, "--tmpfs", run]
+    for keep in [os.path.join(run, "latteos")] + sorted(glob.glob(os.path.join(run, "pleamar*"))):
+        out += ["--ro-bind-try", keep, keep]
+    for p in SEALED:
+        full = os.path.expanduser(p)
+        if p in SEALED_DIRS and not os.path.exists(full):
+            try:
+                os.makedirs(full, exist_ok=True)
+            except OSError:
+                pass
+        if os.path.exists(full):
+            out += ["--ro-bind", full, full]
+    for p in map(os.path.expanduser, HIDDEN):
+        if os.path.isdir(p):
+            out += ["--tmpfs", p]
+        elif os.path.exists(p):
+            out += ["--ro-bind", "/dev/null", p]
+    # the private keys of ~/.ssh alone: known_hosts and the public keys stay for git
+    for key in glob.glob(os.path.join(home, ".ssh", "id_*")):
+        if not key.endswith(".pub"):
+            out += ["--ro-bind", "/dev/null", key]
     if work and os.path.isdir(work) and not os.path.realpath(work).startswith(home + os.sep):
         out += ["--bind", work, work]          # a task's folder elsewhere (a disk of its own)
     # ponytail: the network is all or nothing (bubblewrap); only the agent's own service would need a proxy (srt's way)
