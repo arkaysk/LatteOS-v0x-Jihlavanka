@@ -2042,7 +2042,7 @@ def skills_clawhub_run(args):
     """ClawHub's own tool (npx clawhub, MIT) on the shared folder ~/.agents/skills, asking nothing, telling nothing back;
     a skill it put there is linked for Claude Code as Vercel's `skills` links them."""
     try:
-        r = subprocess.run(["npx", "-y", "clawhub", "--workdir", os.path.expanduser("~/.agents"), "--dir", "skills", "--no-input"] + args,
+        r = subprocess.run(["npx", "-y", "clawhub@0.27.0", "--workdir", os.path.expanduser("~/.agents"), "--dir", "skills", "--no-input"] + args,
                            capture_output=True, text=True, timeout=600, env=dict(os.environ, PATH=SEARCH, CLAWHUB_DISABLE_TELEMETRY="1"))
     except (OSError, subprocess.TimeoutExpired):
         return False
@@ -2056,11 +2056,12 @@ def skills_clawhub_run(args):
     return r.returncode == 0
 
 
+# ponytail: the tools are pinned (security S15: npx -y took whatever was published last); raised by hand after a look
 def skills_cli(args):
     """Vercel's `skills` (through npx), for this user, for every agent's tool, asking nothing and telling nothing back."""
     agents = [x for a in SKILL_AGENTS for x in ("-a", a)] if args[0] == "add" else []      # removed: from all, the shared copy too
     try:
-        r = subprocess.run(["npx", "-y", "skills"] + args + ["-g"] + agents + ["-y"], capture_output=True, text=True, timeout=600,
+        r = subprocess.run(["npx", "-y", "skills@1.9.0"] + args + ["-g"] + agents + ["-y"], capture_output=True, text=True, timeout=600,
                            env=dict(os.environ, PATH=SEARCH, DISABLE_TELEMETRY="1", DO_NOT_TRACK="1"))
     except (OSError, subprocess.TimeoutExpired):
         return False
