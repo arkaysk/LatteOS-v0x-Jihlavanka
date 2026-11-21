@@ -11,6 +11,36 @@ import "../common"
 
 Item {
     id: tabs
+    // agentgram in LatteOS's colours, not its own pale blue (the user, 21. 11.): its design tokens (packages/ui tokens.css) set
+    // anew over its light and its dark, a grain under its ground and soft changes on what is pressed. Only in LensAI's tab:
+    // the fork itself stays as agentes-chat draws it, so an unforked one is the same
+    function rgba(c) { return "rgba(" + Math.round(c.r * 255) + "," + Math.round(c.g * 255) + "," + Math.round(c.b * 255) + "," + c.a.toFixed(3) + ")" }
+    function mix(a, b, t) { return Qt.rgba(a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t, 1) }
+    function skin(view) {
+        const m = Theme.made, ink = Qt.color(m.cream), gold = Qt.color(m.gold), ground = Qt.color(m.ground), card = Qt.color(m.card), raised = Qt.color(m.raised)
+        const v = { "--bg": ground, "--raised": card, "--sunken": mix(ground, ink, 0.04), "--side": mix(ground, gold, 0.05), "--pane": card,
+                    "--glass": Qt.rgba(card.r, card.g, card.b, 0.9), "--glass-solid": card, "--line": Qt.rgba(ink.r, ink.g, ink.b, 0.09),
+                    "--line-strong": Qt.color(m.faint), "--ink": ink, "--muted": Qt.color(m.dim), "--faint": Qt.color(m.faint),
+                    "--agent": gold, "--agent-soft": mix(card, gold, 0.16), "--on-agent": Qt.color(Theme.inkOnGold),
+                    "--chosen-bg": mix(raised, gold, 0.10), "--ok": Qt.color(Theme.ok), "--danger": Qt.color(Theme.red) }
+        let vars = ""
+        for (const k in v) vars += k + ":" + tabs.rgba(v[k]) + " !important;"
+        const grain = "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .045 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")"
+        const css = ":root,[data-theme],[data-theme='light'],[data-theme='dark']{" + vars + "}"
+                  + "body{background-image:" + grain + " !important;background-attachment:fixed}"
+                  + "a,button,[role='button'],[role='menuitem'],[role='tab'],input,textarea,select{transition:background-color .16s ease,color .16s ease,border-color .16s ease,box-shadow .2s ease,transform .12s ease}"
+                  + "button:active:not(:disabled),[role='button']:active{transform:scale(.97)}"
+                  + "@keyframes latte-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}"
+                  + "[role='dialog'],[role='menu'],[role='listbox']{animation:latte-in .16s ease-out}"
+                  + "@media (prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important}}"
+        const s = WebEngine.script()
+        s.name = "latteos-skin"
+        s.injectionPoint = WebEngineScript.DocumentReady
+        s.worldId = WebEngineScript.ApplicationWorld
+        s.runsOnSubFrames = false
+        s.sourceCode = "(function(){var e=document.createElement('style');e.id='latteos-skin';e.textContent=" + JSON.stringify(css) + ";document.documentElement.appendChild(e)})()"
+        view.userScripts.insert(s)
+    }
     property string current: ""
     // a second one beside it, right of it, the window shared half and half ("" alone)
     property string beside: ""
@@ -111,7 +141,8 @@ Item {
             // the profile only once the prototype stands: asked for in a binding (profile: own.instance()) it comes before
             // the prototype knows its name, and is one that keeps nothing (offTheRecord) — every sign-in was lost on closing.
             // Then where the tab began, once: what the user goes to afterwards is the tab's own
-            Component.onCompleted: { profile = own.instance(); url = (tabs.services.find(s => s.id === modelData) || {}).web || "about:blank" }
+            Component.onCompleted: { profile = own.instance(); if (modelData.startsWith("agentgram")) tabs.skin(view)
+                                     url = (tabs.services.find(s => s.id === modelData) || {}).web || "about:blank" }
             // a page that asks for a small window of its own (a sign-in with Google, Apple…) gets one, with the tab's
             // profile, and the page that asked still knows it (the sign-in finishes there); a link to a new window or
             // tab (a source in an answer) goes to the browser, as in any app of web pages

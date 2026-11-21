@@ -3946,6 +3946,21 @@ so zoznamom sekcií vľavo ako Windows 11, farebná bodka pri sekcii a vysvetlen
 **Nastavenia › Agenti** (Tvoj agent, Drobné úlohy, Čo pomáha, presunuté zo stránky Agenti; `latte-app aicenter helpers` ju otvorí),
 stránka Agenti ostala o tom, čo agenti robia, s odkazom na nastavenia. **Ostáva:** spotreba iba na jednom mieste (Prehľad vs. Agenti
 — zatiaľ oboje, Agenti má podrobnosti), prstene druhého účtu, bublinky v téme, Rozhovory filtre a zbaľovanie skupín.
+  **[x] 21. 11. (audit, štvrtá dávka):** Rozhovory: Všetko · Dnes · 7 dní · 30 dní a skupiny služieb sa zbaľujú; prsteň druhého
+účtu tej istej služby má pri sebe prvé písmeno poznámky „Účet“; Prehľad: odkazy na stránky s ikonou stránky (nie ▶), „…“ pri
+skrátenom zozname modelov; Lokálne LLM: kôš odsunutý od kolieska, kvantizácia neorezaná (MXFP4), štítok „Čiastočne na
+grafickej karte“ tmavší; bublinky (QQC.ToolTip) vo vzhľade LatteOS pre všetky aplikácie (`AppWindow`: zdieľanému ToolTipu sa dá
+pozadie a text, okno Quickshell nemá `palette`). agentgram (fork, necommitnuté): „Čaká na teba“ stále navrchu panela tímového
+priestoru, „+“ pri kategórii stále slabo vidno; neprečítané (tučné, počet zmienok, zvonček) už v upstreame boli.
+  **[x] 21. 11. (piata dávka, pokyny používateľa):** LensAI **v0.5.01**. ToolHive služba: jeho vlastná ikona, zelená bodka keď
+beží (z prvého riadku jeho ponuky), klik otvorí tú istú kartu Goo ako pravý klik v tray (`latte-say "text shore_tray toolhive"`,
+`shore.luau`; meno bez `_status_icon_1`). Ikony: pri holých značkách (+, ✕, ✓, úchyt, šípky) bez štvorca z výplne Phosphor duotone.
+agentgram v LensAI vo farbách aktuálnej šálky (tokeny `--bg/--side/--agent…` nanovo, zrnitosť pod podkladom, mäkké prechody
+a vstup dialógov), iba vstreknutý štýl v záložke LensAI — fork sa nemení.
+  **[x] 21. 11. (šiesta dávka):** spotreba iba na Prehľade (zo stránky Agenti preč): pri Claude aj limit jedného modelu
+(`limits[].scope` z /api/oauth/usage), **Navyše (kredity)** so sumou (35.37 / 50 EUR) a kredity zadarmo, keď ich služba hlási;
+týždeň tokenov Claude Code ako stĺpcový graf (Theme.heat), najrušnejší deň zvýraznený (`stats.days`). agentgram (fork):
+plus, krížik, fajka, „…“ a úchyt bez štvorca výplne (Phosphor regular namiesto duotone).
 
 **10B.89** [ ] 21. 11. **Agent má vlastný prehliadač, ktorý pracuje aj mimo obrazovky** (používateľ 21. 11.; k vlastnému kurzoru
 a klávesnici z 10B.58): stránky otvára, číta a kliká v prehliadači bez okna navrchu (headless), používateľ ho môže kedykoľvek

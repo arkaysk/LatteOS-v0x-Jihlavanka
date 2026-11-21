@@ -18,6 +18,7 @@ part Shore {
     event shore_more ->                        // the arrow was pressed
     event shore_bg ->                          // a background program: its place
     event shore_bg_right ->
+    text shore_tray = ""                       // a background program's menu asked from elsewhere (LensAI's ToolHive service): its id
     event shore_sign ->                        // 0 the network, 1 the volume, 2 the battery
     event shore_sign_right ->
     event shore_wheel ->                       // over the volume: 1 up, 0 down

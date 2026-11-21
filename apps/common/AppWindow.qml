@@ -21,6 +21,7 @@ import QtQuick
 import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
+import QtQuick.Controls as QQC
 
 FloatingWindow {
     id: win
@@ -38,6 +39,11 @@ FloatingWindow {
     // without one, 44 px are kept for it (30 deep and the glow above its surface). What stands in the coffee is `foot`.
     readonly property real reserve: hasFoot ? footDepth : 44
     property real fade: 36
+    // the window's tooltips (Controls' one shared ToolTip) in LatteOS's look, not Qt's yellow box (audit 21. 11.); the window has
+    // no `palette` to say it with, so its background and words are given to it once
+    Component { id: tipBack; Rectangle { color: Theme.raised; radius: 8; border.width: 1; border.color: Theme.line } }
+    Component { id: tipText; Text { property var tip; text: tip ? tip.text : ""; color: Theme.cream; font.family: Theme.font; font.pixelSize: 12; wrapMode: Text.Wrap } }
+    Item { Component.onCompleted: { const t = QQC.ToolTip.toolTip; t.background = tipBack.createObject(t); t.contentItem = tipText.createObject(t, { tip: t }); t.padding = 8 } }
 
     property bool arrows: false                // the app has pages one goes back from
     property bool canGoBack: false
