@@ -2,6 +2,7 @@
 // help, credits, licence, source): only the order of the parts is taken, no code. The app gives the words, already
 // translated; `tipsAgain` is the app's own "show the tips once more".
 import QtQuick
+import Quickshell
 import QtQuick.Controls as QQC
 
 Scroll {
@@ -60,11 +61,11 @@ Scroll {
                 Label { x: thName.x + 210; width: parent.width - x - thLic.width - 34; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 13; anchors.verticalCenter: parent.verticalCenter; text: th.modelData.what }
                 Label { id: thLic; anchors.right: parent.right; anchors.rightMargin: 18; color: Theme.faint; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter; text: th.modelData.license }
                 MouseArea { id: thHit; anchors.fill: parent; hoverEnabled: true; enabled: !!th.modelData.url; cursorShape: Qt.PointingHandCursor
-                            onClicked: Qt.openUrlExternally(th.modelData.url) } } } }
+                            onClicked: Quickshell.execDetached(["latte-open", String(th.modelData.url)]) } } } }
 
     Column { width: about.room; spacing: 8
         Head { text: I18n.tr("LICENCE") }
         Row { spacing: 12
             Label { text: about.license; color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
-            Pill { visible: about.source !== ""; implicitHeight: 32; icon: "brand-github"; text: I18n.tr("Source code"); onPressed: Qt.openUrlExternally(about.source) } } }
+            Pill { visible: about.source !== ""; implicitHeight: 32; icon: "brand-github"; text: I18n.tr("Source code"); onPressed: Quickshell.execDetached(["latte-open", String(about.source)]) } } }
 }

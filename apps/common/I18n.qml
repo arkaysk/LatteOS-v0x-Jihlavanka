@@ -25,6 +25,9 @@ Singleton {
 
     function tr(s, args) {
         let out = root.table[s] || s
+        // a word that goes with a number: {n?form|form|form}; three forms as Slovak has them (1 · 2–4 · 0, 5+), two as English
+        if (args) out = out.replace(/\{(\w+)\?([^}]*)\}/g, (m, k, forms) => { const f = forms.split("|"), n = Math.abs(Number(args[k]))
+            return f.length === 3 ? f[n === 1 ? 0 : n >= 2 && n <= 4 ? 1 : 2] : f[n === 1 ? 0 : f.length - 1] })
         if (args) for (const k in args) out = out.split("{" + k + "}").join(String(args[k]))
         return out
     }

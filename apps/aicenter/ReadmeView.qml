@@ -2,6 +2,7 @@
 // it, pictures fitted to the width. marked (MIT, markedjs/marked, apps/aicenter/marked.umd.js) turns it into HTML here.
 // The card is someone else's text: no script of its own runs (CSP), links open in the browser, nothing else loads but pictures.
 import QtQuick
+import Quickshell
 import QtWebEngine
 import "../common"
 
@@ -43,6 +44,6 @@ WebEngineView {
             + '</script></body></html>', Qt.resolvedUrl("card.html"))
     }
     // a link goes to the browser; the card itself stays
-    onNavigationRequested: r => { if (r.navigationType === WebEngineNavigationRequest.LinkClickedNavigation) { Qt.openUrlExternally(r.url); r.reject() } }
-    onNewWindowRequested: r => Qt.openUrlExternally(r.requestedUrl)
+    onNavigationRequested: r => { if (r.navigationType === WebEngineNavigationRequest.LinkClickedNavigation) { Quickshell.execDetached(["latte-open", String(r.url)]); r.reject() } }
+    onNewWindowRequested: r => Quickshell.execDetached(["latte-open", String(r.requestedUrl)])
 }

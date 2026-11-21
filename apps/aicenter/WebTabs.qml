@@ -103,6 +103,7 @@ Item {
             x: second ? tabs.width / 2 + 1 : 0
             width: tabs.split ? tabs.width / 2 - 1 : tabs.width
             height: tabs.height
+            backgroundColor: Theme.card              // until a page (or one woken from sleep) paints: the app's own, not a white or black flash
             visible: tabs.current === modelData || second
             // one profile per service, on disk: its sign-in is there the next time LensAI is opened, session cookies too,
             // as a browser that goes on where it was left
@@ -132,7 +133,7 @@ Item {
                 if (request.destination === WebEngineNewWindowRequest.InNewDialog) {
                     const w = popup.createObject(tabs, { profile: view.profile })
                     request.openIn(w.view)
-                } else Qt.openUrlExternally(request.requestedUrl)
+                } else Quickshell.execDetached(["latte-open", String(request.requestedUrl)])
             }
             onIconChanged: { const i = Object.assign({}, tabs.icons); i[modelData] = String(icon); tabs.icons = i; heard() }
             onTitleChanged: heard()

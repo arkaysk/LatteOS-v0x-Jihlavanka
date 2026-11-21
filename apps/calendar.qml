@@ -567,7 +567,7 @@ ShellRoot {
                     Glyph { name: "map-pin"; color: Theme.dim; font.pixelSize: 15 }
                     Label { text: parent.parent.e.location || ""; color: Theme.dim; width: 270; wrapMode: Text.WordWrap } }
                 Label { visible: (parent.e.notes || "") !== ""; width: parent.width; wrapMode: Text.WordWrap; text: parent.e.notes || ""; color: Theme.dim; font.pixelSize: 13; maximumLineCount: 8; elide: Text.ElideRight }
-                Pill { visible: (parent.e.link || "") !== ""; strong: true; icon: "video"; text: I18n.tr("Join"); onPressed: Qt.openUrlExternally(shell.picked.link) }
+                Pill { visible: (parent.e.link || "") !== ""; strong: true; icon: "video"; text: I18n.tr("Join"); onPressed: Quickshell.execDetached(["latte-open", String(shell.picked.link)]) }
                 Label { visible: shell.picked !== null && shell.picked.kind === "event" && !shell.picked.writable; width: parent.width; wrapMode: Text.WordWrap; color: Theme.faint; font.pixelSize: 12
                         text: I18n.tr("This calendar can only be read: change it where it comes from.") }
                 Row { spacing: 8; visible: shell.picked !== null && shell.picked.kind === "event" && shell.picked.writable

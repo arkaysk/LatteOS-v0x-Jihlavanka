@@ -63,6 +63,7 @@ FloatingWindow {
     onUndoNameChanged: undoLook()
     signal forward()
     property string searchHint: ""             // with a hint the header has a field to search in
+    property bool liveSearch: false            // `searched` as it is typed (also when emptied), not only on Enter
     property real searchWidth: 250             // how wide that field is (an app with many tools in the header makes it narrower)
     property alias searchText: field.text
     signal searched(string text)
@@ -183,7 +184,7 @@ FloatingWindow {
                 Rectangle { visible: win.searchHint !== ""; width: win.searchWidth; height: 36; radius: 12; color: Theme.card; border.width: 1; border.color: field.activeFocus ? Theme.gold : "transparent"; anchors.verticalCenter: parent.verticalCenter
                     Glyph { x: 11; name: "search"; font.pixelSize: 15; color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
                     TextInput { id: field; x: 34; width: parent.width - 44; anchors.verticalCenter: parent.verticalCenter; color: Theme.cream; font.family: Theme.font; font.pixelSize: 14; clip: true; selectByMouse: true
-                                selectionColor: Theme.coffee; onAccepted: if (text.trim() !== "") win.searched(text.trim()) }
+                                selectionColor: Theme.coffee; onAccepted: if (text.trim() !== "") win.searched(text.trim()); onTextChanged: if (win.liveSearch) win.searched(text.trim()) }
                     Label { x: 34; text: win.searchHint; color: Theme.faint; visible: field.text === "" && !field.activeFocus; anchors.verticalCenter: parent.verticalCenter } }
                 Row { spacing: 0; anchors.verticalCenter: parent.verticalCenter
                     HeadButton { icon: win.net === "off" ? "world-off" : "world"; visible: win.net !== ""; lit: Theme.raised; opacity: win.net === "off" ? 1 : 0.7

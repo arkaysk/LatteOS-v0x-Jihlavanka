@@ -60,8 +60,11 @@ end
 local function lay_out()
     local list = {}
     shown_bg = {}
-    for i, t in ipairs(tray) do
-        if i > 10 then break end
+    for _, t in ipairs(tray) do
+        if #list >= 10 then break end
+        -- ToolHive's icon is in LensAI (under ToolHive Studio, the same menu): not here twice (the user, 21. 11.)
+        if string.find(string.lower(t.id or ""), "toolhive", 1, true) then continue end
+        local i = #list + 1
         shown_bg[i] = t
         list[i] = { icon = t.icon or "", has_icon = (t.icon or "") ~= "", glyph = icons["apps"], title = (t.title or "") ~= "" and t.title or (t.id or "") }
     end

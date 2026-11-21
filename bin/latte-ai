@@ -379,6 +379,7 @@ def recommend():
         if not best and m["fit"] != "too-big" and not slow:
             best = m["id"]
     small = listed["models"][-1]["id"] if listed["models"] else ""
+    listed["models"].sort(key=lambda m: (m["fit"] == "too-big", m["id"] != best))   # the one offered, then what fits, in LatteOS's order
     return {"hardware": hw, "updated": listed.get("updated", ""), "models": listed["models"], "best": best, "fast": small,
             "gpu": local_settings().get("gpu", False), "runtime": local_server() or ""}
 
@@ -462,8 +463,9 @@ def hf_files(repo):
         out.append({"file": files[0][0], "quant": q.group(1).upper() if q else "", "size": size, "fit": fit(size, hw),
                     "have": os.path.basename(files[0][0]) in have, "parts": len(files)})
     out.sort(key=lambda x: x["size"])
-    # the variant chosen when nothing is chosen, as LM Studio's `recommended`: Q4_K_M where it fits, else the largest that fits
-    fits = [f for f in out if f["fit"] != "too-big"]
+    # the variant chosen when nothing is chosen, as LM Studio's `recommended`: Q4_K_M where it fits, else the largest that fits;
+    # never one of one or two bits (IQ1, IQ2, Q2: they answer much worse) — then none, and the person chooses (audit 21. 11.)
+    fits = [f for f in out if f["fit"] != "too-big" and not re.match(r"I?Q[12]_", f["quant"])]
     pick = next((f for f in fits if f["quant"] == "Q4_K_M"), fits[-1] if fits else None)
     for f in out:
         f["recommended"] = f is pick

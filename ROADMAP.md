@@ -3701,8 +3701,8 @@ LatteOS, inštaluje sa s ním, ak AI nie je vypnutá; zdroj vo vetve `agent-chat
 `~/src/agentes-chat` s celou históriou (10 362 commitov, `.git` 194 MB), remote `upstream` = agentes-chat, `latteos` = náš repozitár, vetva
 `agent-chats`; `bun install` (2,2 GB node_modules) a vývojový server vedľa pôvodného (API 127.0.0.1:3000, web [::1]:5173, databáza PGlite
 v `.data/`, služba `agent-chats-dev` so stropom 6 GB) — pôvodný na 4310 nedotknutý. **Ďalej:** F1–F3 (podkanály, stav, typ), potom F5–F8, F11.
-Meno: TRADEMARKS.md chce pri verejnom forku vlastné meno — žiadosť v `patches/issues/agentes-chat-name.md`, vetvu nepushnúť verejne pred
-súhlasom alebo zmenou mena.
+Meno: TRADEMARKS.md chce pri verejnom forku vlastné meno — vyriešené menom **agentgram** a vlastnou ikonou (používateľ 21. 11.);
+vetva `agent-chats` je na GitHube.
   **Etapa 1 (F1–F3), 18. 11., vetva `agent-chats` lokálne (2 commity):** `channels.parent_id` (jedna úroveň: podprojekt nemá vlastné,
 projekt s podprojektmi nejde pod iný), `project_state` (active/paused/done; archivovaný = `archived_at`), `project_type` (code, drawing, book,
 3d, music, comic, other; null = obyčajný kanál); migrácia 0305 iba pridáva (pôvodná aplikácia vidí jeden zoznam). Engine, API, klient; testy
@@ -3925,6 +3925,27 @@ nastavenia modelov. Chýba: bez WebEngine (obyčajný qs) ostáva starý Markdow
 (pokyny a nástroje), na procesore ~2 min na prvú odpoveď — úsporný režim pre malé okno kontextu (pridaním vo forku) je otvorený.
   **[x] 21. 11.:** Moje modely: tlačidlo Otvoriť priečinok a veta, že model stiahnutý odinakiaľ (.gguf) sa vloží sem; zoznam
 ho nájde sám (pozerá každých 5 s) aj v podpriečinkoch ako v LM Studiu (`autor/model/súbor.gguf`, s jeho mmproj); test `tests/test_local_models.py`.
+  **[x] 21. 11. (audit, prvá dávka):** hľadanie rozhovorov počas písania (`AppWindow.liveSearch`); ponuka modelov sa zavrie
+Escom a pri zmene stránky; „Agent Chats“ → agentgram v UI; „Store“ → Obchod; množné čísla v I18n (`{n?otázka|otázky|otázok}`);
+Spotreba na Prehľade „25 % · 3 h“ (celé v bublinke); otázka Pomocníka v „Čaká na teba“ a v odznaku; záložky webu bez bieleho a
+čierneho záblesku (`backgroundColor`); hlavička bočného panela s tlačidlom zbalenia sa neposúva; odporúčaný model najprv ten,
+čo počítač unesie, a nikdy 1–2-bitová verzia; **ToolHive služba** v LensAI (jeho ponuka z tray cez dbusmenu, v slovenčine)
+a ikona ToolHive z tray (Goo `shore.luau`) preč; 4 testovacie rozhovory presunuté do `chats-removed-2026-11-21/`. agentgram
+(fork, commit 617513604): Nová kategória s projektom sa posúva, tlačidlo Vytvoriť ostáva vidieť. **Ostáva:** čip modelu na
+Prehľade bez prechodu na Rozhovory, testy s vlastným `XDG_DATA_HOME`, úryvok v hľadaní, ACP „Čítať“, Nastavenia › Web „⋯“ a
+ťahanie, ľavý zoznam Nastavení, tutoriál bodiek, Skilly hľadanie a filter, agentgram (neprečítané, „Čaká na teba“, „+“ pri kategórii).
+  **[x] 21. 11. (audit, druhá dávka):** `latte-open` — odkaz z aplikácie otvorí prehliadač a jeho okno vytiahne dopredu (ACP „Čítať“
+otváralo stránku v zbalenom okne Chromia, preto „nič“); všetky webové odkazy v LensAI, Nastaveniach, Kalendári a O aplikácii idú cezeň.
+Prehľad sa pýta bez modelu naposledy otvoreného rozhovoru. Claude Code v Rozhovoroch: tlačidlo iba pod myšou. Skilly: hľadanie
+v nainštalovaných, Obchod pri hľadaní bez oficiálneho zoznamu, štítok „Neoverený autor“, Inštalovať obrysové. Nastavenia › Web:
+ťahanie za úchyt (šípky ostali), Odstrániť v „⋯“. Vysvetlenie bodiek vedľa čipov Nastavení s ✕ (O LensAI › tipy ho vrátia).
+Úryvok v hľadaní a hľadanie v Claude Code už boli (audit videl iba hľadanie po Enteri); testy chaty neukladajú (falošné boli z ručných skúšok).
+SKILL.md v Pokynoch zbalený pod „Pre pokročilých“.
+  **[x] 21. 11. (audit, tretia dávka):** výber služby priamo na Prehľade (ponuka pod čipom, bez skoku na Rozhovory); Nastavenia
+so zoznamom sekcií vľavo ako Windows 11, farebná bodka pri sekcii a vysvetlenie bodiek pod zoznamom (✕); nová sekcia
+**Nastavenia › Agenti** (Tvoj agent, Drobné úlohy, Čo pomáha, presunuté zo stránky Agenti; `latte-app aicenter helpers` ju otvorí),
+stránka Agenti ostala o tom, čo agenti robia, s odkazom na nastavenia. **Ostáva:** spotreba iba na jednom mieste (Prehľad vs. Agenti
+— zatiaľ oboje, Agenti má podrobnosti), prstene druhého účtu, bublinky v téme, Rozhovory filtre a zbaľovanie skupín.
 
 **10B.89** [ ] 21. 11. **Agent má vlastný prehliadač, ktorý pracuje aj mimo obrazovky** (používateľ 21. 11.; k vlastnému kurzoru
 a klávesnici z 10B.58): stránky otvára, číta a kliká v prehliadači bez okna navrchu (headless), používateľ ho môže kedykoľvek

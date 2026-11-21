@@ -29,6 +29,7 @@
 /usr/bin/latte-say                                      <- bin/latte-say
 /usr/bin/latte-cal                                      <- bin/latte-cal
 /usr/bin/latte-ai                                       <- bin/latte-ai
+/usr/bin/latte-open                                     <- bin/latte-open
 /usr/bin/latte-mcp                                      <- bin/latte-mcp
 /usr/bin/latte-toolhive-catalog                         <- bin/latte-toolhive-catalog
 /usr/bin/latte-skill                                    <- bin/latte-skill

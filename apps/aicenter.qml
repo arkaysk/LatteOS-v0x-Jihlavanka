@@ -14,6 +14,7 @@ import Quickshell
 import Quickshell.Io
 import QtQuick.Controls as QQC      // the tooltips only: Controls' Label and Menu are not LatteOS's
 import Qt.labs.folderlistmodel
+import Quickshell.Services.SystemTray
 import "common"
 
 ShellRoot {
@@ -43,6 +44,7 @@ ShellRoot {
         if (id === "api") keyq.ask(["keys"])
         if (id === "hands") handsq.ask(["hands"])
         if (id === "memory") memq.ask(["memory"])
+        if (id === "agents") helpersq.ask(["helpers"])
         if (id === "agentgram") gramq.ask(["agentgram"])
         else if (id !== "instructions" && id !== "hands" && id !== "memory") { modelq.ask(["models"]); agentsq.ask(["agents"]) }
     }
@@ -107,7 +109,7 @@ ShellRoot {
               command: ["pleamar-wm", "agents", "--json"]
               stdout: StdioCollector { onStreamFinished: wmAgents.list = this.text.split("\n").filter(l => l.trim() !== "")
                                                              .map(l => { try { return JSON.parse(l) } catch (e) { return null } }).filter(x => x) } }
-    function lookAround() { agentsq.ask(["agents"]); localModels.ask(["models"]); if (!sessq.running) sessq.ask(["sessions"]); if (!wmAgents.running) wmAgents.running = true }
+    function lookAround() { helperq.ask(["helper"]); agentsq.ask(["agents"]); localModels.ask(["models"]); if (!sessq.running) sessq.ask(["sessions"]); if (!wmAgents.running) wmAgents.running = true }
     // (the rings' dots want it on every page too)
     Timer { interval: 5000; repeat: true; running: true; triggeredOnStart: true; onTriggered: if (!wmAgents.running) wmAgents.running = true }
     // a service whose own tool works in a terminal, or waits for the person there: the gold dot on its ring
@@ -348,11 +350,15 @@ ShellRoot {
             onTriggered: { if (shell.teamUp || shell.teamTries <= 0) { stop(); return } shell.teamTries -= 1; if (!teamq.running) teamq.running = true } }
     // what waits for the person: an AI's request (the counter), an agent in a terminal that asks
     readonly property var askingAgents: wmAgents.list.filter(a => a.state === "asking")
-    readonly property int waitingCount: asks.length + askingAgents.length
+    // the Helper (Agents page) ended its last task with a question to the person: its last word asks
+    // ponytail: told by the "?" at its end; a state of its own from latte-ai helper when the runner says it
+    readonly property var helperAsks: { const t = helped.length ? helped[helped.length - 1] : null, st = t && t.steps && t.steps.length ? t.steps[t.steps.length - 1] : null
+                                        return st && st.kind === "text" && /\?\s*$/.test(st.text || "") ? { task: t.task || "", question: (st.text || "").trim().split("\n").pop() } : null }
+    readonly property int waitingCount: asks.length + askingAgents.length + (helperAsks ? 1 : 0)
     // the pages, as the side opens them: each asks for what it shows
     function go(p) {
         page = p
-        if (p === "home") lookAround()
+        if (p === "home") { chat = null; open = ""; lookAround() }       // the overview asks anew: not with the model of the conversation left open
         else if (p === "all") { list.ask(["chats"]); if (!sessq.running) sessq.ask(["sessions"]) }
         else if (p === "team") { if (!shell.gram.on) { openSection("agentgram"); return } teamq.running = true }
         else if (p === "agents") { agentsq.ask(["agents"]); helpersq.ask(["helpers"]) }
@@ -371,7 +377,12 @@ ShellRoot {
     FileView { id: tipFile; path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/latteos/lensai-tip-off"; printErrors: false
                onLoaded: shell.tipOff = true }
     function hideTip() { tipOff = true; Quickshell.execDetached(["sh", "-c", "mkdir -p \"$(dirname \"$1\")\" && : > \"$1\"", "sh", tipFile.path]) }
-    function showTips() { tipOff = false; Quickshell.execDetached(["rm", "-f", tipFile.path]) }
+    function showTips() { tipOff = false; dotsTipOff = false; Quickshell.execDetached(["rm", "-f", tipFile.path, dotsTipFile.path]) }
+    // the tip on the coloured dots of Settings (web · CLI · API), put away the same way
+    property bool dotsTipOff: false
+    FileView { id: dotsTipFile; path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/latteos/lensai-dots-tip-off"; printErrors: false
+               onLoaded: shell.dotsTipOff = true }
+    function hideDotsTip() { dotsTipOff = true; Quickshell.execDetached(["sh", "-c", "mkdir -p \"$(dirname \"$1\")\" && : > \"$1\"", "sh", dotsTipFile.path]) }
     function doable(text) { return /```(bash|sh|shell|zsh|console)\n/.test(text || "") }
     // what an AI asked to change on this computer and waits for the person's word on (bin/latte-skill): the counter
     property var asks: []
@@ -440,8 +451,8 @@ ShellRoot {
     Component.onCompleted: {
         fresh.running = true
         gramq.ask(["agentgram"]); list.ask(["chats"]); who.ask(["providers", "all"]); svc.ask(["services"]); keyq.ask(["keys"]); helpersq.ask(["helpers"])      // helpers: whether the AI is on
-        if (["all", "chats", "agents", "helpers", "local", "lensai", "team", "skills", "connectors", "about"].indexOf(words[0]) >= 0) go(words[0] === "helpers" ? "agents" : words[0])      // helpers: a part of the agents' page now; go() asks what the page shows
-        const part = ({ services: "cli", models: "cli", keys: "api", instructions: "instructions", lensai: words[1] || "web" })[words[0]]      // what were pages of their own are parts of the settings
+        if (["all", "chats", "agents", "helpers", "local", "lensai", "team", "skills", "connectors", "about"].indexOf(words[0]) >= 0) go(words[0] === "helpers" ? "agents" : words[0])      // go() asks what the page shows
+        const part = ({ services: "cli", models: "cli", keys: "api", instructions: "instructions", helpers: "agents", lensai: words[1] || "web" })[words[0]]      // helpers: Settings › Agents now      // what were pages of their own are parts of the settings
         if (part) openSection(part)
         if (words[0] === "tab" && words[1]) { page = "web"; tab = words[1]; tabBeside = words[2] || "" }      // latte-app aicenter tab claude [chatgpt]: its own page, another beside
         if (page !== "home") agentsq.ask(["agents"])             // the rings of the tabs show what is left
@@ -495,15 +506,24 @@ ShellRoot {
     function isOn(r) { const d = r["do"] || {}; return !!r.on || (d.model !== undefined && !!useM && d.model === useM.id && !d.provider) || (d.provider !== undefined && d.provider === useProvider) || (d.effort !== undefined && d.effort === effort) || (!!d.think && effort !== "") }
     function keyOf(r) { return r.key === "@effort" ? effortWord(effort) : (r.key ? I18n.tr(r.key) : "") }
     // a row pressed: what LatteOS can do it does; one with more opens a menu beside it; one of the service's page opens that
+    readonly property var thTray: SystemTray.items.values.find(i => /toolhive/i.test(i.id || "")) || null
+    property bool thOpen: false                // its menu open under it in the side
+    // its rows are its own English: put in LensAI's words (a sign before them and a version after them kept)
+    function thWord(t) { t = String(t || ""); let sign = ""; const sp = t.indexOf(" ")
+                         if (sp > 0 && !/[A-Za-z]/.test(t.charAt(0))) { sign = t.slice(0, sp + 1); t = t.slice(sp + 1) }
+                         const v = /\s(v[\d.]+)$/.exec(t); if (v) t = t.slice(0, v.index)
+                         return sign + I18n.tr(t.trim()) + (v ? " " + v[1] : "") }
     property string menuAt: ""                 // "" none · "who" the services · "chip" · "plus"
     property var subRows: []
+    // a menu goes with Esc and with the page it was opened on
+    onPageChanged: { menuAt = ""; subRows = [] }
     property real subY: 0
     function act(r, y, sub) {
         const d = r["do"]
         if (r.note || (d && d.reset && line.text === "")) return
         if (d && d.sub && !sub) { subRows = d.sub; subY = y; return }
         menuAt = ""; subRows = []
-        if (!d || d.sub) { if (useP && useP.web) Qt.openUrlExternally(useP.web); return }
+        if (!d || d.sub) { if (useP && useP.web) Quickshell.execDetached(["latte-open", String(useP.web)]); return }
         if (d.provider !== undefined) { useProvider = d.provider; useModel = d.model }
         else if (d.model !== undefined) useModel = d.model
         else if (d.effort !== undefined) useEffort = d.effort
@@ -512,6 +532,9 @@ ShellRoot {
         else if (d.attach !== undefined) { picker.command = ["latte-ai", d.attach === 1 ? "shot" : "pick"]; picker.running = true }
     }
     function openMenu(at) { subRows = []; menuAt = menuAt === at ? "" : at }
+    // the services, each with the model it would answer with: above a conversation and on the overview
+    function whoRows() { return providers.map(p => ({ name: p.name, kind: kindOf(p.id), key: p.id === useProvider && useM ? useM.name : p.models[0].name,
+                                                      "do": { provider: p.id, model: p.id === useProvider && useM ? useM.id : p.models[0].id } })) }
     Process { id: picker
         stdout: SplitParser { onRead: path => { if (path !== "" && shell.files.length < 8 && shell.files.indexOf(path) < 0) shell.files = shell.files.concat([path]) } } }
     // the microphone: what is said goes into the field, to be read and changed before it is sent
@@ -558,9 +581,11 @@ ShellRoot {
         Behavior on sideWidth { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
         ground: shell.glassy ? "transparent" : Theme.ground
         searchHint: I18n.tr("Find a conversation…")
+        liveSearch: true
+        Shortcut { sequence: "Escape"; enabled: shell.menuAt !== ""; onActivated: { shell.menuAt = ""; shell.subRows = [] } }
         onSearched: text => { shell.find = text; if (text !== "" && shell.page !== "all") shell.page = "all"; hitsSoon.restart() }
         tools: [
-            Pill { implicitHeight: 34; icon: "external-link"; visible: shell.page === "team"; text: I18n.tr("Open in the browser"); onPressed: Qt.openUrlExternally(shell.teamTab.web) },
+            Pill { implicitHeight: 34; icon: "external-link"; visible: shell.page === "team"; text: I18n.tr("Open in the browser"); onPressed: Quickshell.execDetached(["latte-open", String(shell.teamTab.web)]) },
             Pill { implicitHeight: 34; icon: "plus"; text: I18n.tr("New conversation"); strong: true; visible: shell.page === "all" || shell.page === "chats"
                    onPressed: { shell.page = "chats"; shell.open = ""; shell.chat = null } },
             Pill { implicitHeight: 34; icon: "download"; text: I18n.tr("Import…"); visible: shell.page === "all"; onPressed: importer.item.show("chats") },
@@ -574,11 +599,8 @@ ShellRoot {
                    onPressed: forget.ask(["forget", shell.open]) }
         ]
         side: [
-            // it scrolls: folded, the rings stand one under another and may not fit the window's height
-            Flickable { ScrollGrip {} anchors.fill: parent; anchors.bottomMargin: 36; contentHeight: sideCol.implicitHeight + 28; clip: true; boundsBehavior: Flickable.StopAtBounds
-            Column { id: sideCol; x: shell.folded ? 8 : 14; y: 14; spacing: 4; width: win.sideWidth - 2 * x
-                // its name, and the button that folds the side to its icons or opens it again
-                Item { width: parent.width; height: 40
+            // its name, and the button that folds the side to its icons or opens it again: they stay, only what is under them scrolls
+            Item { id: sideHead; x: shell.folded ? 8 : 14; y: 14; width: win.sideWidth - 2 * x; height: 40; z: 1
                     Row { x: 6; spacing: 10; anchors.verticalCenter: parent.verticalCenter; visible: !shell.folded
                         Glyph { name: "sparkles"; font.pixelSize: 24; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
                         Label { text: I18n.tr("LensAI"); font.pixelSize: 17; font.weight: 700; anchors.verticalCenter: parent.verticalCenter }
@@ -587,7 +609,10 @@ ShellRoot {
                                 x: shell.folded ? (parent.width - width) / 2 : parent.width - width
                                 color: foldHit.containsMouse ? Theme.card : "transparent"
                         Glyph { anchors.centerIn: parent; name: shell.folded ? "layout-sidebar-left-expand" : "layout-sidebar-left-collapse"; font.pixelSize: 19; color: foldHit.containsMouse ? Theme.cream : Theme.dim }
-                        MouseArea { id: foldHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: shell.fold() } } }
+                        MouseArea { id: foldHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: shell.fold() } } },
+            // it scrolls: folded, the rings stand one under another and may not fit the window's height
+            Flickable { ScrollGrip {} anchors.fill: parent; anchors.topMargin: 54; anchors.bottomMargin: 36; contentHeight: sideCol.implicitHeight + 28; clip: true; boundsBehavior: Flickable.StopAtBounds
+            Column { id: sideCol; x: shell.folded ? 8 : 14; y: 0; spacing: 4; width: win.sideWidth - 2 * x
                 Item { width: 1; height: 6 }
                 Nav { width: parent.width; text: I18n.tr("Overview"); icon: "layout-dashboard"; on: shell.page === "home"; badge: shell.waitingCount; onPressed: shell.go("home") }
                 Nav { width: parent.width; text: I18n.tr("Conversations"); icon: "messages"; on: shell.page === "all" || shell.page === "chats"; onPressed: shell.go("all") }
@@ -596,6 +621,23 @@ ShellRoot {
                 Nav { width: parent.width; text: I18n.tr("Skills"); icon: "puzzle"; on: shell.page === "skills"; onPressed: shell.go("skills") }
                 // the connectors (MCP servers) and skills are ToolHive's (Stacklok, Apache-2.0; the user, 20. 11.): its own window
                 Nav { width: parent.width; text: "ToolHive Studio"; icon: "hexagon"; tail: "external-link"; onPressed: Quickshell.execDetached(["ToolHive", "--ozone-platform-hint=auto", "--disable-gpu"]); onTailPressed: pressed() }      // its own window: the mark says so; no GPU: its GPU process dies (SIGILL) three times on every start here
+                // ToolHive's tray icon, kept here instead of the tray (the user, 21. 11.): the same menu its right click opens there
+                // (Start/Stop, its servers, Quit); while it runs, the MCP servers do
+                // drawn here from its menu (dbusmenu), in LensAI's look: a popup of its own would need a grab LensAI's side has not
+                Nav { width: parent.width; text: I18n.tr("ToolHive service"); icon: "server"; visible: !!shell.thTray; on: shell.thOpen
+                      onPressed: { if (shell.folded) shell.fold(); shell.thOpen = !shell.thOpen } }
+                Column { visible: shell.thOpen && !!shell.thTray && !shell.folded; width: parent.width; leftPadding: 34; bottomPadding: 4
+                    QsMenuOpener { id: thMenu; menu: shell.thTray ? shell.thTray.menu : null }
+                    // ponytail: one level; a submenu's rows are not opened (ToolHive's menu has none)
+                    Repeater { model: thMenu.children
+                        Item { required property var modelData; width: parent.width - 34; height: modelData.isSeparator ? 9 : 30
+                            Rectangle { visible: parent.modelData.isSeparator; y: 4; width: parent.width; height: 1; color: Theme.line }
+                            Rectangle { visible: !parent.modelData.isSeparator; anchors.fill: parent; radius: 8; color: thRow.containsMouse && parent.modelData.enabled ? Theme.card : "transparent" }
+                            Label { visible: !parent.modelData.isSeparator; x: 10; width: parent.width - 20; anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideRight; font.pixelSize: 13
+                                    color: parent.modelData.enabled ? Theme.cream : Theme.faint
+                                    text: (parent.modelData.checkState === Qt.Checked ? "✓ " : "") + shell.thWord(parent.modelData.text) }
+                            MouseArea { id: thRow; anchors.fill: parent; hoverEnabled: true; enabled: !parent.modelData.isSeparator && parent.modelData.enabled; cursorShape: Qt.PointingHandCursor
+                                        onClicked: { parent.modelData.triggered(); shell.thOpen = false } } } } }
                 Nav { width: parent.width; text: I18n.tr("Local LLMs"); icon: "cpu"; on: shell.page === "local"; onPressed: shell.go("local") }
                 Nav { width: parent.width; text: I18n.tr("Settings"); icon: "settings"; on: shell.page === "lensai"; onPressed: shell.openSection(shell.section) }
                 Nav { width: parent.width; text: I18n.tr("AI Cursor (coming in 2027)"); icon: "pointer"; off: true }      // ROADMAP 10B.34
@@ -660,7 +702,7 @@ ShellRoot {
             Label { width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; color: Theme.dim
                     text: I18n.tr("The services' pages open here only in LensAI's own Quickshell, which this system has not got.") }
             Pill { anchors.horizontalCenter: parent.horizontalCenter; icon: "external-link"; text: I18n.tr("Open in the browser"); strong: true
-                   onPressed: { const p = shell.page === "team" ? shell.teamTab : shell.tabbed.find(x => x.id === shell.tab); if (p) Qt.openUrlExternally(p.web) } } }
+                   onPressed: { const p = shell.page === "team" ? shell.teamTab : shell.tabbed.find(x => x.id === shell.tab); if (p) Quickshell.execDetached(["latte-open", String(p.web)]) } } }
         // Agent Chats whose server is not running: it is started here, nothing else is asked
         Column { anchors.centerIn: parent; spacing: 12; width: 440; visible: shell.page === "team" && !shell.teamUp && shell.teamKnown
             Glyph { name: "users-group"; font.pixelSize: 44; color: Theme.gold; anchors.horizontalCenter: parent.horizontalCenter }
@@ -710,7 +752,7 @@ ShellRoot {
             // where each history is kept: here what went through LensAI, LensGoo, LensShore and the terminals; a web page's
             // in its tab, the team's in Agent Chats (LensAI reads neither)
             Label { width: allPage.room; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
-                    text: I18n.tr("Here: what you asked in LensAI, LensGoo and LensShore, and your Claude Code sessions in terminals. A service's web page keeps its own conversations in its tab, the team keeps theirs in Agent Chats.") }
+                    text: I18n.tr("Here: what you asked in LensAI, LensGoo and LensShore, and your Claude Code sessions in terminals. A service's web page keeps its own conversations in its tab, the team keeps theirs in agentgram.") }
             Label { visible: shell.shown.length === 0 && shell.find === ""; width: allPage.room; wrapMode: Text.WordWrap; color: Theme.dim
                     text: I18n.tr("No conversation yet. LensGoo's AI tab (Win+C) keeps its conversations here too.") }
             Repeater { model: shell.groups
@@ -757,7 +799,9 @@ ShellRoot {
                     Label { id: seInfo; anchors.right: seGo.left; anchors.rightMargin: 12; width: Math.min(implicitWidth, 300); elide: Text.ElideLeft; anchors.verticalCenter: parent.verticalCenter; color: Theme.dim; font.pixelSize: 12
                             text: String(se.modelData.folder || "").replace(Quickshell.env("HOME"), "~") + "  ·  " + shell.when(se.modelData.when) }
                     MouseArea { id: seHit; anchors.fill: parent; hoverEnabled: true }
+                    HoverHandler { id: seHover }
                     Pill { id: seGo; anchors.right: parent.right; anchors.rightMargin: 8; anchors.verticalCenter: parent.verticalCenter; implicitHeight: 32; icon: "terminal-2"; enabled: !shell.atWork(se.modelData)
+                           opacity: seHover.hovered || !enabled ? 1 : 0      // one button under the pointer, not a wall of them (audit 21. 11.)
                            text: shell.atWork(se.modelData) ? I18n.tr("works") : I18n.tr("Go on in a terminal"); onPressed: shell.resume(se.modelData) } } }
         }
 
@@ -913,7 +957,7 @@ ShellRoot {
                     Row { id: searchRow; x: 14; spacing: 7; anchors.verticalCenter: parent.verticalCenter
                         Glyph { name: "world"; font.pixelSize: 15; color: shell.webInk; anchors.verticalCenter: parent.verticalCenter }
                         Text { text: I18n.tr("Smart search"); color: shell.webInk; font.family: Theme.font; font.pixelSize: 14; font.weight: Font.DemiBold } }
-                    MouseArea { id: searchHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: if (shell.useP && shell.useP.web) Qt.openUrlExternally(shell.useP.web) } }
+                    MouseArea { id: searchHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: if (shell.useP && shell.useP.web) Quickshell.execDetached(["latte-open", String(shell.useP.web)]) } }
                 // DeepSeek's paperclip, where the others have the microphone
                 Item { visible: shell.style === "deepseek"; x: send.x - 44; y: box.cy - 16; width: 32; height: 32
                     Glyph { anchors.centerIn: parent; name: "paperclip"; font.pixelSize: 18; color: shell.look.ink }
@@ -984,7 +1028,7 @@ ShellRoot {
                             MouseArea { id: rowHit; anchors.fill: parent; anchors.topMargin: r.gap; hoverEnabled: true; enabled: !r.off; cursorShape: Qt.PointingHandCursor
                                         onClicked: shell.act(r.modelData, r.y, sheet.sub) } } } } }
             Sheet { id: menu; visible: shell.menuAt !== ""; own: shell.menuAt === "who"
-                rows: shell.menuAt === "who" ? shell.providers.map(p => ({ name: p.name, kind: shell.kindOf(p.id), key: p.id === shell.useProvider && shell.useM ? shell.useM.name : p.models[0].name, "do": { provider: p.id, model: p.id === shell.useProvider && shell.useM ? shell.useM.id : p.models[0].id } }))
+                rows: shell.menuAt === "who" ? shell.whoRows()
                       : shell.useP ? (shell.menuAt === "plus" ? shell.useP.plus : shell.useP.menu) : []
                 width: shell.menuAt === "who" ? 300 : shell.menuAt === "plus" ? (({ claude: 260, gemini: 280, chatgpt: 470, grok: 250, mistral: 280 })[shell.style] || 250) : (({ claude: 380, gemini: 230, chatgpt: 300, grok: 320, mistral: 270 })[shell.style] || 300)
                 hintX: shell.menuAt === "plus" && shell.style === "chatgpt" ? 196 : 0
@@ -1022,7 +1066,7 @@ ShellRoot {
             component Quiet: Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 12 }
             Column { id: homeCol; x: 28; y: 22; width: Math.min(home.width - 56, 1100); spacing: 14
                 // ── one field: the answer opens as a conversation; where it is a thing to do, "Do it" is under it ──
-                Rectangle { width: parent.width; height: askCol.implicitHeight + 28; radius: 18; color: Theme.card
+                Rectangle { width: parent.width; height: askCol.implicitHeight + 28; radius: 18; color: Theme.card; z: 5      // its menu over the cards under it
                             border.width: askLine.activeFocus ? 2 : 1; border.color: askLine.activeFocus ? Theme.gold : Theme.line
                     Column { id: askCol; x: 18; y: 14; width: parent.width - 36; spacing: 10
                         Item { width: parent.width; height: 40
@@ -1040,7 +1084,10 @@ ShellRoot {
                                     Label { text: shell.nameOf(shell.useProvider) + " · " + (shell.useM ? shell.useM.name : ""); color: Theme.gold; font.pixelSize: 13; font.weight: 700 }
                                     Glyph { name: "chevron-down"; font.pixelSize: 13; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter } }
                                 MouseArea { id: homeWhoHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                            onClicked: { shell.page = "chats"; shell.open = ""; shell.chat = null; shell.openMenu("who") } } }
+                                            onClicked: shell.openMenu("homewho") }
+                                // the services' menu right here, not on the Conversations page (audit 21. 11.); a press beside it closes it
+                                MouseArea { visible: shell.menuAt === "homewho"; x: -4000; y: -4000; width: 8000; height: 8000; onPressed: shell.menuAt = "" }
+                                Sheet { visible: shell.menuAt === "homewho"; own: true; rows: visible ? shell.whoRows() : []; width: 300; y: parent.height + 6 } }
                             Row { spacing: 6; anchors.verticalCenter: parent.verticalCenter
                                 readonly property bool here: !!shell.useP && shell.useP.local === true
                                 Glyph { name: parent.here ? "device-desktop" : "cloud"; font.pixelSize: 15; color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
@@ -1080,7 +1127,11 @@ ShellRoot {
                                 Label { width: parent.width; elide: Text.ElideLeft; color: Theme.dim; font.pixelSize: 11; text: (modelData.agent || "") + " · " + String(modelData.folder || "").replace(Quickshell.env("HOME"), "~") }
                                 Pill { implicitHeight: 30; icon: "terminal-2"; text: I18n.tr("Show its terminal"); visible: shell.windowOf(modelData) !== ""
                                        onPressed: shell.showWindow(parent.modelData) } } }
-                        Quiet { visible: shell.waitingCount === 0; text: I18n.tr("Nothing waits for you. Agent Chats tells its own in its threads.") } }
+                        Column { visible: !!shell.helperAsks; width: parent.width; spacing: 6
+                            Label { width: parent.width; wrapMode: Text.WordWrap; maximumLineCount: 3; elide: Text.ElideRight; font.pixelSize: 13; font.weight: 600; text: shell.helperAsks ? shell.helperAsks.question : "" }
+                            Label { width: parent.width; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 11; text: I18n.tr("Helper") + " · " + (shell.helperAsks ? shell.helperAsks.task : "") }
+                            Pill { implicitHeight: 30; icon: "message"; text: I18n.tr("Answer"); onPressed: shell.go("agents") } }
+                        Quiet { visible: shell.waitingCount === 0; text: I18n.tr("Nothing waits for you. agentgram tells its own in its threads.") } }
                     // ── what runs now ──
                     Card { width: home.third; title: I18n.tr("Running now"); icon: "robot"
                         Repeater { model: wmAgents.list.filter(a => a.state === "working")
@@ -1105,9 +1156,13 @@ ShellRoot {
                                     Item { required property var modelData; width: us.width; height: 22
                                         Label { width: 150; elide: Text.ElideRight; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter
                                                 text: I18n.tr(us.modelData.name) + " · " + I18n.tr(modelData.label || "") }
-                                        DotBar { x: 158; width: parent.width - 158 - 112; height: 9; segments: 20; value: modelData.used; anchors.verticalCenter: parent.verticalCenter }
-                                        Label { anchors.right: parent.right; width: 104; horizontalAlignment: Text.AlignRight; elide: Text.ElideRight; font.pixelSize: 12; color: Theme.dim; anchors.verticalCenter: parent.verticalCenter
-                                                text: Math.round((modelData.used || 0) * 100) + " %" + (shell.left(modelData.resets) ? " · " + I18n.tr("back in {n}", { n: shell.left(modelData.resets) }) : "") } } } } }
+                                        DotBar { x: 158; width: parent.width - 158 - 132; height: 9; segments: 20; value: modelData.used; anchors.verticalCenter: parent.verticalCenter }
+                                        // the short form, as on the Agents page: "25 % · 3 h"; the whole sentence in the tooltip
+                                        Label { id: usedText; anchors.right: parent.right; width: 124; horizontalAlignment: Text.AlignRight; elide: Text.ElideRight; font.pixelSize: 12; color: Theme.dim; anchors.verticalCenter: parent.verticalCenter
+                                                text: Math.round((modelData.used || 0) * 100) + " %" + (shell.left(modelData.resets) ? "  ·  " + shell.left(modelData.resets) : "")
+                                                MouseArea { id: usedHit; anchors.fill: parent; hoverEnabled: true }
+                                                QQC.ToolTip.visible: usedHit.containsMouse && !!shell.left(parent.modelData.resets); QQC.ToolTip.delay: 400
+                                                QQC.ToolTip.text: I18n.tr("back in {n}", { n: shell.left(parent.modelData.resets) || "" }) } } } } }
                         Quiet { visible: !(shell.agents.services || []).some(s => (s.limits || []).length > 0); text: I18n.tr("No service says its limits.") }
                         Label { width: parent.width; wrapMode: Text.WordWrap; text: shell.statLines[shell.turn % shell.statLines.length]; font.pixelSize: 13; font.weight: 700; color: Theme.cream } }
                     // ── the latest: conversations, and Claude Code's sessions in terminals ──
@@ -1203,20 +1258,6 @@ ShellRoot {
                         Label { text: I18n.tr("Counted from Claude Code's own records on this computer, LensAI's questions included."); color: Theme.dim; font.pixelSize: 12; width: parent.width; wrapMode: Text.WordWrap } }
                     Pill { anchors.right: parent.right; anchors.rightMargin: 16; anchors.verticalCenter: parent.verticalCenter; implicitHeight: 34; icon: "refresh"; text: ""
                            busy: agentsq.running; onPressed: agentsq.ask(["agents"]) } }
-                // the agent: crashes and "Do it for me" go to it; LatteOS picks none for the user (Omarchy's default agent)
-                Rectangle { width: agentCol.width; height: agentBox.implicitHeight + 32; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
-                    Column { id: agentBox; x: 18; y: 16; width: parent.width - 36; spacing: 10
-                        Row { spacing: 10
-                            Glyph { name: "robot"; color: Theme.gold; font.pixelSize: 20; anchors.verticalCenter: parent.verticalCenter }
-                            Label { text: I18n.tr("Your agent"); font.pixelSize: 16; font.weight: 800; anchors.verticalCenter: parent.verticalCenter } }
-                        Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
-                                text: shell.helpers.agent === "" ? I18n.tr("None is chosen: LatteOS does not choose for you. Crashes and “Do it for me” go to the one you choose.")
-                                                                 : I18n.tr("Crashes and “Do it for me” go to it. It plans first and changes nothing before your yes.") }
-                        Flow { width: parent.width; spacing: 8
-                            Repeater { model: shell.helpers.agents
-                                Pill { required property var modelData; implicitHeight: 32; text: modelData.installed ? modelData.name : I18n.tr("{n} (not installed)", { n: modelData.name })
-                                       strong: modelData.id === shell.helpers.agent; icon: modelData.id === shell.helpers.agent ? "check" : (modelData.installed ? "" : "download"); opacity: modelData.installed ? 1 : 0.6
-                                       onPressed: { if (modelData.installed) shell.setHelper(["latte-ai", "doer", modelData.id]); else shell.openSection("cli") } } } } } }
                 // the agents in this session's terminals, as pleamar-wm tells it (`pleamar-wm agents`), read only
                 Label { text: I18n.tr("IN THE TERMINALS"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
                 Repeater { model: wmAgents.list
@@ -1253,61 +1294,15 @@ ShellRoot {
                                             text: Math.round(modelData.used * 100) + " %" + (shell.left(modelData.resets) ? "  ·  " + shell.left(modelData.resets) : "") } } }
                             // a service that tells no figures: what LatteOS counts itself, said as that
                             Label { visible: sec.modelData.limits.length === 0; width: secCol.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
-                                    text: I18n.tr("{n} questions through Lens this month", { n: sec.modelData.asked }) + "  ·  " + I18n.tr("The account's quota is not told here; the service's own page shows it.") } } } }
+                                    text: I18n.tr("{n} questions through LensAI this month", { n: sec.modelData.asked }) + "  ·  " + I18n.tr("The account's quota is not told here; the service's own page shows it.") } } } }
                 Label { visible: (shell.agents.services || []).length === 0 && !agentsq.running; width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim
                         text: I18n.tr("No AI service is installed: see Settings.") }
-                // the helpers (Omarchy's toggles, manual 13 and 17, MIT): who reads a sentence, and each helper as a switch;
-                // off, only the offer goes, the thing itself stays at hand
-                // who reads a sentence: this computer, unless the user chooses Haiku (Omarchy's Defaults, a backend to pick)
-                Rectangle { width: agentCol.width; height: whoBox.implicitHeight + 32; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
-                    Column { id: whoBox; x: 18; y: 16; width: parent.width - 36; spacing: 12
-                        Row { spacing: 10
-                            Glyph { name: "bolt"; color: Theme.gold; font.pixelSize: 20; anchors.verticalCenter: parent.verticalCenter }
-                            Label { text: I18n.tr("Small tasks"); font.pixelSize: 16; font.weight: 800; anchors.verticalCenter: parent.verticalCenter } }
-                        Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
-                                text: I18n.tr("A sentence to read, a date to find: what the rules of LatteOS do not manage. What it read is always shown before anything is done.") }
-                        Row { spacing: 12; width: parent.width
-                            Repeater { model: [
-                                    { id: "local", name: QT_TR_NOOP("On this computer"), glyph: "device-desktop", can: shell.helpers.local !== "",
-                                      how: shell.helpers.local !== "" ? shell.helpers.local : QT_TR_NOOP("No model yet: choose one in Local LLMs"), note: QT_TR_NOOP("Nothing leaves this computer.") },
-                                    { id: "haiku", name: "Claude Haiku", glyph: "cloud", can: shell.helpers.haiku.length > 0,
-                                      how: shell.helpers.haiku.indexOf("key") >= 0 ? QT_TR_NOOP("With your key: a second or two") : shell.helpers.haiku.indexOf("claude") >= 0 ? QT_TR_NOOP("Through Claude Code: some ten seconds") : QT_TR_NOOP("Needs Claude Code or a key (Settings)"),
-                                      note: QT_TR_NOOP("Faster and surer; the sentence goes to Anthropic.") } ]
-                                Rectangle { id: tile; required property var modelData; width: (whoBox.width - 12) / 2; height: 96; radius: 14
-                                    readonly property bool picked: shell.helpers.helper === modelData.id
-                                    color: picked ? Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.12) : (tileHit.containsMouse ? Theme.raised : "transparent")
-                                    border.width: picked ? 2 : 1; border.color: picked ? Theme.gold : Theme.line; opacity: modelData.can || picked ? 1 : 0.55
-                                    Glyph { x: 14; y: 14; name: tile.modelData.glyph; color: tile.picked ? Theme.gold : Theme.dim; font.pixelSize: 20 }
-                                    Glyph { anchors.right: parent.right; anchors.rightMargin: 14; y: 14; visible: tile.picked; name: "circle-check"; color: Theme.gold; font.pixelSize: 18 }
-                                    Column { x: 44; y: 12; width: parent.width - 80; spacing: 3
-                                        Label { text: I18n.tr(tile.modelData.name); font.weight: 800 }
-                                        Label { width: parent.width; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 12; text: I18n.tr(tile.modelData.how) }
-                                        Label { width: parent.width; wrapMode: Text.WordWrap; color: tile.modelData.id === "haiku" ? Theme.gold : Theme.ok; font.pixelSize: 12; text: I18n.tr(tile.modelData.note) } }
-                                    MouseArea { id: tileHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                        onClicked: { if (tile.modelData.can) shell.setHelper(["latte-ai", "helper", tile.modelData.id])
-                                                     else if (tile.modelData.id === "local") shell.openLocal()
-                                                     else shell.openSection("cli") } } } } } } }
-                Label { text: I18n.tr("WHAT HELPS"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
-                Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim
-                        text: I18n.tr("Small agents that help LatteOS. Each one can be turned off: then it stops offering itself, and what it did can still be asked for by hand.") }
-                Repeater { model: shell.helpers.switches
-                    Rectangle { id: sw; required property var modelData; width: agentCol.width; height: swCol.implicitHeight + 32; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
-                        Glyph { x: 18; y: 18; name: sw.modelData.glyph; color: sw.modelData.on ? Theme.gold : Theme.faint; font.pixelSize: 20 }
-                        Column { id: swCol; x: 52; y: 16; width: parent.width - 52 - 90; spacing: 6
-                            Label { text: I18n.tr(sw.modelData.name); font.pixelSize: 15; font.weight: 800 }
-                            Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13; text: I18n.tr(sw.modelData.desc) }
-                            Label { visible: sw.modelData.id === "crash-capture" && sw.modelData.on && shell.helpers.agent === ""; width: parent.width; wrapMode: Text.WordWrap; color: Theme.gold; font.pixelSize: 12
-                                    text: I18n.tr("It waits for your agent: choose one above.") }
-                            // a crash: the programs it is not told for (GuardCorgi's “Not about this program”), each back with a press
-                            Flow { visible: sw.modelData.id === "crash-capture" && shell.helpers.muted.length > 0; width: parent.width; spacing: 8
-                                Label { text: I18n.tr("Not told for:"); color: Theme.dim; font.pixelSize: 12; height: 28; verticalAlignment: Text.AlignVCenter }
-                                Repeater { model: sw.modelData.id === "crash-capture" ? shell.helpers.muted : []
-                                    Pill { required property var modelData; implicitHeight: 28; icon: "x"; text: modelData
-                                           onPressed: shell.setHelper(["latte-guardcorgi", "quiet", modelData, "off"]) } } } }
-                        Rectangle { width: 46; height: 26; radius: 13; color: sw.modelData.on ? Theme.gold : Theme.raised; anchors.right: parent.right; anchors.rightMargin: 18; y: 18
-                            Rectangle { width: 20; height: 20; radius: 10; y: 3; x: sw.modelData.on ? 23 : 3; color: sw.modelData.on ? Theme.inkOnGold : Theme.dim }
-                            MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor
-                                        onClicked: shell.setHelper(["latte-ai", "toggle", sw.modelData.id, sw.modelData.on ? "off" : "on"]) } } } } } }
+                // its settings (your agent, small tasks, what helps) are in Settings › Agents (audit 21. 11.: this page is what they do)
+                Rectangle { width: agentCol.width; height: 56; radius: 16; color: "transparent"; border.width: 1; border.color: Theme.line
+                    Glyph { x: 18; name: "settings"; font.pixelSize: 18; color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
+                    Label { x: 48; width: parent.width - 48 - agSetP.width - 32; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 13; anchors.verticalCenter: parent.verticalCenter
+                            text: I18n.tr("Your agent, small tasks and what helps are set in Settings.") }
+                    Pill { id: agSetP; anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter; implicitHeight: 32; icon: "settings"; text: I18n.tr("Settings"); onPressed: shell.openSection("agents") } } } }
 
         // ── every agent skill on this computer, shown where it lives (the user, 17. 11.: a view, not a copy); edited where
         // it lives. Agent Chats keeps its agents' own skills, seen there ─────────────────────────────────────────────
@@ -1315,6 +1310,8 @@ ShellRoot {
             id: skPage
             visible: shell.page === "skills"
             property string tab: "here"             // here (on this computer) · store (skills.sh)
+            property string storeAsked: ""          // what the Store was searched for: then its results alone, not the official list above them
+            property string mine: ""                // the skills on this computer narrowed to these words
             Row { spacing: 8
                 Repeater { model: [{ id: "here", name: QT_TR_NOOP("On this computer"), icon: "desktop" }, { id: "store", name: QT_TR_NOOP("Store"), icon: "storefront" }]
                     Pill { required property var modelData; implicitHeight: 34; icon: modelData.icon; text: I18n.tr(modelData.name); strong: skPage.tab === modelData.id
@@ -1322,13 +1319,13 @@ ShellRoot {
             Column { visible: skPage.tab === "store"; width: skPage.room; spacing: 12
                 Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim
                         text: I18n.tr("Skills from Anthropic, skills.sh and ClawHub, installed once into ~/.agents/skills for Codex, Claude Code and Gemini; agentgram offers them in Install skill › Skill from LensAI. Anyone may publish on skills.sh and ClawHub: read what a skill does first.") }
-                Field { width: parent.width; icon: "magnifying-glass"; hint: I18n.tr("Search skills: comic, video, Blender… (Enter)"); onAccepted: if (text.trim() !== "") skillFind.ask(["skills", "find", text.trim()]) }
+                Field { width: parent.width; icon: "magnifying-glass"; hint: I18n.tr("Search skills: comic, video, Blender… (Enter)"); onAccepted: { skPage.storeAsked = text.trim(); if (skPage.storeAsked !== "") skillFind.ask(["skills", "find", skPage.storeAsked]) } }
                 Label { visible: skillFind.running; color: Theme.dim; text: I18n.tr("Looking…") }
                 Repeater { model: [{ id: "official", name: QT_TR_NOOP("Official, from Anthropic") }, { id: "skillssh", name: QT_TR_NOOP("From skills.sh") },
                                    { id: "clawhub", name: QT_TR_NOOP("From ClawHub (OpenClaw)") }]
                     Column { id: ssec; required property var modelData; width: skPage.room; spacing: 8
                         readonly property var rows: modelData.id === "official" ? shell.skillOfficial : (shell.skillFound[modelData.id] || [])
-                        visible: rows.length > 0
+                        visible: rows.length > 0 && !(modelData.id === "official" && skPage.storeAsked !== "")
                         Label { text: I18n.tr(ssec.modelData.name).toUpperCase(); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
                         Repeater { model: ssec.rows
                             Rectangle { id: sf; required property var modelData; width: skPage.room; height: sf.modelData.what ? 70 : 54; radius: 12; color: Theme.card
@@ -1338,10 +1335,12 @@ ShellRoot {
                                     Label { width: parent.width; elide: Text.ElideRight; text: sf.modelData.name; font.weight: 700 }
                                     Label { visible: !!sf.modelData.what; width: parent.width; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 12; text: sf.modelData.what || "" }
                                     Label { width: parent.width; elide: Text.ElideRight; color: Theme.faint; font.pixelSize: 12
-                                            text: sf.modelData.source + (sf.modelData.installs ? "  ·  " + I18n.tr("{n} installs", { n: sf.modelData.installs }) : "") } }
+                                            text: sf.modelData.source + (sf.modelData.installs ? "  ·  " + I18n.tr("{n} installs", { n: sf.modelData.installs }) : "") }
+                                    // anyone may publish to skills.sh and ClawHub: a skill can run commands, so whose it is shows
+                                    Label { visible: ssec.modelData.id !== "official"; color: Theme.red; font.pixelSize: 11; font.weight: 700; text: "⚠ " + I18n.tr("Unverified author") } }
                                 Row { id: sfBtns; anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter; spacing: 6
-                                    Pill { implicitHeight: 30; icon: "arrow-square-out"; text: I18n.tr("Read"); onPressed: Qt.openUrlExternally(sf.modelData.url) }
-                                    Pill { implicitHeight: 30; strong: !sf.have; enabled: shell.skillBusy === ""
+                                    Pill { implicitHeight: 30; icon: "arrow-square-out"; text: I18n.tr("Read"); onPressed: Quickshell.execDetached(["latte-open", String(sf.modelData.url)]) }
+                                    Pill { implicitHeight: 30; strong: false; enabled: shell.skillBusy === ""      // outlined: thirteen filled buttons shouted (audit 21. 11.)
                                            icon: shell.skillBusy === sf.modelData.skill ? "spinner" : sf.have ? "trash" : "download-simple"
                                            text: shell.skillBusy === sf.modelData.skill ? I18n.tr("Working…") : sf.have ? I18n.tr("Remove") : I18n.tr("Install")
                                            onPressed: shell.skillRun(sf.have ? ["remove", sf.modelData.skill] : ["add", sf.modelData.source, sf.modelData.skill], sf.modelData.skill) } } } } } } }
@@ -1349,9 +1348,12 @@ ShellRoot {
             Label { width: skPage.room; wrapMode: Text.WordWrap; color: Theme.dim
                     text: I18n.tr("A skill is a way of working an AI has learnt (SKILL.md): how LatteOS is built, how to use the desktop, how to make a comic. Here are the ones in the agents' skill folders on this computer; each is changed where it lives. The tools an AI uses are its connectors.") }
             Waiting { visible: shell.skills.length === 0 && skillq.running; text: I18n.tr("Looking for skills…"); width: skPage.room }
-            Repeater { model: shell.skillGroups
+            Field { width: Math.min(skPage.room, 520); icon: "magnifying-glass"; hint: I18n.tr("Search the skills on this computer…"); visible: shell.skills.length > 0
+                    onTextChanged: skPage.mine = text.trim().toLowerCase() }
+            Repeater { model: skPage.mine === "" ? shell.skillGroups
+                              : shell.skillGroups.map(g => Object.assign({}, g, { skills: g.skills.filter(k => (k.name + " " + (k.description || "")).toLowerCase().indexOf(skPage.mine) >= 0) })).filter(g => g.skills.length > 0)
               Column { id: skg; required property var modelData; width: skPage.room; spacing: 6
-                readonly property bool shut: !shell.skillsOpen[modelData.id]
+                readonly property bool shut: skPage.mine === "" && !shell.skillsOpen[modelData.id]      // searched, every group open
                 Rectangle { width: parent.width; height: 34; radius: 10; color: skgHit.containsMouse ? Theme.card : "transparent"
                     Row { x: 8; spacing: 10; anchors.verticalCenter: parent.verticalCenter
                         Glyph { name: skg.shut ? "chevron-right" : "chevron-down"; font.pixelSize: 15; color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
@@ -1454,7 +1456,7 @@ ShellRoot {
                             FileView { id: mcpToken; printErrors: false; watchChanges: true
                                        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/latteos/mcp-token" }
                             Row { spacing: 10; visible: mcpToken.text().trim() !== ""
-                                Label { color: Theme.dim; font.pixelSize: 12; text: I18n.tr("For Agent Chats: {u}, header Authorization: Bearer and the token", { u: "http://127.0.0.1:8791/mcp" }); anchors.verticalCenter: parent.verticalCenter }
+                                Label { color: Theme.dim; font.pixelSize: 12; text: I18n.tr("For agentgram: {u}, header Authorization: Bearer and the token", { u: "http://127.0.0.1:8791/mcp" }); anchors.verticalCenter: parent.verticalCenter }
                                 CopyButton { copy: "Bearer " + mcpToken.text().trim(); anchors.verticalCenter: parent.verticalCenter } } }
                         Toggle { on: shell.mcpOn; anchors.right: parent.right; anchors.rightMargin: 18; y: 18; opacity: mcpSet.running ? 0.5 : 1
                                  onFlipped: if (!mcpSet.running) { mcpSet.command = ["latte-mcp", shell.mcpOn ? "remove" : "install"]; mcpSet.running = true } } }
@@ -1471,7 +1473,7 @@ ShellRoot {
                                     Label { id: cl; anchors.centerIn: parent; text: parent.modelData; font.pixelSize: 11; font.weight: 600 } } } } } }
                 Label { visible: shell.servers.length === 0 && !serverq.running; width: conPage.room; color: Theme.dim; text: I18n.tr("No tool has a connector yet.") }
                 Label { width: conPage.room; wrapMode: Text.WordWrap; color: Theme.faint; font.pixelSize: 12
-                        text: I18n.tr("Agent Chats gives its agents connectors of its own, by address, in its settings. The services' web pages get none from here.") }
+                        text: I18n.tr("agentgram gives its agents connectors of its own, by address, in its settings. The services' web pages get none from here.") }
             }
         }
 
@@ -1569,7 +1571,7 @@ ShellRoot {
                                 Tag { word: localPage.picked && localPage.picked.vision ? I18n.tr("sees pictures") : ""; tint: "#7aa7ff" }
                                 Tag { word: localPage.picked && localPage.picked.best ? I18n.tr("Best for you") : ""; tint: Theme.gold }
                                 Text { text: I18n.tr("Open on Hugging Face"); color: Theme.gold; font.family: Theme.font; font.pixelSize: 12; font.underline: true
-                                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Qt.openUrlExternally("https://huggingface.co/" + localPage.picked.repo) } } }
+                                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Quickshell.execDetached(["latte-open", String("https://huggingface.co/" + localPage.picked.repo)]) } } }
                             Label { visible: !!(localPage.picked && localPage.picked.good); width: parent.width; wrapMode: Text.WordWrap; color: Theme.cream; text: localPage.picked && localPage.picked.good ? I18n.tr(localPage.picked.good) : "" }
                             // the download options, as LM Studio lists them: one chosen (the recommended one at first)
                             Pill { visible: !!localPage.chosen; implicitHeight: 40; strong: !(localPage.chosen && localPage.chosen.have); icon: localPage.chosen && localPage.chosen.have ? "check" : "download"
@@ -1773,14 +1775,25 @@ ShellRoot {
             id: setPage
             anchors.fill: parent
             visible: shell.page === "lensai"
-            Row { x: 22; y: 16; spacing: 8
+            // the sections in a list on the left, as Windows 11's Settings has them (audit 21. 11.), the dot of each service kind by it
+            Column { id: setChips; x: 16; y: 16; width: 220; spacing: 4
                 Repeater { model: [{ id: "web", name: QT_TR_NOOP("Web"), icon: "world" }, { id: "cli", name: QT_TR_NOOP("CLI"), icon: "terminal-2" }, { id: "api", name: QT_TR_NOOP("API"), icon: "key" },
                                    { id: "instructions", name: QT_TR_NOOP("Instructions"), icon: "file-text" }, { id: "memory", name: QT_TR_NOOP("Memory"), icon: "brain" },
-                                   { id: "hands", name: QT_TR_NOOP("Hands"), icon: "hand-finger" },
+                                   { id: "agents", name: QT_TR_NOOP("Agents"), icon: "robot" }, { id: "hands", name: QT_TR_NOOP("Hands"), icon: "hand-finger" },
                                    { id: "agentgram", name: "agentgram", icon: "users-group" }]
-                    Pill { required property var modelData; implicitHeight: 34; icon: modelData.icon; text: I18n.tr(modelData.name) + (shell.kinds[modelData.id] !== undefined ? "     " : ""); strong: shell.section === modelData.id
-                           onPressed: shell.openSection(modelData.id)
-                           Kind { kind: parent.modelData.id; anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; border.width: 1; border.color: Qt.rgba(0, 0, 0, 0.25) } } } }
+                    Nav { required property var modelData; width: setChips.width; icon: modelData.icon; text: I18n.tr(modelData.name); on: shell.section === modelData.id
+                          onPressed: shell.openSection(modelData.id)
+                          Kind { kind: parent.modelData.id; anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; border.width: 1; border.color: Qt.rgba(0, 0, 0, 0.25) } } } }
+            // what the dots say, under the list, until put away with its cross (About › Show the tips again brings it back)
+            Rectangle { id: dotsTip; x: 16; y: setChips.y + setChips.height + 16; width: setChips.width; height: dotsCol.implicitHeight + 24; radius: 12; color: Theme.card
+                        visible: !shell.dotsTipOff
+                Column { id: dotsCol; x: 12; y: 12; width: parent.width - 40; spacing: 6
+                    Repeater { model: [{ k: "web", t: QT_TR_NOOP("the service's page") }, { k: "cli", t: QT_TR_NOOP("its program on this computer") }, { k: "api", t: QT_TR_NOOP("a key, paid by use") }]
+                        Row { required property var modelData; spacing: 8; width: dotsCol.width
+                            Kind { kind: parent.modelData.k; anchors.verticalCenter: parent.verticalCenter }
+                            Label { text: I18n.tr(parent.modelData.t); color: Theme.dim; font.pixelSize: 12; width: parent.width - 18; wrapMode: Text.WordWrap } } } }
+                Glyph { anchors.right: parent.right; anchors.rightMargin: 10; y: 10; name: "x"; font.pixelSize: 13; color: dotsX.containsMouse ? Theme.cream : Theme.faint
+                    MouseArea { id: dotsX; anchors.fill: parent; anchors.margins: -6; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: shell.hideDotsTip() } } }
 
             // the models of one that can answer: which the chat of LensGoo and LensShore offers, and the star on the one a
             // new conversation begins with
@@ -1801,15 +1814,101 @@ ShellRoot {
                         Toggle { id: mrTg; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; scale: 0.85; on: !mr.modelData.hidden
                                  onFlipped: modeler.ask(["model", mr.modelData.hidden ? "show" : "hide", mrs.pid, mr.modelData.id]) } } } }
 
+            // ── agents: the one that does "Do it for me", who reads a sentence, the small helpers (moved from the Agents page) ──
+            Scroll {
+                id: agentSet
+                visible: shell.section === "agents"
+                anchors.topMargin: 8; anchors.leftMargin: 244
+                // the agent: crashes and "Do it for me" go to it; LatteOS picks none for the user (Omarchy's default agent)
+                Rectangle { width: agentSet.room; height: agentBox.implicitHeight + 32; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
+                    Column { id: agentBox; x: 18; y: 16; width: parent.width - 36; spacing: 10
+                        Row { spacing: 10
+                            Glyph { name: "robot"; color: Theme.gold; font.pixelSize: 20; anchors.verticalCenter: parent.verticalCenter }
+                            Label { text: I18n.tr("Your agent"); font.pixelSize: 16; font.weight: 800; anchors.verticalCenter: parent.verticalCenter } }
+                        Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
+                                text: shell.helpers.agent === "" ? I18n.tr("None is chosen: LatteOS does not choose for you. Crashes and “Do it for me” go to the one you choose.")
+                                                                 : I18n.tr("Crashes and “Do it for me” go to it. It plans first and changes nothing before your yes.") }
+                        Flow { width: parent.width; spacing: 8
+                            Repeater { model: shell.helpers.agents
+                                Pill { required property var modelData; implicitHeight: 32; text: modelData.installed ? modelData.name : I18n.tr("{n} (not installed)", { n: modelData.name })
+                                       strong: modelData.id === shell.helpers.agent; icon: modelData.id === shell.helpers.agent ? "check" : (modelData.installed ? "" : "download"); opacity: modelData.installed ? 1 : 0.6
+                                       onPressed: { if (modelData.installed) shell.setHelper(["latte-ai", "doer", modelData.id]); else shell.openSection("cli") } } } } } }
+                // the helpers (Omarchy's toggles, manual 13 and 17, MIT): who reads a sentence, and each helper as a switch;
+                // off, only the offer goes, the thing itself stays at hand
+                // who reads a sentence: this computer, unless the user chooses Haiku (Omarchy's Defaults, a backend to pick)
+                Rectangle { width: agentSet.room; height: whoBox.implicitHeight + 32; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
+                    Column { id: whoBox; x: 18; y: 16; width: parent.width - 36; spacing: 12
+                        Row { spacing: 10
+                            Glyph { name: "bolt"; color: Theme.gold; font.pixelSize: 20; anchors.verticalCenter: parent.verticalCenter }
+                            Label { text: I18n.tr("Small tasks"); font.pixelSize: 16; font.weight: 800; anchors.verticalCenter: parent.verticalCenter } }
+                        Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
+                                text: I18n.tr("A sentence to read, a date to find: what the rules of LatteOS do not manage. What it read is always shown before anything is done.") }
+                        Row { spacing: 12; width: parent.width
+                            Repeater { model: [
+                                    { id: "local", name: QT_TR_NOOP("On this computer"), glyph: "device-desktop", can: shell.helpers.local !== "",
+                                      how: shell.helpers.local !== "" ? shell.helpers.local : QT_TR_NOOP("No model yet: choose one in Local LLMs"), note: QT_TR_NOOP("Nothing leaves this computer.") },
+                                    { id: "haiku", name: "Claude Haiku", glyph: "cloud", can: shell.helpers.haiku.length > 0,
+                                      how: shell.helpers.haiku.indexOf("key") >= 0 ? QT_TR_NOOP("With your key: a second or two") : shell.helpers.haiku.indexOf("claude") >= 0 ? QT_TR_NOOP("Through Claude Code: some ten seconds") : QT_TR_NOOP("Needs Claude Code or a key (Settings)"),
+                                      note: QT_TR_NOOP("Faster and surer; the sentence goes to Anthropic.") } ]
+                                Rectangle { id: tile; required property var modelData; width: (whoBox.width - 12) / 2; height: 96; radius: 14
+                                    readonly property bool picked: shell.helpers.helper === modelData.id
+                                    color: picked ? Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.12) : (tileHit.containsMouse ? Theme.raised : "transparent")
+                                    border.width: picked ? 2 : 1; border.color: picked ? Theme.gold : Theme.line; opacity: modelData.can || picked ? 1 : 0.55
+                                    Glyph { x: 14; y: 14; name: tile.modelData.glyph; color: tile.picked ? Theme.gold : Theme.dim; font.pixelSize: 20 }
+                                    Glyph { anchors.right: parent.right; anchors.rightMargin: 14; y: 14; visible: tile.picked; name: "circle-check"; color: Theme.gold; font.pixelSize: 18 }
+                                    Column { x: 44; y: 12; width: parent.width - 80; spacing: 3
+                                        Label { text: I18n.tr(tile.modelData.name); font.weight: 800 }
+                                        Label { width: parent.width; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 12; text: I18n.tr(tile.modelData.how) }
+                                        Label { width: parent.width; wrapMode: Text.WordWrap; color: tile.modelData.id === "haiku" ? Theme.gold : Theme.ok; font.pixelSize: 12; text: I18n.tr(tile.modelData.note) } }
+                                    MouseArea { id: tileHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                        onClicked: { if (tile.modelData.can) shell.setHelper(["latte-ai", "helper", tile.modelData.id])
+                                                     else if (tile.modelData.id === "local") shell.openLocal()
+                                                     else shell.openSection("cli") } } } } } } }
+                Label { text: I18n.tr("WHAT HELPS"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
+                Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim
+                        text: I18n.tr("Small agents that help LatteOS. Each one can be turned off: then it stops offering itself, and what it did can still be asked for by hand.") }
+                Repeater { model: shell.helpers.switches
+                    Rectangle { id: sw; required property var modelData; width: agentSet.room; height: swCol.implicitHeight + 32; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
+                        Glyph { x: 18; y: 18; name: sw.modelData.glyph; color: sw.modelData.on ? Theme.gold : Theme.faint; font.pixelSize: 20 }
+                        Column { id: swCol; x: 52; y: 16; width: parent.width - 52 - 90; spacing: 6
+                            Label { text: I18n.tr(sw.modelData.name); font.pixelSize: 15; font.weight: 800 }
+                            Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13; text: I18n.tr(sw.modelData.desc) }
+                            Label { visible: sw.modelData.id === "crash-capture" && sw.modelData.on && shell.helpers.agent === ""; width: parent.width; wrapMode: Text.WordWrap; color: Theme.gold; font.pixelSize: 12
+                                    text: I18n.tr("It waits for your agent: choose one above.") }
+                            // a crash: the programs it is not told for (GuardCorgi's “Not about this program”), each back with a press
+                            Flow { visible: sw.modelData.id === "crash-capture" && shell.helpers.muted.length > 0; width: parent.width; spacing: 8
+                                Label { text: I18n.tr("Not told for:"); color: Theme.dim; font.pixelSize: 12; height: 28; verticalAlignment: Text.AlignVCenter }
+                                Repeater { model: sw.modelData.id === "crash-capture" ? shell.helpers.muted : []
+                                    Pill { required property var modelData; implicitHeight: 28; icon: "x"; text: modelData
+                                           onPressed: shell.setHelper(["latte-guardcorgi", "quiet", modelData, "off"]) } } } }
+                        Rectangle { width: 46; height: 26; radius: 13; color: sw.modelData.on ? Theme.gold : Theme.raised; anchors.right: parent.right; anchors.rightMargin: 18; y: 18
+                            Rectangle { width: 20; height: 20; radius: 10; y: 3; x: sw.modelData.on ? 23 : 3; color: sw.modelData.on ? Theme.inkOnGold : Theme.dim }
+                            MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor
+                                        onClicked: shell.setHelper(["latte-ai", "toggle", sw.modelData.id, sw.modelData.on ? "off" : "on"]) } } } }
+            }
+
             // ── web: the services' own pages in tabs, which, in what order, under what name and picture ──
             Scroll {
                 id: webSet
                 visible: shell.section === "web"
-                anchors.topMargin: 62
+                anchors.topMargin: 8; anchors.leftMargin: 244
                 Label { width: webSet.room; wrapMode: Text.WordWrap; color: Theme.dim
                         text: I18n.tr("Each one is the service's own page, with its own sign-in, as in a browser: the same service twice is two accounts side by side. LensAI reads nothing from a page, so the account is your own note, to tell them apart. The ring shows what is used of the limit that the service's tool tells.") }
                 Repeater { model: shell.tabbed
                     Rectangle { id: tr; required property var modelData; required property int index; width: webSet.room; height: 104; radius: 18; color: Theme.card
+                        property real lift: 0                  // dragged by its grip: how far, until it is let go in its new place
+                        transform: Translate { y: tr.lift }
+                        z: lift !== 0 ? 2 : 0; border.width: lift !== 0 ? 1 : 0; border.color: Theme.gold
+                        // the order by dragging, as in Ferdium and Windows; the arrows stay for the keyboard and the precise (the user, 21. 11.)
+                        Item { x: 14; y: 60; width: 40; height: 36
+                            Glyph { anchors.centerIn: parent; name: "grip-vertical"; font.pixelSize: 18; color: gripHit.containsMouse || gripHit.pressed ? Theme.gold : Theme.faint }
+                            MouseArea { id: gripHit; anchors.fill: parent; hoverEnabled: true; preventStealing: true; cursorShape: pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor
+                                property real from: 0
+                                onPressed: m => from = mapToItem(webSet.contentItem, m.x, m.y).y
+                                onPositionChanged: m => { if (pressed) tr.lift = mapToItem(webSet.contentItem, m.x, m.y).y - from }
+                                onCanceled: tr.lift = 0
+                                onReleased: { const to = Math.max(0, Math.min(shell.tabbed.length - 1, tr.index + Math.round(tr.lift / (tr.height + 26)))); tr.lift = 0
+                                              if (to !== tr.index) { const l = shell.tabbed.slice(); l.splice(to, 0, l.splice(tr.index, 1)[0]); shell.keepTabs(l) } } } }
                         readonly property string pic: shell.iconOf(modelData)
                         readonly property string tool: shell.usageOf(modelData)
                         readonly property bool changed: nameF.text.trim() !== modelData.name || accF.text.trim() !== (modelData.account || "")
@@ -1843,7 +1942,10 @@ ShellRoot {
                                    onPressed: { const l = shell.tabbed.slice(); l.splice(tr.index - 1, 0, l.splice(tr.index, 1)[0]); shell.keepTabs(l) } }
                             Pill { implicitHeight: 32; icon: "chevron-down"; text: ""; visible: tr.index < shell.tabbed.length - 1
                                    onPressed: { const l = shell.tabbed.slice(); l.splice(tr.index + 1, 0, l.splice(tr.index, 1)[0]); shell.keepTabs(l) } }
-                            Pill { implicitHeight: 32; icon: "trash"; danger: true; text: I18n.tr("Remove"); onPressed: shell.removeTab(tr.modelData.id) } } } }
+                            // removing is one step further, in ⋯, not a red button on every row (audit 21. 11.)
+                            Pill { implicitHeight: 32; icon: "dots"; text: ""
+                                   onPressed: { const p = mapToItem(besideMenu, 0, height + 4)
+                                                besideMenu.open(Math.min(p.x, besideMenu.width - 240), p.y, [{ text: I18n.tr("Remove"), icon: "trash", run: () => shell.removeTab(tr.modelData.id) }]) } } } } }
                 // when the pages out of sight sleep (WebTabs: frozen, then discarded; ~/.config/latteos/lensai-web.json)
                 Label { text: I18n.tr("SLEEP"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
                 Rectangle { width: webSet.room; height: slCol.implicitHeight + 28; radius: 16; color: Theme.card
@@ -1876,7 +1978,7 @@ ShellRoot {
             Scroll {
                 id: cliSet
                 visible: shell.section === "cli"
-                anchors.topMargin: 62
+                anchors.topMargin: 8; anchors.leftMargin: 244
                 Waiting { visible: shell.services.length === 0 && svc.running; text: I18n.tr("Asking the services…"); width: cliSet.room }
                 Label { width: cliSet.room; wrapMode: Text.WordWrap; color: Theme.dim
                         text: I18n.tr("With an account, the service's official tool answers, signed in once in the terminal: it is what LensGoo's chat, the agents and the limits go through.") }
@@ -1940,7 +2042,7 @@ ShellRoot {
                                                ac.modelData.missing.length ? I18n.tr("Needs {n}", { n: ac.modelData.missing.join(", ") }) : ""].filter(s => s).join("  ·  ") }
                                 Label { visible: ac.fail !== ""; width: parent.width; wrapMode: Text.WordWrap; color: Theme.red; font.pixelSize: 12; text: I18n.tr("Not installed: {e}", { e: ac.fail }) } }
                             Row { id: acBtns; anchors.right: parent.right; anchors.rightMargin: 12; y: 14; spacing: 6
-                                Pill { visible: ac.modelData.url !== ""; implicitHeight: 30; icon: "arrow-square-out"; text: I18n.tr("Read"); onPressed: Qt.openUrlExternally(ac.modelData.url) }
+                                Pill { visible: ac.modelData.url !== ""; implicitHeight: 30; icon: "arrow-square-out"; text: I18n.tr("Read"); onPressed: Quickshell.execDetached(["latte-open", String(ac.modelData.url)]) }
                                 Pill { visible: ac.have && ac.modelData.installed !== ac.modelData.version && ac.modelData.kind !== ""; implicitHeight: 30; enabled: shell.acpBusy === ""
                                        icon: "download-simple"; text: I18n.tr("Update"); onPressed: shell.acpRun("install", ac.modelData.id) }
                                 Pill { visible: ac.have || (ac.modelData.kind !== "" && ac.modelData.missing.length === 0); implicitHeight: 30; strong: !ac.have; enabled: shell.acpBusy === ""
@@ -1953,7 +2055,7 @@ ShellRoot {
             Scroll {
                 id: apiSet
                 visible: shell.section === "api"
-                anchors.topMargin: 62
+                anchors.topMargin: 8; anchors.leftMargin: 244
                 Label { width: apiSet.room; wrapMode: Text.WordWrap; color: Theme.dim
                         text: I18n.tr("With a key from the service's own site, its API answers directly: you pay it for what you use. The key is kept in the system's keyring, never in a file.") }
                 // the keyring did not open at sign-in: nothing can be kept in it or read from it
@@ -1984,7 +2086,7 @@ ShellRoot {
                                     Pill { visible: kc.modelData.has && !kc.swap; icon: "refresh"; text: I18n.tr("Replace"); onPressed: kc.swap = true }
                                     Pill { visible: kc.modelData.has; icon: "trash"; danger: true; text: I18n.tr("Remove"); onPressed: keyer.ask(["forget-key", kc.modelData.id]) }
                                     // where the service makes keys
-                                    Pill { visible: !kc.modelData.has && !!kc.modelData.page; icon: "external-link"; text: I18n.tr("Get a key"); onPressed: Qt.openUrlExternally(kc.modelData.page) } } }
+                                    Pill { visible: !kc.modelData.has && !!kc.modelData.page; icon: "external-link"; text: I18n.tr("Get a key"); onPressed: Quickshell.execDetached(["latte-open", String(kc.modelData.page)]) } } }
                             Label { visible: kc.failed; width: parent.width; wrapMode: Text.WordWrap; color: Theme.red; font.pixelSize: 12
                                     text: shell.keyError.error === "locked" ? I18n.tr("The key was not kept: the system's keyring is locked and did not open.") : I18n.tr("The key was not kept: the system's keyring did not take it.") }
                             ModelRows { width: parent.width; pid: kc.modelData.id } } } }
@@ -2016,7 +2118,7 @@ ShellRoot {
             Scroll {
                 id: memPage
                 visible: shell.section === "memory"
-                anchors.topMargin: 62
+                anchors.topMargin: 8; anchors.leftMargin: 244
                 readonly property var about: ({
                     basic: { icon: "notebook", what: QT_TR_NOOP("The AI writes what it should remember as notes in Markdown, which you read and change too. It needs no AI of its own and works offline.") },
                     everos: { icon: "brain", what: QT_TR_NOOP("Remembers by itself: the local model reads each conversation and keeps facts, your profile and what worked, in Markdown too. Each saving takes the local AI's time.") } })
@@ -2071,7 +2173,7 @@ ShellRoot {
             Scroll {
                 id: handsPage
                 visible: shell.section === "hands"
-                anchors.topMargin: 62
+                anchors.topMargin: 8; anchors.leftMargin: 244
                 readonly property var entries: DesktopEntries.applications.values.filter(e => !e.noDisplay).sort((a, b) => a.name.localeCompare(b.name))
                 function set(tool, scope, apps) { handsq.ask(["hands", "set", tool, scope].concat(scope === "apps" ? apps : [])) }
                 Label { width: handsPage.room; wrapMode: Text.WordWrap; color: Theme.dim
@@ -2115,7 +2217,7 @@ ShellRoot {
             Scroll {
                 id: gramPage
                 visible: shell.section === "agentgram"
-                anchors.topMargin: 62
+                anchors.topMargin: 8; anchors.leftMargin: 244
                 Rectangle { width: gramPage.room; height: 84; radius: 16; color: Theme.card; border.width: 1; border.color: shell.gram.on ? Theme.gold : Theme.line
                     Glyph { x: 18; name: "users-group"; font.pixelSize: 26; color: shell.gram.on ? Theme.gold : Theme.dim; anchors.verticalCenter: parent.verticalCenter }
                     Column { x: 58; width: parent.width - 58 - 80; spacing: 2; anchors.verticalCenter: parent.verticalCenter
@@ -2167,7 +2269,7 @@ ShellRoot {
             Scroll {
                 id: rulePage
                 visible: shell.section === "instructions"
-                anchors.topMargin: 62
+                anchors.topMargin: 8; anchors.leftMargin: 244
                 Label { width: rulePage.room; wrapMode: Text.WordWrap; color: Theme.dim
                         text: I18n.tr("What you write here goes with every question, to every AI, in LensGoo too: who you are, what you know, how you want to be answered. For example: “I am new to Linux, explain simply. Answer in Slovak.”") }
                 Rectangle { width: rulePage.room; height: 260; radius: 16; color: Theme.card; border.width: 1; border.color: ruleText.activeFocus ? Theme.gold : Theme.line
@@ -2181,14 +2283,20 @@ ShellRoot {
 
                 // LatteOS's skill for the agents (as Omarchy's): the user's own copy, which their agents read; Restore
                 // brings back LatteOS's own (the user's kept beside it)
+                // folded: a SKILL.md with its YAML head, in English, says nothing to most people (audit 21. 11.)
                 Item { width: 1; height: 12 }
-                Label { text: I18n.tr("LatteOS skill for the agents"); font.pixelSize: 17; font.weight: 800 }
-                Label { width: rulePage.room; wrapMode: Text.WordWrap; color: Theme.dim
+                property bool advanced: false
+                Rectangle { width: Math.min(rulePage.room, advRow.implicitWidth + 24); height: 38; radius: 10; color: advHit.containsMouse ? Theme.card : "transparent"
+                    Row { id: advRow; x: 8; spacing: 10; anchors.verticalCenter: parent.verticalCenter
+                        Glyph { name: rulePage.advanced ? "chevron-down" : "chevron-right"; font.pixelSize: 15; color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
+                        Label { text: I18n.tr("For the advanced") + ": " + I18n.tr("LatteOS skill for the agents"); font.pixelSize: 17; font.weight: 800; anchors.verticalCenter: parent.verticalCenter } }
+                    MouseArea { id: advHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: rulePage.advanced = !rulePage.advanced } }
+                Label { visible: rulePage.advanced; width: rulePage.room; wrapMode: Text.WordWrap; color: Theme.dim
                         text: I18n.tr("What Claude Code, Codex and Gemini know about LatteOS when you ask them for help with this computer: how it is built, what may be changed and how, and that they plan first and ask. Add your own rules at the end.") }
-                Rectangle { width: rulePage.room; height: 360; radius: 16; color: Theme.card; border.width: 1; border.color: skillText.activeFocus ? Theme.gold : Theme.line
+                Rectangle { visible: rulePage.advanced; width: rulePage.room; height: 360; radius: 16; color: Theme.card; border.width: 1; border.color: skillText.activeFocus ? Theme.gold : Theme.line
                     Flickable { ScrollGrip {} id: skillView; anchors.fill: parent; anchors.margins: 14; clip: true; contentHeight: skillText.implicitHeight; boundsBehavior: Flickable.StopAtBounds
                         TextEdit { id: skillText; width: parent.width; wrapMode: Text.Wrap; color: Theme.cream; font.family: "monospace"; font.pixelSize: 13; selectByMouse: true; selectionColor: Theme.coffee } } }
-                Row { spacing: 10
+                Row { spacing: 10; visible: rulePage.advanced
                     Pill { icon: "check"; strong: true; text: rulePage.skillSaved ? I18n.tr("Kept") : I18n.tr("Keep"); onPressed: { skillFile.setText(skillText.text); rulePage.skillSaved = true; skillKept.restart() } }
                     Pill { icon: "arrow-back-up"; text: I18n.tr("Restore LatteOS's own"); onPressed: skillReset.running = true } }
                 property bool skillSaved: false

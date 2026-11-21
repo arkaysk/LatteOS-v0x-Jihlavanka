@@ -1253,7 +1253,7 @@ ShellRoot {
                         text: goo.kept["lens_gif_key_" + gifPart.source] || ""; onAccepted: goo.set("lens_gif_key_" + gifPart.source, text.trim()) }
                 Pill { text: I18n.tr("Save the key"); icon: "check"; strong: true; onPressed: goo.set("lens_gif_key_" + gifPart.source, gifKey.text.trim()) }
                 Pill { text: I18n.tr("Where to get a key"); icon: "external-link"
-                       onPressed: Qt.openUrlExternally(gifPart.sources.find(x => x.id === gifPart.source).url) } }
+                       onPressed: Quickshell.execDetached(["latte-open", String(gifPart.sources.find(x => x.id === gifPart.source).url)]) } }
 
             Part { visible: shell.page === "lensshore"; width: view.room; title: I18n.tr("AI")
                    note: I18n.tr("Quick AI and LensShore's questions use LensAI's default model.")
@@ -1316,7 +1316,7 @@ ShellRoot {
                         Label { x: 44; text: modelData.name; font.weight: 700; anchors.verticalCenter: parent.verticalCenter }
                         Label { x: 190; width: parent.width - 330; text: I18n.tr(modelData.what); color: Theme.dim; font.pixelSize: 12; elide: Text.ElideRight; anchors.verticalCenter: parent.verticalCenter }
                         Pill { anchors.right: parent.right; anchors.rightMargin: 10; anchors.verticalCenter: parent.verticalCenter; text: I18n.tr("Open"); icon: "world-www"
-                               onPressed: Qt.openUrlExternally(modelData.url) } } } }
+                               onPressed: Quickshell.execDetached(["latte-open", String(modelData.url)]) } } } }
             Part { id: worldPart; visible: shell.page === "clockgoo"; width: view.room; title: I18n.tr("World clocks")
                    note: I18n.tr("Up to five; the first is home. Find any city or part of the world below, and name it as you like.")
                 Repeater { model: shell.page === "clockgoo" ? shell.worldClocks : []
