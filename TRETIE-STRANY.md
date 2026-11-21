@@ -20,7 +20,6 @@ V repozitári sú iba naše záplaty a doplnky k nim (`patches/`) — tie sa ria
 | [OpenDeck](https://github.com/nekename/OpenDeck), [OpenRazer](https://github.com/openrazer/openrazer), [Polychromatic](https://github.com/polychromatic/polychromatic), [CoolerControl](https://gitlab.com/coolercontrol/coolercontrol), [Solaar](https://github.com/pwr-Solaar/Solaar), [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB) | nástroje periférií: `install` ich iba inštaluje z ich repozitárov a vydaní, keď je zariadenie pripojené (ROADMAP 2.11) | GPL-2.0+ / GPL-3.0 |
 | [whyd](https://github.com/vmaltarello/whyd) | voliteľný samostatný program: prečo sa skončila minulá relácia (SAFE); LatteOS prikladá iba vlastné pravidlá `system/whyd/latteos.toml` | GPL-3.0-or-later |
 | [Noctalia](https://github.com/noctalia-dev/noctalia-shell) | rohová lišta, ovládacie centrum, OSD | MIT |
-| [Chaldea](https://github.com/Aleph1-9012/Chaldea) | widgety v `apps/widgets/`: vyexportované QML (`frontend/scripts/export.ts`), licencia a poznámky pri každom | widgety 0BSD, písma SIL OFL, aplikácia Apache-2.0 |
 | [Quickshell](https://github.com/quickshell-mirror/quickshell) | beh aplikácií LatteOS (QML) | LGPL-3.0 |
 | [labwc](https://github.com/labwc/labwc) | režim SAFE a prihlasovacia obrazovka | GPL-2.0 |
 | [Tabler Icons](https://github.com/tabler/tabler-icons) | ikony (písmo z Noctalie) | MIT |

@@ -2064,7 +2064,7 @@ local function shore_rows()
         -- with nothing typed, LensShore's home (6B.27): what can be done at once (the skills, by how things are now),
         -- the apps one keeps coming back to, the last conversations with the AI
         section({ { gap = 64, peg = true, right = function()
-            ctx.open({ { label = tr(N("Add a widget…")), glyph = "plus", run = function() then_do(function() run("latte-app", { "widgets" }, nil, { output = false }) end) end } }, { width = 240 })
+            ctx.open({ { label = tr(N("Add a widget…")), glyph = "plus", run = function() then_do(function() run("latte-goowidgets", {}, nil, { output = false }) end) end } }, { width = 240 })
         end } })
         local fav, most = picks(12, true)
         while #most > 6 do most[#most] = nil end
