@@ -26,6 +26,44 @@ LatteOS:2.x xxx
 
 # Poradie práce
 
+> **Od 21. 11. do verzie 0.6 iba opravy** (používateľ po CEO review, `docs/audit/2026-11-21/`): nové funkcie sa nepridávajú;
+> nový nápad ide na koniec svojej kategórie s poznámkou „0.6“. **Do 0.6 presunuté:** LPnP + DisplayKit (`docs/devices/LPNP-DISPLAYKIT.md`)
+> a všetky ešte nezrealizované veci kategórií. **Kaviareň zrušená** (kópia clodfarmu, nahrádza ju agentgram). **Heidelberg** je funkčný
+> od v0.1 — v poradí sa už nevedie ako nový. Poradie nižšie sa robí zhora a má prednosť pred fázami ďalej.
+>
+> **A. Pred inštaláciou na prvý PC (najbližšie dni)**
+>  1. Bezpečnosť `latte-mcp`: token skupiny iba čítať, bez tokenu 401 (ENGINEERING 2 = SECURITY S12); port skupiny ukladať s procesom
+>     (ENGINEERING 1); `thv list` mimo slučky požiadaviek (ENGINEERING 8).
+>  2. LensAI dáva svoje CLI/API aplikáciám OS a agentgramu (zámer: jedno prihlásenie do Claude Code za deň), ale **iba tomuto počítaču
+>     a povoleným počítačom**: párovanie `agenteschat://` len z karty agentgramu nastaveného servera + natívne potvrdenie (SECURITY S3,
+>     prvá časť hotová 21. 11.), brána MCP iba pre organizáciu vlastníka (S8).
+>  3. agentgram: synchronizácia projektu nesmie commitovať a pushovať do cudzieho `origin` (ENGINEERING 3); synchronizované
+>     `.claude/settings.json` s hookmi od iných členov nedôverovať (S7).
+>  4. Súbehy a zápisy: zámok denníka Ctrl+Z v `latte-files` (E4), rozhovor sa pred zápisom znova načíta (E5), prílohy s rovnakým menom
+>     (E10), atomické zápisy JSON z Goo a QML (E11), upratanie po zrušenom rozbaľovaní a presune (E6), rotácia `session.log` (E9).
+>  5. **Staré súborové systémy hráčov z Windowsu: NTFS, FAT32, exFAT** — LatteOS s nimi musí natívne fungovať bez problémov: presuny bez
+>     pevných odkazov (Chapolera `organize.rs`, E7), mená súborov, ktoré tieto systémy nedovolia, práva a vlastník, kôš na takom disku,
+>     sledovanie zmien; prejsť `latte-files`, DualBrew, Chapoleru, index a skúšku na skutočných diskoch.
+>  6. Odstrániť widgety z Chaldea (6B.41, `apps/widgets/`, `apps/widgets.qml`, FILES, TRETIE-STRANY) — pre LatteOS nevhodné.
+>  7. Dokumentácia: prejsť `docs/` a README, odstrániť zastarané (Hyprland, Noctalia, `session/` v `docs/ARCHITECTURE.md` a
+>     `docs/README.md`, „licencia nie je“ oproti GPL-3) a údaje, ktoré si navzájom odporujú.
+>  8. Osobné súbory: prejsť, čo je na GitHube (snímky s e-mailom, osobné poznámky, cesty), odobrať z repa (a pridať do `.gitignore`).
+>  9. Pred inštaláciou: skontrolovať najnovšie verzie potrebného softvéru a či treba záplatu; **pleamar a agentgram sa dobiehajú
+>     a záplatujú raz týždenne, v pondelok večer** (1D.17).
+> 10. Nainštalovať pomocníka CSO z gstack (`gstack-cso-launcher`) a spustiť `/cso` znova, so skenermi (Gitleaks, OSV, Semgrep).
+>
+> **B. Inštalácia na prvý PC**, keď pôjde, **potom na druhý (hlavné PC, RTX 3060, dva monitory)**. Všetky opravy z A a bezpečnosti nižšie
+> **musia byť hotové pred druhým PC.**
+> 11. Sandbox agenta (SECURITY S1): bez zbernice D-Bus používateľa, domov iba na čítanie okrem pracovného priečinka, chránené aj cesty,
+>     ktoré ešte neexistujú (`~/.config/autostart`, `~/.local/share/systemd`…), sieť podľa úlohy; tá istá funkcia pre projekty agentgramu (S7).
+> 12. ACP Registry (S4): `npm install --ignore-scripts`, premenné z registra iba povolené, sha256 povinné, cache mimo dosahu sandboxu.
+> 13. Povolenia (S5, S6): krok agenta podľa skutočného príkazu, nie podľa mena od agenta; povolenie relácie MCP viazané na token, nie na meno.
+> 14. `latte-open` iba http(s) a súbory (S9); zvyšok SECURITY S10–S15.
+> 15. Heslo sudo: na latte-lab ostáva zámerne čitateľné pre agenta (testovací PC, nie súkromný); na novom PC súkromné heslo, nie v súbore.
+>
+> **C. LatteSafe: zjednodušený LensAI** — jednoduché okno s chatom cez CLI/API, ktoré už sú prihlásené (bez nového prihlasovania), aby
+> človek v SAFE režime mohol požiadať AI o pomoc (patrí k SAFE, nie nová funkcia mimo neho).
+
 > **Stav po relácii 20. 11. (noc, Claude samostatne; necommitnuté, nasadené):** MCP spravuje **ToolHive** (10B.86: katalóg 818
 > serverov z Registry Servera, ktorý beží iba počas dennej synchronizácie; skupiny = konektory agentgramu cez `latte-mcp /mcp/SKUPINA`;
 > vlastný Store zrušený). LensAI: uspávanie webov v Nastaveniach + „Stále bdelá“ (10B.65), „Prestať čítať“ sa vráti samo (10B.76).

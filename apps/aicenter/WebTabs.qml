@@ -147,6 +147,11 @@ Item {
             // profile, and the page that asked still knows it (the sign-in finishes there); a link to a new window or
             // tab (a source in an answer) goes to the browser, as in any app of web pages
             onNewWindowRequested: request => {
+                const u = String(request.requestedUrl)
+                // LatteOS's own links only from agentgram's own tab: another page cannot pair this computer or open folders
+                // (security audit 21. 11., S3); ponytail: no confirmation yet when agentgram itself asks to pair
+                const mine = view.modelData.startsWith("agentgram")
+                if (!mine && /^(latteos|agenteschat):/.test(u)) return
                 // agentgram's "Open folder" (latteos://agentgram/folder?path=…): the project's folder in Files (latte-ai keeps
                 // it to ~/LensAI/agentgram, whatever the page asks)
                 if (u.startsWith("latteos://agentgram/folder?")) {

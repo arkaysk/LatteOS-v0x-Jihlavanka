@@ -612,3 +612,10 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
   pri agentgrame nebalí automaticky, iba tlačidlo; DM v agentgrame netreba; AI kurzor ostáva v ponuke; bodka API na záložke ostáva;
   pri poradí stránok Webu ostávajú šípky a pribudne ťahanie; skilly na jednom mieste; ikona ToolHive z tray sa presunie do LensAI
   (pod ToolHive Studio „ToolHive služba“ s tou istou ponukou); agentgram iba pridávaním, kvôli kompatibilite s pôvodným. Úlohy: 10B.88.
+- **Po auditoch 21. 11. (CEO, inžiniersky, bezpečnosť; `docs/audit/2026-11-21/`)** (21. 11., používateľ): do verzie 0.6 iba opravy,
+  žiadne nové funkcie. LPnP + DisplayKit a ostatné nezrealizované veci až v 0.6. Kaviareň zrušená (nahrádza ju agentgram); Heidelberg
+  funkčný od v0.1. Inštalácia najprv na prvý PC, potom na druhý; bezpečnostné a inžinierske opravy pred druhým. LatteOS musí natívne
+  fungovať s NTFS, FAT32 a exFAT. Widgety z Chaldea preč. Dokumentáciu očistiť od zastaraného a protirečivého; osobné súbory z GitHubu
+  preč. pleamar a agentgram sa záplatujú raz týždenne v pondelok večer. Heslo sudo na latte-lab je zámerne čitateľné pre agenta (testovací
+  PC); na novom PC súkromné. LensAI má dávať svoje CLI/API aplikáciám OS (jedno prihlásenie za deň), ale iba povoleným počítačom.
+  Pre LatteSafe zjednodušený LensAI (chat cez už prihlásené CLI/API). Pred inštaláciou na nový PC CSO z gstack so skenermi znova.
