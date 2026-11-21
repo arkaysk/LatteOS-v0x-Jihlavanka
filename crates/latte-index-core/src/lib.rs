@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use std::fs::{self, File, Metadata};
 use std::io::Read;
 use std::os::unix::fs::MetadataExt;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 const HASH_BUFFER_SIZE: usize = 1024 * 1024;
 
@@ -66,9 +66,12 @@ pub fn detect_signature(path: &Path) -> Result<Option<DetectedType>, String> {
         .map_err(|error| format!("could not read file signature for {}: {error}", path.display()))
 }
 
+/// `passed_over` gets each folder that could not be read (on Windows disks: System Volume Information, $RECYCLE.BIN,
+/// no permission): what was indexed under it must stay as it was, not count as missing.
 pub fn walk_visible_files(
     root: &Path,
     visitor: &mut impl FnMut(&Path) -> Result<(), String>,
+    passed_over: &mut Vec<PathBuf>,
 ) -> Result<usize, String> {
     use std::os::unix::fs::MetadataExt;
     // the root's own disk only: another disk, a network place or /proc under it is not walked into
@@ -81,7 +84,11 @@ pub fn walk_visible_files(
         let entries = fs::read_dir(&directory).and_then(|rd| rd.collect::<Result<Vec<_>, _>>());
         let mut entries = match entries {
             Ok(entries) => entries,
-            Err(error) if directory != root => { eprintln!("{}: {error}, passed over", directory.display()); continue }
+            Err(error) if directory != root => {
+                eprintln!("{}: {error}, passed over", directory.display());
+                passed_over.push(directory);
+                continue;
+            }
             Err(error) => return Err(format!("{}: {error}", directory.display())),
         };
         entries.sort_by_key(|entry| entry.file_name());
@@ -96,8 +103,10 @@ pub fn walk_visible_files(
             let path = entry.path();
             let Ok(file_type) = entry.file_type() else { continue };
             if file_type.is_dir() {
-                if entry.metadata().map(|m| m.dev() != device).unwrap_or(true) {
-                    continue;
+                match entry.metadata() {
+                    Ok(m) if m.dev() == device => {}
+                    Ok(_) => continue,
+                    Err(_) => { passed_over.push(path); continue }
                 }
                 subfolders += 1;
                 subdirectories.push(path);
@@ -120,7 +129,6 @@ fn hidden_names(directory: &Path) -> HashSet<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::path::PathBuf;
     use std::sync::atomic::{AtomicU64, Ordering};
 
     static NEXT_TEMP_ID: AtomicU64 = AtomicU64::new(0);
@@ -156,11 +164,13 @@ mod tests {
         fs::write(directory.join("visible/a.txt"), "visible").unwrap();
 
         let mut paths = Vec::new();
+        let mut passed_over = Vec::new();
         let subfolders = walk_visible_files(&directory, &mut |path| {
             paths.push(path.strip_prefix(&directory).unwrap().to_path_buf());
             Ok(())
-        })
+        }, &mut passed_over)
         .unwrap();
+        assert!(passed_over.is_empty());
 
         assert_eq!(subfolders, 1);
         assert_eq!(paths, [PathBuf::from("visible/a.txt")]);

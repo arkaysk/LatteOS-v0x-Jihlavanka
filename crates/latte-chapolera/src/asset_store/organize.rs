@@ -1,6 +1,6 @@
 //! Taxonomy planner and journaled, reversible organizer.
 //! The plan is deterministic (no generative model needed); LensAI may later only rename/merge categories.
-//! Nothing moves until `apply`; a move never overwrites (hard_link fails if the target exists), and `undo`
+//! Nothing moves until `apply`; a move never overwrites (link, rename and copy all refuse an existing target), and `undo`
 //! restores only files whose content still matches the recorded hash.
 use super::{default_database_path, open_database};
 use latte_index_core::sha256_file;
@@ -18,15 +18,15 @@ fn now() -> i64 {
     SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs() as i64).unwrap_or(0)
 }
 
-/// Folder-safe category name: no separators or control characters, bounded length.
+/// Folder-safe category name: no separators, control characters or what FAT/exFAT/NTFS refuse, bounded length.
 fn folder_name(label: &str) -> Option<String> {
     let cleaned: String = label
         .chars()
-        .map(|c| if c == '/' || c == '\\' || c.is_control() { ' ' } else { c })
+        .map(|c| if "/\\:*?\"<>|".contains(c) || c.is_control() { ' ' } else { c })
         .collect();
     let cleaned = cleaned.split_whitespace().collect::<Vec<_>>().join(" ");
     let cleaned: String = cleaned.chars().take(64).collect();
-    let cleaned = cleaned.trim_matches('.').trim().to_string();
+    let cleaned = cleaned.trim_matches(|c| c == '.' || c == ' ').to_string();
     (!cleaned.is_empty()).then_some(cleaned)
 }
 
@@ -304,27 +304,60 @@ fn set_move(connection: &Connection, plan_id: i64, asset_id: i64, status: &str, 
         .map_err(|e| e.to_string())
 }
 
-/// Atomic, never overwrites: link at the target fails if it exists; then the source name is removed.
-/// Also finishes a move interrupted between link and unlink (target already is the same file).
+/// Never overwrites. Same disk: a hard link, or `renameat2(RENAME_NOREPLACE)` where links do not exist (FAT32, exFAT,
+/// often NTFS); another disk: copy with `create_new`, check the hash, then remove the source.
+/// Also finishes a move interrupted earlier (target already holds the very content).
 fn move_no_clobber(from: &Path, to: &Path, sha256: &str) -> Result<(), String> {
     if let Some(dir) = to.parent() {
         fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
     }
-    match fs::hard_link(from, to) {
-        Ok(()) => fs::remove_file(from).map_err(|e| format!("{}: {e}", from.display())),
-        Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {
-            use std::os::unix::fs::MetadataExt;
-            match (fs::metadata(from), fs::metadata(to)) {
-                (Ok(a), Ok(b)) if a.ino() == b.ino() && a.dev() == b.dev() => {
-                    fs::remove_file(from).map_err(|e| format!("{}: {e}", from.display()))
-                }
-                // source already gone, target is the very content we moved: interrupted earlier
-                (Err(e), Ok(_)) if e.kind() == std::io::ErrorKind::NotFound && sha256_file(to).map(|h| h == sha256).unwrap_or(false) => Ok(()),
-                _ => Err(format!("{} already exists", to.display())),
-            }
-        }
-        Err(e) => Err(format!("{}: {e}", from.display())),
+    let remove_source = || fs::remove_file(from).map_err(|e| format!("{}: {e}", from.display()));
+    let error = match fs::hard_link(from, to) {
+        Ok(()) => return remove_source(),
+        Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => e,
+        Err(_) => match rename_noreplace(from, to) {
+            Ok(()) => return Ok(()),
+            Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => e,
+            // EXDEV, or a filesystem without the flag (EINVAL, ntfs-3g through FUSE)
+            Err(_) => return copy_verify_remove(from, to, sha256),
+        },
+    };
+    use std::os::unix::fs::MetadataExt;
+    match (fs::metadata(from), fs::metadata(to)) {
+        (Ok(a), Ok(b)) if a.ino() == b.ino() && a.dev() == b.dev() => remove_source(),
+        // a copy finished before a crash: the source is the analysed file and the target holds the same bytes
+        (Ok(_), Ok(_)) if sha256_file(to).is_ok_and(|h| h == sha256) && sha256_file(from).is_ok_and(|h| h == sha256) => remove_source(),
+        // source already gone, target is the very content we moved: interrupted earlier
+        (Err(e), Ok(_)) if e.kind() == std::io::ErrorKind::NotFound && sha256_file(to).map(|h| h == sha256).unwrap_or(false) => Ok(()),
+        _ => Err(format!("{}: {error}", to.display())),
     }
+}
+
+fn rename_noreplace(from: &Path, to: &Path) -> std::io::Result<()> {
+    use std::ffi::CString;
+    let (a, b) = (CString::new(from.as_os_str().as_bytes())?, CString::new(to.as_os_str().as_bytes())?);
+    // SAFETY: both are valid NUL-terminated paths that live through the call
+    let rc = unsafe { libc::renameat2(libc::AT_FDCWD, a.as_ptr(), libc::AT_FDCWD, b.as_ptr(), libc::RENAME_NOREPLACE) };
+    if rc == 0 { Ok(()) } else { Err(std::io::Error::last_os_error()) }
+}
+
+fn copy_verify_remove(from: &Path, to: &Path, sha256: &str) -> Result<(), String> {
+    let mut source = fs::File::open(from).map_err(|e| format!("{}: {e}", from.display()))?;
+    let mut target = fs::OpenOptions::new().write(true).create_new(true).open(to).map_err(|e| format!("{}: {e}", to.display()))?;
+    // from here on `to` is our own new file: on any failure it is removed and the source stays
+    let copied = std::io::copy(&mut source, &mut target).and_then(|_| target.sync_all());
+    if let Err(e) = copied {
+        let _ = fs::remove_file(to);
+        return Err(format!("{}: {e}", to.display()));
+    }
+    if let Ok(modified) = source.metadata().and_then(|m| m.modified()) {
+        let _ = target.set_modified(modified); // FAT keeps 2 s steps; a time that does not stick is no reason to fail
+    }
+    if !sha256_file(to).is_ok_and(|h| h == sha256) {
+        let _ = fs::remove_file(to);
+        return Err(format!("{}: copy does not match the original, source kept", to.display()));
+    }
+    fs::remove_file(from).map_err(|e| format!("{}: {e}", from.display()))
 }
 
 #[cfg(test)]
@@ -397,5 +430,36 @@ mod tests {
         assert_eq!(fs::read(root.join("p0.png")).unwrap(), b"edited after the analysis");
         assert!(root.join("landscape/p1.png").exists());
         let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn fallbacks_without_hard_links_never_overwrite() {
+        let dir = std::env::temp_dir().join(format!("chapolera-noreplace-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        let (a, b, c) = (dir.join("a.png"), dir.join("b.png"), dir.join("c.png"));
+        fs::write(&a, b"photo").unwrap();
+        fs::write(&b, b"other").unwrap();
+        let sha = sha256_file(&a).unwrap();
+        assert_eq!(rename_noreplace(&a, &b).unwrap_err().kind(), std::io::ErrorKind::AlreadyExists);
+        assert!(copy_verify_remove(&a, &b, &sha).is_err());
+        assert_eq!(fs::read(&b).unwrap(), b"other");
+        assert!(copy_verify_remove(&a, &c, "wrong hash").is_err());
+        assert!(a.exists() && !c.exists(), "a copy that does not match is removed, the source kept");
+        copy_verify_remove(&a, &c, &sha).unwrap();
+        assert!(!a.exists() && fs::read(&c).unwrap() == b"photo");
+        match rename_noreplace(&c, &a) {
+            // ntfs-3g through FUSE has no RENAME_NOREPLACE: move_no_clobber copies there instead
+            Err(e) if e.raw_os_error() == Some(libc::EINVAL) => {}
+            done => { done.unwrap(); assert!(a.exists() && !c.exists()); }
+        }
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn category_folders_fit_windows_disks() {
+        assert_eq!(folder_name("cats: \"big\" <3?").as_deref(), Some("cats big 3"));
+        assert_eq!(folder_name(" a. ").as_deref(), Some("a"));
+        assert_eq!(folder_name("..."), None);
     }
 }

@@ -14,6 +14,7 @@ python3 tests/test_acp.py
 python3 tests/test_local_models.py
 python3 tests/test_mcp.py
 python3 tests/test_skill_named.py
+sh tests/test_files_winfs.sh
 for f in bin/*; do
     case "$(head -1 "$f")" in *python*) python3 -c 'import sys; compile(open(sys.argv[1]).read(), sys.argv[1], "exec")' "$f" ;; *) bash -n "$f" ;; esac
 done

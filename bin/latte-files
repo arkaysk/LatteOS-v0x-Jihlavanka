@@ -81,8 +81,39 @@
 #   latte-files tree DIR              how much everything in that folder holds, three levels deep: first "disk", a tab,
 #                                     the disk's SIZE, a tab, what is FREE; "dir", a tab, PATH for every folder; then a line
 #                                     each as du gets there, BYTES, a tab, PATH
-free_name() {   # DIR NAME: that name, or the first "NAME (n)" nothing has yet
-    d="$1"; n="$2"; base="${n%.*}"; ext=""; [ "$base" != "$n" ] && ext=".${n##*.}"
+# DIR is on a Windows disk (FAT32, exFAT, NTFS; fuseblk is ntfs-3g or exfat-fuse in practice, as GNOME Files takes it)
+winfs() { case "$(findmnt -no FSTYPE -T "$1" 2>/dev/null)" in vfat|msdos|exfat|ntfs|ntfs3|fuseblk) return 0 ;; esac; return 1; }
+# DIR NAME: NAME as DIR's disk can keep it. On a Windows disk, as GNOME Files does (make_file_name_valid_for_dest_fs):
+# : * ? " < > | \ and control characters become _, trailing spaces go; and as Windows wants, trailing dots go (vfat would
+# drop them itself and land on another file) and CON, PRN, AUX, NUL, COM1-9, LPT1-9 get a _
+fit() { winfs "$1" || { printf '%s' "$2"; return; }
+    n="$(printf '%s' "$2" | tr '\n' _ | sed 's/[[:cntrl:]:*?"<>|\\]/_/g; s/[. ]*$//')"; n="${n:-_}"
+    b="${n%%.*}"; case "$(printf '%s' "$b" | tr a-z A-Z)" in CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9]) n="${b}_${n#"$b"}" ;; esac
+    printf '%s' "$n"
+}
+# SRC DIR: the first name inside the folder SRC that a Windows disk DIR cannot keep (fit would change it), else nothing.
+# Such a copy is refused whole, said once, rather than left half done (the top name itself is fitted by aim).
+unfit() { winfs "$2" && [ -d "$1" ] && [ ! -L "$1" ] && [ "$(stat -c %d -- "$1")" != "$(stat -c %d -- "$2")" ] || return 0
+    find "$1" -mindepth 1 \( -name '*[:*?"<>|\\]*' -o -name "*[$(printf '\001-\037')]*" -o -name '*[. ]' \
+        -o -iregex '.*/\(con\|prn\|aux\|nul\|com[1-9]\|lpt[1-9]\)\(\..*\)?' \) -print -quit 2>/dev/null; }
+unfit_said="A name inside cannot be kept on a FAT, exFAT or NTFS disk"
+# FAT and exFAT keep no symbolic or hard links: what a link points to is copied instead, each hard link as a file of its
+# own (Windows has neither to keep); owner and mode the disk cannot keep are passed over by cp itself, not an error
+deref() { winfs "$1" && printf '%s' '-L --no-preserve=links'; }
+# DIR SRC: a move onto another disk that is a Windows disk (mv would keep links and leave half a folder there when one fails)
+crossing() { winfs "$1" && [ "$(stat -c %d -- "$2")" != "$(stat -c %d -- "$1")" ]; }
+# SRC TO: moved; onto a Windows disk elsewhere a copy as that disk can keep it, then the original goes, or else the half copy
+mvw() { crossing "$(dirname -- "$2")" "$1" || { mv -n -- "$1" "$2"; return; }
+        if cp -a $(deref "$(dirname -- "$2")") -- "$1" "$2"; then rm -rf -- "$1"; else rm -rf -- "$2"; return 1; fi; }
+# FROM TO, never over another file. On a disk that ignores case (FAT, exFAT) TO can be FROM in other letters: mv would
+# do nothing then, so it goes through a free name; a name that is truly another file's stays an error
+rn() { if [ "$1" -ef "$2" ] && [ "$1" != "$2" ]; then
+           m="$(free_name "$(dirname -- "$1")" ".$(basename -- "$2").renaming")"; mv -n -- "$1" "$m" || return 1
+           mv -n -- "$m" "$2"; if [ -e "$m" ]; then mv -n -- "$m" "$1"; return 1; fi; return 0
+       fi
+       { [ -e "$2" ] || [ -L "$2" ]; } && return 1; mv -n -- "$1" "$2"; }
+free_name() {   # DIR NAME: that name (as the disk can keep it), or the first "NAME (n)" nothing has yet
+    d="$1"; n="$(fit "$1" "$2")"; base="${n%.*}"; ext=""; [ "$base" != "$n" ] && ext=".${n##*.}"
     t="$d/$n"; i=2
     while [ -e "$t" ]; do t="$d/$base ($i)$ext"; i=$((i + 1)); done
     printf '%s' "$t"
@@ -104,12 +135,14 @@ did() { [ "${LATTE_UNDO:-}" = - ] && return 0
 # default: nothing is lost), replace (the one there goes to the Trash), older (replaced only when it is older), skip.
 # Nothing printed: skipped.
 aim() {
-    t="$2/$(basename -- "$1")"
+    t="$2/$(fit "$2" "$(basename -- "$1")")"
     { [ -e "$t" ] || [ -L "$t" ]; } || { printf '%s' "$t"; return; }
     [ "$t" -ef "$1" ] && { free_name "$2" "$(basename -- "$1")"; return; }        # onto itself: a copy beside it
     case "${LATTE_CONFLICT:-both}" in
     skip)    return ;;
-    older)   [ "$1" -nt "$t" ] || return; gio trash -- "$t" && did trashed "$t" && printf '%s' "$t" ;;
+    older)   # FAT keeps time in 2 s steps: a copy made before is not "older" for being rounded down
+             if winfs "$2"; then [ "$(stat -c %Y -- "$1")" -gt $(( $(stat -c %Y -- "$t") + 1 )) ]; else [ "$1" -nt "$t" ]; fi || return
+             gio trash -- "$t" && did trashed "$t" && printf '%s' "$t" ;;
     replace) gio trash -- "$t" && did trashed "$t" && printf '%s' "$t" ;;
     *)       free_name "$2" "$(basename -- "$1")" ;;
     esac
@@ -216,7 +249,13 @@ PY
 mount)  case "$1" in
         rclone:*) r="${1#rclone:}"; at="$HOME/Cloud/$r"; mkdir -p -- "$at"
                   rclone mount "$r:" "$at" --vfs-cache-mode full --daemon && printf '%s\n' "$at" ;;
-        *)        udisksctl mount -b "$1" --no-user-interaction | sed -n 's/^Mounted .* at \(.*\)$/\1/p' ;;
+        *)        out="$(udisksctl mount -b "$1" --no-user-interaction 2>&1)"
+                  at="$(printf '%s\n' "$out" | sed -n 's/^Mounted .* at \(.*\)$/\1/p')"; [ -n "$at" ] && printf '%s\n' "$at"
+                  # NTFS that Windows left in use (Fast Startup, hibernation): ntfs-3g opens it only to read, ntfs3 not at
+                  # all; said in words a Windows user knows, the last line of stderr (DualBrew shows it translated)
+                  [ "$(lsblk -no FSTYPE -- "$1" 2>/dev/null)" = ntfs ] || { [ -n "$at" ] || { printf '%s\n' "$out" >&2; exit 1; }; exit 0; }
+                  if [ -z "$at" ]; then printf '%s\n%s\n' "$out" "This Windows disk could not be opened. Usually Windows did not shut down fully (Fast Startup or hibernation): start Windows and shut it down while holding Shift, or turn Fast Startup off" >&2; exit 1; fi
+                  case "$(findmnt -no OPTIONS -T "$at")" in ro|ro,*) echo "Windows did not shut down fully (Fast Startup or hibernation), so this disk opens only for reading. Start Windows and shut it down while holding Shift, or turn Fast Startup off" >&2 ;; esac ;;
         esac ;;
 eject)  case "$2" in
         rclone:*) fusermount3 -u -- "$1" 2>/dev/null || fusermount -u -- "$1" ;;
@@ -271,18 +310,23 @@ tags)   getfattr -h -m '^user\.xdg\.tags$' -d --absolute-names -- "$1"/* "$1"/.[
 cloud)  [ "$1" = add ] || exit 2
         case "$2" in google) t=drive ;; onedrive) t=onedrive ;; dropbox) t=dropbox ;; *) exit 2 ;; esac
         rclone config create "$3" "$t" && "$0" mount "rclone:$3" ;;
-copy)   d="$1"; shift; for f in "$@"; do t="$(aim "$f" "$d")"; [ -n "$t" ] && cp -a -- "$f" "$t" && did made "$t"; done ;;
-move)   d="$1"; shift; for f in "$@"; do t="$(aim "$f" "$d")"; [ -n "$t" ] && mv -n -- "$f" "$t" && did moved "$f" "$t"; done ;;
-clashes) d="$1"; shift; for f in "$@"; do n="$(basename -- "$f")"; { [ -e "$d/$n" ] || [ -L "$d/$n" ]; } && ! [ "$d/$n" -ef "$f" ] && printf '%s\n' "$n"; done ;;
+copy|move) d="$1"; shift; e=0
+        for f in "$@"; do
+            bad="$(unfit "$f" "$d")"; [ -n "$bad" ] && { printf '%s\n%s\n' "$bad" "$unfit_said" >&2; e=1; continue; }
+            t="$(aim "$f" "$d")"; [ -n "$t" ] || continue
+            if [ "$what" = copy ]; then cp -a $(deref "$d") -- "$f" "$t" && did made "$t" || e=1
+            else mvw "$f" "$t" && did moved "$f" "$t" || e=1; fi
+        done; exit "$e" ;;
+clashes) d="$1"; shift; for f in "$@"; do n="$(fit "$d" "$(basename -- "$f")")"; { [ -e "$d/$n" ] || [ -L "$d/$n" ]; } && ! [ "$d/$n" -ef "$f" ] && printf '%s\n' "$n"; done ;;
 link)   d="$1"; shift; for f in "$@"; do t="$(free_name "$d" "$(basename "$f")")"; ln -s -- "$f" "$t" && did made "$t"; done ;;
 trash)  for f in "$@"; do gio trash -- "$f" && did trashed "$f"; done ;;
 empty)  gio trash --empty ;;
 folder) t="$(free_name "$1" "$2")"; mkdir -- "$t" && did made "$t" && printf '%s\n' "$t" ;;
 file)   t="$(free_name "$1" "$2")"; : > "$t" && did made "$t" && printf '%s\n' "$t" ;;
 rename) case "$2" in */*|"") exit 2 ;; esac
-        t="$(dirname "$1")/$2"; [ -e "$t" ] && exit 1; mv -n -- "$1" "$t" && did moved "$1" "$t" ;;
+        t="$(dirname "$1")/$(fit "$(dirname "$1")" "$2")"; [ "$t" = "$1" ] && exit 0; rn "$1" "$t" && did moved "$1" "$t" ;;
 renames) while [ $# -ge 2 ]; do
-            case "$2" in */*|"") ;; *) t="$(dirname "$1")/$2"; [ -e "$t" ] || { mv -n -- "$1" "$t" && did moved "$1" "$t"; } ;; esac
+            case "$2" in */*|"") ;; *) t="$(dirname "$1")/$(fit "$(dirname "$1")" "$2")"; [ "$t" = "$1" ] || { rn "$1" "$t" && did moved "$1" "$t"; } ;; esac
             shift 2
         done ;;
 recent) python3 -I - "${XDG_DATA_HOME:-$HOME/.local/share}/recently-used.xbel" <<'PY'
@@ -375,9 +419,10 @@ paste)  c="$(wl-paste -t x-special/gnome-copied-files 2>/dev/null)" || c="$(wl-p
         mode="$(printf '%s\n' "$c" | head -n1)"
         printf '%s\n' "$c" | grep '^file://' | while IFS= read -r u; do
             f="$(printf '%b' "$(printf '%s' "${u#file://}" | sed 's/%/\\x/g')")"
+            bad="$(unfit "$f" "$1")"; [ -n "$bad" ] && { printf '%s\n%s\n' "$bad" "$unfit_said" >&2; continue; }
             t="$(aim "$f" "$1")"; [ -n "$t" ] || continue
-            if [ "$mode" = cut ]; then mv -n -- "$f" "$t" && did moved "$f" "$t"
-            else cp -a -- "$f" "$t" && did made "$t"; fi
+            if [ "$mode" = cut ]; then mvw "$f" "$t" && did moved "$f" "$t"
+            else cp -a $(deref "$1") -- "$f" "$t" && did made "$t"; fi
         done ;;
 job)    how="$1"; d="$2"; shift 2
         case "$how" in split|join)
@@ -441,20 +486,25 @@ job)    how="$1"; d="$2"; shift 2
             name="$(basename -- "$f")"; echo "file $name"
             size="$(du -sb -- "$f" 2>/dev/null | cut -f1)"
             way="$how"; [ "$how" = auto ] && { [ "$(stat -c %d -- "$f")" = "$on" ] && way=move || way=copy; }
+            gone=; [ "$way" = move ] && crossing "$d" "$f" && { way=copy; gone=1; }     # copied, the original goes after
+            bad="$(unfit "$f" "$d")"; [ -n "$bad" ] && { echo "unfit $(basename -- "$bad")"; echo "failed $name"; before=$((before + ${size:-0})); echo "done $before"; continue; }
             t="$(aim "$f" "$d")"
             if [ -z "$t" ]; then before=$((before + ${size:-0})); echo "done $before"; continue; fi
             # the target is always new (a taken name was moved aside or left): stopped half way, a half copy is taken away
             # a move to another disk is a copy first (mv): while the original is still there, the half at the target goes too
             trap 'kill "$pid" 2>/dev/null; wait "$pid" 2>/dev/null; { [ "$way" = copy ] || [ -e "$f" ]; } && rm -rf -- "$t"; exit 1' TERM
-            if [ "$way" = move ]; then mv -n -- "$f" "$t" & pid=$!; else cp -a -- "$f" "$t" & pid=$!; fi
+            if [ "$way" = move ]; then mv -n -- "$f" "$t" & pid=$!; else cp -a $(deref "$d") -- "$f" "$t" & pid=$!; fi
             # how far: what has arrived so far; a move on the same disk is done at once
             while kill -0 "$pid" 2>/dev/null; do
                 now="$(du -sb -- "$t" 2>/dev/null | cut -f1)"; echo "done $((before + ${now:-0}))"; sleep 0.4
             done
-            if wait "$pid"; then if [ "$way" = move ]; then did moved "$f" "$t"; else did made "$t"; fi
+            if wait "$pid"; then
                 # LATTE_VERIFY=1: a copy is read back and compared with what it came from, byte by byte
-                if [ "${LATTE_VERIFY:-}" = 1 ] && [ "$way" = copy ]; then diff -rq -- "$f" "$t" >/dev/null 2>&1 || echo "failed $name"; fi
-            else echo "failed $name"; fi
+                if [ "${LATTE_VERIFY:-}" = 1 ] && [ "$way" = copy ] && ! diff -rq -- "$f" "$t" >/dev/null 2>&1; then
+                    echo "failed $name"; if [ -n "$gone" ]; then rm -rf -- "$t"; else did made "$t"; fi
+                elif [ -n "$gone" ]; then rm -rf -- "$f"; did moved "$f" "$t"
+                elif [ "$way" = move ]; then did moved "$f" "$t"; else did made "$t"; fi
+            else echo "failed $name"; [ -n "$gone" ] && rm -rf -- "$t"; fi
             before=$((before + ${size:-0})); echo "done $before"
         done ;;
 tree)   df -B1 --output=size,avail -- "$1" 2>/dev/null | tail -n1 | awk '{ printf "disk\t%s\t%s\n", $1, $2 }'
@@ -495,8 +545,8 @@ PY
             case "$what:$kind" in
             undo:skill)   latte-skill do "${was%% *}" "${was#* }" ;;
             redo:skill)   latte-skill do "${is%% *}" "${is#* }" ;;
-            undo:moved)   [ -e "$was" ] || mv -n -- "$is" "$was" ;;
-            redo:moved)   [ -e "$is" ] || mv -n -- "$was" "$is" ;;
+            undo:moved)   rn "$is" "$was" ;;
+            redo:moved)   rn "$was" "$is" ;;
             undo:made|redo:trashed)  { [ -e "$was" ] || [ -L "$was" ]; } && gio trash -- "$was" ;;
             undo:trashed|redo:made)  restore "$was" || echo "not in the Trash any more, or its place is taken: $was" >&2 ;;
             esac

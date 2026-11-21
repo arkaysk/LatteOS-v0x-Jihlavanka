@@ -41,7 +41,14 @@ LatteOS:2.x xxx
 >     `.claude/settings.json` s hookmi od iných členov nedôverovať (S7).
 >  4. Súbehy a zápisy: zámok denníka Ctrl+Z v `latte-files` (E4), rozhovor sa pred zápisom znova načíta (E5), prílohy s rovnakým menom
 >     (E10), atomické zápisy JSON z Goo a QML (E11), upratanie po zrušenom rozbaľovaní a presune (E6), rotácia `session.log` (E9).
->  5. **Staré súborové systémy hráčov z Windowsu: NTFS, FAT32, exFAT** — LatteOS s nimi musí natívne fungovať bez problémov: presuny bez
+>  5. [x] 21. 11. (skúšané na skutočných obrazoch vfat, exfat, ntfs3 aj ntfs-3g): Chapolera presúva bez pevných odkazov
+>     (renameat2 NOREPLACE, inak kópia + SHA-256 + zmazanie, nikdy neprepíše); LatteIndex a Chapolera: súbory pod nečitateľným
+>     priečinkom ostanú prítomné (10a a); `latte-files`: mená, ktoré Windows disk neudrží, ako GNOME Files (`_`, rezervované
+>     mená), priečinok s takým menom odmietnutý celý, zmena iba veľkosti písmen cez medzimeno, odkazy ako súbory, presun na iný
+>     disk celý alebo nič, rezerva 2 s pre čas na FAT, kôš na disku overený; NTFS po rýchlom spustení Windowsu — preložená veta,
+>     prečo a čo urobiť; test `tests/test_files_winfs.sh`. **Ostáva (0.6, optimalizácia/funkcie):** odtlačok bez dev/inode na FAT
+>     (po zasunutí USB sa všetko prepočíta), štítky na FAT (bez xattr), preklad chýb `latte-files` na ploche, skúška so skutočným
+>     USB cez udisks v živej relácii. Pôvodne: **Staré súborové systémy hráčov z Windowsu: NTFS, FAT32, exFAT** — LatteOS s nimi musí natívne fungovať bez problémov: presuny bez
 >     pevných odkazov (Chapolera `organize.rs`, E7), mená súborov, ktoré tieto systémy nedovolia, práva a vlastník, kôš na takom disku,
 >     sledovanie zmien; prejsť `latte-files`, DualBrew, Chapoleru, index a skúšku na skutočných diskoch.
 >  6. Odstrániť widgety z Chaldea (6B.41, `apps/widgets/`, `apps/widgets.qml`, FILES, TRETIE-STRANY) — pre LatteOS nevhodné.
@@ -57,7 +64,7 @@ LatteOS:2.x xxx
 >     a záplatujú raz týždenne, v pondelok večer** (1D.17).
 > 10. [~] 21. 11.: `gstack-cso-launcher` zostavený (chýbal `glibc-static`, doinštalovaný); `/cso` beží znova → `SECURITY-2.md`.
 >     Pôvodne: Nainštalovať pomocníka CSO z gstack (`gstack-cso-launcher`) a spustiť `/cso` znova, so skenermi (Gitleaks, OSV, Semgrep).
-> 10a. Nezávislá kontrola (GPT, 21. 11.), overené: (a) LatteIndex — súbory v nečitateľnom podpriečinku ostanú `present = 0`
+> 10a. Nezávislá kontrola (GPT, 21. 11.), overené: (a) [x] LatteIndex — súbory v nečitateľnom podpriečinku ostanú `present = 0`
 >     (`latte-index/src/lib.rs:53`, `latte-index-core/src/lib.rs:84`): číslo skenu, chýbajúce až po prejdení, preskočené vetvy bez zmeny;
 >     (b) [x] `latte-mcp` spoločný `CALLER` pri súbežných volaniach (`:640`) → `contextvars`; (c) [x] 21. 11. `latte-skill` vyberá zariadenie podľa časti
 >     mena oboma smermi (`:184`) → presná alebo jediná zhoda, inak sa opýtať, potom ID.

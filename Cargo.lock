@@ -1428,6 +1428,7 @@ dependencies = [
  "candle-transformers",
  "image",
  "latte-index-core",
+ "libc",
  "rusqlite",
  "serde_json",
  "sha2",

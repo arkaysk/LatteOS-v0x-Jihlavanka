@@ -203,7 +203,9 @@ ShellRoot {
     Timer { interval: 4000; repeat: true; running: true; onTriggered: shell.reloadPlaces() }   // a stick put in shows up
     // a drive not yet mounted is mounted when it is pressed, and the panel goes there
     Process { id: mounter; property var then: null
-              stdout: StdioCollector { onStreamFinished: { const at = this.text.trim(); shell.reloadPlaces(); if (at.startsWith("/")) shell.here.go(at) } } }
+              stdout: StdioCollector { onStreamFinished: { const at = this.text.trim(); shell.reloadPlaces(); if (at.startsWith("/")) shell.here.go(at) } }
+              // why a drive did not open, or opens only to read (an NTFS disk Windows left in use): the last line, translated
+              stderr: StdioCollector { onStreamFinished: { const why = this.text.trim().split("\n").pop(); if (why) shell.say(I18n.tr(why)) } } }
     function reach(pl) {
         if (pl.path !== "") return here.go(pl.path)
         mounter.running = false; mounter.command = ["latte-files", "mount", pl.device]; mounter.running = true
@@ -253,11 +255,15 @@ ShellRoot {
             const sp = line.indexOf(" "), k = line.slice(0, sp), v = line.slice(sp + 1), j = Object.assign({}, shell.job)
             if (k === "total") j.total = parseInt(v); else if (k === "done") j.done = parseInt(v); else if (k === "file") j.name = v
             else if (k === "failed") shell.failed = shell.failed.concat([v])
+            else if (k === "unfit") shell.unfit = v
             shell.job = j } }
         onExited: { left.again(); right.again()
-                    if (shell.failed.length) { shell.say(I18n.tr("Not done: {n}", { n: shell.failed.join(", ") })); shell.failed = [] }
+                    if (shell.failed.length) { shell.say(I18n.tr("Not done: {n}", { n: shell.failed.join(", ") })
+                        + (shell.unfit ? " — " + I18n.tr("the name “{name}” inside cannot be kept on a FAT, exFAT or NTFS disk", { name: shell.unfit }) : "")); shell.failed = [] }
+                    shell.unfit = ""
                     shell.nextJob() } }
     property var failed: []                    // what the job under way could not do, said when it ends
+    property string unfit: ""                  // a name inside that a Windows disk cannot keep (why a folder was not copied)
     // what is asked when names are taken: { how, to, files, names }
     property var clash: null
     Process { id: clasher; property var pending: null
@@ -394,7 +400,7 @@ ShellRoot {
     Process { id: doer
         stderr: StdioCollector { id: doerErr }
         onExited: code => {
-            if (code !== 0) shell.say(I18n.tr("It did not go through: {what}", { what: doerErr.text.trim().split("\n").pop() || doer.command[1] }))
+            if (code !== 0) shell.say(I18n.tr("It did not go through: {what}", { what: I18n.tr(doerErr.text.trim().split("\n").pop() || doer.command[1]) }))
             if (shell.queued.length) { doer.command = shell.queued[0]; shell.queued = shell.queued.slice(1); doer.running = true }
             else { left.again(); right.again() } } }
     function act(args) { const c = ["latte-files"].concat(args); if (doer.running) queued = queued.concat([c]); else { doer.command = c; doer.running = true } }

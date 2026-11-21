@@ -227,7 +227,8 @@ pub(super) fn scan_with_database(
     let now = unix_seconds()?;
     let mut counts = Counts::default();
     let mut tool_versions = ToolVersions::default();
-    counts.subfolders = visit_files(&root, &mut |file| {
+    let mut passed_over = Vec::new();
+    counts.subfolders = visit_files(&root, &mut passed_over, &mut |file| {
         counts.total += 1;
         let previous = load_asset_at_path(&transaction, root_id, &file.path_key)?;
         let unchanged = previous
@@ -341,6 +342,18 @@ pub(super) fn scan_with_database(
         add_family_count(&mut counts, &media_family);
         Ok(())
     })?;
+    // what was present under a folder this scan could not read (System Volume Information, no permission) stays present
+    for folder in &passed_over {
+        let mut prefix = folder.as_os_str().as_bytes().to_vec();
+        prefix.push(b'/');
+        transaction
+            .execute(
+                "UPDATE assets SET present = 1 WHERE root_id = ?1 AND present = 0
+                   AND id IN (SELECT asset_id FROM previous_assets) AND substr(path_key, 1, ?3) = ?2",
+                params![root_id, prefix, prefix.len() as i64],
+            )
+            .map_err(|error| format!("could not keep {}: {error}", folder.display()))?;
+    }
 
     transaction
         .execute(
@@ -1410,7 +1423,9 @@ fn reusable_asset_id(
     for row in rows {
         let (asset_id, path_key) = row.map_err(|error| format!("could not read Chapolera rename candidate: {error}"))?;
         let old_path = PathBuf::from(OsStr::from_bytes(&path_key));
-        if old_path == new_path || old_path.exists() {
+        // a path that cannot be looked at (unreadable folder above it) is not gone, so not a rename source
+        let gone = fs::symlink_metadata(&old_path).is_err_and(|error| error.kind() == std::io::ErrorKind::NotFound);
+        if old_path == new_path || !gone {
             continue;
         }
         if candidate.replace(asset_id).is_some() {
@@ -1422,6 +1437,7 @@ fn reusable_asset_id(
 
 fn visit_files(
     root: &Path,
+    passed_over: &mut Vec<PathBuf>,
     visitor: &mut impl FnMut(DiscoveredFile) -> Result<(), String>,
 ) -> Result<usize, String> {
     let mut scan_order = 0_i64;
@@ -1443,7 +1459,7 @@ fn visit_files(
         })?;
         scan_order = scan_order.checked_add(1).ok_or("too many files to index")?;
         Ok(())
-    })
+    }, passed_over)
 }
 
 fn detect_type(path: &Path, name: &str) -> Result<(String, String, String), String> {
@@ -1594,6 +1610,22 @@ mod tests {
         assert_eq!(before.1, after.1);
         assert_eq!(after.2, renamed.to_string_lossy());
         assert!(after.3);
+        cleanup(&root, &database);
+    }
+
+    #[test]
+    fn assets_under_an_unreadable_folder_stay_present() {
+        use std::os::unix::fs::PermissionsExt;
+        let (root, database) = test_paths("unreadable");
+        let locked = root.join("$RECYCLE.BIN");
+        fs::create_dir(&locked).unwrap();
+        write(locked.join("photo.png"), png_bytes(b"photo")).unwrap();
+        scan_with_database(&root, 8, 0, &database).unwrap();
+        fs::set_permissions(&locked, fs::Permissions::from_mode(0o000)).unwrap();
+        let scanned = scan_with_database(&root, 8, 0, &database);
+        fs::set_permissions(&locked, fs::Permissions::from_mode(0o755)).unwrap();
+        scanned.unwrap();
+        assert!(read_asset(&database, &root).3, "unread is not missing");
         cleanup(&root, &database);
     }
 

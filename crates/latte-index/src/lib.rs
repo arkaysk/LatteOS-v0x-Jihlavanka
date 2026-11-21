@@ -49,14 +49,21 @@ pub fn index_root(root: &Path, database_path: &Path) -> Result<IndexSummary, Str
     let root_id: i64 = transaction
         .query_row("SELECT id FROM roots WHERE root_key = ?1", [root_key], |row| row.get(0))
         .map_err(|error| format!("could not read index root: {error}"))?;
+    // everything is missing until this scan sees it; what was present under a folder the scan could not read
+    // is put back at the end (the whole thing is one transaction, so a failed scan changes nothing)
     transaction
-        .execute("UPDATE assets SET present = 0 WHERE root_id = ?1", [root_id])
+        .execute_batch("CREATE TEMP TABLE IF NOT EXISTS previous_assets (asset_id INTEGER PRIMARY KEY); DELETE FROM previous_assets;")
+        .and_then(|_| transaction.execute(
+            "INSERT INTO previous_assets SELECT id FROM assets WHERE root_id = ?1 AND present = 1", [root_id]))
+        .and_then(|_| transaction.execute("UPDATE assets SET present = 0 WHERE root_id = ?1", [root_id]))
         .map_err(|error| format!("could not begin index reconciliation: {error}"))?;
 
     let mut summary = IndexSummary::default();
-    visit_visible_files(&canonical_root, &mut |path| {
+    let mut passed_over = Vec::new();
+    walk_visible_files(&canonical_root, &mut |path| {
         index_file(&transaction, root_id, path, &mut summary)
-    })?;
+    }, &mut passed_over)?;
+    keep_passed_over(&transaction, root_id, &passed_over)?;
     summary.missing = transaction
         .query_row(
             "SELECT count(*) FROM assets WHERE root_id = ?1 AND present = 0",
@@ -164,8 +171,20 @@ fn initialize_schema(connection: &Connection, path: &Path) -> Result<(), String>
     .map_err(|error| format!("could not initialize LatteIndex database {}: {error}", path.display()))
 }
 
-fn visit_visible_files(root: &Path, visitor: &mut impl FnMut(&Path) -> Result<(), String>) -> Result<(), String> {
-    walk_visible_files(root, visitor).map(|_| ())
+/// Rows that were present under a folder this scan could not read stay present: unread is not missing.
+fn keep_passed_over(transaction: &Transaction<'_>, root_id: i64, passed_over: &[PathBuf]) -> Result<(), String> {
+    for folder in passed_over {
+        let mut prefix = folder.as_os_str().as_bytes().to_vec();
+        prefix.push(b'/');
+        transaction
+            .execute(
+                "UPDATE assets SET present = 1 WHERE root_id = ?1 AND present = 0
+                   AND id IN (SELECT asset_id FROM previous_assets) AND substr(path_key, 1, ?3) = ?2",
+                params![root_id, prefix, prefix.len() as i64],
+            )
+            .map_err(|error| format!("could not keep {}: {error}", folder.display()))?;
+    }
+    Ok(())
 }
 
 fn index_file(
@@ -330,13 +349,18 @@ fn reusable_asset_id(
         .map_err(|error| format!("could not read renamed assets: {error}"))?;
     let new_path_key = new_path.as_os_str().as_bytes();
     let mut reusable = candidates.into_iter().filter(|(_, old_path_key)| {
-        old_path_key.as_slice() != new_path_key && !PathBuf::from(OsStr::from_bytes(old_path_key)).exists()
+        old_path_key.as_slice() != new_path_key && is_gone(Path::new(OsStr::from_bytes(old_path_key)))
     });
     let candidate = reusable.next().map(|(asset_id, _)| asset_id);
     if reusable.next().is_some() {
         return Ok(None);
     }
     Ok(candidate)
+}
+
+/// Truly not there; one that cannot be looked at (a folder above it is unreadable) is not a rename source.
+fn is_gone(path: &Path) -> bool {
+    fs::symlink_metadata(path).is_err_and(|error| error.kind() == std::io::ErrorKind::NotFound)
 }
 
 fn detect_mime(path: &Path) -> Result<String, String> {
@@ -526,6 +550,30 @@ mod tests {
             connection.query_row("SELECT count(*) FROM assets WHERE present = 0", [], |row| row.get::<_, i64>(0)).unwrap(),
             0
         );
+        drop(connection);
+        remove_dir_all(database.parent().unwrap()).unwrap();
+    }
+
+    #[test]
+    fn files_under_an_unreadable_folder_are_not_missing() {
+        use std::os::unix::fs::PermissionsExt;
+        let (root, database) = test_paths("unreadable");
+        create_dir_all(root.join("System Volume Information")).unwrap();
+        let hidden = root.join("System Volume Information/tracking.log");
+        write(&hidden, b"kept\n").unwrap();
+        write(root.join("gone.txt"), b"gone\n").unwrap();
+        index_root(&root, &database).unwrap();
+        // a same-content file elsewhere must not take the unreadable file's record either
+        write(root.join("copy.log"), b"kept\n").unwrap();
+        fs::remove_file(root.join("gone.txt")).unwrap();
+        fs::set_permissions(root.join("System Volume Information"), fs::Permissions::from_mode(0o000)).unwrap();
+        let summary = index_root(&root, &database);
+        fs::set_permissions(root.join("System Volume Information"), fs::Permissions::from_mode(0o755)).unwrap();
+        let summary = summary.unwrap();
+        assert_eq!(summary.missing, 1, "only the deleted file is missing");
+        assert_eq!(summary.added, 1);
+        let connection = open_database(&database).unwrap();
+        assert_eq!(asset(&connection, &fs::canonicalize(&hidden).unwrap()).3, 1);
         drop(connection);
         remove_dir_all(database.parent().unwrap()).unwrap();
     }
