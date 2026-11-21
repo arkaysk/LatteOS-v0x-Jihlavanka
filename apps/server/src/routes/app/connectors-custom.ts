@@ -13,6 +13,7 @@ import {
   latteosLocalProgress,
   latteosMcpConnections,
   latteosMcpEnabled,
+  latteosOwnsOrg,
   latteosMcpView,
   listCustomServers,
   listLatteosMcp,
@@ -285,7 +286,8 @@ export function customConnectorRoutes(deps: AppDeps) {
       const { orgId } = c.req.valid("param");
       await requirePermission(custom.db, c.get("user").id, orgId, "read");
       const localModels = latteosLocalLlmUrl();
-      if (!latteosMcpEnabled()) return c.json({ enabled: false, available: [], connected: [], localModels }, 200);
+      // LatteOS: another workspace on this server sees no card of this computer's tools (security S8)
+      if (!latteosMcpEnabled() || !latteosOwnsOrg(orgId)) return c.json({ enabled: false, available: [], connected: [], localModels }, 200);
       const [servers, connected] = await Promise.all([listLatteosMcp(), latteosMcpConnections(custom.db, orgId)]);
       return c.json(
         {

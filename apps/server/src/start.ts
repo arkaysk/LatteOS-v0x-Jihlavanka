@@ -387,6 +387,7 @@ async function boot(
     mcpTokenFile: config.LATTEOS_MCP_TOKEN_FILE,
     skillsDir: config.LATTEOS_SKILLS_DIR,
     localLlmUrl: config.LATTEOS_LOCAL_LLM_URL,
+    runnerConfig: config.LATTEOS_RUNNER_CONFIG,
   });
   // Per-process caches for agent/org/channel config, scopes, connections, credential rows (30 s TTL).
   enableCaches();

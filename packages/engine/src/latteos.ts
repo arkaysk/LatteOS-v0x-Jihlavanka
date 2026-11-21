@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { and, type Database, eq, isNull, schema } from "@agenteschat/db";
 import { type CustomConnectStart, type CustomDeps, connectCustomServer } from "./connectors/custom";
 import { NotFoundError, ValidationError } from "./errors";
@@ -18,6 +18,8 @@ export interface LatteosConfig {
   skillsDir?: string;
   /** This computer's own models, an OpenAI-compatible address (`LATTEOS_LOCAL_LLM_URL`). */
   localLlmUrl?: string;
+  /** The runner's config of this computer (`LATTEOS_RUNNER_CONFIG`): its `orgId` is the workspace that owns the computer. */
+  runnerConfig?: string;
 }
 
 let config: LatteosConfig = {};
@@ -29,6 +31,20 @@ export function setLatteosConfig(next: LatteosConfig) {
 }
 
 export const latteosMcpEnabled = () => Boolean(config.mcpUrl && config.mcpTokenFile);
+
+/**
+ * Whether a workspace may have this computer's tools (security audit S8): the one its runner is paired with, when that is
+ * known; any, as before, when it is not (no runner config). Read each time: a pairing may change.
+ */
+export function latteosOwnsOrg(orgId: string): boolean {
+  if (!config.runnerConfig || !existsSync(config.runnerConfig)) return true;      // not paired yet: nobody else either
+  try {
+    const owner = (JSON.parse(readFileSync(config.runnerConfig, "utf8")) as { orgId?: unknown }).orgId;
+    return typeof owner !== "string" || owner === "" || owner === orgId;
+  } catch {
+    return false;
+  }
+}
 export const latteosSkillsDir = () => config.skillsDir ?? null;
 export const latteosLocalLlmUrl = () => config.localLlmUrl ?? null;
 export { isLatteosLocal, type LatteosLocalModel, latteosLocalModels, latteosLocalProgress } from "./latteos-local";
@@ -119,6 +135,7 @@ export async function connectLatteosMcp(
   serverId: string,
   gateway: LatteosMcpDeps = {},
 ): Promise<CustomConnectStart> {
+  if (!latteosOwnsOrg(orgId)) throw new NotFoundError("This computer's MCP servers belong to another workspace");
   const server = (await listLatteosMcp(gateway)).find((s) => s.id === serverId);
   if (!server) throw new NotFoundError("That MCP server is not installed in LatteOS on this computer");
   const url = latteosMcpUrl(server);

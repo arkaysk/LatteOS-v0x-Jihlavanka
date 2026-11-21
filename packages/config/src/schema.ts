@@ -1057,6 +1057,16 @@ export const envVars = {
     section: "Connectors",
     example: "/home/you/.config/latteos/mcp-token",
   },
+  LATTEOS_RUNNER_CONFIG: {
+    schema: z
+      .string()
+      .regex(/^(\/|[A-Za-z]:[\\/]|\\\\)/, "must be an absolute path")
+      .optional(),
+    description:
+      "Absolute path of this computer's runner config (LatteOS, security audit S8): its `orgId` is the workspace that owns the computer, the only one offered its MCP servers. Unset or not paired yet: any workspace, as before.",
+    section: "Connectors",
+    example: "/home/you/.local/share/agentgram/runner/config.json",
+  },
   LATTEOS_SKILLS_DIR: {
     schema: z
       .string()
