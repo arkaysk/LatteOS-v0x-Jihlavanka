@@ -1,8 +1,8 @@
 # LatteOS GOO — denník rozhodnutí
 
-Rozhodnutia používateľa s dátumom, najnovšie hore. Platné znenie je vždy v [LATTEOS-GOO.md](../../LATTEOS-GOO.md);
+Rozhodnutia používateľa s dátumom: do 6. 11. najnovšie hore, od 10. 11. pribúdajú na koniec (za „Zamietnuté“). Platné znenie je vždy v [LATTEOS-GOO.md](../../LATTEOS-GOO.md);
 tu je, **kedy a prečo** sa čo rozhodlo, a čo bolo zamietnuté. Podrobné pôvodné znenie (s implementačnými poznámkami
-z vtedy) je v [docs_zaloha/2026-10-06-latteos-goo-pred-rozdelenim.md](../../docs_zaloha/2026-10-06-latteos-goo-pred-rozdelenim.md).
+z vtedy) je vo vetve `v0.3`: `docs_zaloha/2026-10-06-latteos-goo-pred-rozdelenim.md`.
 Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného znenia v LATTEOS-GOO.md.
 
 ## 6. 11. 2026

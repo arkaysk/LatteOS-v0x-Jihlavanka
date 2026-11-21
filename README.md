@@ -20,9 +20,9 @@ of windows beneath them. In return the window manager, its effects and the canva
 Hyprland plugins go away, and agents get what the compositor is built around: a pointer and keyboard of their own that leave
 yours alone, rules for what they may touch, and a gate for what they ask to do.
 
-**This is a work in progress.** The session starts from the login screen with the Goo engine, wallpaper and window commands
-(list, focus, minimize, maximize, close), while window modes, snapping, glass and LatteOS's own shortcuts are still being moved
-over. Hyprland is gone from this branch; `v0.4-fresh` remains the way back.
+**This is a work in progress.** The session starts from the login screen with the Goo engine and the wallpaper; window modes
+with pleamar-wm's layouts, snapping, glass and Windows-like shortcuts work. LatteGlance is still to come, and two monitors are
+not yet tested. Until 0.6 only fixes go in. Hyprland is gone from this branch; `v0.4-fresh` remains the way back.
 It was tested on one machine with a Fedora 45 beta. AMD GFX6 to GFX8 cards (such as the RX 640 it was tested on) need Linux 7.3
 and Mesa 26.3, still a release candidate; without them the drops are painted by the processor.
 

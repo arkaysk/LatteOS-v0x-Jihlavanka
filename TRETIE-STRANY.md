@@ -8,7 +8,7 @@ V repozitári sú iba naše záplaty a doplnky k nim (`patches/`) — tie sa ria
 | Projekt | Na čo ho LatteOS používa | Licencia |
 |---|---|---|
 | [pleamar](https://github.com/k4ditano/pleamar) (k4ditano) | kreslenie kvapiek a kariet Goo, jazyk scén `.plm`, logika v Luau | BSD-3-Clause |
-| [K4](https://github.com/k4ditano/k4) (k4ditano) | predloha ostrova LensShore (`apps/lensshore.qml`): ostrov, ktorý v pokoji leží pri okraji a pri písaní pruží von, jeho rozbaľovanie a podoba spúšťača | MIT |
+| [K4](https://github.com/k4ditano/k4) (k4ditano) | predloha ostrova LensShore (od 27. 10. kreslený v pleamare): ostrov, ktorý v pokoji leží pri okraji a pri písaní pruží von, jeho rozbaľovanie a podoba spúšťača | MIT |
 | [hypridle](https://github.com/hyprwm/hypridle) | zamknutie a zhasnutie obrazoviek pri nečinnosti | BSD-3-Clause |
 | [Aarambh](https://github.com/NarkAgni/aarambh) (NarkAgni) | ponuka štartu (LatteOS · SAFE · Windows); naša téma `patches/aarambh/latteos.c` je odvodená z jeho témy Cinema a zostavuje sa do neho | GPL-3.0 |
 | [Inter](https://github.com/rsms/inter) (Rasmus Andersson) | písmo ponuky štartu (z balíka Fedory `rsms-inter-fonts`) | OFL 1.1 |
@@ -19,10 +19,9 @@ V repozitári sú iba naše záplaty a doplnky k nim (`patches/`) — tie sa ria
 | [opendeck-akp03](https://github.com/4ndv/opendeck-akp03) (4ndv) | pravidlá udev pre stream docky Ajazz AKP03 / Mirabox N3 (`system/udev/40-opendeck-akp03.rules`, prevzaté bez zmeny) a doplnok OpenDeck, ktorý `install` stiahne z jeho vydania | GPL-3.0 |
 | [OpenDeck](https://github.com/nekename/OpenDeck), [OpenRazer](https://github.com/openrazer/openrazer), [Polychromatic](https://github.com/polychromatic/polychromatic), [CoolerControl](https://gitlab.com/coolercontrol/coolercontrol), [Solaar](https://github.com/pwr-Solaar/Solaar), [OpenRGB](https://gitlab.com/CalcProgrammer1/OpenRGB) | nástroje periférií: `install` ich iba inštaluje z ich repozitárov a vydaní, keď je zariadenie pripojené (ROADMAP 2.11) | GPL-2.0+ / GPL-3.0 |
 | [whyd](https://github.com/vmaltarello/whyd) | voliteľný samostatný program: prečo sa skončila minulá relácia (SAFE); LatteOS prikladá iba vlastné pravidlá `system/whyd/latteos.toml` | GPL-3.0-or-later |
-| [Noctalia](https://github.com/noctalia-dev/noctalia-shell) | rohová lišta, ovládacie centrum, OSD | MIT |
 | [Quickshell](https://github.com/quickshell-mirror/quickshell) | beh aplikácií LatteOS (QML) | LGPL-3.0 |
 | [labwc](https://github.com/labwc/labwc) | režim SAFE a prihlasovacia obrazovka | GPL-2.0 |
-| [Tabler Icons](https://github.com/tabler/tabler-icons) | ikony (písmo z Noctalie) | MIT |
+| [Tabler Icons](https://github.com/tabler/tabler-icons) | ikony (písmo `assets/fonts/tabler-icons.ttf`) | MIT |
 | [Phosphor Icons](https://github.com/phosphor-icons/core) (Helena Zhang, Tobias Fried) | ikony LatteOS, štýl duotone (písmo z `@phosphor-icons/web` 2.1.2, tabuľka `goo/lib/phosphor.luau`; aplikácie cez `Glyph`, agentgram cez `@phosphor-icons/react`) | MIT |
 | [Lobe Icons](https://github.com/lobehub/lobe-icons) | logá služieb AI v LensGoo a LensAI | MIT |
 | [Basic Memory](https://github.com/basicmachines-co/basic-memory) (Basic Machines) | voliteľný samostatný program (`uv tool`): pamäť AI v LensAI, poznámky v Markdowne; `latte-mcp` ho iba spúšťa | AGPL-3.0 |
@@ -44,11 +43,8 @@ Priložené súbory s vlastnou licenciou:
 | `assets/fonts/Lora.ttf` | Lora (vetva `v0.4-fresh`) | OFL 1.1 (`assets/fonts/OFL-Lora.txt`) |
 | `goo/shaders/sea.wgsl` | [Seascape](https://www.shadertoy.com/view/Ms2SD1) (Alexander Alekseev aka TDM, 2014), prepísaný do WGSL a prefarbený na kávu: hladina v perspektíve na prihlasovaní | CC BY-NC-SA 3.0 (hlavička súboru) |
 | `system/sky/stars.tsv` | [Yale Bright Star Catalogue](http://tdc-www.harvard.edu/catalogs/bsc5.html), 5. vydanie (Hoffleit a Warren, NASA ADC), v JSON od [brettonw/YaleBrightStarCatalog](https://github.com/brettonw/YaleBrightStarCatalog) (MIT): hviezdy do 4,5 mag na prihlasovaní | voľné údaje NASA ADC; prevod MIT |
-| `session/fonts/Manrope[wght].ttf` | Manrope | SIL OFL 1.1 (`session/fonts/OFL-Manrope.txt`) |
-| `session/fonts/Fraunces[…].ttf` | Fraunces | SIL OFL 1.1 (`session/fonts/OFL-Fraunces.txt`) |
-| `session/kvapky/textury/hlinik_*.webp`, `striebro_*.webp` | ambientCG Metal009, Metal010 | CC0 1.0 (`session/kvapky/textury/LICENCIA.txt`) |
 
-Prekladová vrstva aplikácií (`session/apps/common/I18n.qml`) je napísaná podľa vzoru
+Prekladová vrstva aplikácií (`apps/common/I18n.qml`) je napísaná podľa vzoru
 [DankMaterialShell](https://github.com/AvengeMedia/DankMaterialShell) (MIT).
 
 Zo [Omarchy](https://github.com/omacom/omarchy) (MIT, © David Heinemeier Hansson) LatteOS preberá a prepisuje časti
@@ -75,7 +71,7 @@ sú tu, aby sa dala tabuľka obnoviť. Ruská položka sa vynecháva (služba ta
 
 ## Capture (ROADMAP 10O.50), ešte nenapísané
 
-Vzor rozhrania a úprav snímok: **Flameshot** (flameshot-org/flameshot, **GPL-3.0**, C++/Qt Widgets) — preberá sa súbor nástrojov a správanie aj kód, ak treba. **Licencia LatteOS nie je definitívna** (zatiaľ MIT): určí sa po dokončení podľa všetkého integrovaného materiálu tretích strán (používateľ 5. 11.).
+Vzor rozhrania a úprav snímok: **Flameshot** (flameshot-org/flameshot, **GPL-3.0**, C++/Qt Widgets) — preberá sa súbor nástrojov a správanie aj kód, ak treba.
 Motor snímok a nahrávania: **Marea** (`logic/camera.luau`, BSD-3, už v systéme). Rozpoznanie textu: **Tesseract** (Apache-2.0).
 
 ## Chapolera: obrazový model

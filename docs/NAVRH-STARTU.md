@@ -1,13 +1,15 @@
 # Východiskový návrh: rámec, režimy a štart systému
 
-Presunuté z ROADMAP.md (riadky 14–164) 9. 10. 2026; text je pôvodný z 23. 9.–8. 10. 2026. Čo sa týka Classicu, je to história;
-platná architektúra je v [ARCHITECTURE.md](ARCHITECTURE.md).
+Presunuté z ROADMAP.md (riadky 14–164) 9. 10. 2026; text je pôvodný z 23. 9.–8. 10. 2026. Platí rámec, režimy NORMAL a SAFE
+a postup štartu; kompozitor NORMAL je od 2. 11. 2026 **pleamar-wm** (Hyprland odinštalovaný), shell je engine Goo.
+Tabuľka „pobeží stack bez akcelerácie?“ je meranie z VM so starým zásobníkom (Hyprland). Platná architektúra je
+v [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Rámec
 
 | | Teraz (fázy F0–F8) | Neskôr |
 |---|---|---|
-| Systém | **Fedora Server 44**, klasický (dnf) | Fedora Atomic (bootc / rpm-ostree), štýl Bazzite, **až keď bude všetko hotové** |
+| Systém | **Fedora Server 45**, klasický (dnf) | Fedora Atomic (bootc / rpm-ostree), štýl Bazzite, **až keď bude všetko hotové** |
 | Stroj | **VirtualBox VM** `latteOSdev`: VMSVGA, 128 MB VRAM, 3D zapnuté, 4 vCPU, 11 GB RAM | reálny PC s 3D grafikou **AMD aj NVIDIA** |
 | Grafika | **softvérová** (llvmpipe / pixman), VMSVGA 3D len ako doplnková možnosť | plná HW akcelerácia, Vulkan |
 
@@ -50,9 +52,9 @@ selektor iba vtedy, keď prejde test. SAFE režim stojí na ceste C.
 
 | | **NORMAL** | **SAFE** |
 |---|---|---|
-| Kompozitor | Hyprland (+ vmwgfx patch) + Lua modul LatteOS | labwc (balík Fedory) |
-| Renderer | GLES: vm-3d → sw-gl podľa testu | **pixman** (nulová závislosť na GL/EGL/GPU) |
-| Shell | plný LatteOS shell (Quickshell) | minimálny: foot + fuzzel + `latte-safe` ponuka; žiadne shadery, žiadna priehľadnosť |
+| Kompozitor | pleamar-wm so scénou LatteOS (`system/pleamarwm/`) | labwc (balík Fedory) |
+| Renderer | GLES: hw (grafická karta) → sw-gl (llvmpipe) podľa testu | **pixman** (nulová závislosť na GL/EGL/GPU) |
+| Shell | engine Goo (pleamar) + aplikácie LatteOS (Quickshell) | minimálny: lišta SAFE (`goo/safe.plm`) + foot s ponukou `latte-safe`; žiadne shadery, žiadna priehľadnosť |
 | Efekty | podľa stupňa výkonu (vo VM tier **Softvér** = téma Úsporná) | žiadne |
 | Účel | bežná práca | štart pri akomkoľvek probléme: rozbitý GPU stack, pád shellu, zlý update, chýbajúci ovládač |
 | Ponuka `latte-safe` | — | diagnostika (log posledného pádu), „skúsiť NORMAL znova“, „vrátiť posledný update“, terminál, sieť |
@@ -78,9 +80,9 @@ Upresnenia:
 | 3 | Kernel + initramfs | ovládače (vmwgfx, neskôr amdgpu/nvidia), disk | **Plymouth** boot logo Latte (zakryje text a čiernu obrazovku) | 2,1 s + 5,2 s |
 | 4 | systemd | desiatky služieb **paralelne** | — | 7,2 s spolu |
 | 5 | **Latte start** | `latte-boot.service` (oneshot, `Before=greetd.service`): `latte-boot select` | detekcia HW/SW, výber režimu → `/run/latteos/mode.toml` | ~0,05 s (namerané: `/sys` 0 ms, EGL test 40 ms) |
-| 6 | **Session Manager** | greetd → greeter vo vlastnom malom kompozitore podľa režimu | obrazovka prihlásenia (kandidát: Noctalia Greeter) | — |
-| 7 | Relácia | po prihlásení `latte-session` prečíta `mode.toml` → Hyprland (NORMAL) alebo labwc (SAFE) cez systemd user (`latte-session.target`) | Lua modul, SAFE konfigurácia | — |
-| 8 | **Shell** | `latte-shell.service`: **jeden** proces s lištou, Text Barom, panelmi a notifikáciami | shell | — |
+| 6 | **Session Manager** | greetd → `latte-greeter`: scéna prihlásenia pleamaru v labwc (bez grafickej karty nehybná, inak textové prihlásenie) | obrazovka prihlásenia (`goo/login.plm`) | — |
+| 7 | Relácia | po prihlásení `latte-session` prečíta `mode.toml` → pleamar-wm (NORMAL) alebo labwc (SAFE) cez systemd user (`latte-session.target`) | scéna pleamar-wm, SAFE konfigurácia | — |
+| 8 | **Shell** | `latte-goo.service`: **jeden** proces, engine Goo s kvapkami, kartami a upozorneniami | shell | — |
 | 9 | Manageri | Rust služby spúšťané **až na požiadanie** (D-Bus aktivácia), nie všetky pri štarte | Device, Process, Data, App, Session | — |
 | 10 | Potvrdenie | po 60 s zdravej relácie `latte-boot ok`: vynuluje počítadlo pádov, nastaví GRUB `boot_success` | — | — |
 
@@ -92,8 +94,8 @@ flowchart LR
   SD --> LB[latte-boot select<br/>~50 ms]
   LB --> MT[(/run/latteos/mode.toml)]
   MT --> GR[greetd + greeter<br/>prihlásenie]
-  GR --> SE[latte-session<br/>Hyprland alebo labwc]
-  SE --> SH[latte-shell]
+  GR --> SE[latte-session<br/>pleamar-wm alebo labwc]
+  SE --> SH[latte-goo]
   SE --> MG[Manageri<br/>na požiadanie]
   SH -- 60 s OK --> OK[latte-boot ok]
 ```
@@ -109,7 +111,7 @@ funkcií. Čo beží spolu, s rovnakými právami a zdieľa dáta, patrí do jed
 | **`latte-boot`** (Rust, 1 binárka) | pri štarte, root, pár ms | jedna binárka s modulmi (`gpu`, `display`, `input`, `cmdline`, `crash`) a príkazmi `probe`, `select`, `ok`. **Nie** viac malých detektorov: zbytočné spúšťanie procesov a zložité poradie pre 50 ms práce |
 | greeter | pred prihlásením, vlastný používateľ `greeter` | bezpečnosť: nevidí dáta používateľa |
 | `latte-session` | po prihlásení, používateľ | spúšťa a stráži kompozitor; musí prežiť jeho pád |
-| kompozitor | používateľ | cudzí projekt (Hyprland/labwc) |
+| kompozitor | používateľ | cudzí projekt (pleamar-wm/labwc) |
 | **shell** (1 proces) | používateľ, celá relácia | princíp „jeden mozog“ z radaru: jeden proces pre všetky panely, spoločný stav a téma |
 | Manageri (každý zvlášť) | na požiadanie, časti cez polkit s root právami | pád Process Managera nesmie zhodiť shell; rôzne práva |
 
@@ -120,7 +122,7 @@ použije na plnú inventúru HW. Pomalé testy (Vulkan 180 ms, benchmark stupňa
 ### Výber režimu — `latte-boot select`
 
 Výsledok zapíše do `/run/latteos/mode.toml`. Ten súbor je jediné miesto pravdy: číta ho greeter,
-`latte-session`, Hyprland Lua modul aj shell.
+`latte-session` aj shell.
 
 ```mermaid
 flowchart TD
@@ -131,9 +133,9 @@ flowchart TD
   C -- nie --> P[Test grafiky<br/>/dev/dri, ovládač, EGL, GLES 3]
   P -- nič nefunguje --> SAFE
   P -- GLES ok --> R{Ktorý renderer?}
-  R -- vm-3d povolené a prešlo testom --> N3[NORMAL · vm-3d]
+  R -- grafická karta --> N3[NORMAL · hw]
   R -- inak --> NS[NORMAL · sw-gl]
-  N3 & NS --> H[Hyprland]
+  N3 & NS --> H[pleamar-wm]
   H -- pád --> K[počítadlo +1] --> B
   H -- beží 60 s --> OK[počítadlo = 0]
   SAFE[SAFE · labwc + pixman]
@@ -143,14 +145,9 @@ flowchart TD
   štarte kompozitora a `latte-boot ok` ho vynuluje po 60 s. Pád teda zaznamená niekto mimo toho,
   čo padá.
 - **Test grafiky** (`latte-boot probe`): PCI ID a ovládač z `/sys`, EGL/GBM (renderer `llvmpipe`
-  vs. `SVGA3D`), GLES 3.x. Výstupom je `renderer = vm-3d | sw-gl | none` a `tier`. Vulkan a stupne
+  vs. `SVGA3D`), GLES 3.x. Výstupom je `renderer = hw | sw-gl | pixman` a `tier`. Vulkan a stupne
   výkonu (Plný…Minimálny, NVIDIA 580/595) doplní Device Manager po prihlásení.
 - **Ručná voľba:** v GRUB-e sú vždy dve položky, „LatteOS“ a „LatteOS SAFE“. V greeteri je voľba
   relácie (NORMAL/SAFE) pre toto prihlásenie.
 - **Návrat:** zo SAFE ide jedným klikom „skúsiť NORMAL“ (vynuluje počítadlo). V NORMAL sa dá zapnúť
   „nabudúce SAFE“.
-
-**Audit podľa Windows 11 a prieskum rozhrania (29. 9.):** [audit](docs_zaloha/2026-09-29-audit-win11.md) — myš ako hlavný ovládač,
-stav LatteOS aj Noctalie, novinky, rice, moduly skla, návrh rozhrania a poradie krokov. Rozhodnuté: cesta 2
-(vlastné prostredie Hyprland + Noctalia nad ublue `base-main` + `akmods`, všetko pripnuté).
-

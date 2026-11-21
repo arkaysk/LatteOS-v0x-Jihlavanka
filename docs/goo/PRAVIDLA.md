@@ -10,9 +10,9 @@ Zásady správania kvapiek, fyziky a vstupov. **Záväzné pri vývoji.**
 
 1. **Myš je prvá** — každá funkcia myšou (ľavé, pravé, koliesko, ťahanie); klávesy doplnok
 2. **Návyky Windows 11** — všetko dole, klik v lište prepne/minimalizuje, pravý klik = ponuka okna
-3. **Preberať, nevymýšľať** — Noctalia, pleamar, Marea majú prioritu
+3. **Preberať, nevymýšľať** — pleamar, pleamar-wm, Marea majú prioritu
 4. **Preložiteľnosť** — texty po anglicky + `translations sk` v scéne
-5. **Oddelené prostredia** — Goo, čistá Noctalia, Marea a cudzie prostredia (Plasma…) sa nepoškodzujú (Classic je zrušený)
+5. **Oddelené prostredia** — Goo, Marea a cudzie prostredia (Plasma…) sa nepoškodzujú
 
 ### 6–13: Vzhľad
 
@@ -23,7 +23,7 @@ Zásady správania kvapiek, fyziky a vstupov. **Záväzné pri vývoji.**
 10. **Vlastný vzhľad ponúk** — rozhranie Goo, nie kopírovanie z Classic
 11. **Moderný štýl** — ikony Tabler, písmo Inter, minimalizmus, vkus, užitočnosť
 12. **Materiál a priehľadnosť** — prechod z kávy do textúry okien (hliník, zlato, sklo)
-13. **Sklo na oknách (Hyprglass)** — okná s lomom a dúhou, iba sklenené témy, vypnutie v `~/.config/latteos/bez-skla`
+13. **Sklo na oknách** — sklo pleamaru v scéne pleamar-wm, jedna voľba pre celý LatteOS (Nastavenia › Okná, 0 bez skla … 4 True Glass)
 
 ### 14–16: Interakcia
 
@@ -59,9 +59,9 @@ Zásady správania kvapiek, fyziky a vstupov. **Záväzné pri vývoji.**
 - Nič nevisí vo vzduchu
 
 ### Vlákna a spájanie
-- Iba na vzdialenosti, aké sú v trojici GooPower – LensGoo – hlava GooBaru (najviac 2,3 súčtu polomerov)
+- Iba na vzdialenosti, aké sú v trojici PowerGoo – LensGoo – hlava BarGoo (najviac 2,3 súčtu polomerov)
 - Vlákno sa naťahuje a trhá, po určitej dĺžke praskne
-- Každá kvapka je v **jednom goo tele** — všetky sa spájajú, keď sú blízko (aj Goobar a ikry okien)
+- Každá kvapka je v **jednom goo tele** — všetky sa spájajú, keď sú blízko (aj BarGoo a ikry okien)
 
 ### Hladina
 - Okraj obrazovky = voda
@@ -84,7 +84,7 @@ Zásady správania kvapiek, fyziky a vstupov. **Záväzné pri vývoji.**
 ### Nečinnosť (myš + klávesnica)
 
 - **Stupeň 1** (po ~1 min) — zaspávajú (menšie nadnesenie)
-- **Stupeň 2** (po ~3 min) — počasie: dážď alebo vietor podľa Open-Meteo (zatiaľ iba rezerva, nie je hotové)
+- **Stupeň 2** (po ~3 min) — počasie sa nečinnosťou nezapína (13. 11.)
 - **Stupeň 3** (po ~6 min) — hra: naháňačka so zrážkou, behanie (ostatné uhnú), skákanie; nič sa neprekryje
 
 ### Prebudenie
@@ -99,7 +99,7 @@ Zásady správania kvapiek, fyziky a vstupov. **Záväzné pri vývoji.**
 
 ---
 
-## Engine (podrobne v session/goo/README.md)
+## Engine (podrobne v hlavičke goo/lib/engine.luau)
 
 Engine dáva spoločné pravidlá pre **všetky kvapky** jednou kópiou:
 

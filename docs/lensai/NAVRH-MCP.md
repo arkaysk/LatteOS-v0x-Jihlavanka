@@ -1,8 +1,11 @@
 # LensAI ako spoločná AI vrstva LatteOS — návrh (`latte-mcp`)
 
 10. 11. 2026, na pokyn používateľa: pred Kaviarňou spraviť z LensAI skutočný MCP server, jednu AI vrstvu pre celé
-LatteOS. Toto je návrh na schválenie, kód ešte nie je. Úloha v ROADMAP: 10B.43 (rozšírená), súvisí 10B.36, 10B.40,
-10B.34, 10B.18, 10B.30, 10B.39.
+LatteOS. Úloha v ROADMAP: 10B.43 (rozšírená), súvisí 10B.34, 10B.18, 10B.30, 10B.39.
+
+**Stav 21. 11.:** `latte-mcp` je hotový ako server nástrojov LatteOS (`bin/latte-mcp`, služba `latte-mcp.service`);
+konektory MCP a skilly spravuje ToolHive (rozhodnutie 20. 11.). Kaviareň a farma sú zrušené (21. 11., nahrádza ich
+agentgram), preto ich časti z návrhu vypadli.
 
 ## 1. Čo som našiel (stav 10. 11.)
 
@@ -29,18 +32,17 @@ spôsobmi: cez stdio pre CLI nástroje a ako služba používateľa na `127.0.0.
  Claude Code · Codex · Gemini CLI ─┐ (LensAI im server zapíše do nastavení)
  kľúč API · lokálny model ─────────┤ (latte-ai dostane slučku nástrojov)        ┌ čety      → latte-ai
  LensGoo · LensShore · kurzor ─────┼──►  latte-mcp  ──►  potvrdenie v LatteOS ──┼ kurzor    → pleamar-wm agent
- Kaviareň (farma) ─────────────────┤      (denník, vypínač AI, strážca)         ├ ovládanie → skilly, pleamar-wm agent
- web Claude / ChatGPT ─────────────┘ (konektor služby + tunel, predvolene vypnuté) └ farma  → Kaviareň
+                                   │      (denník, vypínač AI, strážca)         └ ovládanie → skilly, pleamar-wm agent
+ web Claude / ChatGPT ─────────────┘ (konektor služby + tunel, predvolene vypnuté)
 ```
 
-### Štyri skupiny nástrojov
+### Tri skupiny nástrojov
 
 | Skupina | Nástroje (prvá verzia) | Nad čím | Trieda |
 |---|---|---|---|
 | **Analýza, čety** | `chats`, `chat`, `ask` (opýtaj sa inej AI — spolupráca AI medzi sebou), `usage`, `providers`; neskôr hľadanie v súboroch (LatteIndex) a Obsidian | `latte-ai` | čítanie; `ask` míňa limit → ukázať komu |
 | **Kurzor** | `under_pointer` (okno, prvok a označený text pod myšou), `look` (výrez obrazovky), `say_at_pointer` (odpoveď pri kurzore) | `pleamar-wm agent`, kvapka Goo | čítanie obrazovky → vždy viditeľná značka, že AI pozerá |
 | **Ovládanie** | `skills` (zoznam), `do_skill` (Wi-Fi, jas, hlasitosť, okná…), `windows`, `tree`, `press`, `type` | `skills.luau` → spoločný zoznam, `pleamar-wm agent` | zmena → potvrdenie; ničiace → dvojité |
-| **Farma / Kaviareň** | `order` (zadaj úlohu), `orders` (stav), `result`, `counter` (čo čaká na schválenie), `answer` | farma 10B.40, dovtedy `pleamar-wm agents` | spustenie → potvrdenie s odhadom času a limitu |
 
 ### Pravidlá, ktoré server vynucuje (nie model)
 
@@ -59,17 +61,12 @@ spôsobmi: cez stdio pre CLI nástroje a ako služba používateľa na `127.0.0.
 2. **Ovládanie s potvrdením:** skilly z `skills.luau` do spoločného zoznamu (jeden zdroj pre LensShore aj server),
    okno potvrdenia, denník.
 3. **Slučka nástrojov v `latte-ai`** pre kľúče API a lokálny model (dnes vedia iba odpovedať).
-4. **Farma:** nástroje `order`/`counter` → stránka Kaviareň dostane objednávky a pult.
-5. **Kurzor** (10B.34) a nakoniec **konektor pre web** služieb.
+4. **Kurzor** (10B.34) a nakoniec **konektor pre web** služieb.
 
-## 3. Záložky v LensAI: Kaviareň a agenti pleamar-wm
+## 3. Agenti pleamar-wm v LensAI
 
-- **Kaviareň** je v bočnom paneli (10. 11.). Kým farma nie je, ukazuje agentov v termináloch tak, ako ich hlási
-  pleamar-wm: kto pracuje, kto čaká na človeka. Iba na čítanie.
-- **Agenti pleamar-wm ako vlastná záložka: neodporúčam.** Je to ten istý pohľad (kto pracuje, kto sa pýta), takže
-  dve záložky by ukazovali to isté. Patria do Kaviarne ako jej prvý zdroj: čašníčka = agent v termináli, pult =
-  jeho otázka, odpoveď cez `pleamar-wm agents answer` (má kľúč otázky, denník aj triedu). Stránka Agenti ostáva
-  na účty, limity a „Urob to za mňa“.
+- Agenti v termináloch sa ukazujú tak, ako ich hlási pleamar-wm: kto pracuje, kto čaká na človeka; odpoveď cez
+  `pleamar-wm agents answer` (má kľúč otázky, denník aj triedu).
 - Stránky *Build* a *Agent* ovládacieho centra pleamar-wm (10B.45, 10B.46) sú iná vec (tvorba scén, agent
   s kurzorom) a ostávajú samostatné body.
 
@@ -80,5 +77,3 @@ spôsobmi: cez stdio pre CLI nástroje a ako služba používateľa na `127.0.0.
 2. **Skilly von z Goo?** Aby ich mal server aj LensShore z jedného miesta, zoznam sa presunie z `skills.luau`
    do spoločného súboru alebo príkazu (`latte-skill list|do`). Odporúčam príkaz.
 3. **Kde sa potvrdzuje:** vždy v LensShore (jedno miesto, odporúčam), alebo oknom pri tom, kto sa pýta?
-4. **Farma:** prevziať kód clodfarm (MIT) ako základ vlastnej farmy, alebo iba jeho rozhranie? Rozhodnutie
-   z 2. 11. hovorí „vlastná verzia, clodfarm je skúsenosť“; licencia prevzatie dovoľuje.

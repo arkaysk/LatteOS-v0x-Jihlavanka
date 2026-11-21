@@ -1,6 +1,6 @@
 # LatteOS GOO
 
-@Arkay · nový štart 23. 9. 2026 · predtým pracovný názov „gamerdistro“ (vetva `gamerdistro` je od 5. 10. 2026 `main`)
+@Arkay · nový štart 23. 9. 2026 · predtým pracovný názov „gamerdistro“
 
 **LatteOS GOO** je linuxová plocha pre ľudí zvyknutých na Windows 11, v ktorej lištu, Štart, hodiny a systémové
 prvky nahrádzajú **tekuté kávové kvapky** (goo): pružia, lepia sa k okraju obrazovky aj k sebe, žijú vlastným
@@ -9,85 +9,75 @@ pohybom a reagujú na kurzor. Všetko sa ovláda myšou.
 <img width="1451" height="823" alt="obrázok" src="https://github.com/user-attachments/assets/1e535e9c-0dca-4e8b-913f-9e024b759f13" />
 
 
-## Smer vývoja (rozhodnutie 5. 10. 2026)
+## Smer vývoja
 
-- **LatteOS GOO je jediná edícia.** Doterajšie „gamerdistro“ sa ním stáva.
-- **LatteOS Classic sa ruší.** Nové funkcie sa preň nerobia; jeho kód (relácia „LatteOS“ s lištou Noctalie) zatiaľ
-  v repozitári ostáva a bude sa odstraňovať postupne, keď ho GOO nahradí aj ako predvolená a núdzová relácia.
-- **Predvolené prihlásenie je engine Goo** (relácia „LatteOS GOO“, 6. 10.); v ponuke prihlásenia sú popri nej samostatné
-  prostredia Marea, Noctalia (čistá) a Serpantinum. Obrazovka prihlásenia sa ešte prerobí.
-- **Hlavná práca je engine Goo** (`session/goo`): jedny pravidlá pre všetky kvapky nad
-  [pleamarom](https://github.com/k4ditano/pleamar) (k4ditano, BSD-3-Clause). Je na ňom ešte veľa práce — otvorené
-  úlohy sú v [ROADMAP.md](ROADMAP.md) (F3·G). **Na systém sa nasadzuje iba engine Goo** (6. 10.); pôvodná plocha
-  Kvapky sa už nenasadzuje.
+- **LatteOS GOO je jediná edícia** (5. 10. 2026); LatteOS Classic je zrušený a jeho kód je z repozitára preč.
+- **Správca okien je pleamar-wm** (od 2. 11. 2026; Hyprland odinštalovaný, Noctalia sa nepoužíva). Engine Goo beží
+  nad [pleamarom](https://github.com/k4ditano/pleamar) (k4ditano, BSD-3-Clause), ako samostatný proces nad oknami.
+- **Do verzie 0.6 iba opravy** (21. 11. 2026), žiadne nové funkcie. Poradie práce je na začiatku
+  [ROADMAP.md](../ROADMAP.md) („Poradie práce“).
 
-## Kvapky (Nová architektúra)
+## Kvapky
 
 | | Kvapka | Čo robí |
 |---|---|---|
-| jadro | **GooBar** | hlavná lišta a správca okien — okná ako ikry a strapce po aplikáciách |
-| jadro | **GooPower** | účet, relácia, napájanie a profil napájania, batéria, Nastavenia, Monitor; pás výkonu (CPU, RAM, GPU, VRAM) |
-| jadro | **LensGoo** | univerzálny spúšťač a lupa: aplikácie, súbory, web, terminál, AI; rýchly zoznam aplikácií |
-| voliteľná | **QueenGoo** | App Manager a Správca zariadení |
-| voliteľná | **ClockGoo** | upozornenia a kalendár; čas, stopky, minútka, budíky, počasie a digitálna pohoda |
-| voliteľná | **ChatGoo** | doplnok pre Beeper (plán) |
+| | **BarGoo** | lišta a správca okien — okná ako ikry a strapce po aplikáciách |
+| | **PowerGoo** | účet, relácia, napájanie a profil napájania, batéria, Nastavenia, Monitor; pás výkonu (CPU, RAM, GPU, VRAM) |
+| | **LensGoo** | spúšťač a lupa: aplikácie, súbory, web, terminál; rýchly zoznam aplikácií (alebo LensShore) |
+| | **QuickGoo** | rýchle spúšťanie: páska s aplikáciami poruke |
+| | **QueenGoo** | App Manager a Správca zariadení |
+| | **ClockGoo** | upozornenia a kalendár; čas, stopky, minútka, budíky, počasie |
+| | **MediaGoo** | práve hrá (MPRIS) |
+| | **CamGoo** | webkamery |
 
-Kliky jednotlivých kvapiek sú v [LATTEOS-GOO.md §4](LATTEOS-GOO.md). Záväzné pravidlá a správanie:
-[LATTEOS-GOO.md](LATTEOS-GOO.md) (pred prácou na kvapkách prečítať), prehľad v [docs/goo/](docs/goo/README.md).
-
-## Stav
-
-- **Plocha Kvapky** (scéna `session/kvapky/kvapka.plm`) — pôvodný prototyp; kód zatiaľ
-  ostáva v repozitári, na systém sa už nenasadzuje.
-- **Engine Goo** (relácia „LatteOS GOO“, `session/goo`) — overený na reálnom PC (Hyprland,
-  AMD RX 640, 5. 10.): fyzika, vstupy myšou, GooBar s oknami, kvapky novej architektúry. Okná z kvapiek sú
-  prenesené (5.–6. 10.: spúšťač a rýchly zoznam LensGoo, karta GooPower a pás výkonu, upozornenia s kalendárom
-  a karta času ClockGoo, bublina QueenGoo); to, čo pribudlo 6. 10., ešte treba overiť naživo.
+Skryť sa dá každá kvapka (14. 11.); jeden spúšťač ostáva vždy. Kliky kvapiek sú v [LATTEOS-GOO.md §4](../LATTEOS-GOO.md),
+záväzné pravidlá a správanie v [LATTEOS-GOO.md](../LATTEOS-GOO.md) (pred prácou na kvapkách prečítať), prehľad
+v [docs/goo/](goo/README.md).
 
 ## Štruktúra
 
 | Zložka   | Obsah |
 |----------|-------|
-| `inspo/` | inšpirácia a aktuálna predstava: technologický radar, návrh plochy, obrázky, videá |
-| `resources/` | prebraté projekty z radaru (`fetch.sh`), naše [záplaty](resources/patches/README.md), EDID, obrázky maskotov |
-| `crates/` | Rust: `latte-hw` (detekcia HW/grafiky), `latte-boot` (výber režimu NORMAL/SAFE, počítadlo pádov) |
-| `session/goo/` | **engine Goo**: scéna `goo.plm`, logika `lib/engine.luau`, kvapky `kvapky/*.luau` ([README](session/goo/README.md)) |
-| `session/kvapky/` | pôvodná scéna plochy Kvapky (`kvapka.plm`) — už sa nenasadzuje |
-| `docs/` | dokumentácia: [index](docs/README.md), [pravidlá Goo](docs/goo/PRAVIDLA.md), [kvapky](docs/goo/ROZHRANIE.md), [rozhodnutia](docs/goo/ROZHODNUTIA.md); archív starých dokumentov a meraní je v [`docs_zaloha/`](docs_zaloha/README.md) |
-| `session/` | štart a relácie: `latte-session`, `latte-greeter`, `latte-safe`, Hyprland/labwc konfigurácia, systemd, GRUB SAFE, Plymouth |
-| `setup/` | inštalácia a testy na VM: `f0-install.sh`, `f1/install-session.sh`, staré merania v `docs_zaloha/`; reálne PC latte-lab: [`lab/`](setup/lab/README.md) |
-| `old/`   | celý predchádzajúci stav repa, len na čítanie; **už sa doň nezapisuje** |
+| `goo/` | **engine Goo**: scéna `goo.plm`, časti `parts/`, logika `lib/` (`engine.luau` — v hlavičke ako sa píše kvapka), kvapky `drops/`, preklady `lang/`, prihlásenie, zámok, SAFE |
+| `apps/` | aplikácie LatteOS (Quickshell, QML): Nastavenia, LensAI, DualBrew, Monitor, App Manager… |
+| `bin/` | pomocníci `latte-*`: relácia, prihlásenie, súbory, sieť, AI… |
+| `crates/` | Rust: `latte-hw` (detekcia HW/grafiky), `latte-boot` (NORMAL/SAFE, počítadlo pádov), `latte-goo` a `goo-phys` (fyzika Goo), `latte-index`, `latte-chapolera`… |
+| `system/` | súbory do systému: pleamar-wm (`pleamarwm/`), labwc, greetd, systemd, relácie, Plymouth, farby šálok `cups.json` |
+| `patches/` | naše [záplaty](../patches/README.md) pleamaru a pleamar-wm; návrhy autorovi v `patches/issues/` |
+| `templates/` | šablóny okien ([docs/okna/SABLONY.md](okna/SABLONY.md)) |
+| `install`, `get` | inštalácia (README › Installing) |
+| `tests/` | `check.sh` pred commitom, `screen.sh` skúška scény bez obrazovky |
+| `docs/` | dokumentácia: [index](README.md), [pravidlá Goo](goo/PRAVIDLA.md), [kvapky](goo/ROZHRANIE.md), [rozhodnutia](goo/ROZHODNUTIA.md) |
+| `FILES` | každý súbor, ktorý LatteOS pridá do systému (cieľ ← zdroj) |
 
-**Toto repo je súkromné** a vyvíja sa v ňom, v jedinej vetve `main`. Verejné je
-[arkaysk/latteos](https://github.com/arkaysk/latteos): v určitých fázach sa doň presunie **vydanie** príkazom
-`setup/verejne/zverejnit.sh` — jeden commit, značka `v<verzia>` a vydanie na GitHube s popisom zo
-[ZMENY.md](ZMENY.md). Verzia je v `Cargo.toml`; každé vydanie musí mať novú. Čo ostáva súkromné, určuje
-`setup/verejne/vynechat.txt`; verejné README je `setup/verejne/README.md` (iba LatteOS GOO, Classic sa neopisuje).
-Skúška bez zverejnenia: `setup/verejne/zverejnit.sh --nasucho`. Licencia: zatiaľ žiadna (už nie MIT; konečná až pri finálnom systéme), cudzie súčasti
-v [TRETIE-STRANY.md](TRETIE-STRANY.md). Posledné vydanie: **0.3.0 „Jihlavanka“** (6. 10. 2026); zverejňuje
-sa iba na pokyn.
+Strom v0.3 je vo vetve `v0.3` (v aktuálnej vetve už nie je); nový kód vzniká načisto.
 
-Plán vývoja je v [ROADMAP.md](ROADMAP.md). Nový kód a dáta vznikajú iba mimo `old/`.
+**Repozitár je verejný:** [arkaysk/LatteOS-v0x-Jihlavanka](https://github.com/arkaysk/LatteOS-v0x-Jihlavanka),
+predvolená vetva **`v0.55`** (do 19. 11. 2026 `v0.5-pleamarwm-jihlavanka`); `v0.4-fresh` ostáva ako cesta späť
+k Hyprlandu. Nič citlivé do gitu; commit a push iba na pokyn. Zmeny po verziách: [ZMENY.md](../ZMENY.md).
+Licencia: GNU GPL 3.0 alebo novšia ([LICENSE](../LICENSE)), cudzie súčasti v [TRETIE-STRANY.md](../TRETIE-STRANY.md).
+
+Plán vývoja je v [ROADMAP.md](../ROADMAP.md).
 
 ## Platforma
 
-- **Základ:** klasický **Fedora Server 44** (dnf, nie atomic); Fedora Atomic (bootc, štýl Bazzite / Universal
-  Blue), live USB a inštalátor až keď bude LatteOS GOO hotový.
-- **Vývoj a testy:** reálny PC `latte-lab` (AMD RX 640, dva monitory) a virtuálny stroj `latteOSdev`.
+- **Základ:** klasický **Fedora Server 45** (dnf, nie atomic); Fedora Atomic (bootc, štýl Bazzite / Universal
+  Blue) až pre 1.0.
+- **Vývoj a testy:** reálny PC `latte-lab` (AMD RX 640, jeden monitor); karty GFX6–GFX8 potrebujú Linux 7.3 a Mesu 26.3.
 - **Bez GPU musí systém naštartovať** (núdzový režim SAFE: labwc + pixman); HW akcelerácia pridáva efekty,
   podmienkou štartu nie je.
 
 ## Zásady pre engine Goo (poznámky autora — na zváženie)
 
-*Nerozhodnuté (6. 10.): dnešný engine je scéna pleamaru + logika v Luau + pomocník `latte-goo`, nie samostatný daemon
-s Quickshell vrstvou; zvažuje sa, čo z týchto zásad prevziať.*
+*Nerozhodnuté (6. 10.): dnešný engine je scéna pleamaru + logika v Luau + fyzika v Ruste (`latte-goo`), nie samostatný
+daemon s Quickshell vrstvou; zvažuje sa, čo z týchto zásad prevziať.*
 
 1. **Oddelenie jadra od renderu (headless core):** logika (stav batérie, zoznam okien, notifikácie, AI požiadavky)
    beží v samostatnom daemone (Python, Go alebo Rust). Quickshell/QML je iba „hlúpa“ vizuálna vrstva, ktorá
    dostáva dáta cez IPC.
 2. **Goo API (event bus):** presné rozhranie pre kvapky, napr. `goo.emit("power", "battery_low", 15)`. Všetky
    kvapky (aj prebraté z GitHubu) komunikujú cez tento jednotný most, nie priamym prepojením komponentov, ktoré
-   sa pri aktualizácii Noctalie rozbije.
-3. **Wrapper pre externé moduly:** prebraný kód sa obalí vlastnou triedou alebo funkciou. Kód Noctalie sa priamo
-   neupravuje, ak to nie je nevyhnutné — vždy nadstavba.
+   sa pri aktualizácii cudzieho kódu rozbije.
+3. **Wrapper pre externé moduly:** prebraný kód sa obalí vlastnou triedou alebo funkciou. Cudzí kód (pleamar,
+   pleamar-wm) sa priamo neupravuje, ak to nie je nevyhnutné — vždy nadstavba.
 4. **Optimalizácia.**

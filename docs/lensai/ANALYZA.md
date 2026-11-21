@@ -85,9 +85,9 @@ a llama.cpp z okna LensAI.
 **LensAI je jedno miesto a jedno API (`latte-ai`) pre všetku AI v LatteOS.** Ukazuje, kto odpovedá, kam ide
 otázka a koľko ostáva z limitov. Dovoľuje rozprávať sa s cloudovou aj lokálnou AI, spúšťať agentov, ktorí najprv
 plánujú a pýtajú sa, a mať oficiálne weby služieb v záložkách. LensGoo, LensShore, kalendár aj Chapolera sú iba
-klienti toho istého API. Základ je AI z Omarchy (MIT) s grafickým rozhraním. Nadstavba LatteOS je dashboard so
-šošovkou, Kaviareň (dlhé tvorivé úlohy agentov so schvaľovaním pri pulte) a LensAI ako MCP hostiteľ, ktorý dá
-konektory všetkým AI naraz.
+klienti toho istého API. Základ je AI z Omarchy (MIT) s grafickým rozhraním. Nadstavba LatteOS je Prehľad
+(dashboard), agentgram (fork agentes-chat, iba pridáva) a konektory MCP pre všetky AI naraz (spravuje ich ToolHive,
+20. 11.). Kaviareň je zrušená (21. 11.), nahrádza ju agentgram.
 **LensAI nie je:** vlastný chatbot, ktorý obchádza podmienky služieb (do webov sa nič nevkladá), ani AI, ktorá
 na systém siaha sama, ani vývojová farma (10B.31, oddelene).
 
@@ -98,8 +98,7 @@ na systém siaha sama, ani vývojová farma (10B.31, oddelene).
 | C. Služby: rozhovor | Rozhovor s každou AI | Okná rozhovoru v podobe každej služby + webové záložky | Dve cesty k tomu istému (N1) | (a) ★ Záložky = plnohodnotná služba; vlastný rozhovor jednotne v štýle LatteOS pre lokálnu AI, kľúče, CLI · (b) ponechať kópie vzhľadov a dorobiť ich menu |
 | D. Lokálna AI | Ako LM Studio | Objavovať, Moje modely, Spúšťanie, videnie | Overenie naostro, kontrola odtlačku (K12), obnova zoznamu (10B.15) | ★ Overiť stiahnutie, pridať sha256; zoznam obnovovať s aktualizáciou |
 | E. Agenti a barlička | AI pomôže so systémom, človek potvrdí každý krok | „Urob to za mňa“ v termináli, pád → AI | Výzva agenta (K3); „robiace“ nástroje LatteOS (10B.18, 10B.30) | ★ Najprv K3, potom nástroje s náhľadom a vrátením cez skill |
-| F. Konektory (MCP) | LensAI = MCP hostiteľ pre všetky AI | Nezačaté (10B.43) | Všetko | ★ Kľúčový kameň: Kaviareň, Obsidian, obchod so skillmi aj barlička naň čakajú |
-| G. Kaviareň a farma | Tvorivé dlhé úlohy so schvaľovaním | Iba šošovka na dashboarde | Farma (10B.40), skilly (10B.36/38), Obsidian (10B.37) | ★ Až po F; začať jedným skillom (Komiks) na jednej stanici |
+| F. Konektory (MCP) | LensAI = MCP hostiteľ pre všetky AI | Nezačaté (10B.43) | Všetko | ★ Kľúčový kameň: Obsidian, obchod so skillmi aj barlička naň čakajú |
 | H. Hľadanie | Podľa významu a obsahu, mimo vypínača | Výskum (10B.13, 10B.32) | Rozhodnutie e5-sk vs. DigUp | ★ Patrí k LatteIndex (10N); v LensAI iba ako klient |
 | I. Hlas, kurzor | Diktovanie, AI pri kurzore | Mikrofón v LensGoo | Diktovanie (neskôr), 10B.33/34 výskum | Nechať ako výskum |
 
@@ -115,7 +114,7 @@ Celé znenie je v `docs/goo/ROZHODNUTIA.md`; tu iba čo sa tým mení oproti ča
 - **Prsteň** = spotreba, plný kruh = minuté (U9 opravené). **Späť/Znova** v hornej lište (K5/U7 → 10B.48).
 - **Dážď** (U2) → 1D.47. **Gemini** (U8): stav po staršom prihlásení v konzole, nie chyba.
 - **Strážca podmienok:** free-claude-code ho v kóde nemá (iba veta v README) → vlastný kód, 10B.39.
-- **Kaviareň** je súčasť LensAI, vizualizácia práce agentov ako Clod farm.
+- **Kaviareň** je súčasť LensAI, vizualizácia práce agentov ako Clod farm (zrušené 21. 11., nahrádza ju agentgram).
 - Otvorené: N1 (ponuky „+“ v poli rozhovoru, 10B.50).
 
 **Opravené a nasadené 10. 11. (10B.47):** K1, K2, K3, K4, K6, K8, U3, U4, U6, U9, N2, N3.
@@ -162,7 +161,7 @@ Z auditu neostáva nič otvorené (N1 hotové v 10B.50).
 1. **Oprava auditu** (malé, bez nových funkcií): K1, K2, K3, K5/U7, K6, K8, U3. Potom K4 s otázkou 3.
 2. **Rozhodnutia 1–5** → zapísať do `docs/goo/ROZHODNUTIA.md`; podľa 1 upratať N1/N3.
 3. **Overenie naostro** po krokoch z `docs/manual-inst.md`.
-4. **10B.43 MCP hostiteľ** → potom 10B.37 Obsidian, 10B.38 skilly, 10B.36/40 Kaviareň.
+4. **10B.43 MCP hostiteľ** → potom 10B.37 Obsidian, 10B.38 skilly.
 5. **Upratanie ROADMAP 10B:** 10B.22, 10B.23, 10B.24, 10B.27 a 10B.28 sú všeobecné body zlúčené zo starých
    zoznamov a prekrývajú sa s 10B.04, 10B.14 a 10B.29. Navrhujem ich zlúčiť do jedného bodu „kvalita rozhovoru
    a chybových stavov“. 10B.17 je takmer celé splnené v 10B.14 (zostávajú body 5–7).

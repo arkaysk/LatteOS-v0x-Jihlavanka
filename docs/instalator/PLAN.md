@@ -37,7 +37,7 @@ Fedory sivé), 2.05 (AI áno/nie), 2.06 (kompaktný inštalátor pre alpha) a 14
 ### 3.1 Z repozitárov Fedory (vždy)
 
 - **Relácia a prihlasovanie:** greetd, labwc (relácia SAFE), tuigreet, plymouth (+ two-step, spinner), egl-utils,
-  python3, python3-pillow, wireplumber, pulseaudio-utils, libnotify, swaybg, hypridle, wlopm.
+  python3, python3-pillow, wireplumber, pulseaudio-utils, libnotify, swaybg, wlopm (hypridle z COPR, §3.4).
 - **Aplikácie LatteOS:** quickshell, qt6-qtdeclarative, xdg-desktop-portal-gtk, flatpak (obchod Flathub).
 - **Písma a systém:** rsms-inter-fonts, jetbrains-mono-fonts, policycoreutils-python-utils, util-linux-core.
 - **Záchrana (SAFE):** foot, less, NetworkManager-tui.
@@ -64,8 +64,8 @@ Fedory sivé), 2.05 (AI áno/nie), 2.06 (kompaktný inštalátor pre alpha) a 14
 
 | Súčasť | Verzia | Záplaty | Čas na zostavenie (odhad) |
 |---|---|---|---|
-| pleamar | 0.7.10 (`94ac94c`) | `patches/pleamar-*.patch` | ~10 min |
-| pleamar-wm | 0.6.9 (`42c8fee`) | `patches/pleamar-wm-*.patch` | ~10 min |
+| pleamar | 0.7.27 (`dc902fe`) | `patches/pleamar-*.patch` | ~10 min |
+| pleamar-wm | 0.6.15 (`96f37e4`) | `patches/pleamar-wm-*.patch` | ~10 min |
 | Quickshell s webovým enginom (iba LensAI) | 0.3.2 (`9b0f339`) | `patches/quickshell-webengine.patch` | ~10 min |
 | programy LatteOS v Ruste (`crates/`) | z repa | — | ~2 min |
 
@@ -78,7 +78,7 @@ vývojové balíky Qt 6 a Waylandu (zoznam v `FILES`, riadok s qt6-qtwebengine).
 |---|---|---|---|
 | **Linux 7.3** | Koji (Fedora) | iba karty AMD GFX6–GFX8 (napr. RX 640) a iba kým Fedora 45 nemá 7.3 v aktualizáciách | z Koji je **nepodpísaný** → pri zapnutom Secure Boot sa nespustí; sprievodca to povie a ponúkne vynechanie |
 | **Mesa 26.3** | dnes rc v `/opt/mesa-26.3` | tie isté karty, kým ju Fedora nemá | samostatný priečinok, nemení systémovú Mesu |
-| Quickshell 0.3 | COPR `lionheartp/Hyprland` (dnes) | kým Fedora má iba 0.2.1 | cudzí COPR; cieľ: vlastná zostava ako pri LensAI |
+| Quickshell 0.3, hypridle, mpvpaper | COPR `lionheartp/Hyprland` (`install` ho zapína vždy, 16. 11.) | Quickshell, kým Fedora má iba 0.2.1; hypridle Fedora nemá | cudzí COPR; cieľ: vlastná zostava ako pri LensAI |
 
 **Hotové 3. 11.:** `patches/old-amd.sh` (`install --old-amd`, sprievodca ho pridá sám pri karte GFX6–8): Linux
 `7.3.1-200.fc45` z Koji (hotové balíky Fedory), Mesa `26.3.0-rc3` z archive.mesa3d.org (kontrolný súčet), zostavená
@@ -173,8 +173,8 @@ slobodná licencia, do COPR nesmie) a založiť ho iba na pokyn (je verejný).
 5. Skúška od nuly vo VM, potom na latte-lab (čistá Fedora 45 Server).
    **16. 11. — prvý beh vo VM, zistené:**
    - **`hypridle` (povinný) nie je vo Fedore** — na latte-lab z COPR `lionheartp/Hyprland` (ako Quickshell 0.3).
-     Inštalácia sa zastavila s jasnou správou a „Skúsiť znova“; vo VM COPR zapnutý ručne. Rozhodnúť: zapnúť COPR
-     v `install`, alebo nahradiť `hypridle` vlastným (pleamar-wm má `idle` v `session.conf`).
+     Inštalácia sa zastavila s jasnou správou a „Skúsiť znova“; vo VM COPR zapnutý ručne. Vyriešené: `install` COPR
+     zapína vždy (používateľ 16. 11.).
    - **Voliteľné mimo Fedory:** steam (RPM Fusion nonfree), gamescope-session(-steam) (COPR), umu-launcher, mpvpaper,
      mise (vlastný repozitár) — `install` ich teraz inštaluje zvlášť s `--skip-unavailable` a vypíše, čo vynechal;
      povinné ostávajú prísne.

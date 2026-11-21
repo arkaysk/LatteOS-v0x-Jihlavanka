@@ -1,13 +1,13 @@
 # LatteOS — Architektúra
 
-Princípy a vrstvy systému LatteOS.
+Princípy a vrstvy systému LatteOS (vetva `v0.55`, Fedora 45).
 
 ## Základné princípy
 
-1. **Linux first** — Hyprland, Wayland, štandardné protokoly (GSettings, XDG, portály)
+1. **Linux first** — pleamar-wm, Wayland, štandardné protokoly (GSettings, XDG, portály)
 2. **Myš prvá** — Všetko sa dá ovládať myšou (ľavé, pravé, koliesko); klávesy sú doplnok
-3. **Preberať, nevymýšľať** — Existujúce riešenia (Noctalia, pleamar) sa integrujú, nie vytvárajú znova
-4. **Jedno miesto pravdy** — Každá vlastnosť má jeden zdroj (režim štartu `/run/latteos/mode.toml`, téma `latte-theme`, kvapky `~/.config/latteos/kvapky.json`…)
+3. **Preberať, nevymýšľať** — Existujúce riešenia (pleamar, pleamar-wm, Marea, ToolHive…) sa integrujú, nie vytvárajú znova
+4. **Jedno miesto pravdy** — Každá vlastnosť má jeden zdroj (režim štartu `/run/latteos/mode.toml`, farby šálok `system/cups.json`, preklady `goo/lang/sk.plm`, čo ide do systému `FILES`…)
 
 ## Vrstvy architektúry
 
@@ -16,7 +16,7 @@ Princípy a vrstvy systému LatteOS.
 ```
 crates/latte-boot
 ├── detekcia grafiky (GPU, renderer)
-└── výber režimu (NORMAL / SAFE)
+└── výber režimu (NORMAL / SAFE), počítadlo pádov
 
 crates/latte-hw
 ├── CPU (x86-64 generácia, takty, cache)
@@ -28,147 +28,105 @@ crates/latte-hw
 1. GRUB zavedie kernel; služba `latte-boot.service` (pred greetd) spustí `latte-boot select`
 2. `latte-boot` zistí grafiku (ovládač, EGL, GLES 3) a počítadlo pádov
 3. Vyberie režim a zapíše `/run/latteos/mode.toml`:
-   - **NORMAL** — OpenGL ES 3 funguje → Hyprland + efekty (renderer `hw`, vo VM `sw-gl` alebo `vm-3d`)
+   - **NORMAL** — OpenGL ES 3 funguje → pleamar-wm + efekty podľa stupňa (renderer `hw`, bez karty `sw-gl`)
    - **SAFE** — grafika nefunguje alebo relácia 2× za sebou spadla → labwc + pixman bez efektov + záchrana
 
-### Vrstva 2: Relácia (Session)
+### Vrstva 2: Prihlásenie a relácia
 
 ```
-session/bin/latte-session
-├── výber relácie (LatteOS Kvapky, Kvapky – engine test, SAFE, Hra; pokusy: Noctalia čistá, Marea; Classic zrušený)
-├── profily prostredí (oddelené konfigurácie)
-└── systemd user jednotky
-
-session/bin/latte-greeter
-└── prihlasovacia obrazovka s výberom
+bin/latte-greeter      ← greetd ho spúšťa; scéna prihlásenia pleamaru (goo/login.plm) v labwc
+bin/latte-session      ← strážca relácie: GOO (pleamar-wm), safe (labwc), game (Steam v gamescope)
+system/sessions/       ← položky prihlásenia: LatteOS GOO, LatteOS SAFE, LatteOS Game
+system/systemd/        ← používateľské jednotky (latte-session.target, latte-goo, latte-idle, latte-mcp…)
 ```
 
 **Konfigurácie:**
-- `session/hypr/` — Hyprland (režimy okien, animácie)
-- `session/noctalia/` — Noctalia (corner bar, widgets)
-- `session/wayland-sessions/` — .desktop súbory
+- `system/pleamarwm/` — pleamar-wm: scéna správcu okien `wm/session.plm` (rozdiely LatteOS), `keys.conf`,
+  `session.conf`, `autostart`, náhrada `bin/hyprctl` (Goo a aplikácie ňou ovládajú okná)
+- `system/labwc/` — relácia SAFE a prihlásenie
+- `system/greetd/`, `system/boot.toml` — prihlasovanie a voľby štartu
 
-### Vrstva 3: Shell (Rozhranie)
+### Vrstva 3: Shell — LatteOS Goo
 
-#### LatteOS Classic (zrušený 5. 10. 2026 — kód ostáva, kým ho GOO nenahradí)
 ```
-Noctalia (panel Noctalie) + Hyprland
-├── Lišta dole so widgetmi
-├── Control center a panely
-├── OSD a notifikácie
-└── Aplikácie LatteOS (Quickshell, QML)
-```
-
-#### LatteOS Goo
-```
-pleamar engine (scéna goo.plm + logika Luau)
-├── Tekuté kvapky (128 miest)
-├── Fyzika: kurzor, nadnesenie, susedia, vietor, vlnky
+engine Goo (pleamar; scéna goo/goo.plm + logika Luau, fyzika crates/goo-phys cez latte-goo)
+├── Tekuté kvapky: BarGoo (okná), LensGoo (spúšťač), PowerGoo, QuickGoo, QueenGoo, ClockGoo, MediaGoo, CamGoo; vlastné
+├── Shore: TrayShore (oznamovacia oblasť), LensShore, DockShore
 ├── Vstupy: myš (všetky tlačidlá, koliesko, ťahanie)
-├── Kvapky: GooBar (okná), GooPower, LensGoo (jadro); QueenGoo, ClockGoo, ChatGoo (voliteľné); vlastné
-├── Noctalia (rohová lišta s widgetmi)
-└── Hyprland (okná aplikácií)
+└── pleamar-wm (okná aplikácií)
 ```
-Pôvodná scéna plochy Kvapky (`session/kvapky/kvapka.plm`, staré mená TimeGoo, PowerGoo, DaNoGoo) sa už nenasadzuje.
 
 **Goo v detaile:**
-- Scéna: `session/goo/goo.plm` (fyzika, vstupy, kresba, karta Goo, pás výkonu)
-- Logika: `session/goo/lib/engine.luau` (API, register, pravidlá); `lib/goobar.luau`, `lib/spustac.luau`, `lib/cas.luau`
-- Kvapky: `session/goo/kvapky/*.luau` (goobar, goopower, lensgoo, queengoo, clockgoo + ukážky)
-- Generátor: `session/goo/gen.py` (rozpíše telo goo, ktoré jazyk nemá v cykloch)
-- Pomocníci: `session/bin/latte-goo` (kvapky, polohy, účet, kalendár, počasie…), `latte-sysmon goo` (pás výkonu)
+- Scéna: `goo/goo.plm`, časti `goo/parts/*.plm` (telo, karta, kvapky, hladina…)
+- Logika: `goo/lib/engine.luau` (API, register, pravidlá; v hlavičke ako sa píše kvapka), `lib/card.luau`, `lib/ctx.luau`…
+- Kvapky: `goo/drops/*.luau`
+- Ďalšie scény: prihlásenie `login.plm`, zámok `lockscreen.plm`, SAFE `safe.plm`, polkit, ďalšie monitory `side.plm`
+- Generátor: `goo/gen.py` (rozpíše telo goo, ktoré jazyk nemá v cykloch)
+- Preklady: `goo/lang/sk.plm` (scény Goo aj aplikácie QML)
 
 ### Vrstva 4: Aplikácie
 
 ```
-session/apps/
-├── App Manager (inštalácia programov, Flatpak + RPM, aktualizácie)
-├── Nastavenia (vzhľad, HW, sieť, AI, Kvapky…)
-├── Monitor (procesy, senzory, autorun, výkon)
-├── Device Manager (zariadenia, ovládače, siete, obrazovky)
-├── Súbory (s archívmi ako priečinkami)
-└── iné (Heidelberg, Barista…) — zoznam v session/README.md
+apps/
+├── appmanager.qml   App Manager (programy, Flatpak + RPM, aktualizácie)
+├── settings.qml     Nastavenia (vzhľad, HW, sieť, AI, Kvapky…)
+├── aicenter.qml     LensAI (AI, agentgram, ToolHive pre MCP)
+├── files.qml        DualBrew (súbory)
+├── monitor.qml      Monitor (procesy, senzory, autorun, výkon)
+├── devices.qml      Správca zariadení
+├── guardcorgi.qml, chapolera.qml, calendar.qml, installer.qml
+└── common/          spoločné prvky (AppWindow.qml, I18n.qml, Theme.qml…)
 ```
 
 **Technológia:**
 - Quickshell (QML) — GUI, spúšťa `latte-app <meno>`
-- D-Bus — komunikácia so systémom
-- systemd — služby, úlohy na pozadí
+- Pomocníci `bin/latte-*` a nástroje v Ruste (`crates/`)
+- D-Bus, systemd — komunikácia so systémom, služby na pozadí
 
 ## Ako všetko komunikuje
 
 ```
-Hyprland (WM)
+pleamar-wm (kompozitor a správca okien, scéna wm/session.plm)
     ↓ (Wayland)
- pleamar engine ↔ Hyprland ↔ Aplikácie (Hyprland okná)
-    ↓                           ↓
-  Goo                    Noctalia control center
-  (kvapky, vstupy)       (panely, widgets)
+ engine Goo  ↔  pleamar-wm  ↔  Aplikácie (Quickshell, Flatpak…)
+    ↓                ↑
+ latte-say, náhrada hyprctl (system/pleamarwm/bin/hyprctl)
     ↓
- latte-kvapky, latte-goo (CLI)
-    ↓
- systemd user, D-Bus, skript
+ bin/latte-* , systemd user, D-Bus
 ```
 
 ## Súborová štruktúra
 
 ```
 .
-├── crates/              ← Rust: hw detekcia, boot
-├── session/             ← Relácie a shell
-│   ├── bin/             ← Úkony (latte-session, latte-goo…)
-│   ├── hypr/            ← Hyprland config (Lua)
-│   ├── goo/             ← Engine Goo (scéna + logika)
-│   ├── kvapky/          ← Pôvodná plocha Kvapky (už sa nenasadzuje)
-│   ├── apps/            ← Aplikácie (Quickshell)
-│   ├── noctalia/        ← Noctalia integrácia
-│   └── wayland-sessions/← .desktop súbory
-├── setup/               ← Inštalácia
-│   ├── f0-install.sh    ← VM, balíky
-│   ├── f1/              ← Relácie, testy
-│   └── lab/             ← Reálny PC
-├── resources/           ← Upstream zdroje
-│   ├── patches/         ← Naše záplaty
-│   └── fetch.sh         ← Sťahovanie
+├── bin/                 ← Pomocníci a úkony (latte-session, latte-files, latte-ai…)
+├── goo/                 ← Engine Goo (scény, časti, logika, kvapky, preklady, shadery)
+├── apps/                ← Aplikácie (Quickshell, QML)
+├── crates/              ← Rust: latte-hw, latte-boot, latte-goo, goo-phys, latte-index, latte-chapolera…
+├── system/              ← Súbory do systému: pleamarwm, labwc, greetd, systemd, sessions, cups.json…
+├── templates/           ← Šablóny okien (docs/okna/SABLONY.md)
+├── patches/             ← Naše záplaty pleamaru a pleamar-wm
+├── install, get         ← Inštalácia (get stiahne repo a otvorí inštalátor)
+├── tests/               ← Kontroly (check.sh), skúšky scén (screen.sh)
 ├── docs/                ← Táto dokumentácia
-├── old/                 ← Predchádzajúca verzia (len čítanie)
-└── docs_zaloha/         ← Archív: staré dokumenty, reporty a merania s dátumom
+└── FILES                ← Čo LatteOS dáva do systému (cieľ ← zdroj)
 ```
 
 ## Režimy a varianty
 
-### Relácia (`latte-session [safe|hra|noctalia|klasicke]`)
+### Relácia (`latte-session [safe|game]`)
 ```
-bez argumentu   → LATTE_VARIANT=kvapky     LatteOS GOO: engine Goo (LATTE_KVAPKY_SCENE = session/goo/goo.plm)
-noctalia        → LATTE_VARIANT=noctalia   čistá Noctalia na pokusy
-safe, hra       → núdzová relácia, herná relácia (nie sú v ponuke prihlásenia)
-klasicke        → LATTE_VARIANT=klasicke   LatteOS Classic (zrušený, kód ostáva, v ponuke nie je)
+bez argumentu   → LatteOS GOO: pleamar-wm s enginom Goo (iba v režime NORMAL)
+safe            → LatteOS SAFE: labwc so softvérovým kreslením a lištou SAFE (goo/safe.plm)
+game            → LatteOS Game: Steam Big Picture v gamescope; prepína sa s GOO v tom istom prihlásení (latte-game)
 ```
-Ponuka prihlásenia (6. 10. 2026): **LatteOS GOO**, **Marea**, **Noctalia (čistá)**, **Serpantinum**. Prvé dve položky
-LatteOS inštaluje `setup/f1/install-session.sh`, Mareu `setup/lab/marea-povodna.sh`, Serpantinum
-`setup/lab/serpantinum.sh`. SAFE príde sám (pády, GRUB › LatteOS SAFE), do hry sa prepína z plochy (`latte-hra`).
-Pôvodná plocha Kvapky (`session/kvapky/kvapka.plm`) sa nenasadzuje; staré mená `kvapky` a `kvapky-engine` znamenajú GOO.
+SAFE príde aj sám (pády, GRUB › LatteOS SAFE).
 
 ### Štart (`latte-boot select` → `/run/latteos/mode.toml`)
 ```
-mode = normal   renderer hw (grafická karta) · sw-gl (llvmpipe) · vm-3d (VMSVGA)   Hyprland + efekty podľa stupňa
-mode = safe     renderer pixman                                                     labwc bez efektov + záchrana
+mode = normal   renderer hw (grafická karta) · sw-gl (llvmpipe)   pleamar-wm + efekty podľa stupňa
+mode = safe     renderer pixman                                   labwc bez efektov + záchrana
 ```
-
-## Čas vývoja
-
-Podľa [ROADMAP.md](../ROADMAP.md):
-
-| Fáza | Popis | Stav |
-|------|-------|------|
-| F0 | základ VM bez GPU, softvérové vykresľovanie | ✅ |
-| F1 | grafický stack a režimy NORMAL / SAFE | ✅ |
-| F2 | Hyprland Lua modul LatteOS | ✅ základ |
-| F3 | shell; **F3·G** plocha Kvapky a engine Goo (hlavná práca) | 🔸 |
-| F4–F8 | systémové služby, stabilita, bezpečnosť, AI a Text Bar, herná vrstva | 🔸 |
-| H | reálny hardvér (latte-lab s AMD; NVIDIA neoverená) | 🔸 |
-| O | optimalizácia (trvalá priorita) | 🔸 |
-| A | Fedora Atomic — až keď bude všetko hotové | ⬜ |
 
 ---
 
@@ -177,5 +135,4 @@ Podľa [ROADMAP.md](../ROADMAP.md):
 - [Východiskový návrh: rámec, režimy, štart](NAVRH-STARTU.md)
 - [Optimalizácia — pravidlá a merania](OPTIMALIZACIA.md)
 - [LatteOS Goo — Pravidlá](goo/PRAVIDLA.md)
-- [Engine Goo — API](../session/goo/README.md)
-- [Setup — Inštalácia](../setup/lab/README.md)
+- [Plán vývoja](../ROADMAP.md)

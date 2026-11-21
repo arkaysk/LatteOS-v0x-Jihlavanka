@@ -108,7 +108,7 @@ Zásady: Barista musí všetko zvládnuť **sám**, bez pomoci používateľa, k
 pre tých, čo majú model, nikdy nie nutnosť). Hry mimo Steamu (nekúpené tam) riešime kombináciou všetkého dostupného.
 
 **Zdroje receptov (poradie dôvery):**
-1. **Vlastné overené recepty** — `session/recepty/*.json` (inštalácia `/usr/share/latteos/recepty`, používateľské `~/.local/share/latteos/recepty`).
+1. **Vlastné overené recepty** — `recipes/*.json` (inštalácia `/usr/share/latteos/recipes`, používateľské `~/.local/share/latteos/recipes`).
    Recept hovorí: zhoda (súbory na médiu, označenie disku), runner, Windows verzia, závislosti, prepisy DLL, sieť, poznámky, overený/neoverený.
 2. **Komunitné databázy — preberáme všetko užitočné:** inštalačné skripty Lutris, databáza opráv umu (`umu-database`/`protonfixes`),
    „verby“ winetricks, poznámky Wine AppDB a ProtonDB. Sťahujú sa s kontrolným súčtom do lokálnej medzipamäte a mapujú sa do nášho formátu.
@@ -116,7 +116,7 @@ pre tých, čo majú model, nikdy nie nutnosť). Hry mimo Steamu (nekúpené tam
 4. **Učenie z výsledkov:** výsledok skúšobného spustenia sa uloží lokálne a môže vytvoriť vlastný recept.
 5. **AI** len voliteľne (ak používateľ platí model): vysvetlenie chyby, návrh úpravy receptu.
 
-**Pravidlá pre Wine/Proton (z `latte-instalator`, neoverené, upravujú sa podľa receptov):**
+**Pravidlá pre Wine/Proton (z `latte-barista`, neoverené, upravujú sa podľa receptov):**
 
 | situácia | runner |
 |---|---|
@@ -136,17 +136,19 @@ alebo „nepodarilo sa“ s dôvodom a uloženým logom.
 ## Základ v systéme od začiatku (rozhodnutie 8. 10.)
 
 Všetko, čo Barista potrebuje na cudzie programy, je súčasť čistej inštalácie LatteOS (nie doinštalovanie na požiadanie):
-- balíky z Fedory v `setup/f0-install.sh` (pole `HRY`): `wine`, `winetricks`, `cabextract`, `innoextract`, `bubblewrap`, `7zip`, `icoutils`, `dosbox-staging`, `waydroid`, `glibc-langpack-en`, `samba`;
-- `setup/f1/hry.sh`: **umu-launcher** (oficiálny RPM, kontrola SHA-256) a **GE-Proton** (kontrola sha512) v `/opt/latteos/proton` (kontajner Steam Linux Runtime
-  nevidí `/usr/share`, ale `/opt` áno); umu pri prvom použití stiahne runtime (~660 MB);
-- **Android:** `waydroid init` s obrazom VANILLA (OTA `ota.waydro.id`); aplikácie len pre ARM potrebujú prekladač ARM→x86 (zatiaľ nie je);
-- `latte-instalator` a recepty (`/usr/share/latteos/recepty/*.json`) cez `setup/f1/install-session.sh`.
+- balíky z Fedory vo `FILES`: `wine`, `winetricks`, `cabextract`, `unshield`, `innoextract`, `7zip`, `icoutils`, `bubblewrap`;
+  voliteľne `umu-launcher`, `protontricks`, `lutris`, `gamemode`, `mangohud`, `dosbox-staging` (Fedora 45 umu-launcher zatiaľ nemá, ROADMAP 1D.16);
+- **GE-Proton** v `/opt/latteos/proton` (kontajner Steam Linux Runtime nevidí `/usr/share`, ale `/opt` áno); umu pri prvom použití
+  stiahne runtime (~660 MB);
+- **Android:** `waydroid init` s obrazom VANILLA (OTA `ota.waydro.id`); aplikácie len pre ARM potrebujú prekladač ARM→x86 (zatiaľ nie je;
+  waydroid zatiaľ nie je vo `FILES`);
+- `latte-barista` a recepty (`/usr/share/latteos/recipes/*.json`) cez `install` podľa `FILES`.
 Overené na latte-lab 8. 10.: `umu-run cmd /c ver` s GE-Proton11-7 vráti „Microsoft Windows 10.0.19045“ (bez displeja). Steam nie je potrebný.
 
 ## Fázy implementácie
 
-- **F1 (hotové 8. 10.):** `session/bin/latte-instalator analyze <cesta> [--json]` → typ, SHA-256, druh inštalátora, požiadavky, ochrany, ďalšie disky, verdikt a dôvody (bez spustenia inštalátora). Overené na AVP2 CD1/CD2 (InstallShield, 32-bit, DirectX a GameSpy na CD2) a na samorozbaľovacích exe.
-- **F1b (hotové 8. 10.):** `latte-instalator analyze` dopĺňa **plán** (runner Wine/Proton/DOSBox, Windows verzia, závislosti, dôvody) z receptu alebo pravidiel; prvý recept `session/recepty/avp2.json`.
+- **F1 (hotové 8. 10.):** `latte-barista analyze` → typ, SHA-256, druh inštalátora, požiadavky, ochrany, ďalšie disky, verdikt a dôvody (bez spustenia inštalátora). Overené na AVP2 CD1/CD2 (InstallShield, 32-bit, DirectX a GameSpy na CD2) a na samorozbaľovacích exe.
+- **F1b (hotové 8. 10.):** `analyze` dopĺňa **plán** (runner Wine/Proton/DOSBox, Windows verzia, závislosti, dôvody) z receptu alebo pravidiel; prvý recept `recipes/avp2.json`.
 - **F2:** portable `.exe` v bwrap profile + manifest + položka v menu.
 - **F3:** Wine inštalátor (Setup.exe) v novom prefixe, sprievodca 1–5, AVP2 ako prvý prípad.
 - **F4:** odinštalovanie a záloha, zmazanie podľa manifestu.

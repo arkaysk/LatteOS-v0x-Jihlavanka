@@ -56,7 +56,7 @@ latte-lab. **[zdroj]** = prečítané v zdroji pleamaru; **[overiť]** = odhad, 
 
 ## 3. Krok 0 — pleamar 0.7.27 a pleamar-wm 0.6.15
 
-Dnes je `patches/build-pleamar.sh` na 0.7.10 a 0.6.9. Jazyk sa medzitým nezmenil; zmenil sa výkon.
+Pri návrhu bol `patches/build-pleamar.sh` na 0.7.10 a 0.6.9, od kroku 0 je na 0.7.27 a 0.6.15. Jazyk sa medzitým nezmenil; zmenil sa výkon.
 
 | Verzia | Čo prináša |
 |---|---|

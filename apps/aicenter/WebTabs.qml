@@ -164,7 +164,7 @@ Item {
             onNewWindowRequested: request => {
                 const u = String(request.requestedUrl)
                 // LatteOS's own links only from agentgram's own tab: another page cannot pair this computer or open folders
-                // (security audit 21. 11., S3); ponytail: no confirmation yet when agentgram itself asks to pair
+                // (security audit 21. 11., S3); a pairing is still confirmed here (pairLink below)
                 // …and only while it shows the agentgram server LensAI is set to (its origin), not a page it was led to
                 const home = String((tabs.services.find(s => s.id === view.modelData) || {}).web || "").split("/").slice(0, 3).join("/")
                 const mine = view.modelData.startsWith("agentgram") && home !== "" && String(view.url).startsWith(home + "/")

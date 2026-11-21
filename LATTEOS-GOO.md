@@ -7,9 +7,10 @@ platné znenie a rozhodnutie sa s dátumom zapíše do denníka [docs/goo/ROZHOD
 hlavička [goo/lib/engine.luau](goo/lib/engine.luau).
 
 > **Smer:** LatteOS GOO je **jediná edícia** LatteOS (Classic je zrušený, 5. 10. 2026). Od 12. 10. 2026 sa píše
-> načisto vo vetve `v0.4-fresh` (**Fresh**): prihlasovanie Goo, relácie **LatteOS GOO**, **LatteOS SAFE** a zatiaľ
-> **LatteOS Game**; bez Noctalie. Tento dokument opisuje, ako sa má GOO správať; **čo z toho Fresh už má, je v §8**,
-> ostatné je predloha v `old/` a vráti sa po kusoch.
+> načisto (**Fresh**), od 2. 11. nad správcom okien **pleamar-wm** (Hyprland odinštalovaný), vo vetve `v0.55`:
+> prihlasovanie Goo, relácie **LatteOS GOO**, **LatteOS SAFE** a **LatteOS Game**; bez Noctalie. Do verzie 0.6 iba
+> opravy (21. 11.). Tento dokument opisuje, ako sa má GOO správať; **čo z toho Fresh už má, je v §8**, ostatné je
+> predloha vo vetve `v0.3` a vráti sa po kusoch.
 
 ---
 
@@ -21,11 +22,11 @@ obrazovky aj k sebe, naťahujú sa a praskajú, žijú vlastným pohybom a reagu
 
 | vrstva | čo robí | kde |
 |---|---|---|
-| **Hyprland 0.57** (Lua) | okná, režimy okien (páska, dlaždice, plávajúce), animácie | `system/hypr/` |
-| **pleamar 0.4.31** (k4ditano, BSD-3; Rust, SDF, jazyk 0.4, naše záplaty v `patches/`) | kreslí kvapky a karty Goo, logika v Luau | `goo/` (engine Goo) |
+| **pleamar-wm** (k4ditano, BSD-3; správca okien je scéna pleamaru, naše záplaty v `patches/`) | okná, režimy a rozloženia okien (páska, dlaždice, plávajúce…), titulky, sklo okien, animácie | `system/pleamarwm/` |
+| **pleamar 0.7.27** (k4ditano, BSD-3; Rust, SDF, jazyk 0.9, naše záplaty v `patches/`) | kreslí kvapky a karty Goo, logika v Luau | `goo/` (engine Goo) |
 | **pomocníci LatteOS** | štart, prihlásenie, relácia, údaje pre kvapky | `bin/`, `crates/` |
 
-Rohovú lištu, ovládacie centrum, upozornenia a zámok robila do v0.3 Noctalia 5; vo Fresh ich nahradia služby
+Rohovú lištu, ovládacie centrum, upozornenia a zámok robila do v0.3 Noctalia 5; vo Fresh ich nahrádzajú služby
 pleamaru (`tray`, `network`, `audio`, `bluetooth`, `notifications`, `session`, `polkit`) a kvapky.
 
 Názvy: **Goo** = celá plocha; **BarGoo** = lišta s oknami (hlava + ikry okien; do 12. 10. GooBar, podobne PowerGoo
@@ -38,10 +39,10 @@ bol GooPower); **kvapka** = každý samostatný tekutý prvok; **karta Goo** = o
 1. **Myš je prvá, klávesy iba doplnok.** Každá funkcia musí ísť myšou (klik, ťahanie, koliesko). Super = kláves Windows.
 2. **Návyky z Windows 11** rozhodujú: všetko je **dole**, klik na okno v lište prepne/minimalizuje, pravý klik na okno
    = ponuka okna, ťahanie ľavým ako vo Windows.
-3. **Preberať, nevymýšľať:** najprv hotové riešenie (Noctalia, pleamar, Marea, Linuxové subsystémy), až potom vlastné.
+3. **Preberať, nevymýšľať:** najprv hotové riešenie (pleamar, pleamar-wm, Marea, Linuxové subsystémy), až potom vlastné.
 4. **Preložiteľné:** texty v UI po anglicky + preklad (`translations sk` v scéne, `tr()` v logike), nikdy natvrdo po slovensky.
-5. **Každé prostredie má svoje nastavenia:** Goo, čistá Noctalia, Marea a cudzie prostredia (Plasma…) sa navzájom
-   nepoškodzujú (`latte-profil`, oddelené priečinky Noctalie).
+5. **Každé prostredie má svoje nastavenia:** Goo, Marea a cudzie prostredia (Plasma…) sa navzájom
+   nepoškodzujú (relácia LatteOS má vlastný priečinok nastavení pleamar-wm, `PLEAMAR_CONFIG`).
 6. **Kvapky sú vždy káva.** Téma LatteOS = šálka (materiál okien); obsah = káva s pomerom **vody a mlieka** (Barista).
    Vodová káva (lungo, americano) je sklo, espresso a mliečne kávy nepriehľadné. Kvapky nemajú vlastné farby —
    farba je iba vo farebnom jadre (17) a guľkách (15).
@@ -52,17 +53,16 @@ bol GooPower); **kvapka** = každý samostatný tekutý prvok; **karta Goo** = o
    obsahom); karta je celá vidieť, pri ktoromkoľvek okraji a v ktoromkoľvek zo 4 rohov (kvapky sa dajú presúvať).
    **Horná hrana karty pri prepínaní záložiek neskáče.** Riadne okná (App Manager, Správca zariadení…) sa nepripájajú
    — rodia sa z bubliny (14).
-10. **Goo má vlastný vzhľad ponúk:** z Noctalie a klasického LatteOS sa preberá **funkcia**, nie vzhľad.
+10. **Goo má vlastný vzhľad ponúk:** z cudzích prostredí a klasického LatteOS sa preberá **funkcia**, nie vzhľad.
 11. **Štýl okien Goo:** moderné ikony, písmo, trochu minimalizmu, chytrosť, vkus, užitočnosť. Ikony **Tabler**, písmo
     **Inter**, jemné zaoblenia, akcent témy na výbere; farby idú z témy LatteOS a karta pri uchu **prechádza do kávy**.
     Karty môžu byť väčšie, stále minimalistické a „futuristicky pohyblivé“; **najmenšie rozlíšenie je 1024 × 768**,
     hardvér nie starší než 10 (najviac 15) rokov.
 12. **Materiál a priehľadnosť:** prechod z kávy do farby okien; ďaleko od ucha reálna textúra materiálu témy (hliník,
     striebro, tepané zlato); sklenené témy majú perleťové dúhové okraje.
-13. **Okná aplikácií: sklo Hyprglass** iba v Goo a pri sklenených témach (okná 86 / 78 %, celá obrazovka a herný
-    režim bez skla); vypnutie `~/.config/latteos/bez-skla`.
-    *(Fresh, 13. 10.: sklo okien ide s materiálom kvapiek — Nastavenia Goo › Sklenená káva ho zapne, Káva vypne;
-    `system/hypr/latte/glass.lua`, plugin Hyprglass, iba stupne výkonu full a standard. Samostatný vypínač nie je.)*
+13. **Okná aplikácií: sklo** — pod každým oknom ho kreslí scéna pleamar-wm sklom pleamaru
+    (`system/pleamarwm/wm/session.plm`); koľko skla, volí jedna voľba pre celý LatteOS (Nastavenia › Okná, 0 bez skla
+    … 4 True Glass). Telo okna je priehľadné najviac na 40 % (pri menšom krytí pleamar do okna nepustí kliky).
 14. **Okno z kvapky sa rodí z bubliny:** kvapka vypľuje bublinku, tá preletí na miesto okna a nafúkne sa naň;
     **zatvorenie = prasknutie bubliny**; **minimalizácia = okno sa zmenší do kvapky, voľným pádom spadne do BarGoo
     a hladina sa zvlní.**
@@ -121,15 +121,16 @@ bol GooPower); **kvapka** = každý samostatný tekutý prvok; **karta Goo** = o
 - **Nesúmernosť:** nič nie je dokonale pravidelné (šum, rôzne veľkosti, cik-cak strapcov).
 - **Neprekrývať okná:** ikry BarGoo sa pod oknom stiahnu k okraju do voľného pásu; do výšky sa zhlukujú iba tam,
   kde nad nimi nie je okno.
-- **Rohová lišta Noctalie je zakázaná zóna:** má premenlivú šírku; kvapky a ikry sa pred ňou zastavia a ustúpia jej.
+- **TrayShore je tvrdý roh** (vpravo dole): kvapky sa k nemu nelepia, pred ním sa zastavia a odskočia (§8).
 - **Veľkosť:** každú kvapku možno nafúknuť alebo vyfúknuť **50–220 %** — kolieskom (ak ho kvapka nepoužíva na iné)
   alebo v Nastaveniach › Kvapky; s ňou rastie text aj ikona a **malé goo ukáže menej detailov**.
 
 ### 3.1 Živé bytosti — nečinnosť
 
-- **Nečinnosť** (myš aj klávesnica): stupeň **1** po ~1 min (kvapky „zaspávajú“), **2** po ~3 min (počasie),
+- **Nečinnosť** (myš aj klávesnica): stupeň **1** po ~1 min (kvapky „zaspávajú“), **2** po ~3 min,
   **3** po ~6 min (hra). **Prebudenie okamžite** pohybom myši alebo klávesom — zachvenie a návrat na miesto.
-- **Stupeň 2 — dážď alebo vietor podľa skutočného počasia** (Open-Meteo): dážď = drobné goo kvapky dopadajú na spodný
+- **Počasie sa nečinnosťou nezapína** (13. 11.): ani dážď a sneh pleamar-wm, ani nič na hladine; prípadne v sporiči
+  obrazovky (ROADMAP 9.26). Ako počasie vyzerá: dážď = drobné goo kvapky dopadajú na spodný
   okraj a zvlnia hladinu aj pripnuté kvapky; vietor (od 30 km/h) = postupné vlny pozdĺž okraja; sneh = vločky;
   jasno = iba dýchanie. Kvapky padajú iba nízko nad hladinou, nie cez okná.
 - **Deň a noc na hladine:** svetlo, ktoré sa odráža v kvapkách, a žiara nad horizontom hladiny sa menia podľa
@@ -149,16 +150,16 @@ bol GooPower); **kvapka** = každý samostatný tekutý prvok; **karta Goo** = o
   ext-idle-notify) pošle po 50 s bez dotyku `sys_idle 1` a pri činnosti `sys_idle 0`; kto píše bez myši, kvapky
   nezaspia, klávesa ich zobudí. Pri prehrávaní videa (inhibítor) sa nečinnosť nehlási. Bez pomocníka platí
   nečinnosť scény (iba myš).
-  *(Fresh, 13. 10.: pomocníkom je hypridle — `system/hypr/hypridle.conf` hlási `sys_idle 1/2/3` po 1, 3 a 6 min
+  *(Fresh, 13. 10.: pomocníkom je hypridle — `system/idle/hypridle.conf` hlási `sys_idle 1/2/3` po 1, 3 a 6 min
   a `sys_idle 0` pri činnosti; inhibítor aj okno na celú obrazovku nečinnosť zastavia.)*
 
 ---
 
 ## 4. Kvapky (Nová architektúra)
 
-**Jadro** (nedá sa skryť, iba zmeniť veľkosť): **PowerGoo, LensGoo.** **Voliteľné** (Nastavenia › Kvapky):
-**BarGoo** (od 27. 10.; aj Nastavenia › Okná, Alt+Tab ostáva), **QueenGoo, ClockGoo, ChatGoo.** Predvolene dole: PowerGoo – LensGoo – hlava BarGoo s ikrami, vpravo ClockGoo
-a v rohu tvrdý TrayShore (vo Fresh; do v0.3 rohová lišta Noctalie); QuickGoo (rýchle spúšťanie) vľavo od PowerGoo.
+**Skryť sa dá každá kvapka** (14. 11., Nastavenia › Kvapky), aj PowerGoo — odhlásiť a vypnúť sa dá aj cez Ctrl+Alt+Del;
+spúšťač je voľba „jedna z“ (LensGoo · LensShore), takže jeden ostáva vždy. BarGoo aj z Nastavení › Okná (Alt+Tab ostáva). Predvolene dole: PowerGoo – LensGoo – hlava BarGoo s ikrami, vpravo ClockGoo
+a v rohu tvrdý TrayShore; QuickGoo (rýchle spúšťanie) vľavo od PowerGoo.
 
 | Goo | Ľavý klik | Pravý klik | Koliesko |
 |---|---|---|---|
@@ -189,16 +190,16 @@ ostatné kvapky sú iba na hlavnom monitore.
   viditeľné — rovnaký prepínač neskôr poslúži režimu Glance (ROADMAP, celok Okná › Glance).
 - **Zvuk a žiadosť o pozornosť sú vidieť na samotnom okne** (rozhodnuté 13. 10.): jeho **okraj pulzuje** — bledo
   a pomaly, kým okno hrá zvuk (nie na okne, v ktorom sa práve pracuje), červeno a rýchlo, kým chce pozornosť (až kým
-  nie je vpredu). Robí to Hyprland (`system/hypr/latte/windows.lua`); ktoré okná hrajú, mu hovorí scéna. Hlava
+  nie je vpredu). Robí to scéna pleamar-wm (`system/pleamarwm/wm/session.plm`); ktoré okná hrajú, jej hovorí Goo. Hlava
   BarGoo sa zavlní iba vtedy, keď také okno nie je na očiach (iná plocha).
 - **Ikry okien:** okná ako menšie kvapky s ikonou aplikácie; okná tej istej aplikácie sa zhlukujú do **strapcov**;
   čím viac okien, tým menšie; myš nad strapcom ho rozvinie. Aktívne okno plnšie, minimalizované menšie a stlmené.
   Ikry sa lepia iba ku BarGoo. **48 miest**, nad nimi posledná ikra „Ďalšie okná“ otvorí prehľad.
 - Ikry vyrastajú z hlavy na stranu, kde nie sú iné kvapky (nastavenie `reversed` to otočí); BarGoo sa spája s inými
-  kvapkami iba z druhej strany. Lišta sa zmestí po kraj a zastaví pred rohovou lištou.
+  kvapkami iba z druhej strany. Lišta sa zmestí po kraj a zastaví pred TrayShore.
 - **Viac monitorov:** každá obrazovka má vlastný BarGoo, okná a ikry sa dajú prenášať. *(Fresh, 13. 10.: na každom ďalšom
   monitore beží vlastná scéna `goo/side.plm` s BarGoo a oknami toho monitora — `latte-goo-side@MONITOR.service`,
-  spúšťa a zastavuje ju Hyprland; materiál, živé správanie a kávu jej hovorí hlavná scéna cez `latte-say`.
+  spúšťa a zastavuje ju `latte-screens`; materiál, živé správanie a kávu jej hovorí hlavná scéna cez `latte-say`.
   Okno sa presunie na inú obrazovku z jeho ponuky › Presunúť na obrazovku (27. 10.); prenášanie ikier ťahaním ešte nie je.)*
 
 ### 4.2 PowerGoo — účet, napájanie a výkon
@@ -206,11 +207,11 @@ ostatné kvapky sú iba na hlavnom monitore.
   AccountsService), meno a `login@počítač · od HH:MM` (klik = Nastavenia › Môj účet); tlačidlá **Zamknúť · Odhlásiť**.
   **NAPÁJANIE:** batéria s pruhom (notebook) a **profil napájania** Úspora · Vyvážený · Výkon (`powerprofilesctl`;
   bez neho sa riadok neukáže). **Nastavenia**, **Monitor**. Tlačidlá **Uspať · Reštartovať · Vypnúť** (červené).
-  Akcie relácie robí Noctalia.
+  Akcie relácie idú priamo cez systemd (`systemctl`).
 - **Pás výkonu (pravý klik):** PowerGoo sa **natiahne pozdĺž okraja do kapsuly** (na voľnú stranu — predvolene od
   LensGoo preč; ikona vypínača ostane na konci pri pôvodnom mieste) a **okolné goo odtlačí**; po vtiahnutí sa
   odtlačené goo vrátia, ak ich medzitým nikto nepresunul. Bunky **CPU · RAM · GPU · VRAM** (názov, hodnota, pruh),
-  raz za sekundu z `latte-sysmon goo`. Hodnota je káva, **jantárová nad 80 %**, **červená nad 95 %** alebo pri
+  raz za sekundu z `latte-stats`. Hodnota je káva, **jantárová nad 80 %**, **červená nad 95 %** alebo pri
   prehriatí (CPU 80 / 90 °C, GPU 85 / 95 °C). Prechod myšou = podrobnosti (takt, teplota, najnáročnejší proces,
   swap), klik = Monitor na tej časti, pravý klik = vtiahnuť. Zapnutý pás ostane aj po ďalšom prihlásení. **FPS
   v páse nie je** — hra na celú obrazovku je nad vrstvou Goo (v hre ostáva prekrytie MangoHud).
@@ -226,8 +227,8 @@ okraji, pri písaní sa vysunie ostrovček od spodného okraja ako v Marei, kont
   hľadanie, kalkulačka a prevody, stránky Nastavení, prvé tri nájdené súbory, rýchle prepnutie do iných režimov;
   každý výsledok má vpravo **značku zdroja** — Aplikácia / Nastavenia / Súbor / Priečinok / Web; pravý klik = akcie
   aplikácie) · **Súbory** (domovské priečinky,
-  `latte-hladaj`; pravý klik = priečinok so súborom) · **Web** (adresa, vyhľadávače, návrhy) · **Terminál**
-  (`latte-terminal`, terminál po príkaze ostane otvorený; nebezpečný príkaz chce druhý Enter; história) · **AI**.
+  `fd`; pravý klik = priečinok so súborom) · **Web** (adresa, vyhľadávače, návrhy) · **Terminál**
+  (terminál z `goo/lib/open.luau`, po príkaze ostane otvorený; nebezpečný príkaz chce druhý Enter; história) · **AI**.
 - **AI vždy vnútri, nikdy v prehliadači** (záväzné): rozhovor beží v goo bublinách spúšťača cez `latte-ai`, **bez API
   kľúča** — cez oficiálne nástroje prihlásené účtom používateľa (Claude = `claude -p` so `stream-json`, Gemini =
   `gemini` CLI, ChatGPT = `codex exec`), prípadne Ollama alebo domáci server; prihlásenie raz z Nastavení. Otvorenie
@@ -275,7 +276,7 @@ okraji, pri písaní sa vysunie ostrovček od spodného okraja ako v Marei, kont
   vľavo **upozornenia** (ikona aplikácie, nadpis, telo; klik otvorí, pravý klik akcie a Zahodiť; najviac 5, potom
   „+N ďalších“), **Nerušiť**, **Vymazať všetko**, Nastavenia oznámení; vpravo **mesiac** od pondelka (koliesko,
   šípky), udalosti a úlohy vybraného dňa, pole na nový záznam („10:30 Porada“, „Porada“, „! úloha“) a **Prepojené
-  kalendáre** (Google, iCloud, CalDAV, ICS — účty spravuje Noctalia). Zmestí sa aj na 1024 × 768.
+  kalendáre** (adresy iCal — Google, iCloud, Nextcloud). Zmestí sa aj na 1024 × 768.
   *(Fresh, 13. 10.: prepojený kalendár je adresa vo formáte iCal (.ics) — dá ju Google, iCloud aj Nextcloud;
   `bin/latte-cal` ich číta pri štarte a každú polhodinu, udalosti sú iba na čítanie. Účty a CalDAV so zápisom nie sú.)*
 - **Karta času (pravý klik):** **Prehľad** (dátum, týždeň, najbližší budík, digitálna pohoda — čas pred obrazovkou
@@ -288,8 +289,8 @@ okraji, pri písaní sa vysunie ostrovček od spodného okraja ako v Marei, kont
   nainštalovaný alebo beží. Nie je nutná — v Nastaveniach voľba „kvapka ChatGoo“ alebo „ikona Beepera v rohovej
   lište“.
 - **Minimalizácia Beepera = okno vtečie do kvapky ChatGoo**; klik ho vráti. Upozornenia Beepera idú do ChatGoo
-  (guľky, odznak siete; klik otvorí rozhovor, pravý akcie). Pomocník `old/session/bin/latte-chatgoo` je hotový (v0.3).
-- **Stav (6. 10.):** kvapka je v engine (`kvapky/chatgoo.luau`). Je na ploche, iba keď je Beeper nainštalovaný alebo
+  (guľky, odznak siete; klik otvorí rozhovor, pravý akcie). Pomocník `latte-chatgoo` bol hotový vo v0.3 (vetva `v0.3`).
+- **Stav vo v0.3 (6. 10.; vo Fresh ešte nie je, §8):** kvapka bola v engine (`kvapky/chatgoo.luau`). Je na ploche, iba keď je Beeper nainštalovaný alebo
   beží; nesie **pôvodnú ikonu Beepera** (zo spúšťača aplikácií). Okno Beepera nemá ikru v BarGoo — ľavý klik na
   kvapku ho ukáže alebo schová, jadro svieti, kým je okno v kvapke. Upozornenia Beepera idú k nej namiesto ClockGoo
   (modré guľky); pravý klik = karta správ (klik otvorí rozhovor, pravý klik na správu = jej akcie, Vymazať všetko).
@@ -314,41 +315,31 @@ okraji, pri písaní sa vysunie ostrovček od spodného okraja ako v Marei, kont
 - Programátor pridá kvapku s vlastným správaním ako modul Luau (`goo/drops/`); ako, je v hlavičke
   [goo/lib/engine.luau](goo/lib/engine.luau).
 
-### 4.8 Rohová lišta Noctalie — vpravo dole
-*(Fresh, 13. 10.: namiesto nej je vlastné **Pobrežie** — tvrdý roh, popis v §8. Nasledujúce platilo do v0.3.)*
-*(27. 10.: Pobrežie sa premenovalo na **TrayShore** — oznamovacia oblasť, upozornenia a dashboard s widgetmi ako
-v Androide; príboj vĺn o TrayShore. ROADMAP 6H.05–6H.08.)*
-- Iba **pravá časť** lišty Noctalie, **natvrdo prilepená** do rohu, šírka podľa počtu widgetov. Obsahuje ikony
-  programov na pozadí, sieť, hlasitosť, ovládacie centrum; **ďalšie widgety a komunitné doplnky** Noctalie sa
-  pridávajú v jej nastaveniach a bežia natívne. Kliky podľa Noctalie, panely sa otvárajú pri lište.
-- Plán: priehľadné pozadie a goo telo z pleamaru pod ňou (vlnenie pri zmene stavu).
+### 4.8 TrayShore — vpravo dole
+Vlastný **tvrdý roh** (do 27. 10. „Pobrežie“): oznamovacia oblasť, upozornenia a dashboard s widgetmi ako v Androide;
+príboj vĺn o TrayShore. Popis v §8, plán v ROADMAP 6H.05–6H.08.
 
-### 4.9 Okná (Hyprland)
-- **Prichytenie ťahaním** (Fresh, 13. 10.; plávajúce okná): okno pustené s kurzorom pri hornom okraji sa
-  maximalizuje, pri bočnom zaberie polovicu, pri rohu štvrtinu; odtiahnuté z miesta dostane späť svoju veľkosť.
-  Kedy bolo okno pustené, hovorí plugin `plugins/latte-events` (Hyprland na to udalosť nemá); bez neho sa
-  neprichytáva. Pri Win + ťahaní sa prichytí až s prvým pohybom myši po pustení. Náhľad cieľa ešte nie je.
+### 4.9 Okná (pleamar-wm)
+- **Prichytenie ťahaním** (plávajúce okná): okno pustené pri okraji zaberie polovicu, v rohu štvrtinu (magnety
+  pleamar-wm); kým sa okno ťahá, pás hore ponúka rozloženia monitora (`system/pleamarwm/wm/session.plm`).
 - **Okno vždy na dosah** (používateľ, 13. 10.; plávajúce okná): od okraja sa mení veľkosť v tom smere; kúsok za
   okrajom v prázdne (do 36 px) sa okno chytí celé a ťahá; pustené okno sa vráti tak, aby jeho vrch ostal na obrazovke
-  a aspoň 140 px z neho bolo vidieť — ✕ sa už nedá stratiť za hranou. Chytenie za okraj robí plugin `latte-events`.
+  a aspoň 140 px z neho bolo vidieť — ✕ sa už nedá stratiť za hranou. (Na Hyprlande to robil plugin; v pleamar-wm
+  neoverené.)
 - Režimy **páska** (nekonečná, ako niri), **dlaždice**, **plávajúce** (ako Windows). Štvrtý, **Glance** pre široké
   monitory (Main · Stash · Parking), je rozhodnutý a čaká v poradí: ROADMAP, celok Okná › Glance. Okná neprekrývajú pás kvapiek
-  pri okraji (ani maximalizované); celú obrazovku kreslí Hyprland nad vrstvou Goo.
+  pri okraji (ani maximalizované); okno na celú obrazovku je nad vrstvou Goo.
 
 ### 4.10 Nastavenia › Kvapky (Goo)
-- Jadro: veľkosť a Vrátiť na miesto; voliteľné: aj skryť / ukázať; veľkosť 50–220 %. ChatGoo: kvapka alebo ikona
-  v rohovej lište. Vlastné kvapky. Súbor `~/.config/latteos/kvapky.json` (engine ho číta každé 2 s).
-- **Materiál kvapiek** (7. 10.): **Káva** (predvolená) alebo **Sklenená káva** (`material: "sklo"`) — predloha
-  „Droplu“ z Figmy v kávových farbách: telo lišty a kvapiek je sklo, cez ktoré presvitá rozmazané pozadie
-  (pleamar `glass`, rozmazanie robí Hyprland; svetlo okraja od kurzora), nad ním priesvitná káva (druhé telo
-  s tými istými tvarmi, 44 %) a na každej kvapke lesklý odlesk. **Lom pozadia** (`lens`) má našu opravu —
-  záplatu `pleamar-sklo-stabilne` (7. 10.): pôvodný pleamar odčítaval iba posledný obraz a pri stále sa hýbucich
-  kvapkách v skle na chvíľu ostávali duchovia a zrnité pásy. Vypne ho `sklo_lom: false` v kvapky.json (potom
-  pozadie iba rozmazáva Hyprland). Cena na latte-lab (RX 640): engine hlavného monitora ~27 % → ~41 % jedného
-  jadra, Hyprland bez zmeny (~16 %); pri obyčajnej káve sklo nestojí nič.
-- Hlavné nastavenia systému sú **Nastavenia LatteOS**; vybrané položky z nastavení Noctalie sa do nich selektívne
-  integrujú (návrh: komunitné doplnky, widgety rohovej lišty, kalendárové účty, filtre a história upozornení, nočné
-  svetlo, OSD, horúce rohy, história schránky, rozloženie klávesnice). Tapety zjednotiť na jedno miesto.
+- Každá kvapka: skryť / ukázať, veľkosť 50–220 %, Vrátiť na miesto. Vlastné kvapky. Súbor `settings.json`
+  v priečinku scény (`~/.local/share/pleamar/goo/`), engine ho berie hneď po zmene.
+- **Materiál kvapiek** (7. 10.): pomer vody a mlieka, jedno číslo `material` — 0 **Káva** (predvolená) … 1 **číre
+  sklo** — predloha „Droplu“ z Figmy v kávových farbách: telo lišty a kvapiek je sklo, cez ktoré presvitá pozadie
+  (pleamar `glass`; svetlo okraja od kurzora), nad ním priesvitná káva a na každej kvapke lesklý odlesk.
+  **Lom pozadia** (`lens`) má našu opravu — záplatu `pleamar-steady-glass` (7. 10.): pôvodný pleamar odčítaval iba
+  posledný obraz a pri stále sa hýbucich kvapkách v skle na chvíľu ostávali duchovia a zrnité pásy. Vypne ho
+  `bends: false` v `settings.json`.
+- Hlavné nastavenia systému sú **Nastavenia LatteOS**. Tapety zjednotiť na jedno miesto.
 
 ### 4.11 Návrhy ďalších kvapiek a vylepšení
 - **ClipGoo** (história schránky s pripnutím), **MediaGoo** (práve hrá, ovládanie a hlasitosť cez MPRIS), **PassGoo**
@@ -366,18 +357,18 @@ Programy sa nevytvárajú — používajú sa existujúce Linuxové subsystémy 
 | Oblasť | Použije sa | Nie |
 |---|---|---|
 | Sieť | **NetworkManager** (jediný správca; iwd iba prípadne ako jeho Wi-Fi backend) | druhý správca vedľa neho |
-| Vyhľadávanie | **plocate + fd + ripgrep** (`latte-hladaj`); LocalSearch (Tracker3) iba na metadáta a plný text, keď bude treba | Baloo (ťahá KDE) |
-| Súbory v sieti | **GVFS** (+ `gvfs-mtp`, `gvfs-smb`), cloud a FTP/SFTP cez rclone (`latte-siet`) | KIO (KDE) |
+| Vyhľadávanie | **plocate + fd + ripgrep**; LocalSearch (Tracker3) iba na metadáta a plný text, keď bude treba | Baloo (ťahá KDE) |
+| Súbory v sieti | **GVFS** (+ `gvfs-mtp`, `gvfs-smb`), cloud a FTP/SFTP cez rclone | KIO (KDE) |
 | Knižnice | XDG priečinky a záložky Súborov | vlastná vrstva |
 | Tlač, skenovanie | CUPS (tlač bez ovládača: IPP Everywhere / AirPrint, USB cez `ipp-usb`), SANE + `sane-airscan`, simple-scan; tlačiarne a skenery v Správcovi zariadení | ovládače od výrobcov, vlastný dialóg skenovania |
-| Bluetooth | BlueZ (ovládanie cez Noctaliu a službu pleamaru) | — |
+| Bluetooth | BlueZ (ovládanie cez službu pleamaru) | — |
 | Firewall | firewalld (nad nftables) | — |
 | Firmvér | fwupd + LVFS (App Manager › Aktualizácie) | — |
 | Dokumenty | poppler (Heidelberg) + hotový prehliadač ako Flatpak (Papers alebo Okular) | Okular ako knižnica |
 | Zvuk a médiá | PipeWire, GStreamer, mpv; MediaGoo cez MPRIS | — |
 | Podcasty | hotová aplikácia (Kasts, GNOME Podcasts) + MediaGoo | vlastný RSS engine |
 
-**Stav (6. 10., v0.3):** balíky inštaluje `old/setup/f1/install-session.sh` (`gvfs-mtp`, `gvfs-gphoto2`, `gvfs-afc`, `gvfs-smb`, CUPS,
+**Stav (6. 10., v0.3):** balíky inštaloval `setup/f1/install-session.sh` (vetva `v0.3`) (`gvfs-mtp`, `gvfs-gphoto2`, `gvfs-afc`, `gvfs-smb`, CUPS,
 `ipp-usb`, SANE, `sane-airscan`, simple-scan); CUPS sa spúšťa až pri použití (`cups.socket`). Správca zariadení
 (`latte-devices`, `SpravcaZariadeni.qml`) má skupiny:
 
@@ -435,8 +426,8 @@ treba rozhodnúť, čo je bezpečné ukázať pred prihlásením (RSS, upozornen
 
 7. **Výskok:** kvapka letí zo šálky oblúkom dopredu a do boku, rastie (blíži sa z diaľky) a dvakrát sa odrazí; pri
    klesaní roviny sa riadok pod hladinu **ponorí a vynorí sa nad ňu** ako ostatné goo.
-8. **Výber relácie** (vývojárska verzia): na hladine v dosahu riadku sa vynorí ešte jedno goo — LatteOS GOO, Marea,
-   Noctalia (čistá), Serpantinum.
+8. **Výber relácie** (vývojárska verzia): na hladine v dosahu riadku sa vynorí ešte jedno goo — LatteOS GOO,
+   LatteOS SAFE, LatteOS Game.
 10. **Hladina a obloha:** riadok je mierne nad hladinou (ako pás výkonu PowerGoo), hladina sa mierne vlní; **dážď
    a sneh** podľa počasia vonku (padá, alebo je v predpovedi); nenápadná **silueta slnka alebo mesiaca** tam, kde
    naozaj je (miesto z Nastavení › Prihlasovanie), mesiac v správnej fáze. Obzor je hladina.
@@ -449,7 +440,7 @@ treba rozhodnúť, čo je bezpečné ukázať pred prihlásením (RSS, upozornen
 **Stav 12. 10. (Fresh):** scéna je napísaná načisto (`goo/login.plm`, logika `goo/lib/login.luau`) a je predvoleným
 prihlasovaním nových inštalácií: `greeter = "goo"` v `/etc/latteos/boot.toml` (bez grafickej karty, v SAFE alebo po
 páde scény nasleduje doterajší prihlasovač; podrobnosti
-v `old/session/goo/README.md` › Prihlásenie). Hladina je v 2/3
+vo vetve `v0.3`, `session/goo/README.md` › Prihlásenie). Hladina je v 2/3
 výšky obrazovky (rovina „klesne“ zo stredu), pod ňou tretina obrazovky kávy.
 
 ### 6.2·1 Monitor (Fresh, 13. 10.)
@@ -519,14 +510,14 @@ v režime Aplikácie — pod čiarou pod aplikáciami ponúkne stránky nastaven
 ### 6.3·0 Okno aplikácie LatteOS (rozhodnuté 13. 10.)
 Každá aplikácia LatteOS žije v tom istom okne (`apps/common/AppWindow.qml`), podľa ForkLiftu a nákresu V2:
 - **Bočný panel zo skla od vrchu po spodok** okna — stránky aplikácie, jej miesta, to, čo má poruke (rozkladacie menu,
-  zoznam diskov a obľúbených priečinkov, rýchly prístup k funkciám editora). Sklo rozmazáva Hyprland; druhy
+  zoznam diskov a obľúbených priečinkov, rýchly prístup k funkciám editora). Sklo kreslí pleamar-wm; druhy
   frost · smoke · clear · milk (`~/.config/latteos/glass`); kde sa nerozmazáva (nižšie stupne výkonu), je panel plný.
 - **Hlavička** vpravo od panela nesie funkcie: šípky späť a vpred, názov, nástroje aplikácie, pole hľadania, **NET**
   (odstaviť aplikáciu od internetu hneď: `latte-net`, služba `latte-netd`; to isté je v ponuke každého okna) a úplne vpravo **✕**. Za hlavičku sa okno ťahá.
   Minimalizovať a maximalizovať sú iba medzi plávajúcimi oknami.
 - **Kávová hladina** (`Surface.qml`): keď má aplikácia spodnú časť, je hladina jej rozhraním a to, čo v nej stojí,
   sa hojdá s ňou; inak je iba tichým pohyblivým pozadím. Pri pohybe okna sa zavlní ako káva v nesenej šálke.
-- Okno si kreslí hlavičku samo, kompozitor mu druhú nedáva (`system/hypr/latte/bars.lua`).
+- Okno si kreslí hlavičku samo, kompozitor mu druhú nedáva (`frame=own` v `system/pleamarwm/session.conf`).
 
 ### 6.3 Obchod podľa ZimaOS (App Manager)
 *(13. 10. večer: obchod je **streamovacie menu** v okne z §6.3·0 — veľký banner so štítkami a okrúhlym tlačidlom,
@@ -545,7 +536,7 @@ Domácnosť, Sieť, AI, Financie, Sociálne, Vývojár, Ostatné) a **komunitné
 kurátorské výbery Bluefin a Bazzite); vpravo veľký **kolotoč bannerov** (dva naraz, snímka, ikona, názov, slogan),
 pod ním **Trending Now** a **New Arrivals** ako veľké karty. Údaje sú (Flathub: snímky, ikony, popisy).
 
-**Stav 6. 10.: vytvorené** v App Manageri (`session/apps/common/AppManager.qml`, `latte-apps store`): kategórie
+**Stav 6. 10.: vytvorené** v App Manageri (`apps/appmanager.qml`, `latte-apps store`): kategórie
 a komunitné obchody (Bluefin, Bazzite) ako zoznam v ľavom paneli, kolotoč dvoch bannerov, „Práve letí“ a „Nové
 prírastky“ ako veľké karty s tlačidlom Inštalovať. Hľadanie ostalo v hlavičke okna; Domácnosť Flathub ako kategóriu
 nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
@@ -561,29 +552,29 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
 | engine: register kvapiek, rozloženie, vstupy, nastavenia | `goo/lib/engine.luau` (v hlavičke: ako sa píše kvapka) |
 | karta (ponuka, spúšťač, panel) | `goo/lib/card.luau` (v hlavičke: druhy riadkov) |
 | kvapky | `goo/drops/*.luau`; okná v lište `goo/lib/bar.luau`, spúšťač `goo/lib/lens.luau` |
-| čo scéna žiada od Hyprlandu | `goo/lib/wm.luau` → `hyprctl eval` → `system/hypr/latte/windows.lua` |
+| čo scéna žiada od správcu okien | `goo/lib/wm.luau` → `hyprctl` (náhrada `system/pleamarwm/bin/hyprctl`) → scéna pleamar-wm |
 | kto čo spúšťa (terminál…) | `goo/lib/open.luau` — jediné miesto, ktoré menuje iný program |
 | preklady | `goo/lang/sk.plm` (scény aj `tr()` v logike; `N("…")` označí text, ktorý `tr()` dostane neskôr) |
-| Hyprland | `system/hypr/hyprland.lua`, `latte/windows.lua` (režimy, okná, plochy), `latte/keys.lua`, `latte/tiers.lua` |
+| pleamar-wm | `system/pleamarwm/`: `wm/session.plm` (režimy, okná, titulky, sklo — rozdiely LatteOS), `keys.conf`, `session.conf`, `autostart` |
 | relácia, štart enginu | `bin/latte-session`, `system/systemd/latte-goo.service` (patrí k `latte-session.target`) |
 | nastavenia a stav používateľa | `~/.local/share/pleamar/goo/`: `places.json` (kde sú kvapky), `settings.json` (materiál, živé správanie, skryté kvapky, veľkosti), `lens.json` (spúšťač); `~/.local/state/latteos/window-mode`; `~/.config/latteos/coffee` |
 | čo LatteOS dáva do systému | `FILES` |
 | kontroly pred commitom | `tests/check.sh` |
-| **skúška celej relácie bez obrazovky**, na skutočnej karte | `tests/screen.sh` (labwc bez výstupu → Hyprland → scéna; snímky, falošná myš, `--record`) |
-| záplaty pleamaru | `patches/` (README tam); novinky u autorov `old/session/bin/latte-upstream -v` |
-| predloha v0.3 | `old/` (nemení sa); jej engine `old/session/goo/` a jeho README |
+| **skúška celej relácie bez obrazovky**, na skutočnej karte | `tests/screen.sh` (labwc bez výstupu → scéna Goo; snímky, falošná myš, `--record`); celá relácia so správcom okien: `pleamar-wm headless` |
+| záplaty pleamaru a pleamar-wm | `patches/` (README tam); novinky u autorov `latte-upstream -v` (v repozitári zatiaľ nie je, ROADMAP 1D) |
+| predloha v0.3 | vetva `v0.3` (nemení sa); jej engine `session/goo/` a jeho README |
 | testovací stroj latte-lab | grafika AMD Polaris 12: na karte (podľa fotky) **RX 550**, detektor LatteOS ju hlási ako **RX 640** (OEM označenie toho istého čipu) |
 
 ---
 
 ## 8. Čo z toho má Fresh (stav 12. 10. 2026)
 
-**Je** (overené v `tests/screen.sh` na latte-lab — Hyprland bez obrazovky, snímky a falošná myš):
+**Je** (overené na latte-lab):
 
 - **Engine:** kvapky na všetkých štyroch okrajoch, jedno telo goo, pokoj a nadnesenie pri kurzore, susedia (voda, vlákno),
   ťahanie a prilepenie k okraju, pád z voľného priestoru, ponor, vlnky a vietor, neprekrývanie (22), farebné jadro,
   guľky, kapsula, veľkosť kolieskom, bublina s názvom, káva podľa `~/.config/latteos/coffee`, materiál sklenená káva,
-  deň a noc a počasie pri nečinnosti (`latte-sky`), uloženie polôh.
+  deň a noc (`latte-sky`), uloženie polôh.
 - **Karta Goo** s uchom: riadky, nadpisy, tlačidlá v rade, dlaždice aplikácií, profil, odsek, pruh, záložky, pole na
   písanie, podponuky, šípky a Enter. Rozmer karty vychádza z rozloženia scény, logika nepočíta súradnice.
 - **BarGoo:** hlava s režimom okien (ľavý klik ďalší režim, pravý ukázať plochu, koliesko), ikry okien po aplikáciách
@@ -628,16 +619,18 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
   (`ext-session-lock`), heslo overí systém; vyzerá ako prihlásenie v pokoji. Keby scéna pri zamknutí spadla, nová
   zamkne znova. Pri nečinnosti (hypridle, `latte-idle.service`) zamkne po 10 min, po 15 min zhasne obrazovky (časy: Nastavenia › Uzamknutie a nečinnosť),
   zamkne aj pred uspaním; film, hra či hovor (inhibítor) a okno na celú obrazovku tomu bránia. Samo sa neuspáva.
-- **Okno z bubliny** (pravidlo 14, 26. 10.; `goo/parts/bubble.plm`, `goo/lib/born.luau`, `system/hypr/latte/windows.lua`):
+- **Okno z bubliny** (pravidlo 14, 26. 10.; `goo/parts/bubble.plm`, `goo/lib/born.luau`; v pleamar-wm zatiaľ nie —
+  okno sa rodí napúšťaním vodou, ROADMAP 1D.08):
   okno otvorené do 5 s po kliku na kvapku (alebo na riadok jej karty) vyletí z nej ako bublina, oblúkom preletí na
-  miesto okna, nafúkne sa naň a praskne do spŕšky, keď sa okno ukáže; dovtedy ho Hyprland drží neviditeľné.
+  miesto okna, nafúkne sa naň a praskne do spŕšky, keď sa okno ukáže; dovtedy ho kompozitor drží neviditeľné.
   Zatvorené okno praskne ako bublina tam, kde bolo. Bublinu kreslí scéna monitora, na ktorom okno je.
 - **Goo z klávesnice** (§6.1, Win+T): šípky po kvapkách dokola po obvode, Enter a medzerník ľavý klik, Menu a Shift+F10
   pravý, + a − koliesko, Esc von; vybraná kvapka sa zdvihne, pulzuje a ukáže bublinu; skončí sám po voľbe okna,
   po voľbe v karte a po minúte.
-- **Hyprland:** tri režimy okien, minimalizovanie, rozloženia okna, plochy, skratky ako vo Windows; tapeta
-  (`~/.config/latteos/wallpaper` alebo tapeta LatteOS, kreslí `swaybg`); okenné tlačidlá – □ ✕ na oknách bez vlastnej
-  hlavičky (plugin hyprbars so záplatou, ak je nainštalovaný; pravý klik na titulok = ponuka okna v karte Goo).
+- **pleamar-wm:** režimy okien (páska, dlaždice, plávajúce) a rozloženia pleamar-wm, minimalizovanie, skratky ako
+  vo Windows; tapeta (`latte-wall`, kreslí skwd-wall, bez neho `swaybg`; voľby v `~/.config/latteos/background.json`);
+  titulky s tlačidlami – □ ✕ kreslí scéna pleamar-wm oknám bez vlastnej hlavičky (pravý klik na titulok = ponuka okna
+  v karte Goo, dvojklik zväčší).
 
 **Ešte nie je** (vráti sa po kusoch, poradie v ROADMAP):
 ChatGoo (čaká na Beeper), Tvorca Goo (vlastné kvapky už sú: §4.7),

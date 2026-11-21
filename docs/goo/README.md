@@ -1,31 +1,31 @@
 # LatteOS Goo — Začni tu
 
-**LatteOS GOO** (jediná edícia LatteOS; Classic je od 5. 10. 2026 zrušený) je plocha s tekutými kávovými kvapkami pri okraji obrazovky (predvolene dole). Je inšpirovaná Windows 11 a fyzikou tekutiny.
+**LatteOS GOO** (jediná edícia LatteOS) je plocha s tekutými kávovými kvapkami pri okraji obrazovky (predvolene dole), nad správcom okien pleamar-wm. Je inšpirovaná Windows 11 a fyzikou tekutiny.
 
 ## Čo to je v 30 sekundách
 
-- **Lišta:** kvapky na okraji — GooBar s oknami, LensGoo (spúšťač), GooPower (vypínač a účet), ClockGoo (čas,
-  upozornenia a kalendár), QueenGoo (App Manager a Správca zariadení)
+- **Lišta:** kvapky na okraji — BarGoo s oknami, LensGoo (spúšťač), PowerGoo (vypínač a účet), QuickGoo (rýchle
+  spúšťanie), ClockGoo (čas, upozornenia a kalendár), QueenGoo (App Manager a Správca zariadení), MediaGoo, CamGoo;
+  vpravo dole TrayShore
 - **Fyzika:** pružia sa, lepia na okraj, spájajú sa navzájom, reagujú na kurzor
 - **Vstupy:** myš (všetko sa dá ovládať: klik, pravý, koliesko, ťahanie); každá kvapka má funkciu na ľavom aj
   pravom tlačidle, koliesko mení veľkosť (LATTEOS-GOO.md §4)
-- **Efekty:** vietor, vlnky na hladine (aj pri minimalizácii okna), hra pri nečinnosti
+- **Efekty:** vietor, vlnky na hladine (aj pri minimalizácii okna), živá hladina a dýchanie kvapiek
 
 ## Čo s tým robím
 
 ### Iba chcem používať
-→ [Setup/inštalácia](../../setup/lab/README.md)
+→ [Inštalácia](../../README.md#installing)
 
 ### Chcem porozumieť pravidlám
 → [22 pravidiel plochy](PRAVIDLA.md) — všetko, čo sa smie a čo nie
 
 ### Chcem zmeniť alebo pridať kvapku
 → Najprv: [Pravidlá](PRAVIDLA.md) (§2 a §3)
-→ Potom: [Engine API](../../session/goo/README.md)
+→ Potom: hlavička [goo/lib/engine.luau](../../goo/lib/engine.luau) — ako sa píše kvapka
 
 ### Som programátor a resetla sa session
-→ [LATTEOS-GOO.md](../../LATTEOS-GOO.md) (čo platí), [denník rozhodnutí](ROZHODNUTIA.md), plán v [ROADMAP.md](../../ROADMAP.md) (F3·G)
-→ história a merania: [docs_zaloha/](../../docs_zaloha/README.md)
+→ [LATTEOS-GOO.md](../../LATTEOS-GOO.md) (čo platí), [denník rozhodnutí](ROZHODNUTIA.md), plán v [ROADMAP.md](../../ROADMAP.md) („Poradie práce“)
 
 ---
 
@@ -34,10 +34,10 @@
 | Dokument | Čo v ňom je |
 |----------|------------|
 | [PRAVIDLA.md](PRAVIDLA.md) | 22 zásad správania kvapiek, fyzika, nečinnosť |
-| [ROZHRANIE.md](ROZHRANIE.md) | Jednotlivé kvapky a ich kliky (GooBar, GooPower, LensGoo, QueenGoo, ClockGoo, ChatGoo) |
-| [session/goo/README.md](../../session/goo/README.md) | Ako programovať: API, háčiky, príklady |
+| [ROZHRANIE.md](ROZHRANIE.md) | Jednotlivé kvapky a ich kliky |
+| [GOOENGINE-2.md](GOOENGINE-2.md) | GooEngine 2 — živá hladina, fyzika v Ruste |
+| [goo/lib/engine.luau](../../goo/lib/engine.luau) | Ako programovať: API v hlavičke súboru |
 | [ROZHODNUTIA.md](ROZHODNUTIA.md) | Denník rozhodnutí s dátumami a zamietnuté nápady |
-| [docs_zaloha/](../../docs_zaloha/README.md) | Archív: odovzdávka enginu k 5. 10. s meraniami, záznam z cloudu, staré varianty |
 
 ---
 
@@ -49,60 +49,47 @@
 
 **Keď chceš zmeniť kvapku:**
 1. Skontroluj, či zmena porušuje [Pravidlá](PRAVIDLA.md) §2
-2. Pozri sa na [API enginu](../../session/goo/README.md) — ako sa to programuje
-3. Zmeniť kvapku `moja-kvapka.json`:
-   ```bash
-   latte-goo novy "Moja kvapka"  # vytvorí súbor
-   # [uprav súbor]
-   latte-goo skontroluj          # skontroluj
-   ```
+2. Pozri sa do hlavičky [goo/lib/engine.luau](../../goo/lib/engine.luau) — ako sa to programuje
+3. Vlastnú kvapku bez programovania pridá používateľ v LensGoo › pravý klik na aplikáciu › Pripnúť ako kvapku
+   (zoznam `drops.json` v `~/.local/share/pleamar/goo/`, `goo/lib/own.luau`)
+4. Pred commitom `pleamar --check` a `tests/check.sh`
 
 **Keď padne session:**
-1. Prečítaj [ROZHRANIE.md](ROZHRANIE.md) (čo je hotové a čo chýba) a ROADMAP F3·G
+1. Prečítaj [LATTEOS-GOO.md](../../LATTEOS-GOO.md) §8 (čo je hotové a čo chýba) a ROADMAP
 2. Zafixuj to, čo treba opraviť
-3. Oprav platný stav (ROZHRANIE.md, LATTEOS-GOO.md), rozhodnutie zapíš do [ROZHODNUTIA.md](ROZHODNUTIA.md) + commit
+3. Oprav platný stav (LATTEOS-GOO.md), rozhodnutie zapíš do [ROZHODNUTIA.md](ROZHODNUTIA.md)
 
 ---
 
 ## Architektúra
 
 ```
-session/goo/
-├── goo.plm                 ← Scéna (fyzika, kresba, vstupy)
-├── goo.luau                ← Vstupný bod (init)
-├── gen.py                  ← Generátor (rozpíše cykly)
-│
+goo/
+├── goo.plm                 ← Scéna plochy (fyzika, kresba, vstupy)
+├── goo.luau                ← Vstupný bod (spustí engine a kvapky)
+├── gen.py                  ← Generátor (rozpíše cykly: parts/shapes.plm, parts/picks.plm)
+├── parts/                  ← Časti scény (body, card, drops, faces, shore…)
 ├── lib/
 │   ├── engine.luau         ← API: register, pravidlá, karta Goo, nečinnosť
-│   ├── goobar.luau         ← Okná a ich správa
-│   ├── spustac.luau        ← Spúšťač a rýchly zoznam LensGoo
-│   ├── cas.luau            ← Stopky, minútka, budíky (ClockGoo)
-│   └── pouzivatel.luau     ← JSON kvapky
-│
-├── kvapky/
-│   ├── goobar.luau         ← GooBar (hlava + okná)
-│   ├── goopower.luau       ← Karta GooPower, pás výkonu
-│   ├── lensgoo.luau        ← Lupa: spúšťač, rýchly zoznam
-│   ├── queengoo.luau       ← Kráľovná (App Manager, Device Manager)
-│   ├── clockgoo.luau       ← Čas, upozornenia, kalendár
-│   └── ukážky (počítadlo, hodiny, lepkavá, ťažká…)
-│
-├── priklady/
-│   ├── kalkulacka.json     ← Príklad: JSON kvapka
-│   └── system.json         ← Príklad: monitoring
-│
-└── README.md               ← Technické detaily
+│   ├── bar.luau            ← Okná v BarGoo
+│   ├── lens.luau           ← Spúšťač LensGoo
+│   ├── card.luau, ctx.luau ← Karta Goo, ponuka
+│   ├── shore.luau          ← TrayShore
+│   └── own.luau            ← Vlastné kvapky (drops.json)
+├── drops/                  ← bargoo, powergoo, lensgoo, quickgoo, queengoo, clockgoo, mediagoo, camgoo
+├── lang/sk.plm             ← Preklady
+└── login.plm, lockscreen.plm, safe.plm, side.plm… ← Ďalšie scény
 ```
+
+Fyziku hmoty počíta `crates/goo-phys` vo vnútri `latte-goo` (pleamar s fyzikou Goo, [GOOENGINE-2.md](GOOENGINE-2.md) §4).
 
 ---
 
 ## Licencie
 
-- **pleamar** (scéna, kresba) — BSD-3-Clause, od k4ditano (Marea)
-- **LatteOS Goo** — vlastný obsah
-- **Hyprland** — LGPL
-
-Pred vydaním sa požiada povolenie všetkých strán.
+- **pleamar** (scéna, kresba) a **pleamar-wm** — BSD-3-Clause, od k4ditano
+- **LatteOS Goo** — GNU GPL 3.0 alebo novšia, ako celý LatteOS; `goo/shaders/sea.wgsl` je CC BY-NC-SA 3.0
+- ostatné cudzie súčasti: [TRETIE-STRANY.md](../../TRETIE-STRANY.md)
 
 ---
 
@@ -110,21 +97,18 @@ Pred vydaním sa požiada povolenie všetkých strán.
 
 ```bash
 # Klonovať repo
-git clone https://github.com/arkaysk/jihlavanka001
-cd jihlavanka001
-git checkout main
+git clone https://github.com/arkaysk/LatteOS-v0x-Jihlavanka.git
+cd LatteOS-v0x-Jihlavanka          # predvolená vetva v0.55
 
-# Inštalácia
-sudo setup/f0-install.sh        # VM: balíky
-setup/f1/install-session.sh     # relácie
+# Inštalácia (README › Installing)
+./install                          # povie, čo by urobil; nič nemení
+sudo ./install --go
 
 # Po zmene
-git add .
-git commit -m "goo: zmena"
-git push -u origin main
+tests/check.sh                     # pred commitom; commit a push iba na pokyn
 
 # Aktualizovať dokumentáciu
-# platné: LATTEOS-GOO.md, docs/goo/ROZHRANIE.md · rozhodnutia: docs/goo/ROZHODNUTIA.md · plán: ROADMAP.md
+# platné: LATTEOS-GOO.md · rozhodnutia: docs/goo/ROZHODNUTIA.md · plán: ROADMAP.md
 ```
 
 ---

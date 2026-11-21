@@ -25,11 +25,10 @@ LensAI sa otvorí **dashboardom**, nie zoznamom rozhovorov.
 |---|---|
 | Prstene služieb — zostávajúci limit (Claude týždeň, 5 h po kliknutí), predpoveď minutia | 10B.14 bod 2, 10B.35 |
 | Agenti: kto pracuje, kto čaká na teba (aj agenti pleamar-wm, keď sa prepoja) | 10B.14 bod 3, 1D.22 |
-| Kaviareň: objednávky pri presse, čo čaká pri pulte na schválenie | 10B.36 |
 | Lokálna AI: bežiaci model, pamäť, karta, či je PC nečinné | 10B.14 bod 7 |
 | Rozhovory: posledné, pokračovať | 10B.04 |
 | Rýchle úlohy: „Urob to za mňa“, 6 pripravených úloh | 10B.14 bod 5 |
-| Projekty z Obsidianu označené pre Kaviareň | 10B.37 |
+| Projekty z Obsidianu | 10B.37 |
 | Upozornenia strážcu podmienok (zmena podmienok služby) | 10B.39 |
 | Prechod do YOL (Learn, Dnes) | 7C |
 
@@ -43,7 +42,7 @@ majákom…). 20 hotových príkladov.
 - Licencia: **kód MIT, vygenerované modely a obrázky CC BY 4.0** (`ASSET-LICENSES.md`) → smie sa prevziať, autor do
   `TRETIE-STRANY.md`.
 - 3D modely vyrába cez platené cloudové služby (fal: Nano Banana 2, Meshy 7.1; ~1,20 $ za model) — pre LatteOS buď
-  hotové modely z repa (CC BY), alebo vlastné cez Kaviareň (ComfyUI) s povolením používateľa.
+  hotové modely z repa (CC BY), alebo vlastné cez ComfyUI s povolením používateľa.
 - Je to **web, nie dashboard**: robí scény na posúvanie s jedným hrdinom, nie husté údaje. Preberá sa jadro (svetlo,
   efekty, plynulosť) a spôsob práce; karty s údajmi sú naša práca.
 - **Kde pobeží:** LensAI je QML (Quickshell) → 3D scéna v QtWebEngine ako pozadie dashboardu, alebo myšlienky
@@ -98,17 +97,7 @@ majákom…). 20 hotových príkladov.
 
 **Konektory a projekty**
 - LensAI ako MCP host, katalóg konektorov z MCP Registry (10B.35, 10B.38).
-- Obsidian ako projektový manažér a lokálny kontext; Kaviareň vidí iba projekty označené pre ňu (10B.37).
-
-**Kaviareň (hravá časť)**
-- Front dlhých úloh, čašníčky = agenti, presso = stanice, pult = schválenie; vymeniteľný vzhľad čašníčok; predvolene
-  lokálne, keď je PC nečinné (10B.36).
-- Úlohy sú skilly (`SKILL.md`, + `stanice.json`, `skripty/`, `comfy/`); Menu lístok — obchod so skillmi a konektormi
-  s kontrolou zdroja, licencie a oprávnení; skilly v základe (Comfy MCP, anthropics/skills s vhodnou licenciou)
-  (10B.36, 10B.38).
-- Vlastná farma s bránou cez testy (lacný model pracuje, výsledok prejde iba s prejdenou kontrolou) (10B.40).
-- Skilly na dorobenie: komiks, videoklip, kniha, tabuľky, výskum, biblia sveta, DnD, hudobné vydanie, výstava,
-  storyboard, audiokniha, prekladateľ, video a podcast, herný dizajn (10B.36, 10B.38).
+- Obsidian ako projektový manažér a lokálny kontext (10B.37).
 
 **Strážca podmienok**
 - Pri každom poskytovateľovi jeho podmienky a ich odtlačok; pri zmene upozorniť, ukázať rozdiel a prístup, ktorý by ich
@@ -134,8 +123,6 @@ cez DeepTutor a odkazy z 10B.41, widgety YOL plní AI. Preto sa robí najprv Len
 
 ## 7. Rozhodnuté (2. 11.)
 
-1. **Hlavný prvok dashboardu je šošovka:** optická šošovka lupy bez rámu a rúčky — iba sklo s vypuklinou, ktorá
-   zväčšuje (iný stupeň priblíženia v strede). Vnútri je pohľad na Kaviareň, možno GIF. Dashboard je postavený okolo nej.
-2. **Na dashboarde je všetko z časti 2 okrem stavu Kaviarne** (tá je v šošovke).
-3. **Agenti pleamar-wm sa ukazujú už teraz** (iba čítanie).
-4. **Najprv dashboard,** potom rozhovor a služby.
+1. **Na dashboarde (Prehľade) je všetko z časti 2.** Šošovka v strede nie je nutná (17. 11.).
+2. **Agenti pleamar-wm sa ukazujú už teraz** (iba čítanie).
+3. **Najprv dashboard,** potom rozhovor a služby.
