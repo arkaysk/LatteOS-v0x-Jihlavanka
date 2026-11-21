@@ -96,8 +96,10 @@ tab="$(printf '\t')"; nl='
 '
 did() { [ "${LATTE_UNDO:-}" = - ] && return 0
         case "$2${3:-}" in *"$tab"*|*"$nl"*) return 0 ;; esac
-        mkdir -p "$(dirname "$log")"; rm -f -- "$log.redo"
-        printf '%s\t%s\t%s\t%s\t%s\n' "$id" "$1" "$2" "${3:-}" "$(printf '%s' "${LATTE_UNDO_LABEL:-}" | tr '\t\n' '  ')" >> "$log"; }
+        mkdir -p "$(dirname "$log")"
+        # one writer at a time: every window and the desktop share the journal (engineering audit 4)
+        ( flock 8; rm -f -- "$log.redo"
+          printf '%s\t%s\t%s\t%s\t%s\n' "$id" "$1" "$2" "${3:-}" "$(printf '%s' "${LATTE_UNDO_LABEL:-}" | tr '\t\n' '  ')" >> "$log" ) 8>>"$log.lock"; }
 # SRC DIR: where SRC goes in DIR. When the name is taken there, by $LATTE_CONFLICT: both (a free name beside it, the
 # default: nothing is lost), replace (the one there goes to the Trash), older (replaced only when it is older), skip.
 # Nothing printed: skipped.
@@ -410,7 +412,7 @@ job)    how="$1"; d="$2"; shift 2
                     # into a hidden folder of its own first, then out under a free name: nothing already there is written over
                     to="$(free_name "$d" ".$base.unpacking")"; mkdir -p -- "$to"
                     case "$name" in *.rar|*.RAR|*.tar*|*.tgz) bsdtar -xf "$f" -C "$to" ;; *) 7z x -y -bso0 -bsp0 -o"$to" -- "$f" ;; esac &
-                    pid=$!; trap 'kill "$pid" 2>/dev/null; exit 1' TERM
+                    pid=$!; trap 'kill "$pid" 2>/dev/null; wait "$pid" 2>/dev/null; rm -rf -- "$to"; exit 1' TERM      # stopped: no hidden half left (engineering 6)
                     while kill -0 "$pid" 2>/dev/null; do echo "done $(du -sb -- "$to" 2>/dev/null | cut -f1)"; sleep 0.4; done
                     ok=0; wait "$pid" || ok=1
                     one="$(find "$to" -mindepth 1 -maxdepth 1 -print -quit)"
@@ -442,7 +444,8 @@ job)    how="$1"; d="$2"; shift 2
             t="$(aim "$f" "$d")"
             if [ -z "$t" ]; then before=$((before + ${size:-0})); echo "done $before"; continue; fi
             # the target is always new (a taken name was moved aside or left): stopped half way, a half copy is taken away
-            trap 'kill "$pid" 2>/dev/null; [ "$way" = copy ] && rm -rf -- "$t"; exit 1' TERM
+            # a move to another disk is a copy first (mv): while the original is still there, the half at the target goes too
+            trap 'kill "$pid" 2>/dev/null; wait "$pid" 2>/dev/null; { [ "$way" = copy ] || [ -e "$f" ]; } && rm -rf -- "$t"; exit 1' TERM
             if [ "$way" = move ]; then mv -n -- "$f" "$t" & pid=$!; else cp -a -- "$f" "$t" & pid=$!; fi
             # how far: what has arrived so far; a move on the same disk is done at once
             while kill -0 "$pid" 2>/dev/null; do
@@ -461,6 +464,8 @@ undo|redo)
         # one journal for each way: what is taken back goes to the other, and comes from it when done again
         from="$log"; to="$log.redo"; order=tac
         [ "$what" = redo ] && { from="$log.redo"; to="$log"; order=cat; }
+        # the journal held for the whole step: a step written meanwhile waits, and two undos never take the same one
+        mkdir -p "$(dirname "$log")"; exec 8>>"$log.lock"; flock 8
         [ -s "$from" ] || exit 1
         last="$(tail -n1 "$from" | cut -f1)"
         # out of the Trash to where it was: the newest of that name (not `gio trash --list`: gvfs's list lags behind)
@@ -497,7 +502,7 @@ PY
             esac
         done
         grep "^$last	" "$from" >> "$to"
-        grep -v "^$last	" "$from" | tail -n 400 > "$from.new"; mv -- "$from.new" "$from" ;;
+        grep -v "^$last	" "$from" | tail -n 400 > "$from.$$.new"; mv -- "$from.$$.new" "$from" ;;
 note)   [ "$1" = skill ] && [ $# -eq 3 ] || exit 2; did "$1" "$2" "$3" ;;
 history) [ "${1:-}" = clear ] && { rm -f -- "$log" "$log.redo"; exit 0; }
         for way in undo redo; do

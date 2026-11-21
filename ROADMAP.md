@@ -51,6 +51,20 @@ LatteOS:2.x xxx
 >  9. Pred inštaláciou: skontrolovať najnovšie verzie potrebného softvéru a či treba záplatu; **pleamar a agentgram sa dobiehajú
 >     a záplatujú raz týždenne, v pondelok večer** (1D.17).
 > 10. Nainštalovať pomocníka CSO z gstack (`gstack-cso-launcher`) a spustiť `/cso` znova, so skenermi (Gitleaks, OSV, Semgrep).
+> 10a. Nezávislá kontrola (GPT, 21. 11.), overené: (a) LatteIndex — súbory v nečitateľnom podpriečinku ostanú `present = 0`
+>     (`latte-index/src/lib.rs:53`, `latte-index-core/src/lib.rs:84`): číslo skenu, chýbajúce až po prejdení, preskočené vetvy bez zmeny;
+>     (b) `latte-mcp` spoločný `CALLER` pri súbežných volaniach (`:640`) → `contextvars`; (c) `latte-skill` vyberá zariadenie podľa časti
+>     mena oboma smermi (`:184`) → presná alebo jediná zhoda, inak sa opýtať, potom ID.
+> 10b. Slovenská klávesnica: prepínač rozloženia v TrayShore (Pobrežie), pravý klik na ňom ponúkne aj mapu znakov (už nainštalovaná).
+>
+> **Stav 21. 11. (večer):** [x] **A1** `latte-mcp` (tokeny skupín pri kontrole iba čítané, prázdny token 401, port s procesom,
+> `thv` 10 s v pamäti a mimo slučky, hlavný token bez obsahu = stop) + **10a(b)** `CALLER` ako `contextvars`; test `tests/test_mcp.py`
+> (HTTP dvere naozaj spustené). [x] **A2** párovanie iba z karty agentgramu, keď ukazuje nastavený server, a s potvrdením v LensAI;
+> v agentgrame pripojiť bránu MCP iba s `manage_connectors` (chýbala akákoľvek kontrola) — **ostáva** viazať na organizáciu majiteľa (S8).
+> [x] **A3** sync projektu nič necommituje ani nepushuje, keď `origin` vedie inam (test vo forku) — **ostáva** S7 (`.claude/settings.json`).
+> [x] **A4** denník Ctrl+Z so zámkom (`flock`, 30 súbežných zápisov = 30 riadkov), zrušené rozbaľovanie a presun na iný disk bez
+> polovice, `session.log` sa otáča po 1 MB, odpoveď AI sa pripíše k rozhovoru z disku, prílohy s rovnakým menom „a (2).txt“ (test),
+> zápisy plochy a zoznamov Lens cez dočasný súbor. Nasadené. Ďalej A5 (NTFS/FAT).
 >
 > **B. Inštalácia na prvý PC**, keď pôjde, **potom na druhý (hlavné PC, RTX 3060, dva monitory)**. Všetky opravy z A a bezpečnosti nižšie
 > **musia byť hotové pred druhým PC.**
@@ -60,6 +74,8 @@ LatteOS:2.x xxx
 > 13. Povolenia (S5, S6): krok agenta podľa skutočného príkazu, nie podľa mena od agenta; povolenie relácie MCP viazané na token, nie na meno.
 > 14. `latte-open` iba http(s) a súbory (S9); zvyšok SECURITY S10–S15.
 > 15. Heslo sudo: na latte-lab ostáva zámerne čitateľné pre agenta (testovací PC, nie súkromný); na novom PC súkromné heslo, nie v súbore.
+>
+> **0.6+:** `latte-ai` (4 285 riadkov) a veľké QML deliť podľa zodpovedností — po kúskoch pri opravách (vytiahnutá časť s testom), celé až po 0.6.
 >
 > **C. LatteSafe: zjednodušený LensAI** — jednoduché okno s chatom cez CLI/API, ktoré už sú prihlásené (bez nového prihlasovania), aby
 > človek v SAFE režime mohol požiadať AI o pomoc (patrí k SAFE, nie nová funkcia mimo neho).

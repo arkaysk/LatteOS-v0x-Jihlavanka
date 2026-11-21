@@ -60,12 +60,15 @@ def told(argv, lines=False, timeout=30, **env):
         return {"error": "%s: %s" % (argv[0], e)}
 
 
-CALLER = {}       # who calls, when a tool is reached through call_tool (--lazy): its own Context is not that request's
+import contextvars
+# who calls, when a tool is reached through call_tool (--lazy): its own Context is not that request's. One per request
+# (a context variable), never shared: two agents calling at once each keep their own (GPT's review, 21. 11.)
+CALLER = contextvars.ContextVar("latte_mcp_caller", default="")
 
 
 def caller(ctx):
     try:
-        return CALLER.get("name") or ctx.session.client_params.clientInfo.name
+        return CALLER.get() or ctx.session.client_params.clientInfo.name
     except (AttributeError, ValueError):
         return "AI"
 
@@ -185,9 +188,22 @@ def servers():
 # asked for; agentgram's card "MCP LatteOS" lists them (/servers) and reaches each at /mcp/G with a token of its own.
 THV = os.path.expanduser("~/.toolhive/bin/thv")      # ToolHive Desktop's own CLI (another one beside it is refused)
 TOKENS = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "mcp-groups.json")
-VMCP_PORT = 4500                                     # 4500 + the group's place in ToolHive's list
+VMCP_PORT = 4500                                     # the first port a group's vMCP may take; each keeps the one it got
 
 
+def _thv_kept(f):
+    """ToolHive's answer kept 10 s: `thv` takes a while, and every request of every agent asked it (engineering audit 8)."""
+    import time
+    kept = {}
+    def wrapped():
+        if kept and time.monotonic() - kept["at"] < 10:
+            return kept["out"]
+        kept["out"], kept["at"] = f(), time.monotonic()
+        return kept["out"]
+    return wrapped
+
+
+@_thv_kept
 def toolhive_groups():
     """ToolHive's groups that hold servers: [{"id", "servers": [names]}], the order of `thv group list`."""
     if not os.path.exists(THV):
@@ -201,6 +217,7 @@ def toolhive_groups():
             if any(w.get("group") == g for w in work)]
 
 
+@_thv_kept
 def toolhive_servers():
     """ToolHive's servers one by one, each with the address its own proxy answers at (streamable HTTP only: an SSE one
     names its message path itself, so it goes through a group): [{"id", "name", "group", "url"}]."""
@@ -214,21 +231,23 @@ def toolhive_servers():
             if w.get("name") and str(w.get("url", "")).startswith("http://127.0.0.1:") and w.get("proxy_mode", w.get("transport_type")) == "streamable-http"]
 
 
-def group_tokens(ids):
-    """Each group's own token (made the first time), kept readable by the user alone."""
+def group_tokens(ids, make=True):
+    """Each group's own token (made the first time), kept readable by the user alone. A request's check only reads
+    (make=False): a name nobody listed gets no token made for it (engineering 2, security S12); the list does."""
     import secrets
     try:
         with open(TOKENS) as f:
             have = json.load(f)
     except (OSError, ValueError):
         have = {}
-    if any(i not in have for i in ids):
+    if make and any(i not in have for i in ids):
         for i in ids:
             have.setdefault(i, secrets.token_urlsafe(32))
         os.makedirs(os.path.dirname(TOKENS), exist_ok=True)
-        with open(os.open(TOKENS + ".new", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w") as f:
+        tmp = "%s.%d.new" % (TOKENS, os.getpid())       # its own name: two writers never meet in one file
+        with open(os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w") as f:
             json.dump(have, f)
-        os.replace(TOKENS + ".new", TOKENS)
+        os.replace(tmp, TOKENS)
     return have
 
 
@@ -239,14 +258,17 @@ async def vmcp(group):
     """The group's vMCP on 127.0.0.1, started the first time and kept while latte-mcp runs: its port, or 0."""
     import asyncio
     import urllib.request
-    ids = [g["id"] for g in toolhive_groups()]
+    ids = [g["id"] for g in await asyncio.to_thread(toolhive_groups)]
     if group not in ids:
         return 0
-    port = VMCP_PORT + ids.index(group)
-    p = VMCP.get(group)
+    # the port goes with the process: from the place in the list, a group taken out moved the others, and a group's
+    # token led to another group's vMCP (engineering audit 1)
+    p, port = VMCP.get(group, (None, 0))
     if not p or p.poll() is not None:
-        VMCP[group] = subprocess.Popen([THV, "vmcp", "serve", "--group", group, "--port", str(port), "--optimizer"],
-                                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+        taken = {q for g, (pp, q) in VMCP.items() if g != group and pp and pp.poll() is None}
+        port = next(n for n in range(VMCP_PORT, VMCP_PORT + 1000) if n not in taken)
+        VMCP[group] = (subprocess.Popen([THV, "vmcp", "serve", "--group", group, "--port", str(port), "--optimizer"],
+                                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True), port)
     for _ in range(60):
         try:
             urllib.request.urlopen("http://127.0.0.1:%d/health" % port, timeout=1)
@@ -423,6 +445,8 @@ def serve(lazy=False, port=0):
             f.write(secrets.token_urlsafe(32))
     with open(path) as f:
         token = f.read().strip()
+    if len(token) < 16:                                # an emptied file would let "Bearer " alone in
+        sys.exit("latte-mcp: %s holds no token; remove it and start again" % path)
     app = server.streamable_http_app()
     # ToolHive's groups, each at /mcp/GROUP with a token of its own (agentgram's card MCP LatteOS connects them one by one,
     # each agent gets only those it is allowed); /servers lists them for the master token
@@ -456,6 +480,7 @@ def serve(lazy=False, port=0):
                 await answer(send, 502, b"latte-mcp: the MCP server does not answer; start it in ToolHive Studio")
 
     async def guarded(scope, receive, send):
+        import asyncio
         if scope["type"] != "http":
             return await app(scope, receive, send)
         said = dict(scope.get("headers") or []).get(b"authorization", b"")
@@ -463,17 +488,18 @@ def serve(lazy=False, port=0):
         solo = re.match(r"^/mcp/one\.([\w.-]+)/?$", scope.get("path", ""))
         if solo:                                          # one server alone, not in a group's vMCP (the user, 21. 11.)
             sid = "one." + solo.group(1)
-            if not secrets.compare_digest(said, b"Bearer " + group_tokens([sid]).get(sid, "").encode()):
+            want = group_tokens([sid], make=False).get(sid, "")
+            if not want or not secrets.compare_digest(said, b"Bearer " + want.encode()):
                 return await answer(send, 401, b"latte-mcp: this server's own token is needed")
-            one = next((x for x in toolhive_servers() if x["id"] == sid), None)
+            one = next((x for x in await asyncio.to_thread(toolhive_servers) if x["id"] == sid), None)
             if not one:
                 return await answer(send, 404, b"latte-mcp: no such server in ToolHive (or it speaks SSE: put it in a group)")
             return await forward(scope, receive, send, 0, one["url"])
         own = re.match(r"^/mcp/([\w.-]+)/?$", scope.get("path", ""))
         if own:
             group = own.group(1)
-            want = group_tokens([group]).get(group, "")
-            if not secrets.compare_digest(said, b"Bearer " + want.encode()):
+            want = group_tokens([group], make=False).get(group, "")
+            if not want or not secrets.compare_digest(said, b"Bearer " + want.encode()):
                 return await answer(send, 401, b"latte-mcp: this group's own token is needed")
             port = await vmcp(group)
             if not port:
@@ -493,7 +519,7 @@ def serve(lazy=False, port=0):
             out, _ = await p.communicate()
             return await answer(send, 200 if p.returncode == 0 else 502, out or b"[]", b"application/json")
         if scope.get("path") == "/servers":
-            groups, solos = toolhive_groups(), toolhive_servers()
+            groups, solos = await asyncio.to_thread(toolhive_groups), await asyncio.to_thread(toolhive_servers)
             tokens = group_tokens([g["id"] for g in groups] + [x["id"] for x in solos])
             rows = [{"id": g["id"], "name": g["id"], "what": ", ".join(g["servers"]), "path": "/mcp/" + g["id"], "token": tokens[g["id"]]} for g in groups]
             # and each server alone, for an agent that should have just that one
@@ -637,13 +663,13 @@ def lazily(full):
         """Calls a tool by its name, with its arguments as describe_tool gives them; answers what the tool answers."""
         if name not in await every():
             return json.dumps({"error": "no tool " + name})
-        CALLER["name"] = caller(ctx)
+        said = CALLER.set(caller(ctx))
         try:
             out = await full.call_tool(name, arguments or {})
         except Exception as e:                      # a wrong argument: said to the model, which may try again
             return json.dumps({"error": str(e)})
         finally:
-            CALLER.clear()
+            CALLER.reset(said)
         if isinstance(out, tuple):
             out = out[0]
         return "\n".join(getattr(c, "text", "") for c in out) if isinstance(out, (list, tuple)) else json.dumps(out, ensure_ascii=False)

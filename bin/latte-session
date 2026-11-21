@@ -15,6 +15,8 @@ set -u
 share="${LATTE_SHARE:-/usr/share/latteos}"
 state="${XDG_STATE_HOME:-$HOME/.local/state}/latteos"
 mkdir -p "$state"
+# past 1 MB the log starts anew, the last one kept beside it (it grew for ever: engineering audit 9)
+[ "$(stat -c %s "$state/session.log" 2>/dev/null || echo 0)" -gt 1048576 ] && mv -f "$state/session.log" "$state/session.log.1"
 exec >>"$state/session.log" 2>&1
 echo "=== latte-session $(date -Is) $*"
 

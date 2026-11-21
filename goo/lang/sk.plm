@@ -3129,6 +3129,8 @@ library Slovak {
         "Answer" = "Odpovedať"
         "ToolHive service" = "ToolHive služba"
         "Free credits" = "Kredity zadarmo"
+        "Connect this computer to agentgram?" = "Pripojiť tento počítač k agentgramu?"
+        "The agents on {n} will work on this computer: with the AIs you are signed in to here and with the folders of their projects." = "Agenti na {n} budú pracovať na tomto počítači: s AI, do ktorých si tu prihlásený, a s priečinkami svojich projektov."
         "Agents through ACP" = "Agenti cez ACP"
         "Usage credits left" = "Zostávajúce kredity"
         "Monthly spend limit" = "Mesačný limit výdavkov"

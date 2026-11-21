@@ -1617,7 +1617,7 @@ local function ql_dir()
 end
 local function ql_save()
     if not ql.path then return end
-    run("sh", { "-c", 'mkdir -p "${1%/*}" && printf "%s" "$2" > "$1"', "sh", ql.path, json.encode(ql.list) }, nil, { output = false })
+    run("sh", { "-c", 'mkdir -p "${1%/*}" && printf "%s" "$2" > "$1.$$" && mv -f "$1.$$" "$1"', "sh", ql.path, json.encode(ql.list) }, nil, { output = false })
 end
 local function ql_load(done)
     ql.path = ql.path or (ql_dir() .. "/quicklinks.json")
@@ -1812,7 +1812,7 @@ end
 local ac = { list = {}, path = nil }
 local function ac_save()
     if not ac.path then return end
-    run("sh", { "-c", 'mkdir -p "${1%/*}" && printf "%s" "$2" > "$1"', "sh", ac.path, json.encode(ac.list) }, nil, { output = false })
+    run("sh", { "-c", 'mkdir -p "${1%/*}" && printf "%s" "$2" > "$1.$$" && mv -f "$1.$$" "$1"', "sh", ac.path, json.encode(ac.list) }, nil, { output = false })
 end
 local function ac_load()
     ac.path = ac.path or (ql_dir() .. "/ai-commands.json")

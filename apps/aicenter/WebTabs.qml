@@ -90,6 +90,21 @@ Item {
     readonly property int discardAfter: sleep.discard > 0 ? sleep.discard * 60000 : 1e12
     // when each service was opened, the last seven days: { claude: [ms, …] }, kept for the next time
     property var use: ({})
+    // agentgram asks to connect this computer (its AIs, its files for the agents): the person says yes here first
+    property string pairLink: ""
+    property string pairServer: ""
+    Rectangle { anchors.fill: parent; z: 50; visible: tabs.pairLink !== ""; color: Qt.rgba(0, 0, 0, 0.35)
+        MouseArea { anchors.fill: parent }
+        Rectangle { anchors.centerIn: parent; width: Math.min(parent.width - 48, 520); height: pairCol.implicitHeight + 48; radius: 18; color: Theme.card
+                    border.width: 1; border.color: Theme.line
+            Column { id: pairCol; x: 24; y: 24; width: parent.width - 48; spacing: 14
+                Label { text: I18n.tr("Connect this computer to agentgram?"); font.pixelSize: 18; font.weight: 800; width: parent.width; wrapMode: Text.WordWrap }
+                Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim
+                        text: I18n.tr("The agents on {n} will work on this computer: with the AIs you are signed in to here and with the folders of their projects.", { n: tabs.pairServer }) }
+                Row { spacing: 10; anchors.right: parent.right
+                    Pill { text: I18n.tr("Cancel"); onPressed: tabs.pairLink = "" }
+                    Pill { strong: true; icon: "plug"; text: I18n.tr("Connect")
+                           onPressed: { Quickshell.execDetached(["latte-ai", "agentgram", "pair", "--link", tabs.pairLink]); tabs.pairLink = "" } } } } } }
     FileView { id: useFile; printErrors: false; blockLoading: true
                path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/latteos/ai/tabs-use.json"
                onLoaded: { try { tabs.use = JSON.parse(text()) } catch (e) { tabs.use = ({}) } } }
@@ -150,7 +165,9 @@ Item {
                 const u = String(request.requestedUrl)
                 // LatteOS's own links only from agentgram's own tab: another page cannot pair this computer or open folders
                 // (security audit 21. 11., S3); ponytail: no confirmation yet when agentgram itself asks to pair
-                const mine = view.modelData.startsWith("agentgram")
+                // …and only while it shows the agentgram server LensAI is set to (its origin), not a page it was led to
+                const home = String((tabs.services.find(s => s.id === view.modelData) || {}).web || "").split("/").slice(0, 3).join("/")
+                const mine = view.modelData.startsWith("agentgram") && home !== "" && String(view.url).startsWith(home + "/")
                 if (!mine && /^(latteos|agenteschat):/.test(u)) return
                 // agentgram's "Open folder" (latteos://agentgram/folder?path=…): the project's folder in Files (latte-ai keeps
                 // it to ~/LensAI/agentgram, whatever the page asks)
@@ -163,7 +180,8 @@ Item {
                 // connects this computer itself, with the AIs it is signed in to; the page then asks to let it join
                 if (u.startsWith("agenteschat://pair?")) {
                     const m = u.match(/[?&]link=([A-Za-z0-9-]{4,40})/)
-                    if (m) Quickshell.execDetached(["latte-ai", "agentgram", "pair", "--link", m[1]])
+                    // asked here first, on this computer, not only on the page (security S3)
+                    if (m) { tabs.pairLink = m[1]; tabs.pairServer = home }
                     return
                 }
                 if (request.destination === WebEngineNewWindowRequest.InNewDialog) {

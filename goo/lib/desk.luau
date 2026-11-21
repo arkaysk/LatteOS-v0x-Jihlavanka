@@ -38,7 +38,8 @@ end
 local function cat(args) local out = { "-c", args[1], "sh" }; for i = 2, #args do out[#out + 1] = args[i] end; return out end
 
 local function keep()
-    if saved ~= "" then run("sh", cat({ 'mkdir -p "${1%/*}" && printf "%s" "$2" > "$1"', saved, json.encode(prefs) }), nil) end
+    -- written beside it and moved over: a crash or a power cut never leaves the desktop empty (engineering audit 11)
+    if saved ~= "" then run("sh", cat({ 'mkdir -p "${1%/*}" && printf "%s" "$2" > "$1.$$" && mv -f "$1.$$" "$1"', saved, json.encode(prefs) }), nil) end
 end
 
 -- what the scene shows: one record a icon, where it lies and how it looks now

@@ -3576,9 +3576,10 @@ def load(ident):
 
 def keep(chat):
     os.makedirs(CHATS, exist_ok=True)
-    with open(path_of(chat["id"]) + ".new", "w") as f:
+    tmp = "%s.%d.new" % (path_of(chat["id"]), os.getpid())       # its own name: two writers never meet in one file
+    with open(tmp, "w") as f:
         json.dump(chat, f, ensure_ascii=False, indent=1)
-    os.replace(path_of(chat["id"]) + ".new", path_of(chat["id"]))
+    os.replace(tmp, path_of(chat["id"]))
 
 
 def now():
@@ -3611,8 +3612,14 @@ def send(ident, provider, model, question, effort="", attach=(), origin=""):
     for path in attach:
         if os.path.isfile(path):
             os.makedirs(room, exist_ok=True)
-            shutil.copy(path, os.path.join(room, os.path.basename(path)))
-            files.append(os.path.basename(path))
+            # a name already in the conversation gets a free one beside it, as Files does ("a (2).pdf"): the AI must
+            # not read the earlier file for the new one (engineering audit 10)
+            base, ext = os.path.splitext(os.path.basename(path))
+            name, n = base + ext, 2
+            while os.path.exists(os.path.join(room, name)):
+                name, n = "%s (%d)%s" % (base, n, ext), n + 1
+            shutil.copy(path, os.path.join(room, name))
+            files.append(name)
     chat["messages"].append({"role": "user", "content": question, "provider": provider, "model": model, "at": now(), "files": files})
     keep(chat)          # the question stays even if no answer comes
     p = PROVIDERS.get(provider) or ({"ask": api_ask(provider), "tool": ""} if provider in apis() else None)
@@ -3628,6 +3635,12 @@ def send(ident, provider, model, question, effort="", attach=(), origin=""):
         msg["used"] = list(USED)
     if stopped:
         msg["stopped"] = True
+    # what was written to it meanwhile (a new title, a message from elsewhere) stays: the answer goes onto the conversation
+    # as it is on disk now, not onto the copy held since the question (engineering audit 5)
+    fresh = load(chat["id"])
+    if fresh and fresh.get("messages") and fresh["messages"][-1] is not None:
+        fresh["provider"], fresh["model"], fresh["effort"] = provider, model, effort
+        chat = fresh
     chat["messages"].append(msg)
     was = chat.get("usage") or {}
     chat["usage"] = {"context": usage.get("context", was.get("context", 0)), "window": usage.get("window", was.get("window", 0)),

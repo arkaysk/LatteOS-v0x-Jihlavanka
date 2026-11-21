@@ -198,6 +198,15 @@ with tempfile.TemporaryDirectory() as d:
     r = ai.send("new", "sh", "m", "Hello there")
     assert r["ok"] and r["answer"] == "answer from m", r
     assert ai.send(r["chat"], "sh", "m", "Again")["chat"] == r["chat"]
+    # two attachments of one name in one conversation: the second gets a free name, the first is not written over
+    att = os.path.join(d, "a.txt")
+    open(att, "w").write("one")
+    two = ai.send("new", "sh", "m", "First", attach=[att])["chat"]
+    open(att, "w").write("two")
+    ai.send(two, "sh", "m", "Second", attach=[att])
+    assert [m.get("files") for m in ai.load(two)["messages"] if m["role"] == "user"] == [["a.txt"], ["a (2).txt"]]
+    assert open(os.path.join(d, "files", two, "a.txt")).read() == "one"
+    os.remove(ai.path_of(two))             # the conversations listed below are the first one's alone
     c = ai.load(r["chat"])
     assert [m["role"] for m in c["messages"]] == ["user", "assistant", "user", "assistant"] and c["title"] == "Hello there", c
     assert [x["id"] for x in ai.chats()] == [r["chat"]] and not ai.send("new", "nobody", "m", "x")["ok"]
