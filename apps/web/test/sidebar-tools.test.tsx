@@ -92,6 +92,7 @@ describe("the bell", () => {
 });
 
 describe("the tools on top", () => {
+  // LatteOS: "Esperando você" is always on top (packages/client/src/lib/sidebar-items.ts), never in More by default.
   test("each tool row shows its own grip, saying what it moves; a click on it opens nothing; Início carries the section's", async () => {
     const { router } = await renderApp(`/org/${ORG_ID}/c/${ENG_ID}`, { api: createFakeApi(seedState()) });
     await settle(8);
@@ -123,10 +124,9 @@ describe("the tools on top", () => {
     await go();
     expect(rows()[0]).toBe("Início");
     expect(rows()).not.toContain("Painéis");
-    expect(listed()).toEqual(["Aprovações", "Threads", "Tarefas", "Drive", "Equipe"]);
+    expect(listed()).toEqual(["Esperando você", "Aprovações", "Threads", "Tarefas", "Drive", "Equipe"]);
     const more = await openMore();
     expect(inMore(more)).toEqual([
-      "Esperando você",
       "Propostas de melhoria",
       "Wiki",
       "Rotinas",
@@ -147,9 +147,8 @@ describe("the tools on top", () => {
     expect(within(more).getByRole("button", { name: "Personalizar a barra lateral" })).toBeTruthy();
     cleanup();
     await go(noneWaiting());
-    expect(listed()).toEqual(["Threads", "Tarefas", "Drive", "Equipe"]);
+    expect(listed()).toEqual(["Esperando você", "Threads", "Tarefas", "Drive", "Equipe"]);
     expect(inMore(await openMore())).toEqual([
-      "Esperando você",
       "Aprovações",
       "Propostas de melhoria",
       "Wiki",
@@ -176,12 +175,12 @@ describe("the tools on top", () => {
     expect(reset.disabled).toBe(true);
 
     await choose(dialog, "Wiki", "Sempre");
-    expect(listed()).toEqual(["Threads", "Tarefas", "Wiki", "Drive", "Equipe"]);
+    expect(listed()).toEqual(["Esperando você", "Threads", "Tarefas", "Wiki", "Drive", "Equipe"]);
     await choose(dialog, "Drive", "Em Mais");
     await choose(dialog, "Aprovações", "Sempre");
     // Threads with no mission waiting for me: in More until one does.
     await choose(dialog, "Threads", "Quando tiver algo");
-    expect(listed()).toEqual(["Aprovações", "Tarefas", "Wiki", "Equipe"]);
+    expect(listed()).toEqual(["Esperando você", "Aprovações", "Tarefas", "Wiki", "Equipe"]);
     // One tool each time: what another device chose meanwhile stays.
     expect(sent(state)).toEqual([
       ["wiki", "always"],
@@ -197,7 +196,7 @@ describe("the tools on top", () => {
 
     expect(reset.disabled).toBe(false);
     await click(reset);
-    expect(listed()).toEqual(["Threads", "Tarefas", "Drive", "Equipe"]);
+    expect(listed()).toEqual(["Esperando você", "Threads", "Tarefas", "Drive", "Equipe"]);
     expect(sent(state).at(-1)).toEqual([{}]);
     expect(chosen(dialog, "Wiki")).toBe("Em Mais");
   });
@@ -207,10 +206,10 @@ describe("the tools on top", () => {
     state.sidebarItems = { wiki: "always" };
     const dialog = await openSetup();
     expect(chosen(dialog, "Wiki")).toBe("Sempre");
-    expect(listed()).toEqual(["Threads", "Tarefas", "Wiki", "Drive", "Equipe"]);
+    expect(listed()).toEqual(["Esperando você", "Threads", "Tarefas", "Wiki", "Drive", "Equipe"]);
     await choose(dialog, "Drive", "Em Mais");
     expect(state.sidebarItems).toEqual({ wiki: "always", drive: "more" });
-    expect(listed()).toEqual(["Threads", "Tarefas", "Wiki", "Equipe"]);
+    expect(listed()).toEqual(["Esperando você", "Threads", "Tarefas", "Wiki", "Equipe"]);
   });
 
   test("Painéis and the task manager are tools like the rest: Sempre brings them into the list, each line one row", async () => {
@@ -242,7 +241,7 @@ describe("the tools on top", () => {
     await choose(dialog, "Drive", "Em Mais");
     expect(state.sidebarItems).toEqual({ wiki: "always", routines: "always", drive: "more" });
     expect(chosen(dialog, "Wiki")).toBe("Sempre");
-    expect(listed()).toEqual(["Threads", "Tarefas", "Wiki", "Rotinas", "Equipe"]);
+    expect(listed()).toEqual(["Esperando você", "Threads", "Tarefas", "Wiki", "Rotinas", "Equipe"]);
   });
 
   test("proposals waiting count on Aprovações, and on their own row once a person gives them one", async () => {
@@ -256,11 +255,11 @@ describe("the tools on top", () => {
       [...nav().querySelectorAll(".sidebar__tools > a.sidebar__item")].find(
         (a) => a.querySelector(".sidebar__item-label")?.textContent === name,
       );
-    expect(listed()).toEqual(["Aprovações", "Threads", "Tarefas", "Drive", "Equipe"]);
+    expect(listed()).toEqual(["Esperando você", "Aprovações", "Threads", "Tarefas", "Drive", "Equipe"]);
     expect(row("Aprovações")?.textContent).toContain("2");
     cleanup();
     await go({ ...waiting(), sidebarItems: { proposals: "auto" } });
-    expect(listed()).toEqual(["Propostas de melhoria", "Threads", "Tarefas", "Drive", "Equipe"]);
+    expect(listed()).toEqual(["Esperando você", "Propostas de melhoria", "Threads", "Tarefas", "Drive", "Equipe"]);
     expect(row("Propostas de melhoria")?.textContent).toContain("2");
     expect(row("Propostas de melhoria")?.getAttribute("href")).toBe(`/org/${ORG_ID}/proposals`);
     cleanup();
@@ -273,9 +272,8 @@ describe("the tools on top", () => {
 
   test("the choices are the server's: the same sidebar on every device", async () => {
     await go(seedState({ sidebarItems: { drive: "more", routines: "always", approvals: "more" } }));
-    expect(listed()).toEqual(["Threads", "Tarefas", "Rotinas", "Equipe"]);
+    expect(listed()).toEqual(["Esperando você", "Threads", "Tarefas", "Rotinas", "Equipe"]);
     expect(inMore(await openMore())).toEqual([
-      "Esperando você",
       "Aprovações",
       "Propostas de melhoria",
       "Wiki",
@@ -293,7 +291,7 @@ describe("the tools on top", () => {
     const dialog = await openSetup();
     await choose(dialog, "Wiki", "Sempre");
     await settle(3);
-    expect(listed()).toEqual(["Aprovações", "Threads", "Tarefas", "Drive", "Equipe"]);
+    expect(listed()).toEqual(["Esperando você", "Aprovações", "Threads", "Tarefas", "Drive", "Equipe"]);
     expect(chosen(dialog, "Wiki")).toBe("Em Mais");
   });
 
@@ -317,11 +315,11 @@ describe("the tools on top", () => {
     await choose(dialog, "Wiki", "Sempre");
     // The second waits for the first, and shows at once.
     await choose(dialog, "Drive", "Em Mais");
-    expect(listed()).toEqual(["Aprovações", "Threads", "Tarefas", "Wiki", "Equipe"]);
+    expect(listed()).toEqual(["Esperando você", "Aprovações", "Threads", "Tarefas", "Wiki", "Equipe"]);
     await act(async () => release());
     await settle(6);
     expect(calls).toBe(2);
-    expect(listed()).toEqual(["Aprovações", "Threads", "Tarefas", "Drive", "Equipe"]);
+    expect(listed()).toEqual(["Esperando você", "Aprovações", "Threads", "Tarefas", "Drive", "Equipe"]);
     expect(chosen(dialog, "Wiki")).toBe("Em Mais");
   });
 
@@ -340,16 +338,16 @@ describe("the tools on top", () => {
           sidebarToolOrder: ["drive", "issues", "approvals", "threads", "wiki", "routines", "calendar"],
         }),
       );
-      expect(listed()).toEqual(["Drive", "Tarefas", "Aprovações", "Threads", "Equipe"]);
+      expect(listed()).toEqual(["Drive", "Tarefas", "Aprovações", "Threads", "Esperando você", "Equipe"]);
     });
 
     test("Alt+Shift+↑/↓ moves a tool past its neighbour in the list, over the ones in More, and saves it", async () => {
       const state = await go(seedState({ sidebarItems: { wiki: "more" } }));
-      expect(listed()).toEqual(["Aprovações", "Threads", "Tarefas", "Drive", "Equipe"]);
+      expect(listed()).toEqual(["Esperando você", "Aprovações", "Threads", "Tarefas", "Drive", "Equipe"]);
       await act(async () => fireEvent.keyDown(tool("Drive"), { key: "ArrowUp", altKey: true, shiftKey: true }));
       await settle(3);
       // Wiki waits in More between Tarefas and Drive: one press is one step in the list.
-      expect(listed()).toEqual(["Aprovações", "Threads", "Drive", "Tarefas", "Equipe"]);
+      expect(listed()).toEqual(["Esperando você", "Aprovações", "Threads", "Drive", "Tarefas", "Equipe"]);
       expect(toolOrder(state)).toEqual([
         [
           "waiting",
@@ -368,7 +366,9 @@ describe("the tools on top", () => {
       ]);
       expect(tool("Drive").getAttribute("aria-keyshortcuts")).toBe("Alt+Shift+ArrowUp Alt+Shift+ArrowDown");
       // At the top, up does nothing; an arrow alone is the page's.
-      await act(async () => fireEvent.keyDown(tool("Aprovações"), { key: "ArrowUp", altKey: true, shiftKey: true }));
+      await act(async () =>
+        fireEvent.keyDown(tool("Esperando você"), { key: "ArrowUp", altKey: true, shiftKey: true }),
+      );
       await act(async () => fireEvent.keyDown(tool("Threads"), { key: "ArrowDown" }));
       await settle(3);
       expect(toolOrder(state)).toHaveLength(1);
@@ -384,14 +384,14 @@ describe("the tools on top", () => {
       expect(tool("Threads").getAttribute("data-drop")).toBe("before");
       await act(async () => fireEvent.drop(tool("Threads"), { dataTransfer }));
       await settle(3);
-      expect(listed()).toEqual(["Aprovações", "Drive", "Threads", "Tarefas", "Equipe"]);
+      expect(listed()).toEqual(["Esperando você", "Aprovações", "Drive", "Threads", "Tarefas", "Equipe"]);
       expect(tool("Threads").getAttribute("data-drop")).toBeNull();
 
       for (let i = 0; i < 2; i++) {
         await act(async () => fireEvent.keyDown(tool("Drive"), { key: "ArrowDown", altKey: true, shiftKey: true }));
         await settle(3);
       }
-      expect(listed()).toEqual(["Aprovações", "Threads", "Tarefas", "Drive", "Equipe"]);
+      expect(listed()).toEqual(["Esperando você", "Aprovações", "Threads", "Tarefas", "Drive", "Equipe"]);
       // Moved down, its node is re-inserted: the focus comes back to it.
       expect(document.activeElement === tool("Drive")).toBe(true);
       // Wiki stays where the steps left it, in More: the order is Drive's own spot now, not the default's.
@@ -436,11 +436,11 @@ describe("the tools on top", () => {
         true,
       );
       await click(within(dialog).getByRole("button", { name: "Mover para baixo: Threads" }));
-      expect(listed()).toEqual(["Threads", "Drive", "Tarefas", "Equipe"]);
+      expect(listed()).toEqual(["Esperando você", "Threads", "Drive", "Tarefas", "Equipe"]);
       const reset = within(dialog).getByRole("button", { name: "Restaurar o padrão" }) as HTMLButtonElement;
       expect(reset.disabled).toBe(false);
       await click(reset);
-      expect(listed()).toEqual(["Threads", "Tarefas", "Drive", "Equipe"]);
+      expect(listed()).toEqual(["Esperando você", "Threads", "Tarefas", "Drive", "Equipe"]);
       expect(toolOrder(state).at(-1)).toBeNull();
       expect(state.sidebarToolOrder).toBeUndefined();
     });

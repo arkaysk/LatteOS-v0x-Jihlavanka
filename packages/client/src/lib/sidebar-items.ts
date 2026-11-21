@@ -18,7 +18,8 @@ export const SIDEBAR_ITEMS: readonly SidebarItem[] = [
 
 /** Where each tool goes for someone who never moved it. */
 export const SIDEBAR_DEFAULTS: Record<SidebarItem, SidebarPlace> = {
-  waiting: "auto",
+  // LatteOS: "Waiting for you" always on top (with its count), not in More while nothing waits; still movable there
+  waiting: "always",
   approvals: "auto",
   proposals: "more",
   threads: "always",

@@ -1612,7 +1612,8 @@ function SidebarChannels({
         size="sm"
         iconOnly
         icon="plus"
-        className="sidebar__section-add"
+        // LatteOS: always in sight (faint until hovered), Discord's "Create channel" at a category
+        className="sidebar__section-add sidebar__section-add--new"
         aria-label={label}
         title={label}
         onClick={() => onNewChannel(categoryId)}

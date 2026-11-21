@@ -17,6 +17,10 @@ export const iconNames = Object.keys(icons) as IconName[];
 /** For a name this build doesn't have (a table missing a kind a newer server sends): a plain ring, never a crash. */
 const UNKNOWN: IconShape[] = [["circle", { cx: "10", cy: "10", r: "6" }]];
 
+/** LatteOS: bare marks whose duotone fill is only a square behind them (a box round "+" that reads as a button in a button,
+ * the user 21. 11.): drawn with Phosphor's line alone. */
+const BARE = new Set<string>(["plus", "close", "check", "checks", "more", "grip"]);
+
 export interface IconProps extends Omit<SVGProps<SVGSVGElement>, "name"> {
   name: IconName;
   /** 20 (default), 16 or 14 px. */
@@ -43,7 +47,7 @@ export function Icon({ name, size = 20, label, inline, className, style, ...rest
   if (Duotone) {
     return (
       <Duotone
-        weight="duotone"
+        weight={BARE.has(name) ? "regular" : "duotone"}
         size={size}
         className={cx("ac-icon", "ac-icon--duo", inline && "ac-icon--inline", className)}
         style={inline ? ({ "--glyph": `${size}px`, ...sized } as CSSProperties) : sized}

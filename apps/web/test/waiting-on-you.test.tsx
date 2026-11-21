@@ -70,10 +70,13 @@ describe("Esperando você", () => {
     expect(count.classList.contains("sidebar__unread")).toBe(false);
   });
 
-  test("nothing waiting: the entry waits in More, and the page says so in one sentence", async () => {
+  // LatteOS: the entry stays on top with no count (upstream puts it in More while nothing waits).
+  test("nothing waiting: the entry stays on top with no count, and the page says so in one sentence", async () => {
     await renderApp(`/org/${ORG_ID}/waiting`, { api: createFakeApi(seedState({ notifications: [] })) });
     await settle(8);
-    expect(nav().querySelector(`.sidebar__tools > a[href="/org/${ORG_ID}/waiting"]`)).toBeNull();
+    const row = nav().querySelector(`.sidebar__tools > a[href="/org/${ORG_ID}/waiting"]`);
+    expect(row === null).toBe(false);
+    expect(row?.querySelector(".ac-count") === null).toBe(true);
     expect(screen().getByRole("heading", { level: 1, name: "Esperando você" })).toBeTruthy();
     expect(document.querySelector(".nt")?.textContent).toContain("Ninguém está esperando você.");
   });
