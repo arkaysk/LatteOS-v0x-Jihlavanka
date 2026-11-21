@@ -93,7 +93,8 @@ LatteOS:2.x xxx
 >     pre ten beh; meno bez neho je „(self-named)“, cez HTTP vždy agentgram. **Ostáva:** dvojité potvrdenie pre execute/delete.
 >     Pôvodne: Povolenia (S5, S6): krok agenta podľa skutočného príkazu, nie podľa mena od agenta; povolenie relácie MCP viazané na token, nie na meno.
 > 14. [x] 21. 11. `latte-open` iba http, https, mailto (S9); príkaz AI v Lens sa pri „Naozaj spustiť?“ ukáže celý (S10); karta
->     modelu nesmie svoje zobrazenie presmerovať (S11, overené: README sa ukáže). **Ostáva:** S8 väzba na organizáciu majiteľa,
+>     modelu nesmie svoje zobrazenie presmerovať (S11, overené: README sa ukáže); S8 [x] iba organizácia spárovaného runnera
+>     (`LATTEOS_RUNNER_CONFIG`, ručne v `~/.config/systemd/user/agentgram.service` — **inštalátor agentgramu ho musí zapisovať**). **Ostáva:**
 >     S13 kľúč llama-servera, S15 pevné verzie skillov (S14 [x] dočasný súbor cez mkstemp); skenery CSO po `podman-docker` (ručne). Pôvodne: `latte-open` iba http(s) a súbory (S9); zvyšok SECURITY S10–S15.
 > 15. Heslo sudo: na latte-lab ostáva zámerne čitateľné pre agenta (testovací PC, nie súkromný); na novom PC súkromné heslo, nie v súbore.
 >
