@@ -56,3 +56,30 @@ asi **1 % jedného jadra** (dovtedy 17–44 %). Bez obrazovky: po doznení (`sti
 ani snímku. Pri pohybe kurzora okolo kvapiek 5,2 ms na kolo pri 36–41 kolách — to je čulý stav a ešte nie je meraný
 proti rozpočtu (§14 návrhu); dlaždice tela a jedna hmota prídu v kroku 4.
 
+
+## Čo prepísať do Rustu a čo inak (20. 11. 2026, merané na latte-lab, prihlásený, LensAI otvorené)
+
+**Stále v pamäti (RSS):** LensAI `qs-web` 731 MB (QtWebEngine pre karty webov) · agentgram `bun` 564 MB + runner 45 MB · pleamar-wm 290 ·
+latte-goo 272 · Marea 105 · **pleamar so scénou zámku 59 a polkitu 50 (stále, aj keď sa nič nezamyká ani nepýta)** · `latte-mcp http` 64 ·
+`latte-cal watch` 33 · router modelov 35 + 32 · `window-place` 13 · `latte-guardcorgi watch` 13 · `latte-focus watch` 9. ToolHive Studio
+~950 MB, kým je otvorené (servery bežia aj bez neho: ~146 MB na server).
+
+**Krátke volania (Python):** `latte-ai` 0,12–0,21 s a ~30 MB na volanie, `latte-cal` 0,18 s, `latte-skill asks` 0,06 s,
+`latte-monitor services` 0,9 s (vzorka CPU 0,25 s + skúšky HTTP), **`latte-mcp status` 8,8 s a 242 MB** (pýtal sa `claude/codex/gemini mcp
+list`, ktoré spúšťajú a kontrolujú každý server).
+
+**Hneď opravené (20. 11., bez Rustu):** `latte-mcp status` číta nastavenia nástrojov priamo → 0,06 s a 17 MB, ten istý výsledok;
+LensAI sa na čakajúce otázky AI (`latte-skill asks`) pýtal každých 1,5 s → teraz pri zmene priečinka a raz za 30 s; GuardCorgi dával
+pri páde aplikácie s mnohými procesmi (Electron) 6+ oznámení → jedno na program.
+
+**Kandidáti na Rust, podľa prínosu:**
+1. **Stále bežiace pomocníky v Pythone** (`latte-mcp http`, `latte-cal watch`, `latte-guardcorgi watch`, `latte-focus watch`,
+   `window-place`): spolu ~130 MB → v Ruste odhadom ~20–25 MB. Najväčší je `latte-mcp` (oficiálne Rust SDK pre MCP `rmcp` existuje;
+   `crates/latte-acp` už Rust a ACP používa). Poradie: `latte-mcp` (64 MB, beží stále s agentgramom), potom tie `watch`.
+2. **Často volané čítania** (`latte-ai agents/providers/models/usage`, `latte-monitor services`): nie prepisovať celý `latte-ai`
+   (3 600 riadkov), ale vytiahnuť horúce čítania do malého Rust programu alebo ich ukladať (cache) a obnovovať pri zmene; `latte-monitor
+   services` skúšať adresy HTTP raz za minútu, nie každé 3 s. `latte-stats` (Rust) je vzor.
+3. **Nie Rust, ale väčší zisk:** scény zámku a polkitu (~110 MB) spúšťať až keď treba (malý agent polkitu, scéna na požiadanie;
+   pozor na rýchlosť zamknutia); karty webov LensAI v samostatnom procese, ktorý skončí, keď je posledná karta uspaná; agentgram skúsiť
+   s `bun --smol` (menšia halda); ToolHive Studio zatvárať (servery bežia ďalej).
+4. **Nechať:** pleamar, pleamar-wm, latte-goo (už Rust), router modelov (C++), bun/agentgram (cudzí kód, iba ladiť).

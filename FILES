@@ -30,6 +30,7 @@
 /usr/bin/latte-cal                                      <- bin/latte-cal
 /usr/bin/latte-ai                                       <- bin/latte-ai
 /usr/bin/latte-mcp                                      <- bin/latte-mcp
+/usr/bin/latte-toolhive-catalog                         <- bin/latte-toolhive-catalog
 /usr/bin/latte-skill                                    <- bin/latte-skill
 /usr/bin/latte-activity                                 <- bin/latte-activity
 /usr/bin/latte-app                                      <- bin/latte-app
@@ -138,6 +139,9 @@
 /usr/share/latteos/goo/side.luau                        <- goo/side.luau
 /usr/share/latteos/apps/aicenter.qml                    <- apps/aicenter.qml
 /usr/share/latteos/apps/aicenter/WebTabs.qml            <- apps/aicenter/WebTabs.qml
+/usr/share/latteos/apps/aicenter/ReadmeView.qml         <- apps/aicenter/ReadmeView.qml
+/usr/share/latteos/apps/aicenter/marked.umd.js          <- apps/aicenter/marked.umd.js
+/usr/share/latteos/apps/aicenter/ImportDialog.qml       <- apps/aicenter/ImportDialog.qml
 /usr/share/latteos/apps/installer.qml                   <- apps/installer.qml
 /usr/share/latteos/dualbrew/recipes/smaller-picture.sh  <- system/dualbrew/recipes/smaller-picture.sh
 /usr/share/latteos/dualbrew/recipes/pictures-to-pdf.sh  <- system/dualbrew/recipes/pictures-to-pdf.sh
@@ -771,7 +775,6 @@
 /etc/mise/conf.d/latteos-tools.toml                     <- system/mise/latteos-tools.toml
 /etc/mise/conf.d/latteos.toml                           <- system/mise/latteos.toml
 /usr/share/latteos/ai/local-models.json                 <- system/ai/local-models.json
-/usr/share/latteos/ai/mcp-store.json                    <- system/ai/mcp-store.json
 /usr/share/plymouth/themes/latteos/latteos.plymouth     <- system/plymouth/latteos.plymouth
 /usr/share/plymouth/themes/latteos/watermark.png        <- system/plymouth/watermark.png
 /usr/share/plymouth/themes/latteos/                     <- system:/usr/share/plymouth/themes/spinner/*.png
@@ -787,6 +790,9 @@
 /usr/lib/systemd/user/latte-guardcorgi.service           <- system/systemd/latte-guardcorgi.service
 /usr/lib/systemd/user/latte-focus.service                <- system/systemd/latte-focus.service
 /usr/lib/systemd/user/latte-mcp.service                  <- system/systemd/latte-mcp.service
+/usr/lib/systemd/user/latte-toolhive-catalog.service     <- system/systemd/latte-toolhive-catalog.service
+/usr/lib/systemd/user/latte-toolhive-catalog.timer       <- system/systemd/latte-toolhive-catalog.timer
+/usr/share/latteos/toolhive/registry.yaml               <- system/toolhive/registry.yaml
 /usr/lib/systemd/user/latte-netwatch.service             <- system/systemd/latte-netwatch.service
 /usr/lib/systemd/user/latte-netwatch.timer               <- system/systemd/latte-netwatch.timer
 /usr/lib/systemd/user/latte-calwatch.service            <- system/systemd/latte-calwatch.service

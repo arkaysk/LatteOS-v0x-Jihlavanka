@@ -53,7 +53,7 @@ watch)
 open)
     shift
     for p in "$@"; do
-        if [ "$p" = "$trash" ]; then setsid -f gio open trash:/// >/dev/null 2>&1
+        if [ "$p" = "$trash" ]; then setsid -f latte-app files "$trash" >/dev/null 2>&1    # gio has no handler for trash:/// here (kitty answered)
         else case "$p" in *.desktop) setsid -f gio launch "$p" >/dev/null 2>&1 ;; *) setsid -f gio open "$p" >/dev/null 2>&1 ;; esac; fi
     done ;;
 entries)

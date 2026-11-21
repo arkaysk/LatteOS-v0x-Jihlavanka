@@ -1,0 +1,3 @@
+[{"account_uuid": "acc-1",
+  "conversations_memory": "**Work context**\n\nThe user builds a Linux desktop called LatteOS.\n\n**Personal context**\n\nThe user likes strong espresso.",
+  "project_memories": {"proj-1": "The project keeps its notes in Markdown."}}]

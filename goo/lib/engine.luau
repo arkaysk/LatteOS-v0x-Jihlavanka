@@ -1047,6 +1047,13 @@ local function dock_pin_of(a, b)
     return -1, 0
 end
 local function dock_moved()
+    -- pleamar-wm's scene started again (or after Goo) and put the dock back in the middle: tell it where it was put
+    local wat, wpin = num(fact.dock_wm_at, -2), num(fact.dock_wm_pin, -2)
+    if not E.side and wpin > -1.5 and num(fact["sh.k"], -1) ~= 2 and (math.abs(wat - num(fact.dock_at, -1)) > 1
+        or wpin ~= num(fact.dock_pin, -1) or (wpin >= 0 and math.abs(num(fact.dock_wm_pinx, 0) - num(fact.dock_pinx, 0)) > 1)) then
+        wm.dock_at(num(fact.dock_at, -1))
+        wm.dock_pin(num(fact.dock_pin, -1), num(fact.dock_pinx, 0))
+    end
     local e, len, deep = num(fact.dock_edge, -1), num(fact.dock_len, 0), num(fact.dock_deep, 0)
     local w, h = num(fact.sw, 0), num(fact.sh, 0)
     if E.side or e < 0 or len <= 0 or w <= 0 or h <= 0 then

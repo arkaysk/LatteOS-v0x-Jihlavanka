@@ -1,0 +1,10 @@
+[Unit]
+Description=ToolHive's catalog as one local file: its own PostgreSQL and Registry Server for the time of a sync
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/latte-toolhive-catalog
+TimeoutStartSec=30min
+MemoryHigh=400M
+MemoryMax=700M

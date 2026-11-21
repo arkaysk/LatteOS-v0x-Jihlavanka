@@ -27,7 +27,7 @@ V repozitári sú iba naše záplaty a doplnky k nim (`patches/`) — tie sa ria
 | [Phosphor Icons](https://github.com/phosphor-icons/core) (Helena Zhang, Tobias Fried) | ikony LatteOS, štýl duotone (písmo z `@phosphor-icons/web` 2.1.2, tabuľka `goo/lib/phosphor.luau`; aplikácie cez `Glyph`, agentgram cez `@phosphor-icons/react`) | MIT |
 | [Lobe Icons](https://github.com/lobehub/lobe-icons) | logá služieb AI v LensGoo a LensAI | MIT |
 | [Basic Memory](https://github.com/basicmachines-co/basic-memory) (Basic Machines) | voliteľný samostatný program (`uv tool`): pamäť AI v LensAI, poznámky v Markdowne; `latte-mcp` ho iba spúšťa | AGPL-3.0 |
-| [Register MCP](https://github.com/modelcontextprotocol/registry), [Docker MCP Catalog](https://github.com/docker/mcp-registry) | Store konektorov v LensAI: hľadanie (API registra) a katalóg Dockera (jeden súbor `catalog.yaml`, obrazy spúšťa podman); LatteOS ich iba číta | Apache-2.0 / MIT |
+| [ToolHive](https://github.com/stacklok/toolhive) a [ToolHive Studio](https://github.com/stacklok/toolhive-studio) (Stacklok) | správca konektorov MCP a skillov: katalóg, spúšťanie v kontajneroch (podman), skupiny, nastavenie klientov; samostatné programy (`thv` v `~/.local/bin`, Studio z .rpm), LensAI ich iba otvára | Apache-2.0 |
 | [skills](https://github.com/vercel-labs/skills) (Vercel, skills.sh), [ClawHub](https://github.com/openclaw/clawhub) (OpenClaw), [skilly Anthropic](https://github.com/anthropics/skills) | Store skillov v LensAI: hľadanie a inštalácia ich vlastnými nástrojmi (`npx skills`, `npx clawhub`) do `~/.agents/skills`, bez telemetrie; pri ClawHube odkaz na jeho stránku skillu | MIT / MIT / podľa skillu |
 | [EverOS](https://github.com/EverMind-AI/EverOS) a [EverOS-MCP](https://github.com/EverMind-AI/EverOS-MCP) (EverMind) | voliteľná pamäť AI v LensAI › Nastavenia › Pamäť, samostatné programy (`latte-ai memory install everos`); `latte-mcp` ich iba spúšťa | Apache-2.0 / MIT |
 | [Loaf](https://github.com/m-uvex/loaf-fm) (Musa Murad a prispievatelia) | súvislé zvýraznenie výberu v mriežke DualBrew (`apps/files.qml`, `chosenShape`): prenesený `selectionCanvas` z `qml/FilePane.qml` | MIT |
@@ -118,7 +118,31 @@ inštaláciami; pri distribúcii sa kontroluje konkrétny Fedora build.
   klient napísaný podľa jeho príkladu `yolo_one_shot_client` (ten všetko povolí, náš sa pýta).
 - **claude-agent-acp** (Apache-2.0, github.com/agentclientprotocol/claude-agent-acp) — adaptér Claude Code pre ACP; samostatný
   program, inštaluje sa cez npm, LatteOS ho iba spúšťa.
+- **ACP Registry** (Apache-2.0, github.com/agentclientprotocol/registry) — zoznam agentov (`registry.json` z
+  cdn.agentclientprotocol.com, ikony) v LensAI › Nastavenia › CLI; `latte-ai acp` ho číta v jeho vlastnom formáte (10B.87).
+- **Zed** (GPL-3.0-or-later, github.com/zed-industries/zed, `crates/project/src/agent_server_store.rs`,
+  `agent_registry_store.rs`, `node_runtime`) — postup inštalácie agentov z registra prenesený do Pythonu v `latte-ai acp install`:
+  výber binárka pre platformu › npm, overenie sha256 (inak digest GitHubu), povolené archívy, príkaz iba `./…` bez `..`,
+  npm `install --save-exact` a spúšťací súbor z `package.json` (`read_package_executable`). Agenti sami sa iba sťahujú.
 - **swarmclawai/mcp-gateway** (MIT) — vzor lenivých nástrojov (`mcp_tool_search`): `latte-mcp --lazy` ho píše nanovo (BM25).
 - **bubblewrap** (LGPL-2.0-or-later, github.com/containers/bubblewrap) — pieskovisko agentov (`latte-ai do`); systémový program.
 - Vzory správania bez prevzatého kódu: Qt WebEngine lifecycle example (uspávanie webov), Vivaldi Memory Saver a Ferdium
   (Apache-2.0; kto spí skôr), GNOME AdwAboutDialog a KDE KAboutData (poradie častí stránky O aplikácii), Windows 11 (posuvník).
+
+## LensAI: import z ChatGPT, Claude a Gemini (ROADMAP 10B.73)
+
+- **llm-memex** (MIT, Alex Towell, github.com/queelius/llm-memex, `llm_memex/importers/openai.py`, `anthropic.py`) — čítanie
+  exportu ChatGPT prenesené do `latte-ai import`: rozpoznanie (`mapping` v prvej položke), črepy `conversations-NNN.json`,
+  `utf-8-sig`, text z `parts` aj z hlasových prepisov, čas `create_time` ako epocha; vetvu vyberáme sami od `current_node`.
+- **memex-chats** (MIT, Dionisio Pereyra Bocchio, github.com/dioniipereyraa/memex, `src/memex/core/ingest/claude_export.py`)
+  — čítanie exportu Claude.ai: `conversations.json` (`chat_messages`, bloky `text`, záloha starším `text`), `memories.json`
+  (`conversations_memory`, `project_memories`), projekty `projects/UUID.json`; zip sa číta bez rozbalenia ako v jeho `pipeline.py`.
+- **google_takeout_parser** (MIT, purarue, github.com/purarue/google_takeout_parser) — tvar záznamov My Activity (`header`,
+  `title`, `time`, `products`); odpoveď Gemini zo `safeHtmlItem` podľa skutočných exportov (bez prevzatého kódu).
+- **import-memory** (skill Anthropic, Claude) — otázka, ktorou sa iný asistent spýta na svoju pamäť (v `ImportDialog.qml`
+  doslovne, po anglicky), kategórie a formát `[YYYY-MM-DD] - …`, pravidlá: iba pridávať, žiadny riadok dvakrát, 64 KB.
+
+## LensAI: karta modelu z Hugging Face (ROADMAP 10B.88)
+
+- **marked** 16.4.2 (MIT, © 2018+ MarkedJS, © 2011–2018 Christopher Jeffrey, github.com/markedjs/marked) — `apps/aicenter/marked.umd.js`
+  bez zmeny: README modelu (GitHub Markdown s HTML) na HTML v `apps/aicenter/ReadmeView.qml`, ako ho zobrazuje LM Studio.

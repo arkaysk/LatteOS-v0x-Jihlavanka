@@ -1,0 +1,10 @@
+[Unit]
+Description=Make ToolHive's catalog again once a day
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=30min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

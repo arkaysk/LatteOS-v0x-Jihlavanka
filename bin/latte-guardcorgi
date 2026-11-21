@@ -535,6 +535,7 @@ def watch():
         # new crashes, a look every half minute: in the log, and a notice unless the user said not about that one
         if now - looked > 30:
             looked = now
+            told = set()                                  # one notice a program: an app's processes crash together (Electron: 6+)
             for c in crashes(1):
                 if c["pid"] in seen:
                     continue
@@ -542,7 +543,8 @@ def watch():
                 note("crash", c["name"], "%s (pid %s, signal %s, %s)" % (c["exe"], c["pid"], c["sig"], c["owner"]))
                 # a notice unless the user said not about that one; the AI is offered as Omarchy's crash-watch does, only
                 # when it is turned on (latte-ai toggle crash-capture) and there is an agent to hand it to
-                if not c["quiet"]:
+                if not c["quiet"] and c["name"] not in told:
+                    told.add(c["name"])
                     tell_crash(c, quiet("latte-ai", "offer-crash"))
         off, known = switched_off(), listed()["components"]
         apps = kept_components()

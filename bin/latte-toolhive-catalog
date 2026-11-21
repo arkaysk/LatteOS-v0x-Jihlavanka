@@ -1,0 +1,162 @@
+#!/usr/bin/env python3
+"""latte-toolhive-catalog: ToolHive's catalog of MCP servers and skills as one local file, made by the ToolHive Registry
+Server (Stacklok, Apache-2.0) from the sources of ~/.config/latteos/toolhive-registry.yaml — ToolHive's own catalog, GitHub's
+MCP registry, and what the user adds (a git repository, a registry's address, a file of their own servers).
+
+  latte-toolhive-catalog          starts a PostgreSQL of its own and the Registry Server, waits until every source synced,
+                                  writes ~/.local/share/latteos/toolhive-catalog.json, points ToolHive (Studio and thv) at
+                                  it and stops both again: nothing of it stays running (the user, 20. 11.)
+  latte-toolhive-catalog --keep   the same, but leaves the Registry Server running (http://127.0.0.1:8794) to look at it
+
+Why a file and not the server's address: ToolHive checks a registry API by listing it one server a request (Limit 1) and
+gives up after 10 s, so a catalog of ~1 000 servers never passes (stacklok/toolhive pkg/registry/provider_api.go; the
+draft report is patches/issues/toolhive-registry-validate.md). ToolHive reads a local file in the same format at once.
+"""
+import json
+import os
+import secrets
+import shutil
+import subprocess
+import sys
+import time
+import urllib.parse
+import urllib.request
+
+HOME = os.path.expanduser("~")
+CONFIG = os.path.join(os.environ.get("XDG_CONFIG_HOME") or HOME + "/.config", "latteos", "toolhive-registry.yaml")
+DEFAULT = os.path.join(os.environ.get("LATTE_SHARE") or "/usr/share/latteos", "toolhive", "registry.yaml")
+ROOM = os.path.join(os.environ.get("XDG_DATA_HOME") or HOME + "/.local/share", "latteos", "toolhive-registry")
+OUT = os.path.join(os.environ.get("XDG_DATA_HOME") or HOME + "/.local/share", "latteos", "toolhive-catalog.json")
+SOCKETS = os.environ.get("XDG_RUNTIME_DIR") or "/tmp"
+PORT, API = 5433, "http://127.0.0.1:8794"
+THV = HOME + "/.toolhive/bin/thv"                       # the Desktop's own CLI: another one beside it is refused
+SERVER = shutil.which("thv-registry-api", path=os.environ.get("PATH", "") + ":" + HOME + "/.local/bin")
+
+
+def database():
+    """A PostgreSQL cluster of this user's, in ROOM, on 127.0.0.1:5433 only; made the first time, with a password kept in
+    ~/.pgpass for the Registry Server (it connects over TCP). Started here, stopped at the end."""
+    data, pw = os.path.join(ROOM, "pg"), os.path.join(ROOM, "pg.pw")
+    if not os.path.exists(os.path.join(data, "PG_VERSION")):
+        os.makedirs(ROOM, exist_ok=True)
+        word = secrets.token_urlsafe(24)
+        with open(os.open(pw, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w") as f:
+            f.write(word + "\n")
+        subprocess.run(["initdb", "-D", data, "-U", os.environ.get("USER", "latte"), "--auth-local=peer", "--auth-host=scram-sha-256",
+                        "--pwfile", pw, "-E", "UTF8"], check=True, capture_output=True)
+        line = "127.0.0.1:%d:*:%s:%s\n" % (PORT, os.environ.get("USER", "latte"), word)
+        old = open(HOME + "/.pgpass").read() if os.path.exists(HOME + "/.pgpass") else ""
+        with open(os.open(HOME + "/.pgpass", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w") as f:
+            f.write("".join(x + "\n" for x in old.splitlines() if not x.startswith("127.0.0.1:%d:" % PORT)) + line)
+    subprocess.run(["pg_ctl", "-D", data, "-w", "-l", os.path.join(ROOM, "pg.log"), "-o",
+                    "-p %d -k %s -c listen_addresses=127.0.0.1 -c shared_buffers=32MB -c max_connections=10" % (PORT, SOCKETS), "start"],
+                   check=True, capture_output=True)
+    subprocess.run(["psql", "-h", SOCKETS, "-p", str(PORT), "-d", "postgres", "-qAtc",
+                    "SELECT 1 FROM pg_database WHERE datname='toolhive_registry'"], capture_output=True)
+    subprocess.run(["createdb", "-h", SOCKETS, "-p", str(PORT), "toolhive_registry"], capture_output=True)      # there already: fine
+    return data
+
+
+def get(path):
+    with urllib.request.urlopen(API + path, timeout=30) as r:
+        return json.load(r)
+
+
+def pages(path, key):
+    """Every item of a list of the registry's API, a hundred a request."""
+    out, cursor = [], None
+    for _ in range(500):                                  # 50 000 at most: never a loop without end
+        q = {"limit": 100, "version": "latest"} if key == "servers" else {"limit": 100}
+        if cursor:
+            q["cursor"] = cursor
+        got = get("/registry/default/v0.1/%s?%s" % (path, urllib.parse.urlencode(q)))
+        out += got.get(key) or []
+        cursor = (got.get("metadata") or {}).get("nextCursor")
+        if not cursor:
+            return out
+    return out
+
+
+def export():
+    servers = []
+    for item in pages("servers", "servers"):
+        s = dict(item.get("server") or {})
+        if item.get("_meta"):                             # the registry's own facts beside the publisher's
+            s["_meta"] = dict(item["_meta"], **(s.get("_meta") or {}))
+        if s.get("name"):
+            servers.append(s)
+    skills = pages("x/dev.toolhive/skills", "skills")
+    if not servers:
+        return None
+    catalog = {"$schema": "https://raw.githubusercontent.com/stacklok/toolhive-core/main/registry/types/data/upstream-registry.schema.json",
+               "version": "1.0.0", "meta": {"last_updated": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())},
+               "data": {"servers": servers, "skills": skills}}
+    os.makedirs(os.path.dirname(OUT), exist_ok=True)
+    with open(OUT + ".new", "w") as f:
+        json.dump(catalog, f, ensure_ascii=False)
+    os.replace(OUT + ".new", OUT)
+    if os.path.exists(THV) and OUT not in subprocess.run([THV, "config", "get-registry"], capture_output=True, text=True).stdout:
+        subprocess.run([THV, "config", "set-registry", OUT], capture_output=True)
+    return {"servers": len(servers), "skills": len(skills), "file": OUT}
+
+
+def main(a):
+    if not SERVER:
+        print("latte-toolhive-catalog: thv-registry-api is not installed", file=sys.stderr)
+        return 1
+    if not os.path.exists(CONFIG):                       # the user's own copy: theirs to change (sources, filters)
+        os.makedirs(os.path.dirname(CONFIG), exist_ok=True)
+        with open(DEFAULT) as f, open(CONFIG, "w") as g:
+            g.write(f.read().replace("{user}", os.environ.get("USER", "latte")))
+    data, server = database(), None
+    try:
+        server = subprocess.Popen([SERVER, "serve", "--config", CONFIG, "--address", "127.0.0.1:8794", "--internal-address", "127.0.0.1:8795"],
+                                  stdout=open(os.path.join(ROOM, "registry.log"), "w"), stderr=subprocess.STDOUT,
+                                  env=dict(os.environ, PGPASSFILE=HOME + "/.pgpass"))
+        # every source synced (or failed) once, at most 20 min: its first sync starts a minute or two in
+        from datetime import datetime
+        start, done = time.time(), {}
+
+        def now_done(st):
+            """Synced: complete (now, or before and still within its interval, so the server will not sync it again now),
+            or failed in this run (a failure left from a run before does not count)."""
+            if st.get("phase") == "complete":
+                return True
+            try:
+                return st.get("phase") == "failed" and datetime.fromisoformat(st.get("lastAttempt")).timestamp() >= start - 1
+            except (TypeError, ValueError):
+                return False
+        for _ in range(240):
+            time.sleep(5)
+            if server.poll() is not None:
+                print("latte-toolhive-catalog: the Registry Server stopped; see %s/registry.log" % ROOM, file=sys.stderr)
+                return 1
+            try:
+                got = {s["name"]: s.get("syncStatus") or {} for s in get("/v1/sources").get("sources") or []}
+            except (OSError, ValueError):
+                continue
+            done = {k: v.get("phase", "") for k, v in got.items()}
+            if got and all(now_done(v) for v in got.values()):
+                break
+        out = export()
+        if not out:
+            print("latte-toolhive-catalog: nothing synced (%s); the file is left as it was" % done, file=sys.stderr)
+            return 1
+        print(json.dumps(dict(out, sources=done)))
+        return 0
+    except (OSError, ValueError) as e:
+        print("latte-toolhive-catalog: %s" % e, file=sys.stderr)
+        return 1
+    finally:
+        if server and "--keep" not in a:
+            server.terminate()
+            try:
+                server.wait(15)
+            except subprocess.TimeoutExpired:
+                server.kill()
+        if "--keep" not in a:
+            subprocess.run(["pg_ctl", "-D", data, "-m", "fast", "stop"], capture_output=True)
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

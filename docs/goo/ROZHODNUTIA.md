@@ -603,3 +603,12 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
   iba zo serverov LensAI a povoľovaním po agentoch — nie jeden spoločný konektor („dizajnérovi iba ComfyUI, Blender, Krita“).
   Skilly zdieľané v `~/.agents/skills` (`npx skills`); v agentgrame záložka „Skill z LensAI“ v okne Nainštalovať skill.
   Monitor dostane stránku **Služby**: MCP a webové rozhrania na localhoste — čo sú, kde na disku, kto ich zapol, otvoriť, ukončiť.
+- **ToolHive namiesto vlastného Store a správcu MCP** (20. 11., používateľ: „preberať, nevymýšľať“): konektory (MCP) a skilly spravuje
+  ToolHive od Stacklok (Apache-2.0): katalóg, kontajnery cez podman, skupiny (viac serverov pod jednou adresou pre agenta), tajomstvá
+  v kľúčenke, nastavenie Claude Code/Codex/Gemini. V LensAI v ľavom menu položka **ToolHive Studio** otvorí jeho okno. Vlastný Store
+  v LensAI a brána `latte-mcp /mcp/ID` pôjdu preč, keď ToolHive preukázateľne pobeží; `latte-mcp` ostáva ako server nástrojov LatteOS.
+  Ponuku agentgramu v ToolHive netreba udržiavať (prekrýva sa; čo je iba cez Composio, vie aj tak len agentgram).
+- **Audit LensAI 21. 11. — reakcie** (21. 11., používateľ, poznámky v `docs/lensai/AUDIT-2026-11-21.md`): bočný panel LensAI sa
+  pri agentgrame nebalí automaticky, iba tlačidlo; DM v agentgrame netreba; AI kurzor ostáva v ponuke; bodka API na záložke ostáva;
+  pri poradí stránok Webu ostávajú šípky a pribudne ťahanie; skilly na jednom mieste; ikona ToolHive z tray sa presunie do LensAI
+  (pod ToolHive Studio „ToolHive služba“ s tou istou ponukou); agentgram iba pridávaním, kvôli kompatibilite s pôvodným. Úlohy: 10B.88.

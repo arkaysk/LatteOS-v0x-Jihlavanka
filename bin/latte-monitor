@@ -408,12 +408,29 @@ def services(quick=False):
                        "cpu": round(sum(max(0, after[p][2] - before[p][2]) for p in pids if p in before) / TICK / dt / ncpu * 100, 1) if not quick else 0,
                        "exe": exe, "cwd": cwd or i.get("WorkingDirectory", ""), "unitFile": unitfile,
                        "enabled": i.get("UnitFileState") == "enabled", "by": by, "app": app if app not in (None, "you") else ""})
-    if not quick:                                          # one short look at each port, all at once
+    if not quick:                                          # one short look at each port, all at once; kept a minute a process
         from concurrent.futures import ThreadPoolExecutor
+        seen_file = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "latteos-monitor-probes.json")
+        try:
+            with open(seen_file) as f:
+                seen = json.load(f)
+        except (OSError, ValueError):
+            seen = {}
+        now, fresh = time.time(), {}
         with ThreadPoolExecutor(8) as pool:
             for r in result:
                 if r["url"] == "probe":
-                    r["url"] = next((u for u in pool.map(probe, r["ports"][:6]) if u), None)
+                    key = "%s:%s" % (r["pids"][0] if r["pids"] else 0, ",".join(map(str, r["ports"][:6])))
+                    if key in seen and now - seen[key][1] < 60:
+                        r["url"] = seen[key][0]
+                    else:
+                        r["url"] = next((u for u in pool.map(probe, r["ports"][:6]) if u), None)
+                    fresh[key] = seen[key] if key in seen and now - seen[key][1] < 60 else [r["url"], now]
+        try:
+            with open(seen_file, "w") as f:
+                json.dump(fresh, f)
+        except OSError:
+            pass
     for r in result:
         if r["url"] == "probe":
             r["url"] = None

@@ -56,6 +56,13 @@ No API key: the official tool of a service answers, with the account the user is
                             the task in a terminal (in DIR, else home), planning first with LatteOS's skill and changing
                             nothing until the user says yes
   latte-ai doer AGENT       the agent "Do it for me" and crashes go to (~/.config/latteos/agent); none is picked for the user
+                            (an agent installed from the ACP Registry: acp:ID)
+  latte-ai acp list · acp refresh   the ACP Registry's agents (the list kept a day, refresh: now; offline the last one), the
+                            ones the Helper can use first: [{"id", "name", "description", "version", "license", "icon",
+                            "svg", "url", "kind": binary|npx|uvx|"" (none for this computer), "needs", "missing",
+                            "signin", "installed": version|"", "doer", "usable"}]
+  latte-ai acp install ID · acp remove ID   one into ~/.local/share/latteos/acp/ID (as Zed installs them; a binary checked
+                            against its sha256), or out of it: {"ok", "error"}; its sign-in is its own, at its first task
   latte-ai running          the agents at work now, for LensShore: [{"agent", "name", "pid", "title", "where", "window",
                             "state", "host"}]; "window" is the address of the terminal it runs in ("" for none: "host"
                             says where it is then, e.g. "VS Code" for one in an editor reached over ssh), "state" is
@@ -110,6 +117,15 @@ No API key: the official tool of a service answers, with the account the user is
                             "log"}]; a task through ACP (latte-acp) with its steps, other journal entries without
   latte-ai index            the index of the conversations whole, with each line's meaning (e5-sk-small through the router);
                             a search starts it behind when lines have no meaning yet
+  latte-ai import FILE [--dry-run]   an export of ChatGPT, Claude or Gemini (Takeout, JSON) into LensAI, its zip or a
+                            file of it, the kind told by what is in it: each conversation one of LensAI's, read only
+                            ("imported": the kind), the same export again changes only what changed; Claude's
+                            memories as with import-memory. {"kind", "new", "updated", "same", "notes", "note", "error"}
+                            (anonymous: called in an anonymous project of agentgram, unknown, gemini-html, unreadable);
+                            --dry-run writes nothing and adds "titles" [{"title", "at", "messages", "state"}] and "lines"
+  latte-ai import-memory TEXT|FILE|- --from chatgpt|claude|gemini [--dry-run]   what that assistant says it remembers
+                            (pasted, a file, stdin) as a note of the chosen memory, imported/KIND-memory.md, a fact a
+                            line, only the lines it lacks added: {"notes", "note", "cut" (past 64 KB, left), "error"}
   latte-ai search WORDS [N]   every conversation that says them, or means them (LensAI's, Claude Code's sessions, the Helper's tasks),
                             the best first, without accents, words by their beginning: [{"source", "ref", "title",
                             "folder", "at", "snippet"}]; the index (~/.local/state/latteos/ai/index.db) is read on first
@@ -414,7 +430,7 @@ def hf_readme(repo):
     if text.startswith("---"):
         end = text.find("\n---", 3)
         text = text[end + 4:] if end > 0 else text
-    return text.strip()[:20000]
+    return text.strip()[:100000]
 
 
 def hf_files(repo):
@@ -428,8 +444,8 @@ def hf_files(repo):
     for f in hf("/api/models/%s/tree/main?recursive=true" % repo):
         p = f.get("path", "")
         base = os.path.basename(p).lower()
-        # not the model itself: its picture reader, and the small drafts that only speed a big one up (EAGLE, speculators)
-        if not p.endswith(".gguf") or "mmproj" in base or base.startswith("eagle") or "draft" in base or "speculator" in base:
+        # not the model itself: its picture reader, and the small drafts that only speed a big one up (EAGLE, MTP heads, speculators)
+        if not p.endswith(".gguf") or "mmproj" in base or base.startswith(("eagle", "mtp")) or "draft" in base or "speculator" in base:
             continue
         size = (f.get("lfs") or {}).get("size") or f.get("size") or 0
         split = re.search(r"-(\d{5})-of-(\d{5})\.gguf$", p)
@@ -732,18 +748,28 @@ def local_mmproj(model):
     """The vision file that belongs to a model (mmproj-<name>….gguf beside it), or None: such a model can look at pictures."""
     import re
     base = re.sub(r"-(q\d.*|f16|bf16|f32)\.gguf$", "", os.path.basename(model), flags=re.I)
-    for f in sorted(glob.glob(os.path.join(os.path.dirname(model), "mmproj-*.gguf"))):
+    near = sorted(glob.glob(os.path.join(os.path.dirname(model), "mmproj*.gguf")))
+    for f in near:
         if base.lower() in os.path.basename(f).lower():
             return f
-    return None
+    # a folder of its own (LM Studio's author/model/) with one reader in it: that one, whatever its name
+    return near[0] if len(near) == 1 and os.path.basename(os.path.dirname(model)) != "models" else None
+
+
+def model_files():
+    """Every model file in the models folders, also one put there by hand or by another program (LM Studio keeps them as
+    author/model/file.gguf): any depth, but not the picture readers, nor the index's and speech's own models."""
+    found = []
+    for d in LOCAL_DIRS:
+        root = os.path.join(d, "models")
+        found += [f for f in glob.glob(os.path.join(root, "**", "*.gguf"), recursive=True)
+                  if os.path.relpath(f, root).split(os.sep)[0] not in ("embed", "asr") and "mmproj" not in os.path.basename(f).lower()]
+    return found
 
 
 def local_models_all():
-    found = []
-    for d in LOCAL_DIRS:
-        found += glob.glob(os.path.join(d, "models", "*.gguf"))
-    return [{"id": f, "name": os.path.basename(f)[:-5], "size": os.path.getsize(f)} for f in sorted(found, key=os.path.getsize)
-            if "mmproj" not in os.path.basename(f).lower()]
+    found = model_files()
+    return [{"id": f, "name": os.path.basename(f)[:-5], "size": os.path.getsize(f)} for f in sorted(found, key=os.path.getsize)]
 
 
 def my_models(quick=True):
@@ -759,12 +785,62 @@ def my_models(quick=True):
 
 def local_models():
     """The model files there are, the smallest first: a small one answers soonest."""
-    found = []
-    for d in LOCAL_DIRS:
-        found += glob.glob(os.path.join(d, "models", "*.gguf"))
-    found = [f for f in sorted(found, key=os.path.getsize) if "mmproj" not in os.path.basename(f).lower()]
+    found = sorted(model_files(), key=os.path.getsize)
     return [{"id": f, "name": os.path.basename(f)[:-5].replace("-Q4_K_M", "").replace("-q4_k_m", "").replace("-", " "),
              "vision": local_mmproj(f) is not None} for f in found] if local_server() else []
+
+
+def local_catalog():
+    """The models here as other programs offer them (agentgram's model picker): each by the name the router knows it by,
+    a label with what LM Studio shows in its list (quantization, size, parameters) and what it can do. Embedding and
+    speech models are not here (they live in models/embed, models/asr)."""
+    import re
+    out = []
+    for m in local_models_all():
+        g, base = gguf(m["id"]), os.path.basename(m["id"])[:-5]
+        quant = re.search(r"(?i)(?:^|[-_.])((?:i?q\d[a-z0-9_]*)|f16|bf16|f32)$", base)
+        params = re.search(r"(?i)(?:^|[-_])(\d+(?:\.\d+)?)b(?:[-_]|$)", base)
+        name = base[:quant.start()].rstrip("-_.") if quant else base
+        bits = [name.replace("-", " ").replace("_", " ")] + ([quant.group(1).upper()] if quant else []) + ["%.1f GB" % (m["size"] / 1e9)]
+        out.append({"id": local_name(m["id"]), "label": " · ".join(bits), "size": m["size"],
+                    "quant": quant.group(1).upper() if quant else "", "params": (params.group(1) + "B") if params else "",
+                    "tools": bool(g.get("tools")), "vision": local_mmproj(m["id"]) is not None, "reasoning": bool(g.get("reasoning"))})
+    return out
+
+
+def local_progress(name):
+    """How far the router is with loading a model (llama.cpp's router says only `loading`, not how far): the bytes of its
+    files the model's own server has read or mapped in, of all of them; `percent` is an estimate, 100 once loaded."""
+    try:
+        st = next((x.get("status") or {} for x in local_call("/v1/models", timeout=2).get("data") or [] if x.get("id") == name), None)
+    except (OSError, ValueError):
+        return {"state": "off", "percent": 0}
+    if st is None:
+        return {"state": "none", "percent": 0}
+    state = st.get("value", "")
+    if state == "loaded":
+        return {"state": state, "percent": 100}
+    if state != "loading":
+        return {"state": state, "percent": 0}
+    model = next((m["id"] for m in local_models_all() if local_name(m["id"]) == name), None)
+    files = [f for f in (model, model and local_mmproj(model)) if f]
+    total = sum(os.path.getsize(f) for f in files) or 1
+    done = 0
+    for pid in os.listdir("/proc"):
+        try:
+            with open("/proc/%s/cmdline" % pid, "rb") as f:
+                args = f.read().split(b"\0")
+            if b"--alias" not in args or args[args.index(b"--alias") + 1] != name.encode():
+                continue
+            with open("/proc/%s/status" % pid) as f:
+                rss = sum(int(l.split()[1]) * 1024 for l in f if l.startswith(("RssFile:", "RssAnon:")))
+            with open("/proc/%s/io" % pid) as f:
+                read = next((int(l.split()[1]) for l in f if l.startswith("read_bytes:")), 0)
+            done = max(done, rss, read)
+        except (OSError, ValueError, IndexError):
+            continue
+    # ponytail: an estimate — pages the kernel drops while loading make it step back; callers keep the highest
+    return {"state": state, "percent": min(99, int(done * 100 / total))}
 
 
 def local_call(path, body=None, timeout=5):
@@ -813,6 +889,15 @@ def local_preset():
     with open(ROUTER_PRESET, "w") as f:
         f.write(text)
     return True
+
+
+def local_reload():
+    """The models' settings changed: the router goes, loaded anew at the next question; while agentgram's agents use the
+    models here it comes back at once, or their next call finds nobody on the port (they do not start it themselves)."""
+    subprocess.run(["pkill", "-f", "llama-server.*--port %d" % LOCAL_PORT])
+    s = agentgram()
+    if s["on"] and s["mode"] == "local":
+        local_start(None, load=False)
 
 
 def local_start(model, load=True):
@@ -1346,9 +1431,9 @@ def asr(wav):
 SPEAKING = os.path.join(ROOM, "say.pid")
 
 
-def say(text):
+def say(text, wait=False):
     """Read aloud in Lili's voice (Piper, the dataset CC0): the words to a sound file, then pw-play; one at a time — a new
-    one, or `say stop`, ends what is being read."""
+    one, or `say stop`, ends what is being read. With `wait`, returns when it was read or stopped (LensAI's button)."""
     import signal
     try:
         os.killpg(int(open(SPEAKING).read()), signal.SIGTERM)
@@ -1369,6 +1454,8 @@ def say(text):
                           "sh", os.path.join(build, "lib"), wav] + tool + [" ".join(words.split())[:4000]],
                          start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     open(SPEAKING, "w").write(str(p.pid))
+    if wait:
+        p.wait()
     return {"ok": True}
 
 
@@ -1817,7 +1904,9 @@ def doers():
             chosen = f.read().strip()
     except OSError:
         chosen = ""
-    there = [i for i, d in DOERS.items() if shutil.which(d["tool"], path=SEARCH)]
+    have = acp_installed()          # and the agents installed from the ACP Registry, for the Helper (ROADMAP 10B.87)
+    there = [i for i, d in DOERS.items() if shutil.which(d["tool"], path=SEARCH) or ACP_OF[i] in have]
+    there += ["acp:" + r for r in have if r not in ACP_OF.values()]
     return sorted(there, key=lambda i: i != chosen)
 
 
@@ -2102,6 +2191,235 @@ def search(words, most=20):
             out.append({"source": d[0], "ref": key.split(":", 1)[1] if d[0] == "helper" else d[1], "title": d[2], "folder": d[3], "at": d[4],
                         "snippet": " ".join(snip.split())})
     db.close()
+    return out
+
+
+# ── what another assistant kept, brought into LensAI (ROADMAP 10B.73): ChatGPT's data export (conversations.json, or
+# its conversations-NNN.json shards), Claude.ai's (conversations.json, memories.json, projects) and Google Takeout's
+# Gemini Apps activity (My Activity/Gemini Apps/MyActivity.json), as the zip or one of its files. Read as llm-memex (MIT,
+# Alex Towell) and memex-chats (MIT, Dionisio Pereyra Bocchio) read them. A conversation becomes one of LensAI's, read
+# only ("imported"): the index, the search and Conversations have it with no code of their own. What the assistant
+# remembers goes into the chosen memory as a note, as Claude's own importer files it (import-memory): only added to,
+# never a line twice.
+IMPORT_KINDS = {"chatgpt": "ChatGPT", "claude": "Claude", "gemini": "Gemini"}
+IMPORT_MOST = 65536             # a pasted memory at most, as Claude's import modal takes it
+
+
+def import_read(path):
+    """The JSON files of an export that tell something: {base name: data}; a zip's read from it, not unpacked. Claude's
+    projects (projects/UUID.json, or one projects.json) are one list "projects.json"."""
+    import zipfile
+    got = {}
+    if not zipfile.is_zipfile(path):
+        with open(path, encoding="utf-8-sig") as f:
+            got[os.path.basename(path)] = json.load(f)
+        return got
+    with zipfile.ZipFile(path) as z:
+        for n in z.namelist():
+            b = os.path.basename(n)
+            if n.startswith("projects/") and b.endswith(".json"):
+                with z.open(n) as f:
+                    got.setdefault("projects.json", []).append(json.loads(f.read().decode("utf-8-sig")))
+            # Takeout's other products keep a MyActivity of their own; an export in HTML is said so (import_export)
+            elif re.fullmatch(r"conversations(-\d+)?\.json|memories\.json|projects\.json", b) or (b == "MyActivity.json" and "Gemini" in n):
+                with z.open(n) as f:
+                    got[b] = json.loads(f.read().decode("utf-8-sig"))
+            elif b == "MyActivity.html" and "Gemini" in n:
+                got["html"] = True
+    return got
+
+
+def import_at(t):
+    """A time of an export (seconds since 1970, or ISO 8601 with Z) as LensAI keeps its own: local, to the second; "" none."""
+    try:
+        d = (datetime.datetime.fromtimestamp(t, datetime.timezone.utc) if isinstance(t, (int, float))
+             else datetime.datetime.fromisoformat(str(t).replace("Z", "+00:00")))
+    except (TypeError, ValueError, OverflowError, OSError):
+        return ""
+    return (d.astimezone() if d.tzinfo else d).replace(tzinfo=None).isoformat(timespec="seconds")
+
+
+def import_chatgpt(c):
+    """A ChatGPT conversation: a tree (`mapping`; each answer asked again is a branch), read from the node shown last
+    (`current_node`) back to its root, as ChatGPT shows it; the system's, the tools' and the hidden messages left out."""
+    m = c.get("mapping") or {}
+    node = c.get("current_node")
+    if node not in m:                                     # none told: the branch that ends last
+        leaves = [k for k, v in m.items() if isinstance(v, dict) and not v.get("children")]
+        node = max(leaves, key=lambda k: (m[k].get("message") or {}).get("create_time") or 0, default=None)
+    line, seen = [], set()
+    while node in m and node not in seen and isinstance(m[node], dict):
+        seen.add(node)
+        line.append(m[node].get("message") or {})
+        node = m[node].get("parent")
+    out, model = [], ""
+    for msg in reversed(line):
+        role, meta, body = (msg.get("author") or {}).get("role"), msg.get("metadata") or {}, msg.get("content") or {}
+        if (role not in ("user", "assistant") or msg.get("recipient", "all") != "all" or meta.get("is_visually_hidden_from_conversation")
+                or body.get("content_type", "text") not in ("text", "multimodal_text")):       # not thoughts, code, its output
+            continue
+        text = "\n".join(p if isinstance(p, str) else str(p.get("text") or "") for p in body.get("parts") or [] if isinstance(p, (str, dict))).strip()
+        if text:
+            out.append({"role": role, "content": text, "at": import_at(msg.get("create_time"))})
+            model = meta.get("model_slug") or model if role == "assistant" else model
+    return {"id": c.get("conversation_id") or c.get("id") or "", "title": c.get("title") or "", "model": model or c.get("default_model_slug") or "",
+            "updated": import_at(c.get("update_time")), "messages": out}
+
+
+def import_claude(c):
+    """A Claude.ai conversation (memex-chats' parse_conversation_dict): its text blocks, or the older `text`."""
+    out = []
+    for m in c.get("chat_messages") or c.get("messages") or []:
+        if not isinstance(m, dict):
+            continue
+        blocks = m.get("content") if isinstance(m.get("content"), list) else []
+        text = "\n".join(str(b.get("text") or "") for b in blocks if isinstance(b, dict) and b.get("type") == "text").strip()
+        text = text or str(m.get("text") or "").strip()
+        if text:
+            out.append({"role": "assistant" if m.get("sender") == "assistant" else "user", "content": text, "at": import_at(m.get("created_at"))})
+    return {"id": c.get("uuid") or "", "title": c.get("name") or c.get("title") or "", "model": c.get("model") or "",
+            "updated": import_at(c.get("updated_at")), "messages": out}
+
+
+def import_gemini(items):
+    """Gemini's activity in Takeout: an entry a question with its answer (safeHtmlItem), no conversation told, so a
+    day's entries are one conversation. The question is the title after a word in the account's language ("Prompted …")."""
+    import html
+    # ponytail: a conversation a day; a Takeout that tells Gemini's conversations would want them instead
+    acts = sorted((a for a in items if isinstance(a, dict) and a.get("safeHtmlItem") and "Gemini" in str(a.get("header", "")) + str(a.get("products", ""))),
+                  key=lambda a: str(a.get("time", "")))
+    heads = [t.split(": ", 1)[0] for t in (str(a.get("title", "")) for a in acts) if ": " in t[:60]]
+    lead = max(set(heads), key=heads.count) if heads else ""
+    lead = lead + ": " if lead and heads.count(lead) >= max(2, 0.8 * len(acts)) else "\0"      # the same word before most: Takeout's
+    days = {}
+    for a in acts:
+        at = import_at(a.get("time"))
+        q = re.sub(r"^Prompted\s+", "", str(a.get("title", "")))
+        q = (q[len(lead):] if q.startswith(lead) else q).strip()
+        said = "\n".join(str(h.get("html") or "") for h in a["safeHtmlItem"] if isinstance(h, dict))
+        said = html.unescape(re.sub(r"<[^>]+>", "", re.sub(r"<br\s*/?>|</(p|li|h\d|div|tr|pre)>", "\n", said, flags=re.I)))
+        said = re.sub(r"\n{3,}", "\n\n", said).strip()
+        d = days.setdefault(at[:10], {"id": at[:10], "title": q[:80], "model": "", "updated": "", "messages": []})
+        d["messages"] += [m for m in ({"role": "user", "content": q, "at": at}, {"role": "assistant", "content": said, "at": at}) if m["content"]]
+    return list(days.values())
+
+
+def import_memory_lines(text, cat="memory"):
+    """What an assistant says it remembers, a fact a line as Basic Memory's observations: `- [category] fact (date)`, the
+    category from the heading over it (the prompt's Instructions, Identity, Career, Projects, Preferences)."""
+    out, block = [], re.search(r"```[^\n]*\n(.*?)```", text, re.S)
+    for s in (x.strip() for x in (block.group(1) if block else text).splitlines()):     # the block the prompt asks for, not what is said after it
+        if not s.strip("`"):                              # the code block the prompt asks for
+            continue
+        h = re.fullmatch(r"#{1,6}\s*(.+?)\s*:?|(?:\d+\.\s*)?\*\*(.+?):?\*\*:?|([^\s:\[][^:]{0,38}):", s)
+        if h:
+            cat = slug(next(g for g in h.groups() if g)).replace("_", "-") or cat
+            continue
+        s = re.sub(r"^(?:[-*•]|\d+\.)\s+", "", s)
+        d = re.match(r"\[(\d{4}-\d{2}-\d{2}|unknown)\]\s*[-–:]?\s*", s)
+        fact = (s[d.end():] if d else s).strip()
+        if fact:
+            out.append("- [%s] %s%s" % (cat, fact, " (%s)" % d.group(1) if d and d.group(1) != "unknown" else ""))
+    return out
+
+
+def import_memory_add(lines, kind, dry=False):
+    """Facts into the chosen memory: Basic Memory's note imported/KIND-memory.md, marked with its source; only the lines
+    it lacks are added, the old ones never changed (Claude's import-memory: additive only)."""
+    engine = chosen(MEMORY_WORD) or "basic"
+    if engine != "basic":                                 # ponytail: Basic Memory only; EverOS would take them by its add_memory
+        return {"notes": 0, "note": "", "error": "memory-" + engine}
+    folder = os.path.join(ai_folder(), "imported")
+    if anonymous(folder):
+        return {"notes": 0, "note": "", "error": "anonymous"}
+    path = os.path.join(folder, kind + "-memory.md")
+    try:
+        with open(path, encoding="utf-8") as f:
+            have = f.read()
+    except OSError:
+        have = ""
+    key = lambda l: re.sub(r"\s*\(\d{4}-\d{2}-\d{2}\)$", "", l).strip().lower()
+    known, new = {key(l) for l in have.splitlines()}, []
+    for l in lines:
+        if key(l) not in known:
+            known.add(key(l))
+            new.append(l)
+    if new and not dry:
+        os.makedirs(folder, exist_ok=True)
+        name = IMPORT_KINDS[kind]
+        head = "" if have else ("---\ntitle: Memory from %s\ntype: note\npermalink: imported/%s-memory\ntags:\n- imported\n- %s\nsource: %s\n---\n\n"
+                                "# Memory from %s\n\nWhat %s remembered about the user, imported into LensAI on %s.\n\n## Observations\n"
+                                % (name, kind, kind, kind, name, name, now()[:10]))
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(head + "".join(l + "\n" for l in new))
+    return dict({"notes": len(new), "note": path}, **({"lines": new} if dry else {}))
+
+
+def import_memory(text, kind, dry=False):
+    """A pasted "what you remember about me" (latte-ai import-memory); what is past IMPORT_MOST is left, whole lines."""
+    cut = len(text) > IMPORT_MOST
+    if cut:
+        text = text[:IMPORT_MOST].rsplit("\n", 1)[0]
+    return dict(import_memory_add(import_memory_lines(text), kind, dry), cut=cut)
+
+
+def import_export(path, dry=False):
+    """An export of ChatGPT, Claude or Gemini into LensAI: {"kind", "new", "updated", "same" (there already, unchanged),
+    "notes", "note", "error"}; with dry, nothing written and "titles" what would come. Never from or for an anonymous
+    project of agentgram: nothing of it leaves it, nothing comes in."""
+    import hashlib
+    import zipfile
+    if anonymous(os.getcwd()) or anonymous(os.path.abspath(path)):
+        return {"error": "anonymous"}
+    try:
+        files = import_read(path)
+    except (OSError, ValueError, zipfile.BadZipFile) as e:
+        return {"error": "unreadable", "why": str(e)[:200]}
+    convs, memories, projects, kind = [], {}, {}, ""
+    for name, data in sorted(files.items()):
+        items = data if isinstance(data, list) else [data]
+        first = items[0] if items and isinstance(items[0], dict) else {}
+        if "mapping" in first:
+            kind, convs = "chatgpt", convs + [import_chatgpt(c) for c in items if isinstance(c, dict)]
+        elif "chat_messages" in first:
+            kind, convs = "claude", convs + [import_claude(c) for c in items if isinstance(c, dict)]
+        elif "conversations_memory" in first or "project_memories" in first:
+            kind, memories = "claude", first
+        elif name == "projects.json":
+            projects = {p.get("uuid"): p.get("name") or "" for p in items if isinstance(p, dict)}
+        elif any(isinstance(a, dict) and "Gemini" in str(a.get("header", "")) + str(a.get("products", "")) for a in items[:50]):
+            kind, convs = "gemini", convs + import_gemini(items)
+    if not kind:
+        return {"error": "gemini-html" if files.get("html") else "unknown"}
+    out = {"kind": kind, "new": 0, "updated": 0, "same": 0, "notes": 0, "note": ""}
+    if dry:
+        out["titles"] = []
+    for c in convs:
+        if not c["messages"]:
+            continue
+        ident = "%s-%s" % (kind, hashlib.sha1(str(c["id"] or c["title"] + c["messages"][0]["at"]).encode()).hexdigest()[:12])
+        chat = {"id": ident, "title": c["title"] or c["messages"][0]["content"].splitlines()[0][:80], "provider": kind, "model": c["model"],
+                "effort": "", "messages": c["messages"], "usage": {"context": 0, "window": 0, "tokens": 0, "cost": 0},
+                "from": "import", "imported": kind, "updated": c["updated"] or c["messages"][-1]["at"] or now()}
+        was = load(ident)
+        state = "same" if was == chat else "updated" if was else "new"
+        out[state] += 1
+        if dry:
+            out["titles"].append({"title": chat["title"], "at": chat["updated"], "messages": len(chat["messages"]), "state": state})
+        elif state != "same":
+            keep(chat)
+    if not dry and out["new"] + out["updated"]:
+        db = index_open()                                  # searchable at once, the meanings behind with the next search
+        index_update(db)
+        db.close()
+    if memories:
+        said = memories.get("conversations_memory")
+        lines = import_memory_lines(said) if isinstance(said, str) else []
+        for ref, t in (memories.get("project_memories") or {}).items():
+            if isinstance(t, str):
+                lines += import_memory_lines(t, slug("project " + (projects.get(ref) or str(ref)[:8])).replace("_", "-"))
+        r = import_memory_add(lines, kind, dry)
+        out.update(notes=r["notes"], note=r["note"], **({"memory_error": r["error"]} if r.get("error") else {}), **({"lines": r["lines"]} if dry else {}))
     return out
 
 
@@ -2402,6 +2720,244 @@ def read_json(path):
         return {}
 
 
+# ── the agents of the ACP Registry (ROADMAP 10B.87; agentclientprotocol/registry, Apache-2.0): its list kept a day (Zed
+# looks every hour), each agent installed as Zed installs them (crates/project/src/agent_server_store.rs, GPL-3.0-or-later):
+# this platform's binary from its archive, checked against its sha256 (none given: GitHub's digest of the release asset),
+# else its npm package (npm install, started with node), else its PyPI package (uv tool install; Zed has no uvx) — each in
+# a folder of its own under ACP_HOME, so removing it leaves nothing. Its sign-in is its own, at its first task: never here.
+ACP_REGISTRY = "https://cdn.agentclientprotocol.com/registry/v1/latest/registry.json"
+ACP_CACHE = os.path.join(os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"), "latteos", "acp")
+ACP_HOME = os.path.join(os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share"), "latteos", "acp")
+ACP_OF = {"claude": "claude-acp", "chatgpt": "codex-acp", "gemini": "gemini"}       # LatteOS's agents in the registry
+ACP_NEEDS = {"binary": [], "npx": ["node", "npm"], "uvx": ["uv"]}
+ACP_ID = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")          # an id is a folder's name here
+ACP_ARCHIVES = (".zip", ".tar.gz", ".tgz", ".tar.bz2", ".tbz2")
+# what the registry does not allow, or Zed cannot unpack: taken for a raw binary, it would be a broken one
+ACP_NOT = (".dmg", ".pkg", ".deb", ".rpm", ".msi", ".appimage", ".tar.xz", ".txz", ".tar", ".gz", ".bz2", ".xz", ".7z")
+
+
+def acp_get(url, timeout=30):
+    import urllib.request
+    return urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "LatteOS"}), timeout=timeout)
+
+
+def acp_registry(fresh=False):
+    """The registry's agents: fetched when asked or a day old, with their icons (as Zed keeps them); offline, the last list."""
+    import time
+    from concurrent.futures import ThreadPoolExecutor
+    path = os.path.join(ACP_CACHE, "registry.json")
+    if fresh or not os.path.exists(path) or time.time() - os.path.getmtime(path) > 86400:
+        try:
+            with acp_get(ACP_REGISTRY) as r:
+                raw = r.read()
+            got = json.loads(raw)
+            if isinstance(got, dict) and isinstance(got.get("agents"), list):
+                os.makedirs(os.path.join(ACP_CACHE, "icons"), exist_ok=True)
+                with open(path + ".part", "wb") as f:
+                    f.write(raw)
+                os.replace(path + ".part", path)
+
+                def icon(x):
+                    try:
+                        with acp_get(x["icon"], 10) as r, open(os.path.join(ACP_CACHE, "icons", x["id"] + ".svg"), "wb") as f:
+                            f.write(r.read(65536))
+                    except (OSError, KeyError, TypeError):
+                        pass
+                with ThreadPoolExecutor(8) as pool:
+                    list(pool.map(icon, [x for x in got["agents"] if isinstance(x, dict) and ACP_ID.match(str(x.get("id", "")))
+                                         and str(x.get("icon", "")).startswith("https://")]))
+        except (OSError, ValueError):
+            pass
+    return [x for x in read_json(path).get("agents") or [] if isinstance(x, dict) and ACP_ID.match(str(x.get("id", "")))]
+
+
+def acp_platform():
+    import platform
+    m = {"x86_64": "x86_64", "amd64": "x86_64", "aarch64": "aarch64", "arm64": "aarch64"}.get(platform.machine().lower())
+    # ponytail: glibc's only (Fedora); a musl system would want linux-*-musl first, as Zed does
+    return "linux-" + m if m else ""
+
+
+def acp_how(x):
+    """How an agent is had here, as Zed picks it: ("binary", its target for this platform), else ("npx", …), else ("uvx", …)."""
+    d = x.get("distribution") or {}
+    t = (d.get("binary") or {}).get(acp_platform())
+    if isinstance(t, dict) and t.get("archive") and t.get("cmd"):
+        return "binary", t
+    for kind in ("npx", "uvx"):
+        if isinstance(d.get(kind), dict) and d[kind].get("package"):
+            return kind, d[kind]
+    return "", {}
+
+
+def acp_installed():
+    """The registry's agents installed here: {id: its agent.json — "name", "version", "kind", "argv", "env", "run"}."""
+    out = {}
+    for path in glob.glob(os.path.join(ACP_HOME, "*", "agent.json")):
+        m, rid = read_json(path), os.path.basename(os.path.dirname(path))
+        if ACP_ID.match(rid) and m.get("argv") and os.path.exists(m.get("run", "")):
+            out[rid] = m
+    return out
+
+
+def acp_argv(who):
+    """How the Helper starts an agent through ACP, (argv, env): its adapter on the PATH, else the one from the registry."""
+    if who in ACP and shutil.which(ACP[who][0], path=SEARCH):
+        return [shutil.which(x, path=SEARCH) or x for x in ACP[who]], {}
+    m = acp_installed().get(ACP_OF.get(who) or (who[4:] if who.startswith("acp:") else ""))
+    if not m:
+        return None
+    return [shutil.which(m["argv"][0], path=SEARCH) or m["argv"][0]] + m["argv"][1:], m.get("env") or {}
+
+
+def acp_list(fresh=False):
+    """Every agent of the registry, the ones the Helper can use first: what it is, how it is installed and what that needs."""
+    have, back = acp_installed(), {v: k for k, v in ACP_OF.items()}
+    runs = bool(shutil.which("latte-acp", path=SEARCH) and shutil.which("bwrap"))
+    out = []
+    for x in acp_registry(fresh):
+        kind = acp_how(x)[0]
+        needs = ACP_NEEDS.get(kind, [])
+        doer = back.get(x["id"]) or "acp:" + x["id"]
+        try:
+            with open(os.path.join(ACP_CACHE, "icons", x["id"] + ".svg")) as f:
+                svg = f.read()
+        except (OSError, ValueError):
+            svg = ""
+        out.append({"id": x["id"], "name": str(x.get("name") or x["id"]), "description": str(x.get("description", "")),
+                    "version": str(x.get("version", "")), "license": str(x.get("license", "")), "icon": str(x.get("icon", "")), "svg": svg,
+                    "url": str(x.get("website") or x.get("repository") or ""), "kind": kind, "needs": needs,
+                    "missing": [n for n in needs if not shutil.which(n, path=SEARCH)],
+                    "signin": True,        # the registry lists only agents that sign in their own way (AUTHENTICATION.md)
+                    "installed": have.get(x["id"], {}).get("version", ""), "doer": doer, "usable": runs and acp_argv(doer) is not None})
+    return sorted(out, key=lambda a: (not a["usable"], not a["installed"], a["name"].lower()))
+
+
+def acp_github_digest(url):
+    """GitHub's sha256 of a release asset, for an archive the registry gives none for (as Zed asks for it)."""
+    import urllib.parse
+    u = urllib.parse.urlparse(url)
+    p = u.path.split("/")                       # /OWNER/REPO/releases/download/TAG/ASSET
+    if u.netloc != "github.com" or len(p) != 7 or p[3:5] != ["releases", "download"]:
+        return ""
+    try:
+        with acp_get("https://api.github.com/repos/%s/%s/releases/tags/%s" % (p[1], p[2], p[5]), 15) as r:
+            got = json.load(r)
+    except (OSError, ValueError):
+        return ""
+    d = next((str(a.get("digest") or "") for a in got.get("assets") or [] if a.get("name") == urllib.parse.unquote(p[6])), "")
+    return d[7:] if d.startswith("sha256:") else ""
+
+
+def acp_unpack(t, into):
+    """A binary target: its archive downloaded and checked, unpacked into the folder; the path of its command."""
+    import hashlib
+    import tarfile
+    import urllib.parse
+    import zipfile
+    cmd, url = str(t["cmd"]), str(t["archive"])
+    if not cmd.startswith("./") or ".." in cmd or not url.startswith("https://"):
+        raise ValueError("the registry's command or archive is not one LatteOS runs: %s %s" % (cmd, url))
+    kind = urllib.parse.urlparse(url).path.lower()
+    if kind.endswith(ACP_NOT) and not kind.endswith(ACP_ARCHIVES):
+        raise ValueError("an archive LatteOS cannot unpack: " + url)
+    file, h = os.path.join(into, ".download"), hashlib.sha256()
+    with acp_get(url, 60) as r, open(file, "wb") as f:
+        for chunk in iter(lambda: r.read(1 << 20), b""):
+            h.update(chunk)
+            f.write(chunk)
+    want = str(t.get("sha256") or acp_github_digest(url)).lower()
+    if want and h.hexdigest() != want:
+        raise ValueError("the download is not what the registry says (sha256)")
+    run = os.path.join(into, cmd[2:])
+    try:
+        if kind.endswith(".zip"):
+            with zipfile.ZipFile(file) as z:
+                for i in z.infolist():
+                    got = z.extract(i, into)         # zipfile drops absolute paths and ".."; it keeps no modes: those set here
+                    if i.external_attr >> 16 & 0o111 and not i.is_dir():
+                        os.chmod(got, 0o755)
+        elif kind.endswith(ACP_ARCHIVES):
+            with tarfile.open(file) as z:
+                z.extractall(into, filter="data")    # nothing outside the folder, no devices, no setuid
+    except (tarfile.TarError, zipfile.BadZipFile) as e:
+        raise ValueError("the archive did not unpack: %s" % e)
+    if not kind.endswith(ACP_ARCHIVES):
+        os.makedirs(os.path.dirname(run), exist_ok=True)
+        os.replace(file, run)                        # a raw binary, named as its command (Zed: as the URL's last part)
+    if os.path.exists(file):
+        os.remove(file)
+    if not os.path.isfile(run) or not os.path.realpath(run).startswith(os.path.realpath(into) + os.sep):
+        raise ValueError("its command is not in what was downloaded: " + cmd)
+    os.chmod(run, os.stat(run).st_mode | 0o755)
+    return run
+
+
+def acp_install(rid):
+    """One agent of the registry into ACP_HOME/ID, agent.json telling how it starts; "" when it is there, else why not.
+    Installed again, the old one goes first (an update)."""
+    x = next((x for x in acp_registry() if x["id"] == rid), None)
+    kind, t = acp_how(x) if x else ("", {})
+    if not kind:
+        return "not in the registry for this computer"
+    missing = [n for n in ACP_NEEDS[kind] if not shutil.which(n, path=SEARCH)]
+    if missing:
+        return "needs " + ", ".join(missing)
+    home = os.path.join(ACP_HOME, rid)
+    shutil.rmtree(home, ignore_errors=True)
+    os.makedirs(home)
+    env = dict(os.environ, PATH=SEARCH)
+    # ponytail: straight into its folder (uv's tools keep absolute paths); an update that fails leaves it uninstalled
+    try:
+        if kind == "binary":
+            run = acp_unpack(t, home)
+            argv = [run] + [str(a) for a in t.get("args") or []]
+        elif kind == "npx":
+            spec = str(t["package"])
+            subprocess.run(["npm", "install", "--prefix", home, "--save-exact", "--no-fund", "--no-audit", spec],
+                           check=True, capture_output=True, timeout=900, env=env, cwd=home)
+            name = spec.rsplit("@", 1)[0] or spec              # @scope/name@1.0 → @scope/name
+            pkg = os.path.join(home, "node_modules", name)
+            bins = read_json(os.path.join(pkg, "package.json")).get("bin")
+            if isinstance(bins, dict):                         # Zed's read_package_executable: the only one, or the named one
+                bins = next(iter(bins.values())) if len(bins) == 1 else bins.get(name.rsplit("/", 1)[-1])
+            if not isinstance(bins, str):
+                raise ValueError("the npm package %s declares no command" % name)
+            run = os.path.realpath(os.path.join(pkg, bins))
+            argv = ["node", run] + [str(a) for a in t.get("args") or []]
+        else:
+            spec = str(t["package"])
+            subprocess.run(["uv", "tool", "install", spec], check=True, capture_output=True, timeout=900, cwd=home,
+                           env=dict(env, UV_TOOL_DIR=os.path.join(home, "tools"), UV_TOOL_BIN_DIR=os.path.join(home, "bin"),
+                                    UV_PYTHON_INSTALL_DIR=os.path.join(home, "python")))
+            name = re.split(r"[=<>~!\[@ ]", spec, 1)[0]
+            found = sorted(os.listdir(os.path.join(home, "bin")))
+            run = os.path.join(home, "bin", name if name in found else (found[0] if len(found) == 1 else name))
+            if not os.path.exists(run):
+                raise ValueError("the PyPI package %s gave no command" % name)
+            argv = [run] + [str(a) for a in t.get("args") or []]
+        with open(os.path.join(home, "agent.json"), "w") as f:
+            json.dump({"id": rid, "name": x.get("name") or rid, "version": x.get("version", ""), "kind": kind, "argv": argv, "run": run,
+                       "env": {str(k): str(v) for k, v in (t.get("env") or {}).items()}}, f, ensure_ascii=False)
+        return ""
+    except (OSError, ValueError, KeyError, subprocess.SubprocessError) as e:
+        shutil.rmtree(home, ignore_errors=True)
+        err = getattr(e, "stderr", None)
+        return (err.decode(errors="replace").strip().splitlines() or [str(e)])[-1] if isinstance(err, bytes) and err.strip() else str(e)
+
+
+def acp_remove(rid):
+    home = os.path.join(ACP_HOME, rid)
+    if not ACP_ID.match(rid) or not os.path.isdir(home):
+        return False
+    shutil.rmtree(home)
+    return True
+
+
+def doer_name(who):
+    return DOERS[who]["name"] if who in DOERS else acp_installed().get(who[4:], {}).get("name") or who
+
+
 def helper(most=60):
     """The Helper's conversation, the oldest first: every task an agent did through ACP, with its words, its steps and
     what it asked, and every other entry of the journal (a "Do it" in a terminal, a setting an AI changed)."""
@@ -2476,7 +3032,7 @@ def helper(most=60):
 # LatteOS's own rules — a change there could outlive the task without the person seeing it
 SEALED = ["~/.ssh", "~/.gnupg", "~/.bashrc", "~/.bash_profile", "~/.profile", "~/.zshrc", "~/.config/autostart", "~/.config/systemd",
           "~/.config/environment.d", "~/.config/pleamar", "~/.config/latteos", "~/.local/share/keyrings", "~/.local/share/applications",
-          "~/.local/bin"]
+          "~/.local/bin", "~/.local/share/latteos/acp"]          # acp: the agents installed from the ACP Registry
 
 
 def sandbox(who, work, net):
@@ -2504,7 +3060,7 @@ def do(task, who="", where=""):
     who = who if who in can else (can[0] if can else "")
     if not who:
         return {"ok": False, "agent": ""}
-    name = DOERS[who]["name"]
+    name = doer_name(who)
     proj = project_of(where) if where else None
     if proj and proj["lock"]["ai"] and who not in proj["lock"]["ai"]:
         notify(T("{n} was not started").replace("{n}", name), T("The project {p} allows only: {a}").replace("{p}", proj["name"]).replace("{a}", ", ".join(proj["lock"]["ai"])))
@@ -2517,15 +3073,17 @@ def do(task, who="", where=""):
     here = where if os.path.isdir(where) else os.path.expanduser("~")
     # through ACP when its adapter is here (crates/latte-acp): the work shows in LensAI's Helper, each step it asks for
     # is the person's (ROADMAP 10B.71); else its own tool in a terminal, as before
-    acp = [shutil.which(x, path=SEARCH) or x for x in ACP.get(who, [])]
-    if task.strip() and acp and shutil.which(acp[0], path=SEARCH) and shutil.which("latte-acp", path=SEARCH):
+    acp, extra = acp_argv(who) or ([], {})          # its adapter on the PATH, or one installed from the ACP Registry
+    if task.strip() and acp and shutil.which("latte-acp", path=SEARCH):
         os.makedirs(HELPER, exist_ok=True)
         log = os.path.join(HELPER, datetime.datetime.now().strftime("%Y%m%d-%H%M%S-%f") + ".jsonl")
-        env = dict(os.environ, PATH=SEARCH, LATTE_ACP_LOG=log, LATTE_ACP_IN=log + ".in", LATTE_APP_NAME=os.environ.get("LATTE_APP_NAME") or "LensAI",
+        env = dict(dict(os.environ, **extra), PATH=SEARCH, LATTE_ACP_LOG=log, LATTE_ACP_IN=log + ".in", LATTE_APP_NAME=os.environ.get("LATTE_APP_NAME") or "LensAI",
                    LATTE_ACP_AUTH=ACP_AUTH.get(who, lambda: "")())
         subprocess.Popen([shutil.which("latte-acp", path=SEARCH), here, name, ACP_FIRST % language() + task, "--"] + sandbox(who, where, net) + acp,
                          start_new_session=True, stdin=subprocess.DEVNULL, stdout=open(log, "w"), stderr=subprocess.DEVNULL, cwd=here, env=env)
         return {"ok": True, "agent": who, "log": log}
+    if who not in DOERS:                            # an agent of the registry speaks ACP only: there is no terminal of its own
+        return {"ok": False, "agent": who}
     argv = DOERS[who]["argv"](first_words() + task) if task.strip() else DOERS[who]["argv"]("")[:-1]
     argv[0] = shutil.which(argv[0], path=SEARCH) or argv[0]
     journal_add({"app": os.environ.get("LATTE_APP_NAME") or "LensAI", "ai": name, "task": task, "did": T("Handed to the agent"), "where": here})
@@ -2755,7 +3313,7 @@ def agents():
              "model": max(by_model, key=by_model.get) if by_model else "", "busiest": max(by_day, key=by_day.get) if by_day else "",
              "prompts": prompts, "sessions": sessions}
     can = doers()
-    return {"services": out, "stats": stats, "doers": [{"id": i, "name": DOERS[i]["name"], "chosen": i == chosen(AGENT_WORD)} for i in can],
+    return {"services": out, "stats": stats, "doers": [{"id": i, "name": doer_name(i), "chosen": i == chosen(AGENT_WORD)} for i in can],
             "ideas": IDEAS}
 
 
@@ -2998,6 +3556,8 @@ def send(ident, provider, model, question, effort="", attach=(), origin=""):
     if "What the user asks of you" not in SYSTEM:
         SYSTEM += instructions()
     chat = None if ident == "new" else load(ident)
+    if chat and chat.get("imported"):              # another assistant's conversation, kept as it came: read only
+        return {"chat": ident, "answer": N("An imported conversation is read only: begin a new one."), "ok": False, "usage": chat.get("usage") or {}, "stopped": False}
     if chat is None:
         chat = {"id": uuid.uuid4().hex[:12], "title": question.strip().splitlines()[0][:80], "messages": [],
                 "usage": {"context": 0, "window": 0, "tokens": 0, "cost": 0}, "from": origin}
@@ -3162,9 +3722,10 @@ def helpers():
         muted = json.loads(subprocess.run(["latte-guardcorgi", "quiet"], capture_output=True, text=True, timeout=10).stdout or "[]")
     except (OSError, ValueError, subprocess.SubprocessError):
         muted = []
-    m = quick_model()
+    m, have = quick_model(), acp_installed()
     return {"ai": not turned_off(), "agent": chosen(AGENT_WORD),
-            "agents": [{"id": i, "name": d["name"], "installed": shutil.which(d["tool"], path=SEARCH) is not None} for i, d in DOERS.items()],
+            "agents": [{"id": i, "name": d["name"], "installed": shutil.which(d["tool"], path=SEARCH) is not None or ACP_OF[i] in have} for i, d in DOERS.items()]
+                      + [{"id": "acp:" + r, "name": g.get("name") or r, "installed": True} for r, g in have.items() if r not in ACP_OF.values()],
             "helper": helper_who(), "local": m["name"] if m else "", "haiku": haiku_ways(),
             "switches": [dict(v, id=k, on=switched_on(k)) for k, v in SWITCHES.items()], "muted": muted}
 
@@ -3250,7 +3811,7 @@ def main(a):
         signal.signal(signal.SIGTERM, stop)
     if len(a) >= 4 and a[0] == "again":
         c = load(a[1])
-        if not c:
+        if not c or c.get("imported"):
             return 1
         while c["messages"] and c["messages"][-1]["role"] == "assistant":
             c["messages"].pop()
@@ -3375,6 +3936,9 @@ def main(a):
     if a[:1] == ["say"] and len(a) == 2:
         print(json.dumps(say("" if a[1] == "stop" else a[1]), ensure_ascii=False))
         return 0
+    if a[:2] == ["say", "--wait"] and len(a) == 3:          # until it was read, or stopped
+        print(json.dumps(say(a[2], wait=True), ensure_ascii=False))
+        return 0
     if len(a) == 2 and a[0] == "listen" and a[1] in ("start", "stop"):
         print(json.dumps(listen(a[1]), ensure_ascii=False))
         return 0
@@ -3398,6 +3962,10 @@ def main(a):
                 print(json.dumps(hardware()))
             elif a[1] == "up":                   # the router alone, for programs that ask it by a model's name (agentgram)
                 return 0 if local_server() and local_start(None, load=False) else 1
+            elif a[1] == "catalog":              # the models for agentgram's picker (latte-mcp /local/models)
+                print(json.dumps(local_catalog(), ensure_ascii=False))
+            elif a[1] == "progress" and len(a) == 3:
+                print(json.dumps(local_progress(a[2])))
             elif a[1] == "recommend":
                 print(json.dumps(recommend(), ensure_ascii=False))
             elif a[1] == "models":
@@ -3424,7 +3992,7 @@ def main(a):
                 os.makedirs(os.path.dirname(LOCAL_SETTINGS), exist_ok=True)
                 with open(LOCAL_SETTINGS, "w") as f:
                     json.dump(s, f)
-                subprocess.run(["pkill", "-f", "llama-server.*--port %d" % LOCAL_PORT])       # loaded anew at the next question
+                local_reload()
             # what it would take loaded otherwise, before it is kept: latte-ai local estimate MODEL CTX NGL
             elif a[1] == "estimate" and len(a) == 5 and a[3].isdigit() and a[4].isdigit():
                 print(json.dumps(estimate(a[2], dict(model_settings(a[2]), ctx=int(a[3]), ngl=int(a[4])), hardware())))
@@ -3440,9 +4008,10 @@ def main(a):
                 return runtime_get()
             elif a[1] == "gpu" and a[2:] in (["on"], ["off"]):
                 os.makedirs(os.path.dirname(LOCAL_SETTINGS), exist_ok=True)
+                s = dict(local_settings(), gpu=a[2] == "on")          # read before "w" empties the file
                 with open(LOCAL_SETTINGS, "w") as f:
-                    json.dump(dict(local_settings(), gpu=a[2] == "on"), f)
-                subprocess.run(["pkill", "-f", "llama-server.*--port %d" % LOCAL_PORT])
+                    json.dump(s, f)
+                local_reload()
             elif a[1] == "remove" and len(a) == 3:
                 path = os.path.realpath(a[2])
                 if not any(path.startswith(os.path.realpath(os.path.join(d, "models")) + os.sep) for d in LOCAL_DIRS) or not path.endswith(".gguf"):
@@ -3491,6 +4060,27 @@ def main(a):
     if a[:1] == ["search"] and len(a) in (2, 3) and (len(a) == 2 or a[2].isdigit()):
         print(json.dumps(search(a[1], int(a[2]) if len(a) == 3 else 20), ensure_ascii=False))
         return 0
+    rest = [x for x in a[1:] if x != "--dry-run"]
+    if a[:1] == ["import"] and len(rest) == 1:
+        r = import_export(rest[0], "--dry-run" in a)
+        print(json.dumps(r, ensure_ascii=False))
+        return 1 if r.get("error") else 0
+    if a[:1] == ["import-memory"] and len(rest) == 3 and "--from" in rest[:2] and rest[rest.index("--from") + 1] in IMPORT_KINDS:
+        k = rest.index("--from")
+        kind, src = rest[k + 1], rest[2 if k == 0 else 0]
+        if anonymous(os.getcwd()) or (os.path.isfile(src) and anonymous(os.path.abspath(src))):
+            print(json.dumps({"notes": 0, "error": "anonymous"}))
+            return 1
+        if src == "-":
+            text = sys.stdin.read()
+        elif os.path.isfile(src):
+            with open(src, encoding="utf-8-sig") as f:
+                text = f.read()
+        else:
+            text = src
+        r = import_memory(text, kind, "--dry-run" in a)
+        print(json.dumps(r, ensure_ascii=False))
+        return 1 if r.get("error") else 0
     if a == ["agentgram"]:
         print(json.dumps(agentgram()))
         return 0
@@ -3587,7 +4177,7 @@ def main(a):
         r = do(a[1], a[2] if len(a) == 3 else "", where)
         print(json.dumps(r))
         return 0 if r["ok"] else 1
-    if len(a) == 2 and a[0] == "doer" and a[1] in DOERS:
+    if len(a) == 2 and a[0] == "doer" and (a[1] in DOERS or a[1][:4] == "acp:" and a[1][4:] in acp_installed()):
         os.makedirs(os.path.dirname(AGENT_WORD), exist_ok=True)
         with open(AGENT_WORD, "w") as f:
             f.write(a[1] + "\n")
@@ -3598,6 +4188,13 @@ def main(a):
     if a[:1] == ["sessions"] and len(a) <= 2 and (len(a) == 1 or a[1].isdigit()):
         print(json.dumps(sessions(int(a[1]) if len(a) == 2 else 30), ensure_ascii=False))
         return 0
+    if a in (["acp", "list"], ["acp", "refresh"]):
+        print(json.dumps(acp_list(a[1] == "refresh"), ensure_ascii=False))
+        return 0
+    if a[:2] in (["acp", "install"], ["acp", "remove"]) and len(a) == 3:
+        err = (acp_install(a[2]) if ACP_ID.match(a[2]) else "not an agent's id") if a[1] == "install" else ("" if acp_remove(a[2]) else "not installed")
+        print(json.dumps({"ok": not err, "error": err}, ensure_ascii=False))
+        return 1 if err else 0
     if a == ["skills"]:
         print(json.dumps(skills_all(), ensure_ascii=False))
         return 0

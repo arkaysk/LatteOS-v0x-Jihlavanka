@@ -13,6 +13,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import QtQuick.Controls as QQC      // the tooltips only: Controls' Label and Menu are not LatteOS's
+import Qt.labs.folderlistmodel
 import "common"
 
 ShellRoot {
@@ -83,7 +84,8 @@ ShellRoot {
         for (const u of used) { const w = u.tool === "ask" ? I18n.tr("asked {n}", { n: shell.nameOf(u.args.provider) + " · " + shell.modelName(u.args.provider, u.args.model) }) : I18n.tr("used {n}", { n: u.tool }); if (said.indexOf(w) < 0) said.push(w) }
         return "  ·  " + said.join(", ")
     }
-    readonly property var places: ({ lensai: "LensAI", lensgoo: "LensGoo", lensshore: "LensShore" })      // where a conversation began ("from")
+    readonly property var places: ({ lensai: "LensAI", lensgoo: "LensGoo", lensshore: "LensShore", "import": I18n.tr("Imported") })      // where a conversation began ("from")
+    readonly property bool readOnly: !!(chat && chat.imported)     // another assistant's conversation, brought in (latte-ai import)
     function when(iso) {
         const d = new Date(iso), now = new Date()
         return d.toDateString() === now.toDateString() ? Qt.formatTime(d, "HH:mm") : Qt.formatDate(d, "d. M.")
@@ -212,6 +214,8 @@ ShellRoot {
     Process { id: helpSay }
     // the words of every conversation (latte-ai search, ROADMAP 10B.73): asked a moment after the last key
     property int reading: -1                   // the answer being read aloud (its index), -1 none
+    // reads one answer aloud and says when it ended (read to the end, or stopped): the button turns back by itself
+    Process { id: sayer; property int at: -1; onExited: if (shell.reading === at && !running) shell.reading = -1 }
     property var hits: []
     Ask { id: hitsq; onDone: shell.hits = data || [] }
     Timer { id: hitsSoon; interval: 350; onTriggered: { if (shell.find.trim().length < 2) shell.hits = []; else hitsq.ask(["search", shell.find.trim()]) } }
@@ -288,26 +292,9 @@ ShellRoot {
     readonly property bool mcpOn: shell.servers.some(s => s.name === "latteos" && (s.clients || []).length > 0) || shell.mcp.agents.some(a => a.has)
     // the MCP servers the official tools are given, by name (latte-mcp servers): the Connectors page
     property var servers: []
-    // LensAI's MCP store (latte-mcp store): LatteOS's picks, agentgram's offer, the registry by words, what is installed
-    property var store: ({ latteos: [], agentgram: [], docker: [], registry: [] })
-    property var storeMine: []
-    property string storeError: ""
-    readonly property var storeCats: [...new Set([].concat(store.latteos || [], store.agentgram || []).map(e => e.category).filter(c => !!c))]
-    function catName(c) { return ({ creative: QT_TR_NOOP("Creative"), web: QT_TR_NOOP("Web"), home: QT_TR_NOOP("Household"), automation: QT_TR_NOOP("Automation"),
-                                    data: QT_TR_NOOP("Data"), docs: QT_TR_NOOP("Documents"), email: QT_TR_NOOP("E-mail"), marketing: QT_TR_NOOP("Marketing"),
-                                    payments: QT_TR_NOOP("Payments"), support: QT_TR_NOOP("Support"), sales: QT_TR_NOOP("Sales"), product: QT_TR_NOOP("Product"),
-                                    dev: QT_TR_NOOP("Development"), social: QT_TR_NOOP("Social networks") })[c] || c }
-    Process { id: storeq; property string buf: ""
-              function ask(args) { running = false; command = ["latte-mcp"].concat(args); running = true }
-              stdout: StdioCollector { onStreamFinished: storeq.buf = this.text }
-              onExited: { try { const d = JSON.parse(storeq.buf)
-                                if (d.latteos) { shell.store = d; shell.storeMine = d.mine || [] }
-                                else { if (d.error) shell.storeError = d.error; storeq.ask(["store"]) } } catch (e) {} } }
-    Process { id: storeAdd; property string payload: ""; property string said: ""; stdinEnabled: true
-              stdout: StdioCollector { onStreamFinished: storeAdd.said = this.text }
-              onStarted: { write(payload + "\n"); stdinEnabled = false }
-              onExited: { stdinEnabled = true; try { const d = JSON.parse(said); shell.storeError = d.error ? (d.error === "install" ? (d.detail || "install") : d.error) : "" } catch (e) { shell.storeError = "install" }
-                          storeq.ask(["store"]); serverq.running = true } }
+    // ToolHive's groups of MCP servers (latte-mcp groups): the Connectors page
+    property var thGroups: []
+    Ask { id: thq; onDone: shell.thGroups = data || []; function look() { running = false; command = ["latte-mcp", "groups"]; running = true } }
     Process { id: serverq; command: ["latte-mcp", "servers"]
               stdout: StdioCollector { onStreamFinished: { try { shell.servers = JSON.parse(this.text) } catch (e) { shell.servers = [] } } } }
     // every agent skill on this computer, shown where it lives (latte-ai skills): the Skills page
@@ -321,6 +308,15 @@ ShellRoot {
     Ask { id: skillFind; onDone: shell.skillFound = data && data.skillssh ? data : { skillssh: [], clawhub: [] } }
     Process { id: skillDo; onExited: { shell.skillBusy = ""; skillq.ask(["skills"]) } }
     function skillRun(args, name) { skillBusy = name; skillDo.command = ["latte-ai", "skills"].concat(args); skillDo.running = true }
+    // the agents of the ACP Registry (latte-ai acp list|install|remove, ROADMAP 10B.87): installed for the Helper, as the skills are
+    property var acpAgents: []
+    property string acpBusy: ""                    // the agent being installed or removed
+    property var acpError: ({})                    // id → why its install failed
+    Ask { id: acpq; onDone: shell.acpAgents = data || [] }
+    Ask { id: acpDo; property string who: ""
+          onDone: { const e = Object.assign({}, shell.acpError); e[who] = data && !data.ok ? (data.error || "?") : ""; shell.acpError = e
+                    shell.acpBusy = ""; acpq.ask(["acp", "list"]); helpersq.ask(["helpers"]) } }
+    function acpRun(verb, id) { acpBusy = id; acpDo.who = id; acpDo.ask(["acp", verb, id]) }
     // by where each lives: LatteOS's own first, then each tool's folder
     property var skillsOpen: ({ latteos: true })      // the groups shown open; the others fold to their name and count
     readonly property var skillGroups: [{ id: "latteos", name: "LatteOS" }, { id: "claude", name: "Claude Code" }, { id: "codex", name: "Codex" },
@@ -361,7 +357,7 @@ ShellRoot {
         else if (p === "team") { if (!shell.gram.on) { openSection("agentgram"); return } teamq.running = true }
         else if (p === "agents") { agentsq.ask(["agents"]); helpersq.ask(["helpers"]) }
         else if (p === "skills") skillq.ask(["skills"])
-        else if (p === "connectors") { serverq.running = true; mcpq.running = true; storeq.ask(["store"]) }
+        else if (p === "connectors") { serverq.running = true; mcpq.running = true; thq.look() }
         else if (p === "local") openLocal()
     }
     // an answer that is a thing to do: the agent does it, in a terminal, a plan first (latte-ai do); its question is the task
@@ -381,7 +377,10 @@ ShellRoot {
     property var asks: []
     Process { id: asksq; command: ["latte-skill", "asks"]
               stdout: StdioCollector { onStreamFinished: { try { shell.asks = JSON.parse(this.text) } catch (e) { shell.asks = [] } } } }
-    Timer { interval: 1500; repeat: true; running: true; triggeredOnStart: true; onTriggered: if (!asksq.running) asksq.running = true }
+    // looked at when its folder changes (an ask written or answered), and every half minute anyway: no Python every 1.5 s
+    FolderListModel { folder: "file://" + (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/latteos/asks"
+                      showDirs: false; onCountChanged: if (!asksq.running) asksq.running = true }
+    Timer { interval: 30000; repeat: true; running: true; triggeredOnStart: true; onTriggered: if (!asksq.running) asksq.running = true }
     Process { id: asksSay; onExited: asksq.running = true }
     function answer(req, word) { asksSay.command = ["latte-skill", "answer", req, word]; asksSay.running = true; asks = asks.filter(a => a.req !== req); undoSoon.restart() }
     Timer { id: undoSoon; interval: 2500; onTriggered: win.undoLook() }      // what was allowed is done by the one that asked, a moment later: then it can be taken back here
@@ -564,6 +563,7 @@ ShellRoot {
             Pill { implicitHeight: 34; icon: "external-link"; visible: shell.page === "team"; text: I18n.tr("Open in the browser"); onPressed: Qt.openUrlExternally(shell.teamTab.web) },
             Pill { implicitHeight: 34; icon: "plus"; text: I18n.tr("New conversation"); strong: true; visible: shell.page === "all" || shell.page === "chats"
                    onPressed: { shell.page = "chats"; shell.open = ""; shell.chat = null } },
+            Pill { implicitHeight: 34; icon: "download"; text: I18n.tr("Import…"); visible: shell.page === "all"; onPressed: importer.item.show("chats") },
             // another service's page beside this one, half and half, or this one alone again
             Pill { implicitHeight: 34; icon: "layout-columns"; visible: shell.page === "web" && shell.web; text: I18n.tr("Beside")
                    strong: shell.tabBeside !== ""
@@ -594,7 +594,8 @@ ShellRoot {
                 Nav { width: parent.width; text: "agentgram"; icon: "users-group"; on: shell.page === "team"; off: !shell.gram.on; onPressed: shell.go("team") }      // off: grey, turned on in Settings › agentgram
                 Nav { width: parent.width; text: I18n.tr("Agents"); icon: "robot"; on: shell.page === "agents"; badge: shell.askingAgents.length; onPressed: shell.go("agents") }
                 Nav { width: parent.width; text: I18n.tr("Skills"); icon: "puzzle"; on: shell.page === "skills"; onPressed: shell.go("skills") }
-                Nav { width: parent.width; text: I18n.tr("Connectors"); icon: "plug-connected"; on: shell.page === "connectors"; onPressed: shell.go("connectors") }
+                // the connectors (MCP servers) and skills are ToolHive's (Stacklok, Apache-2.0; the user, 20. 11.): its own window
+                Nav { width: parent.width; text: "ToolHive Studio"; icon: "hexagon"; tail: "external-link"; onPressed: Quickshell.execDetached(["ToolHive", "--ozone-platform-hint=auto", "--disable-gpu"]); onTailPressed: pressed() }      // its own window: the mark says so; no GPU: its GPU process dies (SIGILL) three times on every start here
                 Nav { width: parent.width; text: I18n.tr("Local LLMs"); icon: "cpu"; on: shell.page === "local"; onPressed: shell.go("local") }
                 Nav { width: parent.width; text: I18n.tr("Settings"); icon: "settings"; on: shell.page === "lensai"; onPressed: shell.openSection(shell.section) }
                 Nav { width: parent.width; text: I18n.tr("AI Cursor (coming in 2027)"); icon: "pointer"; off: true }      // ROADMAP 10B.34
@@ -686,6 +687,10 @@ ShellRoot {
                         Pill { implicitHeight: 36; icon: "x"; text: I18n.tr("Refuse"); onPressed: shell.answer(ak.modelData.req, "no") }
                         Pill { implicitHeight: 36; icon: "check"; strong: true; danger: ak.armed; text: ak.armed ? I18n.tr("Really? Press once more") : I18n.tr("Allow")
                                onPressed: if (ak.modelData.risky && !ak.armed) ak.armed = true; else shell.answer(ak.modelData.req, "yes") } } } } }
+
+        // Import… (Conversations, Settings › Memory): ChatGPT's, Claude's and Gemini's conversations and memory brought in
+        Loader { id: importer; anchors.fill: parent; z: 60; source: "aicenter/ImportDialog.qml" }
+        Connections { target: importer.item; function onImported() { list.ask(["chats"]); if (shell.section === "memory") memq.ask(["memory"]) } }
 
         // ── the AI turned off (Settings › AI): LensAI asks nobody, and says so over whatever page it is on ─────
         Rectangle { anchors.fill: parent; z: 50; visible: !shell.helpers.ai; color: Theme.ground
@@ -794,7 +799,8 @@ ShellRoot {
                         // read aloud in Lili's voice (latte-ai say, ROADMAP 10B.76); pressed again while it reads, it stops
                         Act { visible: !msg.mine; what: shell.reading === msg.index ? I18n.tr("Stop reading") : I18n.tr("Read aloud")
                               onGo: { const on = shell.reading === msg.index; shell.reading = on ? -1 : msg.index
-                                      Quickshell.execDetached(["latte-ai", "say", on ? "stop" : msg.modelData.content]) } }
+                                      if (on) Quickshell.execDetached(["latte-ai", "say", "stop"])
+                                      else { sayer.running = false; sayer.command = ["latte-ai", "say", "--wait", msg.modelData.content]; sayer.at = msg.index; sayer.running = true } } }
                         Act { visible: !msg.mine && msg.index === talk.count - 1; what: I18n.tr("Again"); onGo: shell.again() }
                         Act { visible: msg.mine && msg.last; what: I18n.tr("Change"); onGo: { line.text = msg.modelData.content; shell.editing = true } } } }
                 // the answer while it comes
@@ -827,7 +833,7 @@ ShellRoot {
                             text: shell.providers.length ? I18n.tr("Write below. Choose who answers with the button above the line.") : I18n.tr("No AI is ready on this computer: see Settings.") } } }
 
             // who answers: LatteOS's own switch, the one part that is the same for every service (LensGoo has it at its foot)
-            Rectangle { id: whoPill; x: box.x; y: box.y - 42; height: 32; radius: 16; width: whoRow.implicitWidth + 28; visible: shell.providers.length > 0
+            Rectangle { id: whoPill; x: box.x; y: box.y - 42; height: 32; radius: 16; width: whoRow.implicitWidth + 28; visible: shell.providers.length > 0 && !shell.readOnly
                 color: Qt.rgba(0.97, 0.78, 0.45, whoHit.containsMouse || shell.menuAt === "who" ? 0.3 : 0.18)
                 Row { id: whoRow; x: 14; spacing: 8; anchors.verticalCenter: parent.verticalCenter
                     Text { text: shell.nameOf(shell.useProvider) + " · " + (shell.useM ? shell.useM.name : ""); color: shell.style === "own" ? Theme.gold : "#8a5a14"; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.Bold }
@@ -845,8 +851,16 @@ ShellRoot {
             // ── the field, a copy of the service's own: its colours, its shape, and what sits in it where it sits ──
             // + at the left (not Copilot, not DeepSeek: its paperclip is at the right); its chip at the right, or at the
             // left for Copilot and DeepSeek; the microphone (Mistral's is its black button); and the button that sends
+            // an imported conversation is read as it came: in place of the field, where it came from
+            Rectangle { visible: shell.readOnly; anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.bottom; anchors.bottomMargin: 22
+                        width: Math.min(parent.width - 44, roRow.implicitWidth + 40); height: 48; radius: 24; color: Theme.card; border.width: 1; border.color: Theme.line
+                Row { id: roRow; anchors.centerIn: parent; spacing: 10
+                    Glyph { name: "download"; font.pixelSize: 16; color: shell.colour(shell.chat ? shell.chat.imported : ""); anchors.verticalCenter: parent.verticalCenter }
+                    Label { font.pixelSize: 13; color: Theme.dim; anchors.verticalCenter: parent.verticalCenter
+                            text: I18n.tr("Imported from {n}, read only: begin a new conversation to go on.", { n: shell.chat && shell.chat.imported ? ({ chatgpt: "ChatGPT", claude: "Claude", gemini: "Gemini" })[shell.chat.imported] || shell.chat.imported : "" }) } } }
             Rectangle {
                 id: box
+                visible: !shell.readOnly
                 readonly property bool oneLine: ["gemini", "chatgpt"].indexOf(shell.style) >= 0
                 readonly property bool hasPlus: shell.style !== "copilot" && shell.style !== "deepseek"
                 readonly property bool chipLeft: shell.style === "copilot" || shell.style === "deepseek"
@@ -1396,8 +1410,7 @@ ShellRoot {
                 { name: "Lobe Icons", what: I18n.tr("the services' logos"), license: "MIT", url: "https://github.com/lobehub/lobe-icons" },
                 { name: "Tabler Icons", what: I18n.tr("the icons"), license: "MIT", url: "https://github.com/tabler/tabler-icons" },
                 { name: "Phosphor Icons", what: I18n.tr("the icons"), license: "MIT", url: "https://github.com/phosphor-icons/core" },
-                { name: "MCP Registry", what: I18n.tr("the connectors one can search for"), license: "Apache-2.0", url: "https://github.com/modelcontextprotocol/registry" },
-                { name: "Docker MCP Catalog", what: I18n.tr("the connectors one can search for"), license: "MIT", url: "https://github.com/docker/mcp-registry" },
+                { name: "ToolHive", what: I18n.tr("the connectors: installed, run in containers, grouped"), license: "Apache-2.0", url: "https://github.com/stacklok/toolhive" },
                 { name: "skills (skills.sh)", what: I18n.tr("the skills one can search for"), license: "MIT", url: "https://github.com/vercel-labs/skills" },
                 { name: "ClawHub", what: I18n.tr("the skills one can search for"), license: "MIT", url: "https://github.com/openclaw/clawhub" }]
         }
@@ -1406,135 +1419,26 @@ ShellRoot {
         Scroll {
             id: conPage
             visible: shell.page === "connectors"
-            property string tab: "store"                // store · mine (installed, and what each tool is given)
-            property string cat: ""                     // the store's category shown, "" all
-            property var sel: null                      // the entry open, its details and its install
-            property var vals: ({})                     // what its fields were filled with
-            property var picked: ({})                   // the files chosen for them, shown
-            Process { id: filePick; property string fid: ""; command: ["latte-ai", "pick"]
-                      stdout: StdioCollector { onStreamFinished: { const f = this.text.split("\n")[0].trim()
-                                                                   if (f !== "") { conPage.vals[filePick.fid] = f; const o = Object.assign({}, conPage.picked); o[filePick.fid] = f; conPage.picked = o } } } }
-            Row { spacing: 8
-                Repeater { model: [{ id: "store", name: QT_TR_NOOP("Store"), icon: "storefront" }, { id: "mine", name: QT_TR_NOOP("Installed"), icon: "check-circle" }]
-                    Pill { required property var modelData; implicitHeight: 34; icon: modelData.icon; text: I18n.tr(modelData.name); strong: conPage.tab === modelData.id
-                           onPressed: { conPage.tab = modelData.id; conPage.sel = null } } } }
-
-            // ── the store: LatteOS's picks, agentgram's whole offer, the official MCP registry by words ──
-            Column { visible: conPage.tab === "store" && !conPage.sel; width: conPage.room; spacing: 18
-                Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim
-                        text: I18n.tr("Install a connector once and give it to the tools you choose: Claude Code, Codex, Gemini. agentgram's agents get those that run on this computer from its card MCP LatteOS, each agent only the ones you allow.") }
-                Field { id: storeFind; width: parent.width; icon: "magnifying-glass"; hint: I18n.tr("Search Docker's catalog and the MCP registry: a program or a service (Enter)")
-                        onAccepted: if (text.trim() !== "") storeq.ask(["store", text.trim()]) }
-                Flow { width: parent.width; spacing: 6
-                    Repeater { model: [""].concat(shell.storeCats)
-                        Pill { required property var modelData; implicitHeight: 30; text: modelData === "" ? I18n.tr("All") : I18n.tr(shell.catName(modelData)); strong: conPage.cat === modelData
-                               onPressed: conPage.cat = modelData } } }
-                Repeater { model: [{ id: "latteos", name: QT_TR_NOOP("Recommended by LatteOS") }, { id: "agentgram", name: QT_TR_NOOP("From agentgram's offer") },
-                                   { id: "docker", name: QT_TR_NOOP("From Docker's MCP catalog (checked by Docker, runs in a container)") },
-                                   { id: "registry", name: QT_TR_NOOP("From the MCP registry (not checked)") }]
-                    Column { id: sect; required property var modelData; width: parent.width; spacing: 10
-                        readonly property var rows: (shell.store[modelData.id] || []).filter(e => conPage.cat === "" || e.category === conPage.cat)
-                        visible: rows.length > 0
-                        Label { text: I18n.tr(sect.modelData.name).toUpperCase(); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
-                        Flow { width: parent.width; spacing: 10
-                            Repeater { model: sect.rows
-                                Rectangle { id: tile; required property var modelData; width: (sect.width - 20) / 3; height: 96; radius: 16; color: Theme.card
-                                    border.width: tileHit.containsMouse ? 2 : 1; border.color: tileHit.containsMouse ? Theme.gold : Theme.line
-                                    readonly property bool have: shell.storeMine.some(m => m.id === modelData.id)
-                                    Rectangle { x: 14; y: 14; width: 36; height: 36; radius: 10; color: Theme.raised
-                                        Image { anchors.centerIn: parent; visible: !!tile.modelData.logo; source: !tile.modelData.logo ? "" : tile.modelData.logo.indexOf("http") === 0 ? tile.modelData.logo : "file://" + tile.modelData.logo
-                                                width: 22; height: 22; sourceSize: Qt.size(44, 44); fillMode: Image.PreserveAspectFit }
-                                        Glyph { anchors.centerIn: parent; visible: !tile.modelData.logo; name: tile.modelData.icon || "plugs-connected"; font.pixelSize: 22; color: Theme.gold } }
-                                    Column { x: 62; y: 12; width: parent.width - 62 - 12; spacing: 3
-                                        Label { width: parent.width; elide: Text.ElideRight; text: tile.modelData.name; font.weight: 800 }
-                                        Label { width: parent.width; height: 32; wrapMode: Text.WordWrap; elide: Text.ElideRight; maximumLineCount: 2; color: Theme.dim; font.pixelSize: 12
-                                                text: tile.modelData.here || (tile.modelData.source === "registry" || tile.modelData.source === "docker" ? tile.modelData.what : I18n.tr(tile.modelData.what)) }
-                                        Label { color: tile.have ? Theme.ok : Theme.faint; font.pixelSize: 11; font.weight: 600
-                                                text: tile.have ? I18n.tr("Installed") : tile.modelData.only ? I18n.tr("Only in agentgram") : tile.modelData.cannot ? I18n.tr("Cannot be installed here")
-                                                    : (tile.modelData.install || {}).kind === "remote" ? I18n.tr("Service on the web")
-                                                    : (tile.modelData.install || {}).kind === "oci" ? I18n.tr("In a container on this computer") : I18n.tr("Runs on this computer") } }
-                                    MouseArea { id: tileHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                                onClicked: { conPage.vals = {}; conPage.picked = {}; shell.storeError = ""; conPage.sel = tile.modelData } } } } } } }
-                Label { visible: storeq.running; color: Theme.dim; text: I18n.tr("Looking…") }
-            }
-
-            // ── one entry: what it is, what it needs, its fields, Install ──
-            Column { id: det; visible: conPage.tab === "store" && !!conPage.sel; width: conPage.room; spacing: 14
-                readonly property var e: conPage.sel || ({ install: {} })
-                Pill { implicitHeight: 32; icon: "arrow-left"; text: I18n.tr("Back"); onPressed: conPage.sel = null }
-                Row { spacing: 14
-                    Rectangle { width: 56; height: 56; radius: 14; color: Theme.raised
-                        Image { anchors.centerIn: parent; visible: !!det.e.logo; source: !det.e.logo ? "" : det.e.logo.indexOf("http") === 0 ? det.e.logo : "file://" + det.e.logo
-                                width: 34; height: 34; sourceSize: Qt.size(68, 68); fillMode: Image.PreserveAspectFit }
-                        Glyph { anchors.centerIn: parent; visible: !det.e.logo; name: det.e.icon || "plugs-connected"; font.pixelSize: 32; color: Theme.gold } }
-                    Column { spacing: 4; anchors.verticalCenter: parent.verticalCenter
-                        Label { text: det.e.name || ""; font.pixelSize: 20; font.weight: 800 }
-                        Label { color: Theme.faint; font.pixelSize: 12
-                                text: [det.e.license, det.e.version, det.e.registry].filter(x => !!x).join("  ·  ") } } }
-                Label { width: parent.width; wrapMode: Text.WordWrap; text: det.e.here || (det.e.source === "registry" || det.e.source === "docker" ? (det.e.what || "") : I18n.tr(det.e.what || "")) }
-                Label { visible: !!det.e.needs; width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; text: I18n.tr("Needs: {n}", { n: I18n.tr(det.e.needs || "") }) }
-                Label { visible: !!det.e.unchecked; width: parent.width; wrapMode: Text.WordWrap; color: Theme.red; font.pixelSize: 13
-                        text: I18n.tr("From the open registry: anyone may list a server there. LatteOS has not looked at this one; install it only when you know its author.") }
-                Label { visible: !!det.e.soon && !det.e.only; width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
-                        text: I18n.tr("agentgram cannot connect it yet (the service has not allowed it); Claude Code and the other tools sign in on their own and may.") }
-                Label { visible: !!det.e.only; width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
-                        text: det.e.via === "composio" && !det.e.ready
-                              ? I18n.tr("agentgram connects this one only through Composio, a paid service whose key (COMPOSIO_API_KEY) this agentgram server does not have, so here it cannot be connected.")
-                              : I18n.tr("This one only agentgram connects (through its own sign-in), in its Settings › Connectors.") }
-                // a program of the same kind that runs on this computer instead, from LatteOS's picks
-                Repeater { model: (shell.store.latteos || []).filter(x => (x.replaces || []).indexOf(String(det.e.id).replace(/^agentgram-/, "")) >= 0)
-                    Rectangle { required property var modelData; width: det.width; height: 58; radius: 14; color: Theme.card; border.width: 1; border.color: Theme.gold
-                        Glyph { x: 14; name: parent.modelData.icon || "plugs-connected"; font.pixelSize: 22; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
-                        Label { x: 48; width: parent.width - 48 - altGo.width - 28; wrapMode: Text.WordWrap; font.pixelSize: 13; anchors.verticalCenter: parent.verticalCenter
-                                text: I18n.tr("On this computer instead: {n}, open source.", { n: parent.modelData.name }) }
-                        Pill { id: altGo; anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter; implicitHeight: 32; strong: true
-                               icon: "arrow-right"; text: I18n.tr("Show"); onPressed: { conPage.vals = {}; conPage.picked = {}; shell.storeError = ""; conPage.sel = parent.modelData } } } }
-                // a file it needs: chosen in a dialog, never typed (Browse…)
-                Repeater { model: ((det.e.install || {}).fields || []).filter(f => !!f.file)
-                    Row { required property var modelData; spacing: 10
-                        Pill { implicitHeight: 34; icon: "folder-open"; text: I18n.tr("Browse…"); onPressed: { filePick.fid = parent.modelData.id; filePick.running = true } }
-                        Label { anchors.verticalCenter: parent.verticalCenter; width: conPage.room - 160; elide: Text.ElideMiddle
-                                color: conPage.picked[parent.modelData.id] ? Theme.cream : Theme.dim
-                                text: conPage.picked[parent.modelData.id] || I18n.tr(parent.modelData.label) } } }
-                Repeater { model: ((det.e.install || {}).fields || []).filter(f => !f.file)
-                    Field { required property var modelData; width: conPage.room; icon: modelData.secret ? "key" : "pencil-simple"; secret: !!modelData.secret
-                            hint: I18n.tr(modelData.label) + (modelData.required === false ? "  " + I18n.tr("(optional)") : ""); text: modelData.default || ""
-                            Component.onCompleted: conPage.vals[modelData.id] = text
-                            onTextChanged: conPage.vals[modelData.id] = text } }
-                Row { spacing: 10
-                    Pill { implicitHeight: 36; strong: true; icon: storeAdd.running ? "spinner" : "download-simple"
-                           visible: !det.e.only && !det.e.cannot && !shell.storeMine.some(m => m.id === det.e.id)
-                           text: storeAdd.running ? I18n.tr("Installing…") : I18n.tr("Install")
-                           onPressed: if (!storeAdd.running) { storeAdd.payload = JSON.stringify({ entry: conPage.sel, values: conPage.vals }); storeAdd.command = ["latte-mcp", "add", conPage.sel.id]; storeAdd.running = true } }
-                    Pill { implicitHeight: 36; icon: "users-three"; text: I18n.tr("Connect in agentgram")
-                           visible: det.e.source === "agentgram" && !det.e.soon && !!det.e.ready
-                           onPressed: shell.gramOpen("/?connector=" + encodeURIComponent(String(det.e.id).replace(/^agentgram-/, ""))) }
-                    Pill { implicitHeight: 36; icon: "arrow-square-out"; text: I18n.tr("Source"); visible: !!(det.e.home || det.e.url && (det.e.install || {}).kind !== "remote")
-                           onPressed: Qt.openUrlExternally(det.e.home || det.e.url) } }
-                Label { visible: shell.storeError !== ""; width: parent.width; wrapMode: Text.WordWrap; color: Theme.red; font.pixelSize: 13
-                        text: shell.storeError === "missing" ? I18n.tr("Fill in what it asks for first.") : shell.storeError === "headers" ? I18n.tr("Codex cannot send this one's token.")
-                            : I18n.tr("It did not install: {e}", { e: shell.storeError }) }
-                Label { visible: shell.storeMine.some(m => m.id === det.e.id); color: Theme.ok; text: I18n.tr("Installed. Choose which tools get it under Installed.") }
-            }
-
-            // ── installed: each with the tools it is given to; and what every tool has (its own settings too) ──
-            Column { visible: conPage.tab === "mine"; width: conPage.room; spacing: 26
-                Repeater { model: shell.storeMine
-                    Rectangle { id: mi; required property var modelData; width: conPage.room; height: miCol.implicitHeight + 28; radius: 16; color: Theme.card
-                        Column { id: miCol; x: 18; y: 14; width: parent.width - 36; spacing: 8
-                            Item { width: parent.width; height: 28
-                                Label { text: mi.modelData.name; font.weight: 800; anchors.verticalCenter: parent.verticalCenter }
-                                Pill { anchors.right: parent.right; implicitHeight: 28; icon: "trash"; text: I18n.tr("Uninstall")
-                                       onPressed: { const p = mapToItem(besideMenu, 0, height + 4)
-                                                    besideMenu.open(p.x, p.y, [{ text: I18n.tr("Uninstall {n} and take it from every tool", { n: mi.modelData.name }), icon: "trash",
-                                                                                 run: () => storeq.ask(["remove", mi.modelData.id]) }]) } } }
-                            Flow { width: parent.width; spacing: 16
-                                Repeater { model: [{ id: "claude", name: "Claude Code" }, { id: "chatgpt", name: "Codex" }, { id: "gemini", name: "Gemini" }]
-                                    Row { required property var modelData; spacing: 8; visible: !!mi.modelData.tools[modelData.id]
-                                        Toggle { scale: 0.85; on: !!mi.modelData.given[parent.modelData.id]; anchors.verticalCenter: parent.verticalCenter
-                                                 onFlipped: storeq.ask(["give", mi.modelData.id, parent.modelData.id, mi.modelData.given[parent.modelData.id] ? "off" : "on"]) }
-                                        Label { text: parent.modelData.name; anchors.verticalCenter: parent.verticalCenter } } } } } } }
-                Label { visible: shell.storeMine.length === 0; width: conPage.room; wrapMode: Text.WordWrap; color: Theme.dim; text: I18n.tr("Nothing installed from the store yet.") }
+            // the MCP servers are ToolHive's (Stacklok, Apache-2.0; the user, 20. 11.): installed, grouped and given to the
+            // tools in ToolHive Studio; here its groups, each one connector for agentgram's agents (latte-mcp /mcp/GROUP)
+            Column { width: conPage.room; spacing: 26
+                Rectangle { width: conPage.room; height: thCol.implicitHeight + 32; radius: 18; color: Theme.card; border.width: 1; border.color: Theme.gold
+                    Glyph { x: 18; y: 18; name: "hexagon"; font.pixelSize: 26; color: Theme.gold }
+                    Column { id: thCol; x: 58; y: 16; width: parent.width - 58 - 18 - thGo.width - 12; spacing: 4
+                        Label { text: "ToolHive Studio"; font.pixelSize: 17; font.weight: 800 }
+                        Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
+                                text: I18n.tr("Connectors (MCP servers) are installed, run in their own containers, grouped and given to Claude Code, Codex, Gemini and other tools in ToolHive Studio. A group is one connector for an agent in agentgram.") } }
+                    Pill { id: thGo; anchors.right: parent.right; anchors.rightMargin: 18; y: 18; implicitHeight: 34; strong: true; icon: "arrow-square-out"; text: I18n.tr("Open")
+                           onPressed: Quickshell.execDetached(["ToolHive", "--ozone-platform-hint=auto", "--disable-gpu"]) } }
+                Label { text: I18n.tr("TOOLHIVE GROUPS"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
+                Repeater { model: shell.thGroups
+                    Rectangle { required property var modelData; width: conPage.room; height: 58; radius: 14; color: Theme.card
+                        Glyph { x: 16; name: "stack"; font.pixelSize: 20; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
+                        Column { x: 50; width: parent.width - 66; spacing: 2; anchors.verticalCenter: parent.verticalCenter
+                            Label { text: parent.parent.modelData.id; font.weight: 800 }
+                            Label { width: parent.width; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 12; text: parent.parent.modelData.servers.join(", ") } } } }
+                Label { visible: shell.thGroups.length === 0; width: conPage.room; wrapMode: Text.WordWrap; color: Theme.dim
+                        text: I18n.tr("No group with servers yet: in ToolHive Studio, run a server and put it in a group, for example “design”.") }
                 Label { width: conPage.room; wrapMode: Text.WordWrap; color: Theme.dim
                         text: I18n.tr("A connector (an MCP server) is a tool an AI reaches programs and data with. Here are the ones the official tools on this computer are given, and to which of them.") }
                     // LatteOS for the agents: one MCP server, written into each agent's own tool (ROADMAP 10B.43)
@@ -1583,13 +1487,16 @@ ShellRoot {
             property string query: ""
             property var picked: null                  // the model open on the right
             property string variant: ""                // its file chosen to download
+            property bool allFiles: false              // every download option shown, not only those this computer can carry
             readonly property var rec: localq.data || ({ hardware: { gpus: [] }, models: [] })
             readonly property var picks: (rec.models || []).map(m => ({ repo: m.repo, name: m.name, author: m.repo.split("/")[0], params: (/(\d+(?:\.\d+)?)B/.exec(m.name) || ["", ""])[1] ? (/(\d+(?:\.\d+)?)B/.exec(m.name)[1] + "B") : "",
                                                         good: m.good, pick: true, best: m.id === rec.best, fast: m.id === rec.fast }))
             readonly property var listed: query === "" ? picks : (hfFound.data || []).map(m => Object.assign({ pick: picks.some(p => p.repo === m.repo) }, m))
-            function open(m) { picked = m; variant = ""; hfFiles.data = null; hfFiles.ask(["files", m.repo]); readmeq.ask(["readme", m.repo]) }
+            function open(m) { picked = m; variant = ""; allFiles = false; hfFiles.data = null; readmeq.data = null; hfFiles.ask(["files", m.repo]); readmeq.ask(["readme", m.repo]) }
             function search() { query = searchField.text.trim(); picked = null; if (query !== "") hfFound.ask(["search", query, sort]) }
             readonly property var chosen: (hfFiles.data || []).find(f => f.file === variant) || (hfFiles.data || []).find(f => f.recommended) || null
+            // what fits (and the chosen, the recommended, the downloaded) first; the rest behind one line, so the card stays in sight
+            readonly property var shownFiles: (hfFiles.data || []).filter(f => allFiles || f.fit !== "too-big" || f.recommended || f.have || f === chosen)
             function ago(d) { if (!d) return ""; const days = Math.floor((Date.now() - new Date(d)) / 86400000); return days < 1 ? I18n.tr("today") : days < 31 ? I18n.tr("{n} days ago", { n: days }) : days < 365 ? I18n.tr("{n} months ago", { n: Math.floor(days / 30) }) : I18n.tr("{n} years ago", { n: Math.floor(days / 365) }) }
             function count(n) { return n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : n >= 1e3 ? Math.round(n / 1e3) + "k" : String(n || 0) }
             LocalAsk { id: readmeq }
@@ -1644,7 +1551,10 @@ ShellRoot {
                 // the chosen model: its head, its download options, its card
                 Rectangle { x: found.x + found.width + 14; y: 50; width: parent.width - x - 22; height: parent.height - 58; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
                     Label { visible: !localPage.picked; anchors.centerIn: parent; color: Theme.faint; text: I18n.tr("Choose a model on the left") }
-                    Flickable { ScrollGrip {} visible: !!localPage.picked; anchors.fill: parent; anchors.margins: 20; clip: true; contentHeight: detail.implicitHeight; boundsBehavior: Flickable.StopAtBounds
+                    // the head and the download options on top, the card under them scrolled on its own (LM Studio's model page);
+                    // without the web engine the card is plain Markdown at the end of the same column
+                    Flickable { ScrollGrip {} id: detailTop; visible: !!localPage.picked; x: 20; y: 20; width: parent.width - 40; clip: true; contentHeight: detail.implicitHeight; boundsBehavior: Flickable.StopAtBounds
+                        height: shell.web ? Math.min(detail.implicitHeight, (parent.height - 40) * 0.6) : parent.height - 40
                         Column { id: detail; width: parent.width; spacing: 12
                             Row { spacing: 12
                                 Rectangle { width: 46; height: 46; radius: 23; color: localPage.picked ? Qt.hsla((localPage.picked.author.charCodeAt(0) * 37 % 360) / 360, 0.45, 0.45, 1) : "transparent"
@@ -1662,9 +1572,13 @@ ShellRoot {
                                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Qt.openUrlExternally("https://huggingface.co/" + localPage.picked.repo) } } }
                             Label { visible: !!(localPage.picked && localPage.picked.good); width: parent.width; wrapMode: Text.WordWrap; color: Theme.cream; text: localPage.picked && localPage.picked.good ? I18n.tr(localPage.picked.good) : "" }
                             // the download options, as LM Studio lists them: one chosen (the recommended one at first)
+                            Pill { visible: !!localPage.chosen; implicitHeight: 40; strong: !(localPage.chosen && localPage.chosen.have); icon: localPage.chosen && localPage.chosen.have ? "check" : "download"
+                                   busy: !!shell.getting && !!localPage.chosen && shell.getting.file === localPage.chosen.file
+                                   text: !localPage.chosen ? "" : localPage.chosen.have ? I18n.tr("Downloaded") : I18n.tr("Download {n}", { n: (localPage.chosen.quant || "") + " · " + shell.gb(localPage.chosen.size) })
+                                   onPressed: if (localPage.chosen && !localPage.chosen.have && !shell.getting) { shell.fetch(["get", localPage.picked.repo, localPage.chosen.file], localPage.chosen.file); localPage.tab = "mine" } }
                             Label { text: I18n.tr("Download options"); font.pixelSize: 15; font.weight: 800 }
                             Waiting { visible: hfFiles.running; text: I18n.tr("Asking Hugging Face…"); width: parent.width }
-                            Repeater { model: hfFiles.data || []
+                            Repeater { model: localPage.shownFiles
                                 Rectangle { id: opt; required property var modelData; width: detail.width; height: 44; radius: 10
                                     readonly property bool sel: !!localPage.chosen && localPage.chosen.file === modelData.file
                                     color: sel ? Theme.raised : (optHit.containsMouse ? Qt.alpha(Theme.raised, 0.5) : "transparent"); border.width: sel ? 1 : 0; border.color: Theme.gold
@@ -1676,14 +1590,19 @@ ShellRoot {
                                         Label { visible: !!opt.modelData.recommended; text: "★ " + I18n.tr("Recommended"); color: Theme.gold; font.pixelSize: 12; font.weight: 700; anchors.verticalCenter: parent.verticalCenter }
                                         Label { visible: !!opt.modelData.have; text: "✓ " + I18n.tr("Downloaded"); color: Theme.ok; font.pixelSize: 12; font.weight: 700; anchors.verticalCenter: parent.verticalCenter } }
                                     MouseArea { id: optHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: localPage.variant = opt.modelData.file } } }
-                            Pill { visible: !!localPage.chosen; implicitHeight: 40; strong: !(localPage.chosen && localPage.chosen.have); icon: localPage.chosen && localPage.chosen.have ? "check" : "download"
-                                   busy: !!shell.getting && !!localPage.chosen && shell.getting.file === localPage.chosen.file
-                                   text: !localPage.chosen ? "" : localPage.chosen.have ? I18n.tr("Downloaded") : I18n.tr("Download {n}", { n: (localPage.chosen.quant || "") + " · " + shell.gb(localPage.chosen.size) })
-                                   onPressed: if (localPage.chosen && !localPage.chosen.have && !shell.getting) { shell.fetch(["get", localPage.picked.repo, localPage.chosen.file], localPage.chosen.file); localPage.tab = "mine" } }
+                            Text { readonly property int more: (hfFiles.data || []).length - localPage.shownFiles.length
+                                   visible: more > 0 || localPage.allFiles; color: Theme.gold; font.family: Theme.font; font.pixelSize: 12; font.underline: true
+                                   text: localPage.allFiles ? I18n.tr("Fewer options") : I18n.tr("{n} more options, too big for this computer", { n: more })
+                                   MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: localPage.allFiles = !localPage.allFiles } }
                             // the model's card
                             Rectangle { width: parent.width; height: 1; color: Theme.line }
-                            TextEdit { width: parent.width; readOnly: true; selectByMouse: true; wrapMode: Text.Wrap; textFormat: TextEdit.MarkdownText; color: Theme.cream; font.family: Theme.font; font.pixelSize: 13
-                                       text: readmeq.data && readmeq.data.text ? readmeq.data.text : "" } } } }
+                            TextEdit { visible: !shell.web; width: parent.width; readOnly: true; selectByMouse: true; wrapMode: Text.Wrap; textFormat: TextEdit.MarkdownText; color: Theme.cream; font.family: Theme.font; font.pixelSize: 13
+                                       text: visible && readmeq.data && readmeq.data.text ? readmeq.data.text : "" } } }
+                    Waiting { visible: shell.web && !!localPage.picked && readmeq.running; anchors.horizontalCenter: parent.horizontalCenter; y: detailTop.y + detailTop.height + 30; text: I18n.tr("Asking Hugging Face…") }
+                    Loader { id: cardView; active: shell.web && !!localPage.picked && !!(readmeq.data && readmeq.data.text); source: "aicenter/ReadmeView.qml"
+                             x: 20; y: detailTop.y + detailTop.height + 12; width: parent.width - 40; height: parent.height - y - 16
+                             Binding { target: cardView.item; property: "repo"; value: localPage.picked ? localPage.picked.repo : ""; when: cardView.item !== null }
+                             Binding { target: cardView.item; property: "text"; value: readmeq.data ? readmeq.data.text : ""; when: cardView.item !== null } } }
             }
 
             // ── My Models: what is on this computer, and what is on its way ──
@@ -1692,7 +1611,15 @@ ShellRoot {
                 visible: localPage.tab === "mine"
                 anchors.topMargin: 62
                 property string openModel: ""          // the model whose settings are open
-                Label { text: I18n.tr("{n} models on this computer", { n: (localModels.data || []).length }) + "  ·  " + (localPage.rec.hardware.dir || ""); color: Theme.dim; font.pixelSize: 12 }
+                // the folder itself: a model got elsewhere (a .gguf file, also in a folder of its own) is put there and shows up here
+                Row { spacing: 12
+                    Column { spacing: 2; anchors.verticalCenter: parent.verticalCenter
+                        Label { text: I18n.tr("{n} models on this computer", { n: (localModels.data || []).length }) + "  ·  " + (localPage.rec.hardware.dir || ""); color: Theme.dim; font.pixelSize: 12 }
+                        Label { text: I18n.tr("A model downloaded elsewhere (a .gguf file) goes into this folder and appears here by itself."); color: Theme.faint; font.pixelSize: 11 } }
+                    Pill { implicitHeight: 32; icon: "folder"; text: I18n.tr("Open folder"); anchors.verticalCenter: parent.verticalCenter; visible: !!localPage.rec.hardware.dir
+                           onPressed: Qt.openUrlExternally("file://" + localPage.rec.hardware.dir) } }
+                // ponytail: looked at every 5 s while the page is open; a file watch if a folder ever gets big
+                Timer { interval: 5000; repeat: true; running: minePage.visible && shell.page === "local"; onTriggered: if (!localModels.running) localModels.ask(["models", "measured"]) }
                 // a download: how far, how much is left, how fast; paused it keeps what came and goes on from there
                 component Download: Rectangle { id: dl
                     property string file; property real got; property real total; property real speed; property bool live
@@ -1908,11 +1835,33 @@ ShellRoot {
                                                 besideMenu.open(Math.min(p.x, besideMenu.width - 280), p.y, (shell.agents.services || []).map(x => ({ text: I18n.tr(x.name), checked: tr.tool === x.id,
                                                         hint: ((shell.services.find(y => y.id === x.id) || {}).account || "").split(" · ")[0], run: () => shell.setTab(tr.modelData.id, { usage: x.id }) }))
                                                     .concat([{ line: true }, { text: I18n.tr("None"), checked: tr.tool === "" || !(shell.agents.services || []).some(x => x.id === tr.tool), run: () => shell.setTab(tr.modelData.id, { usage: "" }) }])) } }
+                            // never sleeps: its news keeps coming, its memory stays taken (Ferdium's "never hibernate")
+                            Pill { implicitHeight: 32; icon: tr.modelData.awake ? "sun" : "moon"; strong: !!tr.modelData.awake
+                                   text: tr.modelData.awake ? I18n.tr("Always awake") : I18n.tr("Sleeps")
+                                   onPressed: shell.setTab(tr.modelData.id, { awake: !tr.modelData.awake }) }
                             Pill { implicitHeight: 32; icon: "chevron-up"; text: ""; visible: tr.index > 0
                                    onPressed: { const l = shell.tabbed.slice(); l.splice(tr.index - 1, 0, l.splice(tr.index, 1)[0]); shell.keepTabs(l) } }
                             Pill { implicitHeight: 32; icon: "chevron-down"; text: ""; visible: tr.index < shell.tabbed.length - 1
                                    onPressed: { const l = shell.tabbed.slice(); l.splice(tr.index + 1, 0, l.splice(tr.index, 1)[0]); shell.keepTabs(l) } }
                             Pill { implicitHeight: 32; icon: "trash"; danger: true; text: I18n.tr("Remove"); onPressed: shell.removeTab(tr.modelData.id) } } } }
+                // when the pages out of sight sleep (WebTabs: frozen, then discarded; ~/.config/latteos/lensai-web.json)
+                Label { text: I18n.tr("SLEEP"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
+                Rectangle { width: webSet.room; height: slCol.implicitHeight + 28; radius: 16; color: Theme.card
+                    FileView { id: webSleep; printErrors: false; watchChanges: true; onFileChanged: reload()
+                               path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/latteos/lensai-web.json" }
+                    readonly property var now: { try { return Object.assign({ keep: 2, freeze: 5, discard: 15 }, JSON.parse(webSleep.text())) } catch (e) { return { keep: 2, freeze: 5, discard: 15 } } }
+                    function put(k, v) { const o = Object.assign({}, now); o[k] = v; webSleep.setText(JSON.stringify(o)) }
+                    Column { id: slCol; x: 18; y: 14; width: parent.width - 36; spacing: 10
+                        Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
+                                text: I18n.tr("A page out of sight first pauses (it comes back at once), later gives its memory back (it loads again). The ones you use most this week stay awake, and the ones marked Always awake.") }
+                        Repeater { model: [{ k: "freeze", name: QT_TR_NOOP("Pause after"), opts: [5, 15, 30, 0] }, { k: "discard", name: QT_TR_NOOP("Give memory back after"), opts: [15, 30, 60, 0] },
+                                           { k: "keep", name: QT_TR_NOOP("Most used, always awake"), opts: [0, 1, 2, 3] }]
+                            Row { id: slRow; required property var modelData; spacing: 8
+                                Label { width: 230; text: I18n.tr(slRow.modelData.name); anchors.verticalCenter: parent.verticalCenter }
+                                Repeater { model: slRow.modelData.opts
+                                    Pill { required property var modelData; implicitHeight: 30; strong: slCol.parent.now[slRow.modelData.k] === modelData
+                                           text: slRow.modelData.k === "keep" ? String(modelData) : modelData === 0 ? I18n.tr("Never") : I18n.tr("{n} min", { n: modelData })
+                                           onPressed: slCol.parent.put(slRow.modelData.k, modelData) } } } } } }
                 Label { text: I18n.tr("ANOTHER PAGE"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
                 Row { spacing: 10
                     Field { id: tabName; width: 220; icon: "tag"; hint: I18n.tr("Name") }
@@ -1956,6 +1905,48 @@ ShellRoot {
                                            onPressed: { shell.inTerminal(card.modelData.logout); later.restart() } } } }
                             ModelRows { width: parent.width; pid: card.modelData.id } } } }
 
+                // ── the agents of the ACP Registry (ROADMAP 10B.87): installed here for the Helper, as Zed installs them ──
+                Column { id: acpBox; width: cliSet.room; spacing: 10
+                    property string words: ""
+                    onVisibleChanged: if (visible && shell.acpAgents.length === 0 && !acpq.running) acpq.ask(["acp", "list"])
+                    Component.onCompleted: if (visible) acpq.ask(["acp", "list"])
+                    Item { width: parent.width; height: 34
+                        Label { text: I18n.tr("AGENTS THROUGH ACP"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8; anchors.verticalCenter: parent.verticalCenter }
+                        Pill { anchors.right: parent.right; implicitHeight: 32; icon: "refresh"; text: ""; busy: acpq.running; onPressed: acpq.ask(["acp", "refresh"]) } }
+                    Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim
+                            text: I18n.tr("Agents from the ACP Registry, installed for you only, into ~/.local/share/latteos/acp. The Helper on the Agents page gives them tasks and shows you every change they ask for. Each signs in its own way at its first task. Anyone may publish there: read what an agent does first.") }
+                    Field { width: parent.width; icon: "magnifying-glass"; hint: I18n.tr("Search agents…"); onTextChanged: acpBox.words = text.trim().toLowerCase() }
+                    Waiting { visible: shell.acpAgents.length === 0 && acpq.running; text: I18n.tr("Looking…"); width: parent.width }
+                    Label { visible: shell.acpAgents.length === 0 && !acpq.running; width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim
+                            text: I18n.tr("The ACP Registry did not answer, and no list of it is kept yet.") }
+                    Repeater { model: shell.acpAgents.filter(x => acpBox.words === "" || (x.name + " " + x.description).toLowerCase().indexOf(acpBox.words) >= 0)
+                        Rectangle { id: ac; required property var modelData; width: acpBox.width; height: acCol.implicitHeight + 24; radius: 12; color: Theme.card
+                            border.width: modelData.usable ? 1 : 0; border.color: Theme.line
+                            readonly property bool have: modelData.installed !== ""
+                            readonly property string fail: shell.acpError[modelData.id] || ""
+                            readonly property string how: ({ binary: I18n.tr("program"), npx: "npm", uvx: "PyPI" })[modelData.kind] || ""
+                            // the registry's icon is one colour (currentColor): drawn in the theme's gold
+                            Image { id: acIcon; x: 16; y: 16; width: 24; height: 24; sourceSize: Qt.size(48, 48); visible: status === Image.Ready
+                                    source: ac.modelData.svg ? "data:image/svg+xml," + encodeURIComponent(ac.modelData.svg.replace(/currentColor/g, String(Theme.gold))) : "" }
+                            Glyph { x: 16; y: 16; visible: !acIcon.visible; name: "robot"; font.pixelSize: 22; color: Theme.gold }
+                            Column { id: acCol; x: 52; y: 12; width: parent.width - 52 - acBtns.width - 24; spacing: 3
+                                Row { spacing: 8; width: parent.width
+                                    Label { text: ac.modelData.name; font.weight: 700 }
+                                    Label { visible: ac.modelData.usable; color: Theme.ok; font.pixelSize: 12; text: I18n.tr("The Helper can use it"); anchors.verticalCenter: parent.verticalCenter } }
+                                Label { width: parent.width; wrapMode: Text.WordWrap; maximumLineCount: 2; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 12; text: ac.modelData.description }
+                                Label { width: parent.width; elide: Text.ElideRight; color: ac.modelData.missing.length ? Theme.gold : Theme.faint; font.pixelSize: 12
+                                        text: [ac.have ? I18n.tr("Installed {v}", { v: ac.modelData.installed }) : ac.modelData.version, ac.modelData.license, ac.how,
+                                               ac.modelData.kind === "" ? I18n.tr("Not made for this computer") : "",
+                                               ac.modelData.missing.length ? I18n.tr("Needs {n}", { n: ac.modelData.missing.join(", ") }) : ""].filter(s => s).join("  ·  ") }
+                                Label { visible: ac.fail !== ""; width: parent.width; wrapMode: Text.WordWrap; color: Theme.red; font.pixelSize: 12; text: I18n.tr("Not installed: {e}", { e: ac.fail }) } }
+                            Row { id: acBtns; anchors.right: parent.right; anchors.rightMargin: 12; y: 14; spacing: 6
+                                Pill { visible: ac.modelData.url !== ""; implicitHeight: 30; icon: "arrow-square-out"; text: I18n.tr("Read"); onPressed: Qt.openUrlExternally(ac.modelData.url) }
+                                Pill { visible: ac.have && ac.modelData.installed !== ac.modelData.version && ac.modelData.kind !== ""; implicitHeight: 30; enabled: shell.acpBusy === ""
+                                       icon: "download-simple"; text: I18n.tr("Update"); onPressed: shell.acpRun("install", ac.modelData.id) }
+                                Pill { visible: ac.have || (ac.modelData.kind !== "" && ac.modelData.missing.length === 0); implicitHeight: 30; strong: !ac.have; enabled: shell.acpBusy === ""
+                                       icon: shell.acpBusy === ac.modelData.id ? "spinner" : ac.have ? "trash" : "download-simple"
+                                       text: shell.acpBusy === ac.modelData.id ? I18n.tr("Working…") : ac.have ? I18n.tr("Remove") : I18n.tr("Install")
+                                       onPressed: shell.acpRun(ac.have ? "remove" : "install", ac.modelData.id) } } } } }
             }
 
             // ── API: a key of one's own, as in VS Code: the service's API answers directly, a conversation and no tools ──
@@ -2053,7 +2044,8 @@ ShellRoot {
                                         : me.modelData.folder.replace(Quickshell.env("HOME"), "~") }
                             Row { spacing: 8; visible: me.on && me.modelData.installed
                                 Pill { implicitHeight: 30; icon: "folder"; text: I18n.tr("Open folder")
-                                       onPressed: Quickshell.execDetached(["sh", "-c", "mkdir -p \"$1\" && exec latte-app files \"$1\"", "sh", me.modelData.folder]) } } }
+                                       onPressed: Quickshell.execDetached(["sh", "-c", "mkdir -p \"$1\" && exec latte-app files \"$1\"", "sh", me.modelData.folder]) }
+                                Pill { implicitHeight: 30; icon: "download"; text: I18n.tr("Import…"); visible: me.modelData.id === "basic"; onPressed: importer.item.show("memory") } } }
                         Pill { id: mePick; anchors.right: parent.right; anchors.rightMargin: 18; y: 16; implicitHeight: 34
                                visible: me.can || (!me.modelData.installed && !me.modelData.cannot)
                                icon: me.on ? "check" : me.can ? "circle" : "download"; strong: me.on

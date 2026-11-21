@@ -26,6 +26,13 @@ LatteOS:2.x xxx
 
 # Poradie práce
 
+> **Stav po relácii 20. 11. (noc, Claude samostatne; necommitnuté, nasadené):** MCP spravuje **ToolHive** (10B.86: katalóg 818
+> serverov z Registry Servera, ktorý beží iba počas dennej synchronizácie; skupiny = konektory agentgramu cez `latte-mcp /mcp/SKUPINA`;
+> vlastný Store zrušený). LensAI: uspávanie webov v Nastaveniach + „Stále bdelá“ (10B.65), „Prestať čítať“ sa vráti samo (10B.76).
+> Optimalizácia 17.12 (meranie, `latte-mcp status` 8,8 s → 0,06 s a ďalšie). ArtCraft obídené cez X11 (bughunt, 1D.49).
+> **Čaká na používateľa:** zdroje LPnP E1 (chwd, `docs/devices/LPNP-DISPLAYKIT.md`), návrh 17.11 (oomd), kalendár 10J.24 (Merkuro…),
+> NetPulse 10G.12, ACP agenti 10B.87, Rust pre `latte-mcp` (17.12), commit.
+
 > **Stav po relácii 14. 11. (cez deň, Claude, pokračovať odtiaľto):** hotové, nasadené na latte-lab a commitnuté (posledný push: spoje, 6B.49):
 > AppCloud (6N.05–09: premenovanie, samostatná voľba popri LensGoo/LensShore, mriežka cez celú obrazovku s plynulým virtuálnym rolovaním, rám, končí nad Shore, minútka na doske),
 > Nastavenia › Kvapky v novom poradí + stránka pre každé Goo (6.47), okno Widgety a nové Goo (v1), **licencia odstránená** (nie MIT, konečná až pri finálnom systéme),
@@ -938,6 +945,7 @@ tvaru a pritisne sa medzi Shore (Shore je ťažšie než Goo, ustúpi kvapka). *
   inak ostáva stred. Goo (`drops.plm` `dock.c`) aj dok pleamar-wm (`session.plm` `dk.a0`, `latte.dock.pin` v `hyprctl`) kreslia od toho konca, takže
   pri otvorení aplikácií dok nevchádza do suseda a pri zatvorení nenecháva medzeru. Overené: dok pri LensShore, otvorená aplikácia (74 → 152 px, ľavý koniec
   ostal na 620 px), zatvorená. Počas ťahania ide dok zasa za stred. Neoverené: skutočné Alt-ťahanie myšou; pravý koniec (pri TrayShore); bočné okraje (stred).
+- [x] 21. 11. **6.42 dok späť v strede** (používateľ 21. 11.: po pár dňoch zasa ukotvený na stred, cez LensShore): scéna pleamar-wm po novom načítaní (alebo spustená po Goo) zabudne `dock.at`/`dock.pin` a dok ide na stred. Dok teraz s `dock_moved` povie aj, kde ho má (`dock_wm_at/pin/pinx`), a Goo mu pri nezhode miesto pošle znova (`engine.luau` `dock_moved`). Overené: nové načítanie `session.plm` → dok ostal pri LensShore. DockShore je na každom monitore, miesto (`dock.at`, `pin`) je spoločné a Goo počíta s doskou iba na prvom.
 - [~] 14. 11. **6.43 vyskočenie:** Goo pritlačené medzi Shore sa nestratí: `apart()` v `engine.luau` hľadá najbližšie voľné miesto okraja (úseky Shore rozšírené
   o polomer kvapky a spojené), takže kvapka medzi dvoma priblíženými doskami vyskočí k susednému voľnému miestu. Overené: QueenGoo medzi dok a TrayShore → odskočila vľavo
   od doku. Chýba: pokles do štvorcového tvaru a vtlačenie medzi Shore, keď na okraji nie je voľné miesto vôbec (dnes ostane, kde bola); iná hrana okraja.
@@ -3575,7 +3583,8 @@ načítanému modelu 2,8 s namiesto nového štartu; pomocník (malý model) už
 podľa príkladu Qt a pravidla Vivaldi Memory Saver / Ferdium: dve služby najčastejšie otvárané za 7 dní (`~/.local/state/latteos/ai/tabs-use.json`)
 ostávajú bdelé, iná po 5 min mimo pohľadu Frozen, po 15 min Discarded; jej posledný obrázok (snímaný každých 20 s, kým je vidieť) stojí
 pod „Otváram…“, kým sa znova načíta. Namerané (8 webov, skrátené časy): 3 778 MB → 1 215 MB PSS; prebudenie Mistralu overené
-kliknutím, prihlásenie ostalo. Chýba: časy v Nastaveniach › Web, výnimka „nikdy neuspať“ pri službe.
+kliknutím, prihlásenie ostalo. 20. 11.: časy v Nastaveniach › Web › Uspávanie (pozastaviť po 5/15/30 min/nikdy, uvoľniť pamäť po
+15/30/60 min/nikdy, koľko najpoužívanejších ostáva bdelých; `~/.config/latteos/lensai-web.json`) a pri každej službe „Stále bdelá“.
 
 **10B.66** [x] 18. 11. **Pieskovisko agentov a povolenia na reláciu** (krok 3 syntézy; používateľ 18. 11.: internet „zapnúť na
 požiadanie“, povolenie predvolene platí iba pre reláciu): „Urob to“ (`latte-ai do`) spúšťa agenta v **bubblewrap** — celý systém
@@ -3651,7 +3660,16 @@ s úryvkom, klik otvorí rozhovor / reláciu / Pomocníka. **Význam (18. 11.):*
 s konfiguráciou XLM-R bez posunu pozícií a s tokenizerom z `tokenizer.json`; overené proti pôvodnému modelu: kosínus 0,999), v routeri
 ako tretí model (iba procesor, `embedding`, `pooling mean`); `latte-ai index` dopočíta význam každého riadku (4 765 riadkov za ~2 min,
 riadok najviac 800 znakov), hľadanie spojí slová a význam cez Reciprocal Rank Fusion („orbitálne laboratórium Číny“ nájde rozhovor
-o Tiangongu bez spoločného slova; ~0,3 s). **Chýba:** importy ChatGPT/Gemini, relácie Codexu, sqlite-vec (pri tisícoch riadkov stačí numpy).
+o Tiangongu bez spoločného slova; ~0,3 s). **Chýba:** relácie Codexu, sqlite-vec (pri tisícoch riadkov stačí numpy).
+  **21. 11. Import z ChatGPT, Claude a Gemini** (vzor llm-memex a memex-chats, MIT; otázka zo skillu Anthropic import-memory):
+`latte-ai import ZIP|JSON [--dry-run]` — druh podľa obsahu; ChatGPT strom `mapping` od `current_node` ku koreňu, Claude
+`conversations.json` + `memories.json` (aj pamäť projektov), Gemini z Takeoutu (`MyActivity.json`, jeden rozhovor za deň).
+Rozhovor je rozhovor LensAI iba na čítanie (`imported`, `from: import`, dátumy zachované), hneď v indexe; ten istý export
+znova nič nezdvojí. `latte-ai import-memory TEXT|SÚBOR|- --from …` — poznámka Basic Memory `imported/DRUH-memory.md`
+(`- [kategória] fakt (dátum)`), iba chýbajúce riadky. Z anonymného projektu agentgramu ani doň nič. LensAI: **Import…**
+v Rozhovoroch a v Nastavenia › Pamäť (záložky Rozhovory / Pamäť, postup exportu pre každého, Prehľadávať…, otázka
+s kopírovaním). Test `tests/test_import.py`. **Chýba:** EverOS ako cieľ pamäte, Takeout v HTML, `design_chats` Claude,
+vetvy ChatGPT okrem zobrazenej, prílohy; overiť na skutočnom exporte (formát Gemini z jedného zdroja).
 
 **10B.74** [x] 18. 11. **Stiahnuté pre ďalšie kroky** (na latte-lab, `/data/ai`): sherpa-onnx 2.0.1 (rozpoznávanie reči, VAD) a 1.13.8
 (syntéza — od 2.0 nemá espeak-ng, ktorý hlas Piper potrebuje), Parakeet TDT 0.6B v3 int8, KInIT Parakeet TDT sk (.nemo, na prevod do ONNX),
@@ -3671,7 +3689,7 @@ KInIT po prevode, inak NVIDIA v3), whisper ostáva ako záloha. Namerané na tej
 „To vidiem. … Bratislave slnečná … 12 stupň“), whisper large turbo na Vulkane 26,4 s („Dobý deň. … v Bratislave slnečno … 12 stupnú“).
 `latte-ai say TEXT|stop` číta nahlas hlasom Lili (sherpa-onnx 1.13.8, bez značiek Markdownu a kódu); v LensAI pri každej odpovedi
 „Prečítať nahlas“ / „Prestať čítať“. **Chýba:** prevod KInIT Parakeet sk (beží), VAD (Silero: koniec reči sám), stále načítaný model
-(dnes ~4 s načítanie pri každom prepise), „Prestať čítať“ sa po dočítaní samo nevráti.
+(dnes ~4 s načítanie pri každom prepise). 20. 11.: „Prestať čítať“ sa po dočítaní samo vráti (`latte-ai say --wait`).
   **18. 11. večer — pád latte-lab:** prevod KInIT Parakeet sk do ONNX (NeMo, dočasné prostredie) vyšiel, ale kvantovanie kódovača na int8
 zabralo celú pamäť (15 GB, z toho ~7 GB relácia): prvý pokus zabil OOM killer, druhý zamrazil počítač (~20:38, reštart 20:46,
 spadlo spojenie aj Moonlight). Výstup fp32 bol v /tmp a reštart ho zmazal; ostali dekodér a joiner int8. Znova iba s pevným stropom pamäte
@@ -3755,6 +3773,7 @@ súborov v databáze do `files/` (súbor „Tajný Svet v1.0.docx“ overený st
 Viditeľné ostáva `~/LensAI/agentgram/` (projekty, `channels/`). Kópie súborov v databáze ostali ako záloha. Fork iba pridáva —
 pôvodný agentes.chat sa má vedieť pripojiť (rozhodnutie 19. 11.).
 
+- [~] 21. 11. **Lokálne modely agentom agentgramu** (používateľ 21. 11.: „stále je problém pridať lokálnu LLM agentovi“): príčina — agentgram pri uložení „Iného poskytovateľa“ testoval všetky modely naraz s limitom 60 s; router llama.cpp drží jeden model, každý test vyhodil predošlý a všetky padli (jeden test Qwen3.5 2B trvá ~38 s aj s načítaním). Fork: adresa na tomto počítači → modely sa testujú po jednom so 120 s (`onThisComputer`), `idleTimeout` 255 s; `LATTEOS_LOCAL_LLM_URL` (v `~/.config/systemd/user/agentgram.service`) → v Pripojiť AI › Iný poskytovateľ tlačidlo **Použiť modely tohto počítača** (meno, štýl OpenAI, adresa, zoznam modelov jedným klikom; ADR 0202 dodatok). Dialóg **Nová kategória** širší (640) a polia sa rolujú, tlačidlo Vytvoriť ostane vidieť. **Výber modelov ako v LM Studiu (21. 11., používateľ):** kľúč „Tento počítač (LatteOS)“ ponúka v výbere modelu agenta **všetky stiahnuté modely** (živý zoznam z `latte-ai local catalog` cez `latte-mcp /local/models`, 30 s; nový stiahnutý sa ukáže sám; e5 a reč nie), s menom · kvantizáciou · veľkosťou; žiaden sa pri uložení nenačítava (čo vedia, je v GGUF: nástroje → `ok`, inak „iba text“). Router načíta model až keď ho agent zavolá; kým sa načítava, pás v kanáli ukazuje **„Ada načítava Qwen3.5 4B · 45 %“** — llama.cpp router percentá nehlási, LatteOS ich odhaduje z bajtov modelu, ktoré jeho proces už prečítal/namapoval (`latte-ai local progress`, overené plynulo 5 → 94 → 100 % pri Qwen3.5 2B), web sa pýta každú sekundu iba počas načítania. Fork: `latteos-local.ts` (mimo latteos.ts kvôli cyklu importov — prvá verzia zhodila server), trasa `GET …/latteos/local/progress`, `useLocalModelLoad`, testy `endpoints-local.test.ts` (5). Chýba: preklikať naostro (kľúč uložiť, model agentovi, odpoveď s percentami) — pri skúške používateľ prevzal okno.
 **10B.78** [x] 20. 11. (rozhodnuté: pamäte oddelené, nič sa nezrkadlí — agentgram si nechá pôvodnú pamäť agentes.chat a Wiki,
 ostatok LensAI Basic Memory s výberom v Nastaveniach, 10B.80; `docs/goo/ROZHODNUTIA.md` 20. 11.) **agentgram: Wiki a centrálna pamäť LensAI** (používateľ 19. 11.: „Wiki — informácie pre všetkých agentov
 nezávisle od projektu; ako to prepojiť s centrálnou pamäťou LensAI“). Wiki agentgramu (ADR 0023): stránky Markdown s priečinkami,
@@ -3789,7 +3808,7 @@ Inštalovať (`uv tool`). `latte-ai memory [set basic|everos|off | install evero
 → off → basic v jednej relácii latte-mcp (nástroje Basic Memory / 8 nástrojov EverOS-MCP / chyba „pamäť vypnutá“), snímka stránky.
 Tlačidlo Pamäť v Pomocníkovi otvorí túto stránku. **Chýba:** EverOS naostro — na latte-lab nejde (LanceDB potrebuje AVX2, procesor ho
 nemá; z latte-lab odstránený, v LensAI ostáva ako sivá voľba s vysvetlením — používateľ 20. 11.), overiť na hlavnom PC: inštalácia, `everos.toml` s lokálnym modelom (`json_object`), zápis
-a hľadanie. Prechod poznámok medzi pamäťami nie je (každá ostáva vo svojom priečinku).
+a hľadanie. Prechod poznámok medzi pamäťami nie je (každá ostáva vo svojom priečinku). **EverOS je iba voľba, nie nutnosť** (používateľ 21. 11.): kto ju chce, vyberie si ju; predvolená ostáva Basic Memory — overenie na hlavnom PC teda nie je podmienka hotovosti.
   20. 11.: agent agentgramu s lokálnym modelom = API kľúč › Iný poskytovateľ, OpenAI, `http://127.0.0.1:8790/v1`, kľúč `none`;
 `latte-ai local up` spustí iba router (~100 MB), robí to aj zapnutý agentgram; model sa načíta na žiadosť (Qwen 4B s nástrojom overený,
 1 min 46 s s načítaním na procesore). Odporúčané okno ≥ 32 768 tokenov.
@@ -3812,7 +3831,7 @@ dlaždici, výber ako mriežka dlaždíc; celý agentgram kreslí ikony Phosphor
 `packages/ui/src/icons/phosphor.ts`, ~30 mien bez náhrady ostalo pôvodných). Chýba: typecheck mobilnej a desktopovej aplikácie padá
 na chýbajúcu `sk` v ich tabuľke jazykov (od F11, 19. 11.), portugalské texty.
 
-**10B.83** [~] 20. 11. (hotové a nasadené: LensAI › Konektory › Store — 4 odporúčané (`system/ai/mcp-store.json`: ComfyUI, Blender,
+**10B.83** [x] 20. 11. (nahradené ToolHive 10B.86, vlastný Store zrušený; pôvodne: LensAI › Konektory › Store — 4 odporúčané (`system/ai/mcp-store.json`: ComfyUI, Blender,
 Playwright, Home Assistant), 79 z ponuky agentgramu s ich logami a slovenskými opismi (`bun` číta `presets.ts` raz na commit forku),
 hľadanie v registri MCP; Nainštalované s prepínačmi Claude Code / Codex / Gemini; `latte-mcp store|add|give|remove`, zoznam
 `~/.config/latteos/mcp-servers.json` (0600); `latte-mcp http` dáva každý lokálny server na `/mcp/ID` s vlastným tokenom a `/servers`
@@ -3836,6 +3855,43 @@ o inštalácii) so značkou „neoverené“ a kontrolou GuardCorgi. Inštaluje 
 servery bežia raz za `latte-mcp` (vlastná adresa a kľúč pre každý), pri každom výber Claude Code / Codex / Gemini / lokálne modely;
 cloudové sa zapíšu do CLI s prihlásením. agentgram sa nemení, jeho Store ostáva pôvodný.
 
+**10B.86** [~] 20. 11. **ToolHive ako správca konektorov a skillov** (používateľ 20. 11.; nahrádza vlastný Store 10B.83 a bránu
+10B.84): `thv` 0.67.0 v `~/.local/bin` (kontrolný súčet overený), podman.socket zapnutý, štatistiky vypnuté (`disable_usage_metrics`),
+ToolHive Studio 0.41.0 z .rpm (súčet overený); LensAI › ľavé menu **ToolHive Studio** otvára jeho okno (namiesto Konektorov).
+Zistené: vlastný katalóg 109 serverov + 249 skillov, 23 zo 79 položiek agentgramu v ňom je; ComfyUI v ňom nie je (`thv run
+uvx://comfy-mcp` alebo register MCP); Studio + thv ~950 MB RAM. Studio má vlastný `thv` (v0.64, `~/.toolhive/bin/thv`), samostatný iný `thv` odmieta — samostatný
+odstránený. **ToolHive Registry Server** 1.5.4 (Apache-2.0, súčet overený, `~/.local/bin/thv-registry-api`) na 127.0.0.1:8794
+s PostgreSQL 18.3 (dnf, `postgresql.service` so stropom 500 MB, rola `arkay` CREATEROLE, heslo v `~/.pgpass`, pg_hba scram pre
+127.0.0.1/::1): zdroje katalóg ToolHive (109 + 249 skillov) a **register MCP od GitHubu** (896 serverov; oficiálny celý register
+má ~50 tis. a server ho nenačíta — „viac ako 1000 strán“). ToolHive adresu servera neprijme (chyba v ToolHive: kontrola registra
+listuje po jednom serveri a do 10 s nestihne — návrh `patches/issues/toolhive-registry-validate.md`), preto
+`latte-toolhive-catalog` zapíše zoznam do súboru a ToolHive ho číta (818 serverov v `thv registry list`, „comfy“ nájde RunComfy);
+Ďalej: ToolHive a PostgreSQL do inštalátora LatteOS, `latte-mcp` pridať do ToolHive ako server.
+  **20. 11. noc (samostatne):** (1) Registry Server a PostgreSQL **nebežia stále** (používateľ): `latte-toolhive-catalog` (služba
+na 1 beh, `.timer` raz denne) spustí vlastný klaster PostgreSQL používateľa (`~/.local/share/latteos/toolhive-registry/pg`,
+127.0.0.1:5433, heslo v `~/.pgpass`) a Registry Server, počká na synchronizáciu, zapíše súbor a obe zastaví — 8,5 s pri čerstvých
+dátach, ~2,5 min pri novej synchronizácii; systémová služba `postgresql` vypnutá a jej databáza zrušená. (2) Nastavenie zdrojov
+je používateľovo: `~/.config/latteos/toolhive-registry.yaml` (vzor s príkladom vlastného súboru a filtra v
+`/usr/share/latteos/toolhive/registry.yaml`). (3) Overené: server `time` (katalóg ToolHive) v skupine beží v podmane s
+DNS a egress proxy (~146 MB na server: proxy 76 + kontajner 61 + egress 9), vMCP skupiny na jednej adrese funguje (nástroje
+s predponou, s `--optimizer` iba `find_tool`/`call_tool`), **po ukončení Studia servery aj vMCP bežia ďalej**; skúšobná skupina
+zmazaná. (4) **Vlastný Store zrušený:** `latte-mcp store/add/give/remove` a brána `/mcp/ID` preč; `latte-mcp groups` a
+`/servers` = skupiny ToolHive, `/mcp/SKUPINA` spustí jej vMCP (port 4500+, pri prvom použití) a prepošle požiadavky (overené
+cez HTTP s tokenom skupiny); karta agentgramu (fork, ADR 0202 dodatok, texty „skupiny“) ostáva rovnaká; LensAI › Konektory =
+odkaz na Studio + skupiny + čo majú nástroje; `system/ai/mcp-store.json` zmazaný. Kategórie v Studiu nie sú (katalóg ich nemá).
+  **21. 11.:** agentgram dostáva aj **jednotlivé servery** (nielen skupiny): `/servers` a `/mcp/one.MENO` → vlastný proxy servera v ToolHive (iba streamable HTTP; bodka v mene skupiny ToolHive nie je), zastavený server = 502; dialóg „Pridať MCP z LatteOS“ má rozloženie katalógu Konektorov (vľavo Všetky · Pripojené · Skupiny · Servery, vpravo mriežka; prvá verzia vložila dlaždice do úzkeho stĺpca kategórií — overené snímkou až po oprave); pripojené sa neopakujú v karte, sú v karte MCP nižšie aj s Odpojiť; LensAI web: F5 / Ctrl+R načíta stránku znova. LensAI › ToolHive Studio má značku nového okna a spúšťa Studio s `--disable-gpu` (jeho GPU proces tu pri každom štarte 3× padá na SIGILL).
+
+**10B.87** [~] 20. 11. **Zoznam agentov z ACP Registry** (používateľ 20. 11.): [agentclientprotocol/registry](https://github.com/agentclientprotocol/registry)
+(Apache-2.0, `cdn.agentclientprotocol.com/registry/v1/latest/registry.json`, 46 agentov s overením, verziou, licenciou a spôsobom
+spustenia npx/uvx/binárka, obnova každú hodinu) → LensAI › Agenti „Pridať agenta“ cez `latte-acp`; na výber pomôže
+[harnesses.sh](https://www.harnesses.sh/) (75 harnessov, 9 vlastností; iba odkaz, dáta nemajú API). Súvisí s 10B.71 a Brood Boxom (Stacklok).
+  **[~] 21. 11.:** `latte-ai acp list|refresh|install ID|remove ID` (zoznam a ikony v `~/.cache/latteos/acp`, raz za deň, offline
+z neho; inštalácia ako v Zede do `~/.local/share/latteos/acp/ID`: binárka so sha256 › npm › uv, `agent.json` hovorí, ako sa spúšťa;
+priečinok je v `SEALED` pieskoviska); LensAI › Nastavenia › CLI „Agenti cez ACP“ (hľadanie, Inštalovať/Aktualizovať/Odstrániť,
+„Pomocník ho môže použiť“); nainštalovaný agent je na výber v „Tvoj agent“ (`acp:ID`), adaptéry Claude/Codex/Gemini z registra
+sú náhradou za tie na PATH (chýbajúce z 10B.71). Test `tests/test_acp.py`; skúška: codex-acp z registra odpovedal na `initialize`,
+potom odstránený. **Chýba:** nenasadené, nevidené na obrazovke; prihlásenie agenta (Terminal Auth) z LensAI; musl; harnesses.sh.
+
 **10B.84** [~] 20. 11. (hotové a nasadené vo forku, ADR 0202: karta a Store, pripojenie tokenom servera, ktorý do prehliadača
 nejde; výnimka z https iba pre presný pôvod `LATTEOS_MCP_URL`; premenné v `agentgram.service`; testy `latteos-offer.test.ts`;
 spojenie overené cez engine falošným serverom echo. Chýba: preklik v okne agentgramu, skutočný server z LensAI.) **agentgram: karta MCP LatteOS** (návrh používateľa so snímkou): Nastavenia › Konektory a MCP — karta „MCP
@@ -3850,6 +3906,30 @@ odkazy mimo priečinka sa nečítajú; overené testom, nie v okne.)
 **Zdieľané skilly** (používateľ 20. 11.): jeden priečinok `~/.agents/skills` cez
 [`npx skills`](https://github.com/vercel-labs/skills) (MIT, skills.sh, ~80 nástrojov), Store skillov v LensAI › Skilly; v agentgrame
 v okne „Nainštalovať skill“ nová záložka **Skill z LensAI** (vedľa Odkaz na GitHub, Nahrať .zip, Napísať) s rolovacím zoznamom.
+
+**10B.88** [ ] 21. 11. **Audit LensAI 21. 11. — čo z neho používateľ prijal** (`docs/lensai/AUDIT-2026-11-21.md`, jeho poznámky
+tučne priamo v súbore). Prijaté: Rozhovory bez testovacích dát, živé hľadanie a filtre; jedno miesto pre skilly (ToolHive dnes
+nemá Store skillov z LensAI); Nastavenia › Web „⋯“ na riadok, ťahanie **a šípky ostávajú**; vysvetlenie farebných bodiek ako
+vypínateľný tutoriál; ToolHive do poďakovania v O LensAI; agentgram: neprečítané a „Čaká na teba“ v paneli, viditeľné „+“
+pri kategórii. **Zamietnuté:** bočný panel LensAI sa pri agentgrame **nebalí sám** (iba tlačidlo, zbalí si ho používateľ);
+priame správy (DM) v paneli agentgramu netreba; AI kurzor ostáva v ponuke; bodka API na záložke ostáva. Upresnenia: stránka Agenti
+je o agentoch LensAI (mimo agentgramu); zmeny agentgramu iba pridávaním (kompatibilita s pôvodným, 10B.84). Nové:
+**ToolHive služba v LensAI** — pod „ToolHive Studio“ položka „ToolHive služba“, klik otvorí tú istú ponuku ako pravý klik
+na jeho ikonu v tray (ikona z tray preč; ToolHive musí bežať, inak padnú MCP servery); **agenti cez ACP možno na vlastnej
+stránke** (dnes Nastavenia › CLI) a v nich klik na „Čítať“ nič nerobí (chyba, 10B.87).
+  **[x] 21. 11.:** Lokálne LLM › Objavovať: tlačidlo Stiahnuť hore pri modeli, iba možnosti, ktoré počítač unesie (+ odkaz na
+ostatné), README modelu pod nimi s vlastným posúvaním, vykreslené ako na webe (marked, MIT, vo WebEngine: HTML, tabuľky, obrázky
+na šírku panela; Qt MarkdownText ukazoval prázdne odrážky a mriežky), bez bliknutia starého; medzi možnosťami už nie sú hlavy MTP; po zmene nastavení modelu sa router llama.cpp
+hneď vráti, keď ho používa agentgram (agentka Nina zlyhala na „could not reach provider“); `latte-ai local gpu` už nemaže
+nastavenia modelov. Chýba: bez WebEngine (obyčajný qs) ostáva starý Markdown; agentgram posiela malému modelu ~15 tis. tokenov
+(pokyny a nástroje), na procesore ~2 min na prvú odpoveď — úsporný režim pre malé okno kontextu (pridaním vo forku) je otvorený.
+  **[x] 21. 11.:** Moje modely: tlačidlo Otvoriť priečinok a veta, že model stiahnutý odinakiaľ (.gguf) sa vloží sem; zoznam
+ho nájde sám (pozerá každých 5 s) aj v podpriečinkoch ako v LM Studiu (`autor/model/súbor.gguf`, s jeho mmproj); test `tests/test_local_models.py`.
+
+**10B.89** [ ] 21. 11. **Agent má vlastný prehliadač, ktorý pracuje aj mimo obrazovky** (používateľ 21. 11.; k vlastnému kurzoru
+a klávesnici z 10B.58): stránky otvára, číta a kliká v prehliadači bez okna navrchu (headless), používateľ ho môže kedykoľvek
+pozrieť. Najprv nájsť hotové: Playwright MCP (`@playwright/mcp`, Apache-2.0), vercel-labs/agent-browser (Apache-2.0),
+browser-use (MIT); profil oddelený od používateľovho, prístup cez `latte-mcp` a Ruky (Vypnuté · Operačný systém · Všade).
 
 ### 10C. [ ] Heidelberg
 
@@ -4048,7 +4128,7 @@ porušuje pravidlo 4 (texty cez preklad).
 **10E.14** [ ] (19. 11., používateľ) **LPnP — Latte Plug and Play** (návrh a kontrola: `docs/devices/LPNP-DISPLAYKIT.md`): zariadenie →
 databáza → najlepší komunitný ovládač/nástroj → jeho funkcie v jednom okne. LatteOS ovládače nepíše. UI = tento Správca zariadení
 (`apps/devices.qml`, `bin/latte-devices`), služba `lpnpd` (Rust, D-Bus `org.latteos.Lpnp1`). Spĺňa 10E.02, 10E.06–10E.11. Pred kódom:
-CachyOS chwd (GPL-3, kód sa smie prevziať), hw-probe/LKDDb, ukázať zdroj a cestu.
+CachyOS chwd (GPL-3, kód sa smie prevziať), hw-probe/LKDDb, ukázať zdroj a cestu. 20. 11.: zdroje a cesta E1 spísané v `docs/devices/LPNP-DISPLAYKIT.md` („Zdroje pre E1 a cesta“) — čaká na súhlas používateľa.
 **10E.15** [ ] (19. 11.) **E1 — Discovery a Atlas iba na čítanie**: udev → DeviceRecord (bus, vendor, product, ovládač, firmvér), Atlas ako TOML
 v `system/lpnp/atlas/` (SQLite a podpis až v E5), úroveň funkčnosti Nefunguje / Základná / Plná a návrh poskytovateľa na karte zariadenia; nič neinštaluje.
 **10E.16** [ ] (19. 11.) **E2 — inštalácia poskytovateľa s návratom**: `dnf … --noautoremove` po snímke snapper (nie ostree — 1C je odložené;
@@ -4250,6 +4330,13 @@ Zdroje: `bin/latte-network`, `bin/latte-net`, `bin/latte-network`
 **10G.11** [ ] (Sieť) pozriet v složke /inspo/dalsie-inspiracie.md a nástroje na spravu sietí. Vzhladom na to že LatteOS može byt aj zaroven hlavny pc spravcu siete, a je jedno či domacej alebo firemnej, ten bude potrebovat adekvatne nastroje na udržbu všetkých zariadeni, kontrolu a upravu ich firmware. NetManager sa v tomto pokročilom mode zmeni na NetTyrant (krutovladca). 
 
 
+
+**10G.12** [ ] 20. 11. **NetPulse ako doplnok NetManagera** (používateľ 20. 11.: „možný prídavok“): [NetPulse](https://github.com/gnacho/netpulse)
+(AGPL-3.0, samostatný panel, SQLite, bez účtov a cloudu) — routery, AP a SNMP prepínače (CPU, pamäť, teplota, WAN, latencia), živá
+topológia (klienti, Proxmox, WireGuard), Wi-Fi (roaming, 802.11r, analyzátor kanálov), AdGuard Home, upozornenia (Web Push, ntfy,
+Telegram), MQTT pre Home Assistant, **MCP server iba na čítanie** pre AI, aktualizácie OpenWrt; integrácie MikroTik, Asuswrt, UniFi
+([netpulse-integrations](https://github.com/gnacho/netpulse-integrations)). Vyhodnotiť: samostatná služba (Monitor › Služby ju ukáže),
+jej MCP do ToolHive, NetManager ako okno nad ňou; AGPL ako samostatný program je v poriadku.
 ### 10H. [~] AppManager
 
 Zdroje: `apps/appmanager.qml`, `bin/latte-apps`, `bin/latte-app`; LATTEOS-GOO §6.3
@@ -4498,6 +4585,19 @@ Zdroje: `apps/calendar.qml`, `bin/latte-cal`, `goo/lang/sk-dates.json`
 **10J.22** [~] (5. 11. — **nevyriešené**; čo je isté: Goo kreslí plynulo (60 fps), `pleamar --report`; pri **zatváraní** karty `card.p` (pružina `land = 630, 14`) klesne na −0,40 a odrazí sa na +0,16, takže sa telo karty po zavretí ~0,15 s znova ukáže ako kapsula (a zasa zmizne, `card.p > 0,02`) — to sú blikajúce štvorce pri zatváraní; návrhy: (1) odraz po zavretí skryť, (2) kritický útlm, (3) odraz presunúť na kvapku — **čaká na výber**; ClockGoo pri otváraní krátko zbledne; **používateľ:** Sunshine/Moonlight používa s rovnakým nastavením mesiac a artefakty sa začali až po odstránení Hyprlandu tento týždeň → príčina je pri prechode na pleamar-wm, nie v streamovaní; skúšané a **vrátené** (nepomohlo): oslabenie skla/`lens`, farba panela pri nepriehľadnosti, kávu v šírke tela, `panes` podľa úrovne skla — pozri `bughunt/najdene-chyby.md`; Sklo je v Nastaveniach vlastná stránka) **Grafické artefakty Goo** (používateľ 5. 11.; zapísané v `bughunt/najdene-chyby.md`): karty Goo sa otvárajú sekane so svetlými štvorcami, zatváranie LensShore bliká, sklenené rámiky ClockGoo majú niekoľko postupne tmavších obdĺžnikov v sebe. Zistené: je to reálne v obraze (nielen v streame Sunshine), príčina zatiaľ neznáma; pozri bughunt. Po tom TrayShore (Pobrežie).
 
 **10J.23** [ ] (Kalendár) **Kľúčenka sa pri prihlásení neodomkne** (5. 11., okno „Odomknúť prihlasovací zväzok kľúčov“): prihlasovanie cez greetd neodomkne `login` kľúčenku (chýba `pam_gnome_keyring`), takže heslo CalDAV (a iné tajomstvá EDS) sa neuloží a systém sa pýta znova. Opraviť v PAM pre greetd (`auth optional pam_gnome_keyring.so`, `session optional pam_gnome_keyring.so auto_start`) a overiť pri novom prihlásení; Kalendár musí pri zamknutej kľúčenke povedať, nie čakať na okno.
+
+**10J.24** [ ] 20. 11. **Kalendár ako kalendar.aktuality.sk + prevziať lepší klon Google Kalendára** (používateľ 20. 11.): voliteľné
+vrstvy kalendára — menný kalendár podľa zvolenej krajiny (SK, CZ, HU, AT, PL…; dnes `latte-cal` vie menné kalendáre cez nameday.abalin.net,
+10J.16), štátne sviatky a prázdniny, pracovný kalendár (10J.18), **lunárny** (fázy mesiaca), východ a západ slnka, medzinárodné a pamätné
+dni, cirkevné (rímsko-/gréckokatolícky, pravoslávny, židovský), iné sústavy (juliánsky, islamský, perzský…), špecializované (daňový,
+poľovnícky, rybársky, peľový), Veľká noc a dátumová kalkulačka, zmena času. Najprv hľadať hotové: [OpenDay](https://github.com/lortkipa/openday)
+(MIT, Go + React + SQLite, „vyzerá a funguje ako Google Kalendár“, 34 ★, mladý) a ďalšie otvorené klony; dáta: knižnice sviatkov
+a menín s licenciou (napr. python-holidays MIT), astronomické výpočty fáz mesiaca a slnka (lokálne, bez webu). Ukázať zdroje a cestu.
+  **20. 11. (prieskum):** menné kalendáre a sviatky už `latte-cal` má offline (`system/namedays.json`, sviatky krajiny, pracovné dni,
+mostíky) — chýbajú lunárny, slnko, medzinárodné a cirkevné dni, iné sústavy. Klony: **KDE Merkuro** (QML/Kirigami, GPL — najbližšie
+nášmu QML, pohľady deň/týždeň/mesiac/rozvrh ako Google) — kandidát č. 1 na prenos pohľadov; Etar (Android, GPL-3, 2,6 tis. ★);
+Schedule-X (MIT, 2,6 tis. ★) a FullCalendar (MIT, 20 tis. ★) sú webové knižnice; GNOME Calendar (GPL-3, C); OpenDay (MIT, mladý);
+XCalendar (Compose). Ukázať používateľovi a vybrať.
 
 ### 10K. [ ] Hry
 
@@ -5194,10 +5294,24 @@ mimo FILES — rozhodne používateľ), `latte-goo` 26 MB (ladiace symboly? `str
 nechá v latte-goo ~40 MB a v pleamar-wm desiatky MB. V pokoji pamäť stojí, takže bežného používateľa to netrápi; zistiť, čo ostáva
 (textúry kariet, sklo, staré telá), a uvoľniť. Merané `bughunt/meranie-goo.sh`.
 
+**17.12** [~] 20. 11. **Čo prepísať do Rustu** (používateľ 20. 11.: „zhodnoť, čo sa môže prekódovať do Rustu, aby sa znížila
+náročnosť“): meranie a poradie v `docs/OPTIMALIZACIA.md` (20. 11.). Hneď opravené bez Rustu: `latte-mcp status` 8,8 s/242 MB → 0,06 s,
+LensAI už nevolá `latte-skill asks` každých 1,5 s, GuardCorgi jedno oznámenie na spadnutý program, `latte-monitor services`
+0,9 → 0,5 s (adresy HTTP sa skúšajú raz za minútu). Ďalej: (1) `latte-mcp` do Rustu
+(`rmcp`), potom démoni `latte-cal/guardcorgi/focus watch` a `window-place`; (2) horúce čítania `latte-ai` do cache alebo malého
+Rust programu; (3) zámok a polkit na požiadanie (~110 MB), karty webov LensAI v procese, ktorý sa môže skončiť.
+
 **17.11** [ ] (20. 11., používateľ) **Počítač nikdy úplne nezamrzne** (latte-lab spadol na plnú RAM 18. a 20. 11.): optimalizovať systém
 a zaistiť, že pri nedostatku pamäte skončí najväčší žrút, nie celý počítač. Najprv nájsť hotové riešenia (systemd-oomd s tlakom pamäte
 — Fedora ho má, overiť nastavenie; earlyoom; zram; strop pamäte pre `app.slice` a služby AI/agentgramu `MemoryHigh`/`MemoryMax`;
 chránené Goo, pleamar-wm a prihlásenie `OOMScoreAdjust`), ukázať zdroj a cestu, potom nastaviť a overiť záťažou s návratom.
+  **20. 11. (zistené, návrh — nenastavené, čaká na súhlas):** Fedora už má **systemd-oomd** (beží) a **zram 8 GB** (swappiness 60).
+oomd sleduje `user@1000.service` s limitom **tlaku pamäte 80 % počas 20 s** a swap pri 90 % — to je príliš voľné: počítač sa „zadrhne“
+(zram swapuje) skôr, než oomd zasiahne. Návrh (hotové nástroje, iba nastavenie): (1) drop-in pre `user@.service`
+`ManagedOOMMemoryPressureLimit=50%` (Fedora Workstation má pre používateľa tiež nižší) a `oomd.conf` `DefaultMemoryPressureDurationSec=10s`;
+(2) Goo, pleamar-wm, prihlásenie a zámok `ManagedOOMPreference=avoid`, ťažké služby AI (agentgram, router modelov ako služba,
+ToolHive, kontajnery) `ManagedOOMPreference=prefer` a `MemoryHigh/Max`; (3) `user.slice` `MemoryHigh` ~1,5 GB pod celkovou RAM, aby
+jadro a systém mali vždy rezervu; (4) earlyoom netreba (oomd stačí). Overiť riadenou záťažou (`stress-ng --vm`) v obmedzenom scope.
 
 ---
 

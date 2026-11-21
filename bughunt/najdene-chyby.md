@@ -88,3 +88,16 @@ V gite nie je heslo ani `.claude-local`. Značky: **[x]** opravené a nasadené 
 **Otvorené — nízka (výber):** latte-hw: Surface/„microsoft“ v DMI = VM → softvérové kreslenie; Intel Arc „minimal“; Ice/Jasper Lake chýbajú;
 btrfs: varovanie HDD nikdy; `df -B1G` zaokrúhľuje nahor. `latte-ai invite` ostáva bežať po odhlásení (3 procesy). SAFE sa nedá zamknúť.
 Budík vynechá, keď Goo stojí práve v tú minútu. `latte-apps` berie `--all` ako balík. lockscreen sťahuje správy každú minútu aj odomknutý.
+
+## 20. 11. 2026 — ArtCraft (WordCraft, PhotoCraft, PdfCraft, ArtCraft Launcher): rozbitý obraz (nahlásil používateľ)
+
+Tá istá chyba ako ROADMAP **1D.49** (flatpak s vlastnou Mesou 26.2 + Wayland v pleamar-wm na RX 640 → rozsypaný obraz). **Obídené
+20. 11.** pre všetky štyri aplikácie `ai.storyteller.*`: `flatpak override --user --nosocket=wayland --socket=x11 <id>` (bežia cez
+XWayland). Overené snímkou: WordCraft čistý. Daň: kreslia na CPU (llvmpipe), teda pomalšie. Vrátiť: `flatpak override --user --reset <id>`.
+Skutočné riešenie ostáva v 1D.49 (lineárne rozloženie pre GFX6–8 v pleamar-wm, alebo Mesa hostiteľa pre flatpaky).
+
+## 21. 11. 2026 — Kôš na ploche otvoril kitty „Open URL error: trash:///“ (nahlásil používateľ)
+
+`latte-desktop open` otváral Kôš cez `gio open trash:///`; na latte-lab nemá `x-scheme-handler/trash` žiadnu aplikáciu, gio
+tak siahlo po `kitty-open.desktop`. Oprava: Kôš otvára DualBrew priamo v `~/.local/share/Trash/files` (`latte-app files`), ako
+ho DualBrew pozná (Vyprázdniť Kôš). Nasadené.

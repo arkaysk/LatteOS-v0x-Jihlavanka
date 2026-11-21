@@ -33,6 +33,21 @@ V poradí práce hneď po LensAI (10B). Pôvodný návrh používateľa je niž�
 9. Bezpečný displejový režim z čierneho obrazu = skratka v `system/pleamarwm/keys.conf` + `latte-screens`; nezávislá od Goo a od D-Bus služby.
 10. Pravidlá frekvencie podľa aplikácie (hra → 165 Hz + VRR) závisia od toho, či pleamar-wm vie meniť režim za behu podľa okna — overiť; inak návrh autorovi do `patches/issues/`.
 
+## Zdroje pre E1 a cesta (20. 11., Claude) — na schválenie, kód zatiaľ žiadny
+
+| Zdroj | Licencia | Čo je | Čo prevziať |
+|---|---|---|---|
+| [CachyOS chwd](https://github.com/CachyOS/chwd) | GPL-3.0 (smie sa do LatteOS, GPL-3.0-or-later) | Rust, detekcia PCI/USB (`libpci`, `libusb` v repe), profily ovládačov v TOML, aktívny (31. 10.) | **priamo kód** zhody zariadenie ↔ profil (`profile.rs` 32 kB, `data.rs`, `device*.rs`) a **formát profilov**: `class_ids`, `vendor_ids`, `device_ids`/`device_name_pattern`, `priority`, `driver_conflict_group` (= náš Resolver „iba jeden z konfliktných“), `packages`, skripty pred/po inštalácii. Mení sa: balíky `pacman` → `dnf` (Fedora), pribudnú polia LPnP (`level`, `features`, `provider`, `recovery`). |
+| [hw-probe](https://github.com/linuxhw/hw-probe) | LGPL-2.1+ alebo BSD-4 | Perl, sonda hardvéru a databáza linux-hardware.org | iba **dáta** (či zariadenie na Linuxe funguje, aký ovládač) ako zdroj pre Atlas; nič neposielať (bez telemetrie) |
+| [LKDDb](https://github.com/linuxhw/LKDDb) | GPL-2.0 | databáza ID → modul jadra, posledná zmena 2023 | iba ako doplnkové dáta, nie závislosť |
+| [kanshi](https://github.com/emersion/kanshi) / shikane | MIT | zostavy monitorov podľa množiny pripojených | logika zhody zostáv pre DisplayKit (E3), nie E1 |
+| `bin/latte-devices` (vlastné) | — | Správca zariadení: `lspci -vmm -k -nn`, USB, vstupy, EDID, nálezy | ostáva UI a čítanie; E1 doň pridá kartu „úroveň funkčnosti + návrh poskytovateľa“ |
+
+**Cesta E1 (návrh):** `crates/latte-lpnp` (Rust) = prevzatý kód chwd na detekciu a zhodu + čítanie Atlasu (`system/lpnp/atlas/*.toml`
+vo formáte chwd s poľami LPnP) → príkaz `latte-lpnp scan` vypíše DeviceRecord a najlepší profil s úrovňou (Nefunguje / Základná / Plná);
+`bin/latte-devices` ho zavolá a karta zariadenia ukáže návrh. Nič neinštaluje (to je E2). Prvé záznamy Atlasu: GPU AMD/NVIDIA (profily chwd
+prevedené na `dnf`), Logitech (Solaar), Razer (OpenRazer), herné ovládače, tlačiarne (CUPS/ipp-usb). Autor chwd do `TRETIE-STRANY.md`.
+
 ---
 
 ## Pôvodný návrh (používateľ, 19. 11. 2026)

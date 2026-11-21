@@ -1,0 +1,45 @@
+# LatteOS: the sources of ToolHive's catalog (ToolHive Registry Server, Stacklok). This is the user's copy
+# (~/.config/latteos/toolhive-registry.yaml, from /usr/share/latteos/toolhive/registry.yaml): add, remove or filter
+# sources here, then run `latte-toolhive-catalog` (it also runs once a day). Sources first in "sources" below win.
+# Docs: https://github.com/stacklok/toolhive-registry-server (examples/config-complete.yaml)
+sources:
+  # ToolHive's own catalog: servers checked by Stacklok, each with its permissions; and the skills
+  - name: toolhive
+    git:
+      repository: https://github.com/stacklok/toolhive-catalog.git
+      branch: main
+      path: pkg/catalog/toolhive/data/registry-upstream.json
+    syncPolicy:
+      interval: "24h"
+  # GitHub's MCP registry: ~900 servers chosen from the official MCP registry (the official one whole, ~50 000, is more
+  # pages than the Registry Server reads)
+  - name: github-mcp
+    api:
+      endpoint: https://api.mcp.github.com
+    syncPolicy:
+      interval: "24h"
+  # your own servers: a file in the format of examples/upstream-registry.json of the Registry Server
+  # - name: mine
+  #   file:
+  #     path: /home/YOU/.config/latteos/mcp-mine.json
+  #   syncPolicy:
+  #     interval: "24h"
+  # a source filtered by names (glob; * does not cross /)
+  #   filter:
+  #     names:
+  #       include: ["io.github.*/*"]
+registries:
+  - name: default
+    sources: ["toolhive", "github-mcp"]
+auth:
+  mode: anonymous
+database:
+  host: 127.0.0.1
+  port: 5433
+  user: {user}
+  migrationUser: {user}
+  database: toolhive_registry
+  sslMode: disable
+  maxOpenConns: 4
+  maxIdleConns: 1
+  connMaxLifetime: "30m"

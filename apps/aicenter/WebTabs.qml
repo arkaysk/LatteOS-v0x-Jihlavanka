@@ -20,6 +20,9 @@ Item {
     ListModel { id: opened }
     function has(id) { for (let i = 0; i < opened.count; i++) if (opened.get(i).service === id) return i; return -1 }
     // a page of its service in a tab already open (agentgram's code to confirm); a tab not open yet starts at its web
+    // F5 / Ctrl+R: the page shown loaded again, as in any browser (a web app that was updated, a page that hangs)
+    Shortcut { sequences: [StandardKey.Refresh, "Ctrl+R"]; enabled: tabs.visible && tabs.current !== ""
+               onActivated: { for (let i = 0; i < views.count; i++) { const v = views.itemAt(i); if (v && v.modelData === tabs.current) v.reload() } } }
     function load(id, url) { for (let i = 0; i < views.count; i++) { const v = views.itemAt(i); if (v && v.modelData === id) { v.url = url; return } } }
     // each open tab's own icon, as its page gives it (its favicon): { claude: "image://favicon/…" }
     property var icons: ({})
@@ -46,9 +49,15 @@ Item {
     // The two used most this week stay awake (their news still comes); another, out of sight 5 min, is frozen (its
     // scripts stop, it comes back at once), after 15 min discarded (its memory goes back; it loads again when it is
     // chosen, its last picture shown meanwhile)
-    readonly property int keepAwake: 2
-    readonly property int freezeAfter: 5 * 60000
-    readonly property int discardAfter: 15 * 60000
+    // the times are the user's (LensAI › Settings › Web, ~/.config/latteos/lensai-web.json; 0 = never), and a tab marked
+    // "awake" never sleeps
+    property var sleep: ({ keep: 2, freeze: 5, discard: 15 })
+    FileView { printErrors: false; watchChanges: true; onFileChanged: reload()
+               path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/latteos/lensai-web.json"
+               onLoaded: { try { tabs.sleep = Object.assign({ keep: 2, freeze: 5, discard: 15 }, JSON.parse(text())) } catch (e) {} } }
+    readonly property int keepAwake: sleep.keep
+    readonly property int freezeAfter: sleep.freeze > 0 ? sleep.freeze * 60000 : 1e12
+    readonly property int discardAfter: sleep.discard > 0 ? sleep.discard * 60000 : 1e12
     // when each service was opened, the last seven days: { claude: [ms, …] }, kept for the next time
     property var use: ({})
     FileView { id: useFile; printErrors: false; blockLoading: true
@@ -63,6 +72,7 @@ Item {
         const week = Date.now() - 7 * 86400000, n = id => (use[id] || []).filter(t => t > week).length,
               last = id => (use[id] || []).slice(-1)[0] || 0
         return services.map(x => x.id).sort((a, b) => n(b) - n(a) || last(b) - last(a)).slice(0, keepAwake)
+                       .concat(services.filter(x => x.awake).map(x => x.id))
     }
     property var pictures: ({})       // the last picture of each discarded page, shown while it loads again
     Timer { interval: 30000; repeat: true; running: opened.count > 0

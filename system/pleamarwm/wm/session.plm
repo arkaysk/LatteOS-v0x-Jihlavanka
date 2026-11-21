@@ -1403,7 +1403,7 @@ scene Session {
         // (goo/lib/engine.luau `dock_moved`). Told when where it lies changes, not on every frame of its springs;
         // and again when Goo starts (`dock_tell`). Edges as Goo counts them: 0 bottom, 1 left, 3 right, −1 none.
         let dkg.edge.$s = if(free.$s > 0.5 and dock.off < 0.5 and (dock.hide < 0.5 or dk.open.$s or dmenu.$s >= 0 or pv.$s >= 0 or dkdrag.$s >= 0), if(dock.side == 2, 3, dock.side), -1)
-        on change dkg.edge.$s * 100000 + dk.tw.$s + dkpl * 7 + dkg.grow * 13 + dktold while s == 0 { launch "latte-say 'fact dock_edge {dkg.edge.$s}' 'fact dock_len {dk.tw.$s}' 'fact dock_deep {dkpl}' 'fact dock_grow {dkg.grow}' 'emit dock_moved'" }
+        on change dkg.edge.$s * 100000 + dk.tw.$s + dkpl * 7 + dkg.grow * 13 + dktold while s == 0 { launch "latte-say 'fact dock_edge {dkg.edge.$s}' 'fact dock_len {dk.tw.$s}' 'fact dock_deep {dkpl}' 'fact dock_grow {dkg.grow}' 'fact dock_wm_at {dock.at}' 'fact dock_wm_pin {dock.pin}' 'fact dock_wm_pinx {dock.pinx}' 'emit dock_moved'" }
         repeat j in 0..12 {
             image dockicon.$s.$j = from win.dock.$s.$j.icon, 96, 96
             prop buoy.$s.$j = 0 ~pop

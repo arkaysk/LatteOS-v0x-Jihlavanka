@@ -196,6 +196,9 @@ part Drops {
     fact dock_pin = -1                         // …or its end that stays where it is while it grows and shrinks (6.42): 0 the left, 1 the right, −1 neither: its middle
     fact dock_pinx = 0                         // …and where that end lies, px
     fact dock_at = -1                          // …its middle along the edge, px; −1 the middle (6.36: Goo carries it, tells pleamar-wm)
+    fact dock_wm_at = -2                       // …and where pleamar-wm has it (dock.at, .pin, .pinx), told with dock_moved: a WM whose
+    fact dock_wm_pin = -2                      // scene started again (or came up after Goo) has forgotten it and is told again; −2 not told
+    fact dock_wm_pinx = 0
     fact alt_held = 0                          // Alt is held (pleamar-wm says, keys.alt): the Shore plates can be carried
     fact dock_grow = 0                         // …how much longer it grows with the mouse on it (its icons magnified)
     prop dock_l = 0 ~spring(320, 12)           // its length as the dock's own spring carries it (wm/session.plm `pop`)
