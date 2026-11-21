@@ -186,13 +186,20 @@ def N(s):
     return s
 
 
+_TABLES = {}
+
+
 def T(text):
     """The user's language, for what latte-ai itself shows (a notice): the table of goo/lang/<language>.plm, as GuardCorgi."""
     lang = re.split(r"[_.@]", os.environ.get("LC_ALL") or os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or "en")[0]
-    try:
-        with open(os.path.join(os.environ.get("LATTE_SHARE") or "/usr/share/latteos", "goo", "lang", lang + ".plm"), encoding="utf-8") as f:
-            table = f.read()
-    except OSError:
+    if lang not in _TABLES:                # read once a run: the table is ~300 KB (engineering audit 14)
+        try:
+            with open(os.path.join(os.environ.get("LATTE_SHARE") or "/usr/share/latteos", "goo", "lang", lang + ".plm"), encoding="utf-8") as f:
+                _TABLES[lang] = f.read()
+        except OSError:
+            _TABLES[lang] = ""
+    table = _TABLES[lang]
+    if not table:
         return text
     m = re.search(r'^\s*"%s"\s*=\s*"((?:[^"\\]|\\.)*)"\s*$' % re.escape(text), table, re.M)
     return m.group(1) if m else text

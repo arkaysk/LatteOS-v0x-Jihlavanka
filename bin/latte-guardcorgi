@@ -54,10 +54,15 @@ LOG_KEEP = 5000
 PROBLEMS = ("crash", "down", "thaw", "fell", "impostor", "changed", "doghouse")
 
 
+_TABLES = {}
+
+
 def T(text):
     """The user's language, from the table the scenes and the apps translate with (goo/lang/<language>.plm)."""
     lang = re.split(r"[_.@]", os.environ.get("LC_ALL") or os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or "en")[0]
-    table = read(os.path.join(os.environ.get("LATTE_SHARE") or "/usr/share/latteos", "goo", "lang", lang + ".plm"))
+    if lang not in _TABLES:                # read once a run (engineering audit 14)
+        _TABLES[lang] = read(os.path.join(os.environ.get("LATTE_SHARE") or "/usr/share/latteos", "goo", "lang", lang + ".plm"))
+    table = _TABLES[lang]
     m = re.search(r'^\s*"%s"\s*=\s*"((?:[^"\\]|\\.)*)"\s*$' % re.escape(text), table, re.M) if table else None
     return m.group(1) if m else text
 
