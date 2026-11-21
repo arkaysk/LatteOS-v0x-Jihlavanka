@@ -50,12 +50,16 @@ LatteOS:2.x xxx
 >  8. [x] 21. 11.: súpis diskov a hardvéru hlavného PC (`docs/instalator/HLAVNE-PC.md`, kroky v `manual-inst.md`) presunutý do
 >     `docs/private/` (v `.gitignore`); snímky v repe prejdené OCR — e-mail ani adresy nie sú. V **histórii gitu** súbor ostáva
 >     (vymazať z histórie = prepísať vetvu a force push, iba na pokyn). Pôvodne: Osobné súbory: prejsť, čo je na GitHube (snímky s e-mailom, osobné poznámky, cesty), odobrať z repa (a pridať do `.gitignore`).
->  9. Pred inštaláciou: skontrolovať najnovšie verzie potrebného softvéru a či treba záplatu; **pleamar a agentgram sa dobiehajú
+>  9. [~] 21. 11. zistené: pleamar **0.7.27 → 0.7.31** (0.8.0-exp sa nepreberá), pleamar-wm **0.6.15 → 0.6.33** (18 vydaní:
+>     záplaty v `patches/` preniesť), agentes-chat **352 commitov** pred forkom (základ 18. 11.), llama.cpp **b12110 → v1.0.0**,
+>     ToolHive CLI 0.64 → 0.67 (Studio 0.41 je najnovšie). **Dobehnutie v pondelok 23. 11. večer** (pleamar, pleamar-wm, agentgram),
+>     potom `build-pleamar.sh` a skúška; llama.cpp a ToolHive po nich. Pôvodne: Pred inštaláciou: skontrolovať najnovšie verzie potrebného softvéru a či treba záplatu; **pleamar a agentgram sa dobiehajú
 >     a záplatujú raz týždenne, v pondelok večer** (1D.17).
-> 10. Nainštalovať pomocníka CSO z gstack (`gstack-cso-launcher`) a spustiť `/cso` znova, so skenermi (Gitleaks, OSV, Semgrep).
+> 10. [~] 21. 11.: `gstack-cso-launcher` zostavený (chýbal `glibc-static`, doinštalovaný); `/cso` beží znova → `SECURITY-2.md`.
+>     Pôvodne: Nainštalovať pomocníka CSO z gstack (`gstack-cso-launcher`) a spustiť `/cso` znova, so skenermi (Gitleaks, OSV, Semgrep).
 > 10a. Nezávislá kontrola (GPT, 21. 11.), overené: (a) LatteIndex — súbory v nečitateľnom podpriečinku ostanú `present = 0`
 >     (`latte-index/src/lib.rs:53`, `latte-index-core/src/lib.rs:84`): číslo skenu, chýbajúce až po prejdení, preskočené vetvy bez zmeny;
->     (b) `latte-mcp` spoločný `CALLER` pri súbežných volaniach (`:640`) → `contextvars`; (c) `latte-skill` vyberá zariadenie podľa časti
+>     (b) [x] `latte-mcp` spoločný `CALLER` pri súbežných volaniach (`:640`) → `contextvars`; (c) [x] 21. 11. `latte-skill` vyberá zariadenie podľa časti
 >     mena oboma smermi (`:184`) → presná alebo jediná zhoda, inak sa opýtať, potom ID.
 > 10b. Slovenská klávesnica: prepínač rozloženia v TrayShore (Pobrežie), pravý klik na ňom ponúkne aj mapu znakov (už nainštalovaná).
 >

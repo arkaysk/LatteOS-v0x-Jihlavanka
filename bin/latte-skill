@@ -178,10 +178,21 @@ def level(a, now):
 
 
 def named(key, field):
-    """The one whose name holds the name asked for, or is held by it."""
+    """The one named: its own name first; else the one whose name holds the name asked for, or is held by it — but only
+    when one alone does. Two alike ("Sony" for two headphones, two networks of one name's start) are not guessed: none,
+    and the AI asks with the list (GPT's review, 21. 11.: the first found was taken)."""
     def find(a, now):
-        name = a.get(field).lower() if isinstance(a.get(field), str) else ""
-        return next((d for d in now.get(key, []) if name and (name in d["label"].lower() or d["label"].lower() in name)), None)
+        name = a.get(field).strip().lower() if isinstance(a.get(field), str) else ""
+        if not name:
+            return None
+        rows = now.get(key, [])
+        for alike in ([d for d in rows if d["label"].lower() == name], [d for d in rows if name in d["label"].lower()],
+                      [d for d in rows if d["label"].lower() in name]):
+            if len(alike) == 1:
+                return alike[0]
+            if len(alike) > 1:
+                return None
+        return None
     return find
 
 
