@@ -92,7 +92,9 @@ LatteOS:2.x xxx
 >     nezmení na „vždy“ (E15, povie sa to). S6: `latte-acp` dá každému behu vlastný `LATTE_MCP_RUN`, povolenie na reláciu platí
 >     pre ten beh; meno bez neho je „(self-named)“, cez HTTP vždy agentgram. **Ostáva:** dvojité potvrdenie pre execute/delete.
 >     Pôvodne: Povolenia (S5, S6): krok agenta podľa skutočného príkazu, nie podľa mena od agenta; povolenie relácie MCP viazané na token, nie na meno.
-> 14. [x] 21. 11. `latte-open` iba http, https, mailto (S9). Pôvodne: `latte-open` iba http(s) a súbory (S9); zvyšok SECURITY S10–S15.
+> 14. [x] 21. 11. `latte-open` iba http, https, mailto (S9); príkaz AI v Lens sa pri „Naozaj spustiť?“ ukáže celý (S10); karta
+>     modelu nesmie svoje zobrazenie presmerovať (S11, overené: README sa ukáže). **Ostáva:** S8 väzba na organizáciu majiteľa,
+>     S13 kľúč llama-servera, S14 dočasný súbor latte-doghouse, S15 pevné verzie skillov; skenery CSO po `podman-docker` (ručne). Pôvodne: `latte-open` iba http(s) a súbory (S9); zvyšok SECURITY S10–S15.
 > 15. Heslo sudo: na latte-lab ostáva zámerne čitateľné pre agenta (testovací PC, nie súkromný); na novom PC súkromné heslo, nie v súbore.
 >
 > **0.6+:** `latte-ai` (4 285 riadkov) a veľké QML deliť podľa zodpovedností — po kúskoch pri opravách (vytiahnutá časť s testom), celé až po 0.6.

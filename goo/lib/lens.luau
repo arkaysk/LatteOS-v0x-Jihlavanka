@@ -2019,7 +2019,7 @@ local function shore_rows()
                     if s.skill then
                         local r = skills.row(s.skill.skill, s.skill, function() render(true) end)       -- nil: latte-skill is still asked
                         if r ~= nil then rows[#rows + 1] = r or { label = tr("This cannot be done here"), line2 = tostring(s.skill.skill), glyph = "alert-triangle", quiet = true } end
-                    elseif s.cmd then rows[#rows + 1] = { label = shore.sure[key] and tr("Really run it?") or tr("Run in a terminal"), line2 = s.cmd:sub(1, 60), glyph = "terminal-2", danger = shore.sure[key] == true, keep = not shore.sure[key],
+                    elseif s.cmd then rows[#rows + 1] = { label = shore.sure[key] and tr("Really run it?") or tr("Run in a terminal"), line2 = (shore.sure[key] or #s.cmd <= 60) and s.cmd or (s.cmd:sub(1, 60) .. "…"),      -- asked to be sure: all of it (security S10) glyph = "terminal-2", danger = shore.sure[key] == true, keep = not shore.sure[key],
                                                       run = function() if shore.sure[key] then then_do(function() open.shell(s.cmd) end) else shore.sure[key] = true render(true) end end }
                     else rows[#rows + 1] = { label = tr("Open the link"), line2 = s.url, glyph = "world", run = function() then_do(function() open.url(s.url) end) end } end
                 end

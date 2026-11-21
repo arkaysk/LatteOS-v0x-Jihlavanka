@@ -44,6 +44,12 @@ WebEngineView {
             + '</script></body></html>', Qt.resolvedUrl("card.html"))
     }
     // a link goes to the browser; the card itself stays
-    onNavigationRequested: r => { if (r.navigationType === WebEngineNavigationRequest.LinkClickedNavigation) { Quickshell.execDetached(["latte-open", String(r.url)]); r.reject() } }
+    // the card itself stays: a link goes to the browser, and the card cannot lead its view anywhere (a meta refresh,
+    // a form: security S11); only the page made here loads
+    onNavigationRequested: r => {
+        const u = String(r.url)
+        if (r.navigationType === WebEngineNavigationRequest.LinkClickedNavigation) { Quickshell.execDetached(["latte-open", u]); r.reject() }
+        else if (!/^(file|data|about):/.test(u)) r.reject()
+    }
     onNewWindowRequested: r => Quickshell.execDetached(["latte-open", String(r.requestedUrl)])
 }
