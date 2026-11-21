@@ -3129,6 +3129,8 @@ library Slovak {
         "Nothing is written here yet." = "Zatiaľ tu nič nie je zapísané."
         "It could not be exported." = "Nepodarilo sa exportovať."
         "The history is cleared." = "História je zmazaná."
+        "It runs a command on this computer." = "Spustí príkaz na tomto počítači."
+        "It deletes files." = "Zmaže súbory."
         "Ask the AI for help" = "Požiadať AI o pomoc"
         "Waiting for the answer…" = "Čakám na odpoveď…"
         "The AI you are already signed in to answers here, without signing in again. Say what went wrong." = "Odpovie tu AI, do ktorej si už prihlásený, bez nového prihlasovania. Povedz, čo sa pokazilo."
