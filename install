@@ -426,10 +426,21 @@ def main(a):
         as_user = ["sudo", "-u", owner] if owner and owner != "root" else []
         crates = sorted({s[6:] for _, s in pairs(sections.get("files", [])) if s.startswith("build:")})
 
+        def gentle(cmd):
+            """A build runs at the lowest priority and leaves two cores free: the installer's window (cage, the moving
+            coffee) must keep drawing and the mouse must keep moving while cargo takes everything else (22. 11.: on the
+            main PC the window froze during pleamar's build)."""
+            cmd = ["nice", "-n", "19", "ionice", "-c", "2", "-n", "7"] + cmd
+            if "sudo" in cmd[:6]: cmd.insert(cmd.index("sudo") + 1, "--preserve-env=CARGO_BUILD_JOBS,MAKEFLAGS,CMAKE_BUILD_PARALLEL_LEVEL")
+            return cmd
+        def gentle_env():
+            jobs = str(max(1, (os.cpu_count() or 2) - 2))
+            return dict(os.environ, CARGO_BUILD_JOBS=jobs, MAKEFLAGS="-j" + jobs, CMAKE_BUILD_PARALLEL_LEVEL=jobs)
+
         def compiled(cmd, name, crates_about, cwd=None):
             """A build with its lines passed on; cargo's "Compiling …" lines move the bar through `name`'s part.
             cargo does not say how many there will be: about as many as the lock files hold."""
-            p = subprocess.Popen(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace")
+            p = subprocess.Popen(gentle(cmd), cwd=cwd, env=gentle_env(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace")
             n = 0
             for line in p.stdout:
                 say(line.rstrip("\n"))
@@ -452,7 +463,7 @@ def main(a):
         # (not into a tree under --root: tests/check.sh builds nothing that takes ten minutes)
         if with_web:
             part("web")
-            if subprocess.run(as_user + ["sh", os.path.join(HERE, "patches", "build-quickshell-web.sh")]).returncode:
+            if subprocess.run(gentle(as_user + ["sh", os.path.join(HERE, "patches", "build-quickshell-web.sh")]), env=gentle_env()).returncode:
                 say("   Quickshell with a web engine was not built: LensAI goes without the services' tabs")
         # how LatteOS was developed, for the Settings' About page: from this repository's history, as the user (git
         # refuses a repository that is not its asker's); no history (a copy without .git) leaves the old file as it is

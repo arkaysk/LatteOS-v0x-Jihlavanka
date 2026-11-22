@@ -119,3 +119,5 @@ ho DualBrew pozná (Vyprázdniť Kôš). Nasadené.
 - [ ] **Zamrznutie počas buildu pleamar/pleamar-wm** (pri `Compiling wayland-protocols`, 29 %): kurzor nereagoval. Podozrenie: `cargo` berie
   všetky jadrá s bežnou prioritou a okno inštalátora (cage + pohyblivá káva) nedostane čas. Návrh: build cez `nice -n 10` (a `ionice`),
   prípadne `-j` = jadrá − 2; počas buildu stíšiť animáciu kávy.
+- [x] **Zamrznutie okna počas buildu:** `install` teraz spúšťa build cez `nice -n 19` + `ionice` a s `CARGO_BUILD_JOBS` = jadrá − 2 (min. 1).
+- [ ] **Návrh (používateľ 22. 11.):** v ľavom menu inštalátora ukazovateľ aktuálneho zaťaženia (CPU, RAM, GPU, teplota) ako v LatteMonitor/PowerGoo strip.
