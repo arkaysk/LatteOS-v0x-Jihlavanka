@@ -425,6 +425,12 @@ def main(a):
         owner = os.environ.get("SUDO_USER") if os.geteuid() == 0 else None      # cargo's files stay the user's
         as_user = ["sudo", "-u", owner] if owner and owner != "root" else []
         crates = sorted({s[6:] for _, s in pairs(sections.get("files", [])) if s.startswith("build:")})
+        # the build runs as the user, but the source may have been fetched by root (get): its build folders are the
+        # user's, or cargo stops with "failed to open .cargo-build-lock: Permission denied" (22. 11., main PC)
+        if as_user:
+            for d in ("target", "build"):
+                os.makedirs(os.path.join(HERE, d), exist_ok=True)
+                subprocess.run(["chown", "-R", owner, os.path.join(HERE, d)])
 
         def gentle(cmd):
             """A build runs at the lowest priority and leaves two cores free: the installer's window (cage, the moving
