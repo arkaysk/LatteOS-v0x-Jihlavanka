@@ -132,3 +132,4 @@ ho DualBrew pozná (Vyprázdniť Kôš). Nasadené.
 - Oznam o softvérovom renderi pri SAFE relácii.
 - `~/.config/latteos` patrilo rootovi (kroky inštalácie bežia ako root s HOME používateľa) → latte-wall `PermissionError` (tapeta sa neuloží/nezobrazí), Nastavenia nemôžu zapisovať (pády), `monitors` sa neuloží. Oprava: `install` po krokoch vráti vlastníctvo (chown) priečinkov LatteOS v domovskom adresári. Ručne: `sudo chown -R $USER: ~/.config/latteos`.
 - `journalctl` na Fedora Server nie je v PATH používateľa v relácii? (bash: jornalctl1 bola preklep používateľa, nie chyba).
+- Presnejšie: root-ový krok vytvoril aj samotný `~/.config` (používateľ sa ešte nikdy nepríhlásil), takže `latteos` v ňom nešlo vytvoriť. `install` teraz po krokoch vráti root-ovým `~/.config`, `~/.local`, `~/.local/share`, `~/.local/state`, `~/.cache` používateľa (len ich samých) a rekurzívne priečinky LatteOS.

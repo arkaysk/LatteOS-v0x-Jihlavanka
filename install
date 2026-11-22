@@ -539,6 +539,9 @@ def main(a):
         for name in users():
             try: pw = pwd.getpwnam(name)
             except KeyError: continue
+            for sub in (".config", ".local", ".local/share", ".local/state", ".cache"):    # made by a root step before the user ever logged in
+                top = os.path.join(pw.pw_dir, sub)
+                if os.path.isdir(top) and os.stat(top).st_uid == 0: os.chown(top, pw.pw_uid, pw.pw_gid)
             for sub in (".config/latteos", ".config/quickshell", ".local/share/latteos", ".cache/latteos", ".local/state/latteos"):
                 top = os.path.join(pw.pw_dir, sub)
                 if not os.path.isdir(top): continue
