@@ -487,6 +487,9 @@ def main(a):
             if "/build/quickshell-web/" in source:      # LensAI only goes without the services' tabs
                 say("   not built (LensAI's tabs): " + source)
                 continue
+            if source.endswith("/build/activity.json"):     # only the About page's history; no git history here is fine
+                say("   not built (About page's history): " + source)
+                continue
             if root and "/build/pleamar-src/" in source:     # not built into a tree under --root (tests/check.sh)
                 say("   not built under --root: " + source)
                 continue
