@@ -808,6 +808,15 @@ with tempfile.TemporaryDirectory() as d:
         assert house.pleamar_display(7, str(os.getpid())) == {"WAYLAND_DISPLAY": "pleamar-3", "PLEAMAR_SOCKETS": d + "/7/pleamar-pleamar-3"}
     assert house.pleamar_display(7, str(os.getpid())) == {}
     house.RUN_USER = run_user
+# a symlink put in the log's place is not followed (security S16)
+with tempfile.TemporaryDirectory() as d:
+    secret = d + "/secret"; open(secret, "w").write("not for the log\n")
+    log, house.LOG = house.LOG, d + "/doghouse.log"
+    os.symlink(secret, house.LOG)
+    assert house.old_lines() == []
+    os.unlink(house.LOG); open(house.LOG, "w").write("a\nb\n")
+    assert house.old_lines() == ["a", "b"]
+    house.LOG = log
 ok = {"LoadState": "loaded", "FragmentPath": house.VENDOR, "DropInPaths": "/usr/lib/systemd/user/service.d/10-timeout-abort.conf"}
 assert house.tampered(ok) == ""
 assert house.tampered(dict(ok, LoadState="masked")) == "masked"

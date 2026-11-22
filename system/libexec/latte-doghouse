@@ -13,7 +13,7 @@ the user's cannot stop. For every LatteOS desktop (a pleamar-wm of the session w
 It reads and writes no file of the user's: what is to change, the user's systemd is asked to change, as the user. What it did is in
 /var/lib/latteos/doghouse.log, a JSON line each {"at", "uid", "what", "id", "text"}, for GuardCorgi's window.
 """
-import json, os, pwd, re, subprocess, sys, time
+import json, os, pwd, re, stat, subprocess, sys, time
 
 LOG = os.environ.get("LATTE_DOGHOUSE_LOG") or "/var/lib/latteos/doghouse.log"
 KEEP = 1000
@@ -28,14 +28,23 @@ RUN_USER = "/run/user/%d"
 SETTLE = 90         # a desktop younger than this is still starting: nothing is missing yet
 
 
+def old_lines():
+    """The log's last lines. The folder is the latte group's: a symlink or a FIFO put in the log's place must not make
+    root read /etc/shadow into a world-readable file, or hang (security S16)."""
+    try:
+        fd = os.open(LOG, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    except OSError:
+        return []
+    with os.fdopen(fd, "rb") as f:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            return []
+        return f.read().decode("utf-8", "replace").splitlines()[-(KEEP - 1):]
+
+
 def note(uid, what, text):
     line = json.dumps({"at": int(time.time()), "uid": uid, "what": what, "id": "guardcorgi", "text": text})
     print("doghouse: %d %s: %s" % (uid, what, text), flush=True)
-    try:
-        with open(LOG) as f:
-            lines = f.read().splitlines()[-(KEEP - 1):]
-    except OSError:
-        lines = []
+    lines = old_lines()
     try:
         os.makedirs(os.path.dirname(LOG), exist_ok=True)
         # a fresh temporary file of its own (O_EXCL, a random name): the folder is the latte group's, and a link left
