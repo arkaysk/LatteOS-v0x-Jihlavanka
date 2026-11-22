@@ -82,7 +82,7 @@ ShellRoot {
             shell.groups = g
         } }
     // a group holding one of these is AI's: only with AI (the services' tools, the MCP server, LensAI's web engine)
-    readonly property var aiWords: ["mise", "pipewire-utils", "gnome-keyring", "python3-mcp", "qt6-qtwebengine"]
+    readonly property var aiWords: ["mise", "pipewire-utils", "gnome-keyring", "python3-mcp", "qt6-qtwebengine", "postgresql-server"]
     // untouched (null), a group is chosen, except the Game session's without a real graphics card (PLAN 3.2)
     // off by default: the Game session without a real graphics card; the boot menu without UEFI, and with Secure Boot
     // on (its key waits for a password at the next start that this window does not show yet, ROADMAP 3.11)

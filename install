@@ -327,6 +327,9 @@ def main(a):
         and ("--with" not in a or "qt6-qtwebengine" in chosen)
     # the boot menu (Aarambh) only when the installer's window chose it: it changes what the firmware starts first
     with_boot = "--go" in flags and not root and "gnu-efi-devel" in chosen
+    # agentgram and ToolHive only when the installer's window chose them (patches/ai-stack.sh): bun, the Registry Server, ToolHive Studio
+    # and a build of the user's fork; for the one who asked with sudo, not for every user of the PC (a build is ~2.2 GB)
+    with_ai = "--go" in flags and not root and "postgresql-server" in chosen
     with_pleamar = "--go" in flags and not root and any(s.startswith("pleamar:") for _, s in pairs(sections.get("files", [])))
     must, may, files, may_files = needs(sections)
     fetch = must + [p for p in chosen if p in may]       # what dnf brings: what is missing, and what was chosen of the rest
@@ -337,7 +340,7 @@ def main(a):
         + ([("gpu", "Linux 7.3 and Mesa 26.3 for this graphics card", 35)] if old_amd else []) + [("build", "Building LatteOS's programs", 15)] + ([("pleamar", "Building pleamar and pleamar-wm", 45)] if with_pleamar else []) \
         + ([("web", "Building Quickshell for LensAI", 40)] if with_web else []) \
         + [("files", "Copying the files", 25), ("steps", "Setting the system up", 20)] \
-        + ([("boot", "The boot menu", 10)] if with_boot else []) + ([("driver", "NVIDIA's driver, built for this Linux", 8)] if nvidia else [])
+        + ([("boot", "The boot menu", 10)] if with_boot else []) + ([("ai", "Agentgram and ToolHive", 12)] if with_ai else []) + ([("driver", "NVIDIA's driver, built for this Linux", 8)] if nvidia else [])
     whole = sum(w for _, _, w in parts)
     def part(name, share=0.0):
         """Where the bar is: at `share` (0…1) of that part; with --progress, a line for the installer's window."""
@@ -577,6 +580,11 @@ def main(a):
         part("boot")
         if subprocess.run(["sh", os.path.join(HERE, "patches", "aarambh", "setup-latteos.sh")]).returncode:
             say("   the boot menu was not set up whole: if the PC starts into Aarambh, LatteOS is there under its own name; sudo ./install --remove takes the menu off")
+    if with_ai:
+        part("ai")
+        asked = os.environ.get("SUDO_USER") or (users() or [""])[0]
+        if asked and subprocess.run(["sh", os.path.join(HERE, "patches", "ai-stack.sh"), asked]).returncode:
+            say("   agentgram and ToolHive were not set up whole: sudo sh patches/ai-stack.sh %s runs it again (what is done stays)" % asked)
     if building:
         part("driver")
         building.wait()

@@ -530,6 +530,24 @@ základ, na ktorý sa dajú integrovať ostatné pracovné prúdy.
   +30–55 %, hry nič. Do inštalátora ako voľba iba pri RTX 20/30/40 (2.10), zapnutie/vypnutie v Nastaveniach a v ponuke štartu (3.11).
   **Windows-GPU-UNLOCK** (GPL-2.0, súbor EFI pred Windows): experimentálny, iba konkrétne dosky; RTX 3060 hlásená iba
   „headless USB“ — do inštalátora nie, iba odkaz; položka v ponuke štartu až po overení na hlavnom PC s možnosťou návratu.
+  **22. 11. (používateľ): gpu-unlock bude VOĽBA v inštalátore**, lebo LatteOS je AI systém: ak má PC podporovanú grafiku (RTX 20/30/40, nie 50;
+  `--gpu` už zistí karty), ponúknuť ju ako súčasť s popisom (čo dá: tenzorové jadrá naplno, +25–55 % príprava promptu/obrázky, llama.cpp
+  0–15 %, hry nič; riziká: modul jadra, firmvér NVIDIA sa sťahuje z download.nvidia.com, krátko čierny obraz pri štarte, notebooky sa
+  môžu odomknutia vzdať) a po výbere ho nainštalovať (zdroj zamknutý na jeden commit, RPM/DKMS, podpis kľúčom pre Secure Boot,
+  `gpu_unlock.targets=all` v riadku jadra) s Nastaveniami › Grafika na zapnutie/vypnutie a so zálohou predošlého jadra. Predvolene vypnuté.
+  **Poradie:** najprv to používateľ ručne vyskúša na hlavnom PC (commit `7eb51bc`, v2.0.0; `make install-rpm`; podpis modulu pri Secure
+  Boot, parameter pre jadro aj pre položky aarambh) a až z toho, čo naozaj prešlo, sa napíše krok inštalátora; do inštalátora sa nedáva
+  nič neoverené. Windows variant (EFI) ostáva mimo.
+  **22. 11. (noc) OVERENÉ NA HLAVNOM PC** (RTX 3060, Fedora 45, jadro 7.3.4-300, Secure Boot zapnutý): `make install-rpm` z commitu `7eb51bc`
+  (v2.0.0) nainštalovalo `gpu-unlock-dkms` + `gpu-unlock-firmware`; **DKMS modul podpísal kľúčom akmods** (`signer` = ten istý, čo je v MOK), takže
+  druhé heslo MOK netreba a `/etc/pki/akmods` sa musí zachovať (latte-reset ho prenáša). Po reštarte `journalctl -k -b | grep gpu_unlock`:
+  `stage=host ss0=0x88888888 ss1=0x8` … `gpu_unlock: unlocked`, nvidia sa načítala po ňom. Prínos zatiaľ NEZMERANÝ (iba log, nie výkon).
+  **Pasca pre inštalátor:** keď PC štartuje cez **aarambh** (priamy štart bez GRUB-u), `grubby --args=gpu_unlock.targets=all` nestačí; aarambh berie
+  riadok jadra z `/etc/aarambh/cmdline` (ak existuje), inak z `/proc/cmdline` bežiaceho jadra v čase, keď naposledy generoval zoznam jadier
+  (`hooks/lib/cmdline.sh`). Zápis do `/etc/aarambh/cmdline` (celý riadok + `gpu_unlock.targets=all`) a potom `aarambh-kernels` to obnoví na ESP.
+  Krok inštalátora preto musí: (1) nainštalovať RPM, (2) pridať parameter cez `grubby` (záložné GRUB/BLS položky), (3) ak je aarambh
+  (`/etc/aarambh.env`), zapísať aj `/etc/aarambh/cmdline` a spustiť `aarambh-kernels`, (4) po ďalšom kerneli to dokazuje DKMS/initramfs háky,
+  (5) overiť `/proc/cmdline` a log po reštarte a ukázať výsledok v Nastaveniach › Grafika; vypnutie = odobrať parameter z oboch miest.
 
 **3.11** [ ] **Ponuka štartu v štýle LatteOS podľa aarambh** (používateľ 16. 11.; https://github.com/NarkAgni/aarambh, GPL-3.0):
   vlastná téma podľa Cinema, pozadie kávový sliz v šálke z README; položky LatteOS · LatteOS SAFE · Windows 11. GRUB ostáva ako
@@ -3961,6 +3979,16 @@ má ~50 tis. a server ho nenačíta — „viac ako 1000 strán“). ToolHive ad
 listuje po jednom serveri a do 10 s nestihne — návrh `patches/issues/toolhive-registry-validate.md`), preto
 `latte-toolhive-catalog` zapíše zoznam do súboru a ToolHive ho číta (818 serverov v `thv registry list`, „comfy“ nájde RunComfy);
 Ďalej: ToolHive a PostgreSQL do inštalátora LatteOS, `latte-mcp` pridať do ToolHive ako server.
+  **22. 11. (noc) agentgram a ToolHive v inštalátore:** `patches/ai-stack.sh USER` (volá ho `install`, keď okno vybralo súčasť
+  „Agentgram a ToolHive“ = riadok `optional: postgresql-server podman` vo FILES; v okne iba s AI) pripína: bun 1.4.5, Registry Server 1.5.4
+  (obe so súčtom sha256 z vydania), ToolHive Studio 0.41.0 .rpm (root; digest GitHubu), agentgram = jeden commit vetvy `agent-chats`
+  používateľovho forku (`df4d0b9`), zostavený (`bun install --frozen-lockfile`, `bun run build`), dáta a `env` v `~/.local/share/agentgram`
+  (`TELEMETRY=off`, secret náhodný, práva 0600), používateľská jednotka `agentgram.service` a `podman.socket`/časovač katalógu zapnuté.
+  **Overené na hlavnom PC ako používateľ (bez root):** server beží na 127.0.0.1:5173 (`/api/health` ok, web 200, databáza PGlite),
+  `latte-ai agentgram` ho vidí, `latte-mcp` aktívny, skript je opakovateľný (druhé spustenie preskočí hotové). Test nájdený a opravený:
+  `bun run build` potrebuje `bun` v PATH. **Neoverené:** beh ako root cez `install` (runuser, odkazy jednotiek bez prihlásenej relácie),
+  inštalácia Studia cez dnf, jeho `~/.toolhive/bin/thv` po prvom spustení, `latte-toolhive-catalog` (potrebuje `postgresql-server`),
+  zlučovanie noviek vetvy (zmena `AG_COMMIT` + súčtov). `--remove` agentgram/ToolHive nechá (je v [state]), jednotky nevypína.
   **20. 11. noc (samostatne):** (1) Registry Server a PostgreSQL **nebežia stále** (používateľ): `latte-toolhive-catalog` (služba
 na 1 beh, `.timer` raz denne) spustí vlastný klaster PostgreSQL používateľa (`~/.local/share/latteos/toolhive-registry/pg`,
 127.0.0.1:5433, heslo v `~/.pgpass`) a Registry Server, počká na synchronizáciu, zapíše súbor a obe zastaví — 8,5 s pri čerstvých

@@ -386,6 +386,9 @@ $XDG_RUNTIME_DIR/latteos/                               # per user: the reason f
 ~/.local/share/pleamar/goo/                             # per user: where the drops were left, the launcher's memory, settings.json, lock.json, clock.json, timers.json
 /var/lib/latteos/login/user-*.json                      # per user, for the login screen: where the power drop is, the coffee
 ~/.cache/latteos/                                       # per user: the weather, the news, the name days and the webcams' pictures last fetched
+~/.local/share/agentgram/                              # per user: agentgram's database, files and settings (patches/ai-stack.sh); --purge only
+~/src/agentes-chat/                                     # per user: agentgram's source, built (patches/ai-stack.sh)
+~/.bun/                                                 # per user: bun, which runs agentgram (patches/ai-stack.sh)
 
 # Not in this repository's power to ship: Fedora packages, and programs built from someone else's source.
 [needs]
@@ -411,6 +414,7 @@ package: fd-find xdg-utils xdg-user-dirs                             # the launc
 optional: brightnessctl power-profiles-daemon                        # the brightness keys; the power profiles in PowerGoo's card
 optional: steam gamescope gamescope-session gamescope-session-steam  # the Game session; without them it is not offered
 optional: gnu-efi-devel efibootmgr make python3-fonttools sbsigntools mokutil   # the boot menu: LatteOS, LatteOS SAFE and Windows when the PC starts (Aarambh, patches/aarambh/setup-latteos.sh)
+optional: postgresql-server podman                                 # Agentgram (the chat of the AI agents, the user's fork of agentes.chat) and ToolHive (the AI's MCP connectors): bun, the Registry Server, ToolHive Studio and agentgram built for the user (patches/ai-stack.sh); the build takes ~2.2 GB and a few minutes
 package: git cargo gcc-c++ pkgconf wayland-devel libxkbcommon-devel pam-devel vulkan-loader clang-devel libinput-devel libseat-devel systemd-devel mesa-libgbm-devel xorg-x11-server-Xwayland pipewire-devel openssl-devel opus-devel   # building pleamar and pleamar-wm (their install.sh's list for dnf; patches/build-pleamar.sh)
 package: nodejs nodejs-npm                                    # Marea's agent (her chat and Build) runs in Node; npm fetches its packages when built (patches/build-pleamar.sh)
 package: wine winetricks cabextract unshield innoextract 7zip icoutils bubblewrap    # Barista: Windows programs, each in a folder and a fence of its own
