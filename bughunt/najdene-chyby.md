@@ -121,3 +121,12 @@ ho DualBrew pozná (Vyprázdniť Kôš). Nasadené.
   prípadne `-j` = jadrá − 2; počas buildu stíšiť animáciu kávy.
 - [x] **Zamrznutie okna počas buildu:** `install` teraz spúšťa build cez `nice -n 19` + `ionice` a s `CARGO_BUILD_JOBS` = jadrá − 2 (min. 1).
 - [ ] **Návrh (používateľ 22. 11.):** v ľavom menu inštalátora ukazovateľ aktuálneho zaťaženia (CPU, RAM, GPU, teplota) ako v LatteMonitor/PowerGoo strip.
+
+### 22. 11. 2026 — prvá živá relácia na hlavnom PC (dva monitory, RTX 3060)
+- Nastavenia ťahajú iba `hyprctl eval latte.screen(…)` → náhrada `system/pleamarwm/bin/hyprctl` → `pleamar-wm output NAME at X,Y`. V ROADMAP 1D.xx je to „ostáva overiť v ostrej relácii s dvoma monitormi“. Používateľ: pegboard nejde prehodiť (nová chyba/neoverené).
+- Tapeta sa nezobrazuje (skontrolovať `latte-wall`, `journalctl --user -b | grep -i wall`).
+- Nastavenia sa pri niektorých kliknutiach zavrú (treba stderr: `latte-app settings 2>&1 | tee /tmp/settings.log`).
+- `latte-app` musí používať `/usr/lib64/latteos/qs-web` (Fedorin `qs` nepozná `pragma AppId`) — opravené c3cd94d.
+- `latte-settings` bez argumentov má otvoriť GUI.
+- Goo panel je iba na hlavnom monitore, ľavý nemá nič (latte-goo-side@NAME sa nespustil?).
+- Oznam o softvérovom renderi pri SAFE relácii.
