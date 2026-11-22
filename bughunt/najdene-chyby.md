@@ -101,3 +101,21 @@ Skutočné riešenie ostáva v 1D.49 (lineárne rozloženie pre GFX6–8 v pleam
 `latte-desktop open` otváral Kôš cez `gio open trash:///`; na latte-lab nemá `x-scheme-handler/trash` žiadnu aplikáciu, gio
 tak siahlo po `kitty-open.desktop`. Oprava: Kôš otvára DualBrew priamo v `~/.local/share/Trash/files` (`latte-app files`), ako
 ho DualBrew pozná (Vyprázdniť Kôš). Nasadené.
+
+## 22. 11. 2026 — prvá inštalácia na hlavné PC (Fedora 45 Server, RTX 3060, dva monitory, Secure Boot zapnutý)
+
+- [x] **Pád na 0 % pri Secure Boot + OpenRazer:** `install` volal `dnf()` (kľúč pre DKMS) skôr, než bola funkcia definovaná →
+  `UnboundLocalError`. **Opravené** v `6b3c52e` (definícia `dnf()` presunutá nad blok OpenRazer).
+- [ ] **Inštalátor roztiahnutý cez oba monitory:** `cage` predvolene spája výstupy. Návrh: v `get` `cage -s -m last` alebo zrkadlenie
+  (duplikovať) — používateľ chce duplikovanie.
+- [ ] **Návrat v inštalátore:** po chybe sa nedá vrátiť na predošlé kroky (Súčasti…). Má ísť kliknutím na krok vľavo aj šípkami hore/späť.
+- [ ] **Konzola (log) inštalátora:** pevná výška 160 px (`apps/installer.qml`, r. 288). Má zaberať premenlivé miesto podľa rozlíšenia — ak to
+  rozlíšenie dovolí, až po hladinu kávy.
+- [ ] **Farebné riadky v logu** ako pri štarte Fedory: chyby a problémy červené (`error`, `Traceback`, `install: … could not`), varovania
+  žlté, OK/hotovo zelené, ostatné bežné.
+- [ ] **NumLock vždy zapnutý vopred** (inštalátor, prihlasovanie, relácia).
+- [ ] **Jazyk inštalátora** sa má brať z jazyka, ktorý sa nastavil v inštalátore Fedory (`/etc/locale.conf`, `LANG`). Preklad zatiaľ iba sk;
+  ostatné jazyky predvolene angličtina.
+- [ ] **Zamrznutie počas buildu pleamar/pleamar-wm** (pri `Compiling wayland-protocols`, 29 %): kurzor nereagoval. Podozrenie: `cargo` berie
+  všetky jadrá s bežnou prioritou a okno inštalátora (cage + pohyblivá káva) nedostane čas. Návrh: build cez `nice -n 10` (a `ionice`),
+  prípadne `-j` = jadrá − 2; počas buildu stíšiť animáciu kávy.
