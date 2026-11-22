@@ -359,16 +359,6 @@ def main(a):
     if with_packages:
         part("packages")
         extra = [p for p in fetch if p not in must]
-        if "openrazer-meta" in extra and secure_boot():   # its module is built while dnf installs it: the key first
-            if not dnf(["install", "-y", "akmods", "mokutil", "openssl"], 0.55, 0.58):
-                mok = mok_key(say)
-                os.makedirs(os.path.dirname(DKMS_SIGN), exist_ok=True)
-                with open(DKMS_SIGN, "w") as f:
-                    f.write("# LatteOS (install): DKMS signs with akmods' key, the one MokManager learns (ROADMAP 2.11)\n"
-                            "mok_signing_key=/etc/pki/akmods/private/private_key.priv\nmok_certificate=" + MOK_KEY + "\n")
-        if not repositories(extra, nvidia):
-            say("install: a repository could not be added")
-            return 1
         def dnf(args, lo, hi):
             """dnf with its lines passed on; its [n/m] counter moves the bar from lo to hi of the packages' part."""
             say("   $ dnf " + " ".join(args))
@@ -382,6 +372,16 @@ def main(a):
                     at = int(m.group(1)) / int(m.group(2)) / 2 + (0.5 if "Install" in line or "Remov" in line or "Upgrad" in line else 0)
                     if at > best: best = at; part("packages", lo + (hi - lo) * at)
             return p.wait()
+        if "openrazer-meta" in extra and secure_boot():   # its module is built while dnf installs it: the key first
+            if not dnf(["install", "-y", "akmods", "mokutil", "openssl"], 0.55, 0.58):
+                mok = mok_key(say)
+                os.makedirs(os.path.dirname(DKMS_SIGN), exist_ok=True)
+                with open(DKMS_SIGN, "w") as f:
+                    f.write("# LatteOS (install): DKMS signs with akmods' key, the one MokManager learns (ROADMAP 2.11)\n"
+                            "mok_signing_key=/etc/pki/akmods/private/private_key.priv\nmok_certificate=" + MOK_KEY + "\n")
+        if not repositories(extra, nvidia):
+            say("install: a repository could not be added")
+            return 1
         if must and dnf(["install", "-y"] + must, 0.0, 0.6 if extra else 1.0):
             say("install: dnf could not install them")
             return 1
