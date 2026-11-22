@@ -107,6 +107,36 @@ def users():
     return sorted(set(names + ([asked] if asked and asked != "root" else [])))
 
 
+def give_back_home(pw):
+    """What root made under a user's home is the user's: the home's own entries owned by root (not following links, not
+    leaving the home's file system), and everything in LatteOS's own folders. Returns how many it changed."""
+    changed, home_dev = 0, os.stat(pw.pw_dir).st_dev
+
+    def give(path):
+        nonlocal changed
+        try:
+            if os.lstat(path).st_uid == 0:
+                os.lchown(path, pw.pw_uid, pw.pw_gid)
+                changed += 1
+        except OSError:
+            pass
+
+    for d, ds, fs in os.walk(pw.pw_dir):
+        ds[:] = [x for x in ds if not os.path.islink(os.path.join(d, x)) and os.lstat(os.path.join(d, x)).st_dev == home_dev]
+        give(d)
+        for x in fs:
+            give(os.path.join(d, x))
+    for sub in (".config/latteos", ".config/quickshell", ".local/share/latteos", ".cache/latteos", ".local/state/latteos"):
+        top = os.path.join(pw.pw_dir, sub)
+        if not os.path.isdir(top):
+            continue
+        os.lchown(top, pw.pw_uid, pw.pw_gid)
+        for d, ds, fs in os.walk(top):
+            for x in [os.path.join(d, n) for n in ds + fs]:
+                os.lchown(x, pw.pw_uid, pw.pw_gid)
+    return changed
+
+
 def commands(lines, people, kernels):
     """The steps as they are run: a line with USER once for each user, one with VERSION once for each kernel."""
     out = []
@@ -535,19 +565,14 @@ def main(a):
             part("steps", (n + 1) / len(todo))
         else: say("   $ " + cmd)
     if "--go" in flags and not root and os.geteuid() == 0:
-        # steps run as root with the user's HOME: whatever they made under the user's folders stays the user's
+        # steps run as root with the user's HOME: whatever they made under the user's folders stays the user's. Not a list of
+        # names (a step made ~/.config before the user ever logged in, then ~/.config/pleamar...; a list is always one short,
+        # 22. 11.): every thing under the home that root owns is given back, and all of LatteOS's own folders whoever owns
+        # what is in them
         for name in users():
             try: pw = pwd.getpwnam(name)
             except KeyError: continue
-            for sub in (".config", ".local", ".local/share", ".local/state", ".cache"):    # made by a root step before the user ever logged in
-                top = os.path.join(pw.pw_dir, sub)
-                if os.path.isdir(top) and os.stat(top).st_uid == 0: os.chown(top, pw.pw_uid, pw.pw_gid)
-            for sub in (".config/latteos", ".config/quickshell", ".local/share/latteos", ".cache/latteos", ".local/state/latteos"):
-                top = os.path.join(pw.pw_dir, sub)
-                if not os.path.isdir(top): continue
-                os.chown(top, pw.pw_uid, pw.pw_gid)
-                for d, ds, fs in os.walk(top):
-                    for x in [os.path.join(d, n) for n in ds + fs]: os.lchown(x, pw.pw_uid, pw.pw_gid)
+            give_back_home(pw)
     if with_boot:
         part("boot")
         if subprocess.run(["sh", os.path.join(HERE, "patches", "aarambh", "setup-latteos.sh")]).returncode:

@@ -1,0 +1,33 @@
+#!/bin/sh
+# latte-reset-first: runs once, as a service, on the first start after tools/latte-reset swapped the root for the Fedora
+# before LatteOS. It waits for the network, then starts the install the way latte-reset was told (/etc/latteos-reset.conf).
+# It disables itself first: whatever happens, it does not run on every start.
+set -u
+conf=/etc/latteos-reset.conf
+[ -r "$conf" ] || exit 0
+. "$conf"                                   # MODE=gui|console, USER, WITH
+log=/var/log/latteos-reinstall.log
+exec >>"$log" 2>&1
+systemctl disable latte-reinstall.service || true
+mv "$conf" "$conf.done"
+say() { echo "latte-reset-first: $*" | tee /dev/console; }
+say "installing LatteOS again ($MODE); the log is $log"
+# what latte-reset copied across, with the labels of this root
+restorecon -R /opt/latteos /etc/pki/akmods "/home/$USER" 2>/dev/null || true
+n=0
+until nm-online -q -t 20; do
+    n=$((n + 1)); [ $n -lt 15 ] || { say "no network after 5 minutes: connect (nmtui) and run: sudo sh /opt/latteos/src/get"; exit 1; }
+done
+cd /opt/latteos/src || exit 1
+case "$MODE" in
+console)
+    gpu=""; lspci | grep -qi 'nvidia' && gpu="nvidia"
+    # the packages the install needs before it can run; `get` brings the window's own the same way
+    dnf install -y python3 git || true
+    SUDO_USER="$USER" ./install --go --with "$WITH" ${gpu:+--gpu "$gpu"} --progress && say "done: restart" || say "the install failed: see $log"
+    ;;
+*)
+    # the installer's window, as on a PC with Fedora just installed (get opens it full screen on the console)
+    SUDO_USER="$USER" sh ./get || say "the window did not start: run  sudo sh /opt/latteos/src/get"
+    ;;
+esac

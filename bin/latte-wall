@@ -601,7 +601,9 @@ def draw(target, path, fit):
     if path.lower().endswith(FILMS):
         argv = ["mpvpaper", "-o", "no-audio loop", "*" if target == "*" else target, path]
     else:
-        argv = ["swaybg", "-i", path, "-m", fit if fit in FITS else "fill"] + ([] if target == "*" else ["-o", target])
+        # -o first: swaybg applies -i and -m only to the output named before them (to all of them when none is), so a
+        # picture for one screen put its -o last lay over every screen, over another screen's film too (22. 11.)
+        argv = ["swaybg"] + ([] if target == "*" else ["-o", target]) + ["-i", path, "-m", fit if fit in FITS else "fill"]
     subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
     time.sleep(0.8)
     for pid in old:

@@ -1,0 +1,270 @@
+#!/usr/bin/env python3
+"""latte-reset: this PC back to the Fedora it was before LatteOS, and LatteOS installed again. A tool for the developer's
+own machine, not part of what LatteOS installs (it is not in FILES).
+
+  tools/latte-reset                 DRY RUN: checks what it can and says each step; nothing is changed
+  sudo tools/latte-reset --go       does it, after you type the word it asks for
+  --mode gui|console                how the new install runs after the restart (asked when not said): gui = the installer's
+                                    window (`get`), console = `./install --go` in text, with its log on the screen
+  --keep FILE                       paths of the user's home to carry over (one a line, relative to ~); default
+                                    ~/.config/latte-reset.keep, else the list in DEFAULT_KEEP below
+  --force                           go on although a check warns (a kernel without its modules in the snapshot)
+  --clean-boot                      also take off outside the root what LatteOS put there: Aarambh (EFI entry, folder, key),
+                                    SAFE's entries in /boot, the nouveau block. Without it ONLY `/` CHANGES: Aarambh stays
+                                    in the EFI partition and the install puts it on again over it (to see if it can)
+  --initramfs                       also build the initramfs again from the new root (dracut in a chroot); without it the
+                                    ones in /boot stay as they are
+
+What it does, in order (ROADMAP 2.x, installer re-test):
+  1. checks: the snapshot `root-pred-lateos` is there and is a snapshot, every kernel in /boot has its modules in it, room
+  2. only with --clean-boot, outside the root, which a root swap does not undo: Aarambh's EFI entry, folder and key (its own
+     uninstall --purge), LatteOS SAFE's entries in /boot/loader/entries, and the nouveau block the NVIDIA package put on the kernel's line
+  3. the swap, from the btrfs top level: `root` -> `root-lateos-old-DATE` (kept to look at), a NEW writable `root` made from
+     the snapshot (the snapshot itself is never changed), what to keep copied across with reflinks (free, instant)
+  4. the first start: LatteOS's source in /opt/latteos/src and a one-shot service that runs the install (tools/latte-reset-first)
+By default the EFI partition and /boot are not touched at all: the boot menu, Windows' boot manager and GRUB stay.
+Never run this on a machine without the snapshot. It is NOT tested for real yet (ROADMAP 2.x): the first real run is the test.
+"""
+import argparse
+import datetime
+import glob
+import os
+import pwd
+import shlex
+import shutil
+import subprocess
+import sys
+
+BASE = "root-pred-lateos"            # the Fedora before LatteOS (made 22. 11. 2026 12:14, after the update to Fedora 45)
+LIVE = "root"
+TOP = "/run/latte-reset/top"
+HERE = os.path.dirname(os.path.abspath(__file__))
+REPO = os.path.dirname(HERE)
+KEEP_FILE = os.path.expanduser("~/.config/latte-reset.keep")
+# What of the developer's home goes with the swap (the rest of it, and everything of LatteOS's, comes back as in the snapshot)
+DEFAULT_KEEP = [".claude", ".claude.json", ".ssh", ".gitconfig", "Projekty", ".var/app/com.visualstudio.code",
+                ".var/app/org.mozilla.firefox", ".local/share/flatpak/overrides", ".config/pleamar/session.conf"]
+# Root's own things that stay the same across installs: the akmods key is already in the firmware's MOK, so a new one would
+# ask for a new MOK password at every test
+KEEP_ROOT = ["/etc/pki/akmods"]
+NOUVEAU_ARGS = "rd.driver.blacklist=nouveau,nova_core modprobe.blacklist=nouveau,nova_core"
+BOOT_PACKAGES = "gnu-efi-devel efibootmgr make python3-fonttools sbsigntools mokutil"      # FILES: the boot menu's own
+
+dry = True
+problems = []
+
+
+def say(line=""):
+    print(line, flush=True)
+
+
+def probe(*argv):
+    """Something read, never changed: its output, or None when it cannot be run."""
+    try:
+        r = subprocess.run(argv, capture_output=True, text=True)
+    except OSError:
+        return None
+    return r.stdout.strip() if r.returncode == 0 else None
+
+
+def do(*argv, may_fail=False):
+    """Something changed: said in a dry run, run otherwise."""
+    say("   $ " + " ".join(shlex.quote(a) for a in argv))
+    if dry:
+        return True
+    r = subprocess.run(argv)
+    if r.returncode and not may_fail:
+        raise SystemExit("latte-reset: that failed (exit %d); nothing after it was done. The snapshot %s and the old root are as they were."
+                         % (r.returncode, BASE))
+    return r.returncode == 0
+
+
+def warn(text):
+    problems.append(text)
+    say("   ! " + text)
+
+
+def device():
+    """The btrfs partition of / and the subvolume the running system is."""
+    src = probe("findmnt", "-no", "SOURCE", "/") or ""
+    if "[" not in src:
+        return None, None
+    return src.split("[")[0], src.split("[")[1].rstrip("]").lstrip("/")
+
+
+def mount_top(dev):
+    if os.path.ismount(TOP):
+        return True
+    os.makedirs(TOP, exist_ok=True)
+    return subprocess.run(["mount", "-o", "subvolid=5" + (",ro" if dry else ""), dev, TOP]).returncode == 0
+
+
+def checks(dev, sub):
+    say("1. checks")
+    root = os.geteuid() == 0
+    if not dev or sub != LIVE:
+        warn("/ is not the btrfs subvolume `%s` (it is %r): this tool is made for that and nothing else" % (LIVE, sub))
+        return False
+    say("   / is %s, subvolume %s" % (dev, sub))
+    if not root:
+        say("   (not root: the snapshot and the kernels' modules cannot be looked at; run with sudo for the whole dry run)")
+        return True
+    if not mount_top(dev):
+        warn("the btrfs top level could not be mounted")
+        return False
+    top = sorted(os.listdir(TOP))
+    say("   on the top level: " + " ".join(top))
+    if BASE not in top:
+        warn("the snapshot %s is not there: without it there is nothing to go back to" % BASE)
+        return False
+    show = probe("btrfs", "subvolume", "show", os.path.join(TOP, BASE)) or ""
+    when = [l.split(":", 1)[1].strip() for l in show.splitlines() if l.strip().startswith("Creation time")]
+    parent = [l for l in show.splitlines() if l.strip().startswith("Parent UUID")]
+    has_parent = bool(parent) and parent[0].split(":", 1)[1].strip() not in ("", "-")
+    say("   %s made %s%s" % (BASE, when[0] if when else "?", "" if has_parent else "  (no parent: not a snapshot?)"))
+    if not has_parent:
+        warn("%s does not look like a snapshot" % BASE)
+    for kernel in sorted(glob.glob("/boot/vmlinuz-*")):
+        ver = os.path.basename(kernel)[len("vmlinuz-"):]
+        if "rescue" in ver:
+            continue
+        if not os.path.isdir(os.path.join(TOP, BASE, "usr/lib/modules", ver)):
+            warn("the kernel %s in /boot has no modules in the snapshot: it would start without them (--force goes on)" % ver)
+    free = shutil.disk_usage("/").free
+    say("   free: %.0f GB" % (free / 1e9))
+    if free < 30e9:
+        warn("under 30 GB free: the old root is kept beside the new one")
+    return True
+
+
+def outside_root():
+    say("2. outside the root (what the swap does not undo), only with --clean-boot")
+    env = "/etc/aarambh.env"
+    if os.path.exists(env):
+        say("   Aarambh: EFI entry, folder in the EFI partition and key, by its own uninstall (as `install --remove` does)")
+        do("sh", "-c", '. /etc/aarambh.env; [ ! -r "$ESP_DIR/hooks/uninstall.sh" ] || bash "$ESP_DIR/hooks/uninstall.sh" --purge')
+    else:
+        say("   Aarambh is not installed here: nothing to take off")
+    root = os.geteuid() == 0
+    safe = glob.glob("/boot/loader/entries/*-lattesafe*.conf")
+    say("   LatteOS SAFE's boot entries: %s" % (len(safe) if root else "? (/boot is read by root only)"))
+    for f in safe:
+        do("rm", "-f", f)
+    args = probe("grubby", "--info=ALL") or ""
+    if not root:
+        say("   the kernel's line: cannot be read without root (nouveau block, if the NVIDIA package put it there, is taken off with grubby)")
+    elif "nouveau" in args:
+        say("   the kernel's line blocks nouveau (the NVIDIA package did it); the Fedora before LatteOS has no NVIDIA driver, so it goes")
+        do("grubby", "--update-kernel=ALL", "--remove-args=" + NOUVEAU_ARGS)
+    else:
+        say("   the kernel's line has no nouveau block")
+
+
+def keep_list():
+    if os.path.exists(KEEP_FILE):
+        return [l.strip() for l in open(KEEP_FILE) if l.strip() and not l.startswith("#")]
+    return DEFAULT_KEEP
+
+
+def swap(user, mode, keep):
+    say("3. the swap, from the btrfs top level (%s)" % TOP)
+    old = "root-lateos-old-" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    home = pwd.getpwnam(user).pw_dir
+    rel = os.path.relpath(home, "/")
+    do("mv", os.path.join(TOP, LIVE), os.path.join(TOP, old))
+    do("btrfs", "subvolume", "snapshot", os.path.join(TOP, BASE), os.path.join(TOP, LIVE))
+    new = os.path.join(TOP, LIVE)
+    say("   carried across (reflinks, nothing is copied twice):")
+    for p in keep:
+        src = os.path.join(TOP, old, rel, p)
+        if dry and not os.path.exists(src):
+            src = os.path.join(home, p)
+        if os.path.exists(src):
+            say("     ~/%s" % p)
+            do("sh", "-c", "cd %s && cp -a --reflink=auto --parents %s %s" % (shlex.quote(os.path.join(TOP, old, rel)), shlex.quote(p), shlex.quote(os.path.join(new, rel))))
+        else:
+            say("     ~/%s: not there, skipped" % p)
+    for p in KEEP_ROOT:
+        if os.path.exists(p):
+            say("     %s" % p)
+            do("sh", "-c", "mkdir -p %s && cp -a --reflink=auto %s %s" % (shlex.quote(os.path.dirname(new + p)), shlex.quote(os.path.join(TOP, old, p.lstrip("/"))), shlex.quote(os.path.dirname(new + p) + "/")))
+    return old, new
+
+
+def first_start(new, user, mode, initramfs):
+    say("4. the first start")
+    do("mkdir", "-p", new + "/opt/latteos")
+    do("cp", "-a", "--reflink=auto", REPO, new + "/opt/latteos/src")
+    conf = "MODE=%s\nUSER=%s\nWITH=\"%s\"\n" % (mode, user, BOOT_PACKAGES)
+    say("   /etc/latteos-reset.conf: mode %s, user %s" % (mode, user))
+    unit = ("[Unit]\nDescription=LatteOS installed again (tools/latte-reset)\nAfter=network-online.target\nWants=network-online.target\n"
+            "ConditionPathExists=/etc/latteos-reset.conf\n\n[Service]\nType=oneshot\nExecStart=/opt/latteos/src/tools/latte-reset-first\n"
+            "StandardOutput=journal+console\nTimeoutStartSec=infinity\n\n[Install]\nWantedBy=multi-user.target\n")
+    if dry:
+        say("   /etc/systemd/system/latte-reinstall.service (one-shot, enabled), runs tools/latte-reset-first")
+    else:
+        open(new + "/etc/latteos-reset.conf", "w").write(conf)
+        open(new + "/etc/systemd/system/latte-reinstall.service", "w").write(unit)
+        os.makedirs(new + "/etc/systemd/system/multi-user.target.wants", exist_ok=True)
+        link = new + "/etc/systemd/system/multi-user.target.wants/latte-reinstall.service"
+        if not os.path.lexists(link):
+            os.symlink("/etc/systemd/system/latte-reinstall.service", link)
+    if not initramfs:
+        say("   the initramfs in /boot stays as it is (--initramfs builds it again from the new root)")
+        return
+    say("   the initramfs is built again from the Fedora before LatteOS (dracut in the new root, /boot bound in)")
+    for m in ("proc", "sys", "dev"):
+        do("mount", "--rbind", "/" + m, new + "/" + m)
+    do("mount", "--bind", "/boot", new + "/boot")
+    do("chroot", new, "dracut", "--force", "--regenerate-all", may_fail=True)
+    for m in ("boot", "dev", "sys", "proc"):
+        do("umount", "-R", new + "/" + m, may_fail=True)
+
+
+def main():
+    global dry
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--go", action="store_true")
+    ap.add_argument("--mode", choices=("gui", "console"))
+    ap.add_argument("--keep")
+    ap.add_argument("--force", action="store_true")
+    ap.add_argument("--clean-boot", action="store_true")
+    ap.add_argument("--initramfs", action="store_true")
+    a = ap.parse_args()
+    dry = not a.go
+    if a.keep:
+        global KEEP_FILE
+        KEEP_FILE = a.keep
+    if a.go and os.geteuid() != 0:
+        raise SystemExit("latte-reset: --go changes the system; run it with sudo")
+    user = os.environ.get("SUDO_USER") or pwd.getpwuid(os.getuid()).pw_name
+    mode = a.mode or ("gui" if dry else (input("How should the new install run, gui (the installer's window) or console? [gui] ") or "gui").strip())
+    if mode not in ("gui", "console"):
+        raise SystemExit("latte-reset: the mode is gui or console")
+    say("latte-reset: %s; user %s; install after the restart: %s\n" % ("DRY RUN, nothing is changed" if dry else "FOR REAL", user, mode))
+    dev, sub = device()
+    ok = checks(dev, sub)
+    if a.clean_boot:
+        outside_root()
+    else:
+        say("2. outside the root: nothing (only `/` changes; --clean-boot takes Aarambh, SAFE's entries and the nouveau block off first)")
+    if not ok:
+        say("\nlatte-reset: the checks did not pass; the swap is not shown or done.")
+        return 1
+    if a.go and problems and not a.force:
+        raise SystemExit("latte-reset: warnings above; --force goes on anyway")
+    if a.go:
+        say("\nThis puts the Fedora before LatteOS back as `/`; the system now running stays as root-lateos-old-*.")
+        if input("Type RESET to do it: ").strip() != "RESET":
+            raise SystemExit("latte-reset: nothing was done")
+    old, new = swap(user, mode, keep_list())
+    first_start(new, user, mode, a.initramfs)
+    do("umount", TOP)
+    say("\nDone%s. Restart; the old system is kept as %s on the btrfs top level.\n"
+        "To go back to it before anything else: mount -o subvolid=5 %s /mnt; mv /mnt/root /mnt/root-bad; mv /mnt/%s /mnt/root"
+        % (" (dry run: nothing was changed)" if dry else "", old, dev, old))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

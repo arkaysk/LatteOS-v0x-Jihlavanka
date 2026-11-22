@@ -574,6 +574,12 @@ základ, na ktorý sa dajú integrovať ostatné pracovné prúdy.
   Dotyková obrazovka áno (tá istá `ABSOLUTE_POINTER`). Otázka na neskôr: pri viacerých monitoroch kreslí UEFI (GOP)
   spravidla iba na jeden, ktorý určí firmvér — overiť na PC s tromi obrazovkami.
 
+  **22. 11. (používateľ), prvý živý štart na hlavnom PC:** ponuka aarambh sa nainštalovala (Aarambh prvý v boot order, Windows 11 nájdený
+  na ESP Fedory) a „je to fajn“. **Úloha:** dlaždica a pozadie **Windows 11** nemá mať našu kávovú šálku (dnes `backgrounds/windows.jpg` =
+  stlmená šálka na espresse, `patches/aarambh/make-assets.py` r. 76–77), ale **logo Windows 11** (štvorec zo štyroch okien) na tmavom
+  pozadí v štýle ponuky; šálka ostane iba pri LatteOS a SAFE. Pozor na ochrannú známku: logo iba na označenie systému, ktorý sa
+  spúšťa; použiť vlastnú jednoduchú kresbu štyroch štvorcov, nie obrázok od Microsoftu.
+
 **3.12** [ ] **bootvine pri pomalom štarte a v SAFE** (používateľ 17. 11.: zavedieme; [bootvine](https://codeberg.org/wvhulle/bootvine),
 GPL-3.0, Rust, samostatný program): živý strom úloh systemd na konzole — čo čaká na čo. Overiť súžitie s Plymouthom
 a aarambh (3.11): ukázať namiesto splashu, keď štart trvá dlho alebo na Esc, v SAFE vždy. GuardCorgi z toho istého
