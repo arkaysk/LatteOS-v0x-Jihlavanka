@@ -19,6 +19,10 @@ if [ -z "${QS_ICON_THEME:-}" ]; then
 fi
 # LensAI shows the services' own pages: it alone runs in the Quickshell that holds a web engine (patches/README.md);
 # LATTE_WEB tells it the tabs may be made, which in the plain one would take the app down
+# The apps' `//@ pragma AppId` is known to the Quickshell LatteOS builds (qs-web: revision 9b0f339), not to the older
+# one Fedora ships ("Unrecognized pragma AppId", 22. 11., main PC): where it is built, every app runs in it; LATTE_WEB
+# stays for LensAI alone.
 qs=qs
-if [ "$app" = aicenter ] && [ -x /usr/lib64/latteos/qs-web ]; then qs=/usr/lib64/latteos/qs-web; export LATTE_WEB=1; fi
+if [ -x /usr/lib64/latteos/qs-web ]; then qs=/usr/lib64/latteos/qs-web; fi
+if [ "$app" = aicenter ] && [ "$qs" != qs ]; then export LATTE_WEB=1; fi
 LATTE_APP_ARGS="$(printf '%s\n' "$@")" exec "$qs" -n -p "$share/apps/$app.qml"
