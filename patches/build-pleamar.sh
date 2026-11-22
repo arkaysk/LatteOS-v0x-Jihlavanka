@@ -12,7 +12,12 @@ mkdir -p "$src"
 # changed and the patches are seen to fit (a tag can be moved, a commit cannot). pleamar-wm builds against the
 # pleamar beside it.
 get() {   # get NAME COMMIT
-    [ -d "$src/$1/.git" ] || git clone -q "https://github.com/k4ditano/$1.git" "$src/$1"
+    # a clone that was cut off (power button, a frozen install) leaves a broken .git: it is thrown away and fetched again
+    [ -d "$src/$1/.git" ] && ! git -C "$src/$1" fsck --connectivity-only -q >/dev/null 2>&1 && rm -rf "$src/$1"
+    for try in 1 2 3; do
+        [ -d "$src/$1/.git" ] && break
+        rm -rf "$src/$1"; git clone -q "https://github.com/k4ditano/$1.git" "$src/$1" || sleep 5
+    done
     git -C "$src/$1" fetch -q --tags
     git -C "$src/$1" checkout -q -f "$2"
     git -C "$src/$1" clean -qfd
