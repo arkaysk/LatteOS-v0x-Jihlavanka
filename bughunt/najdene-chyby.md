@@ -130,3 +130,5 @@ ho DualBrew pozná (Vyprázdniť Kôš). Nasadené.
 - `latte-settings` bez argumentov má otvoriť GUI.
 - Goo panel je iba na hlavnom monitore, ľavý nemá nič (latte-goo-side@NAME sa nespustil?).
 - Oznam o softvérovom renderi pri SAFE relácii.
+- `~/.config/latteos` patrilo rootovi (kroky inštalácie bežia ako root s HOME používateľa) → latte-wall `PermissionError` (tapeta sa neuloží/nezobrazí), Nastavenia nemôžu zapisovať (pády), `monitors` sa neuloží. Oprava: `install` po krokoch vráti vlastníctvo (chown) priečinkov LatteOS v domovskom adresári. Ručne: `sudo chown -R $USER: ~/.config/latteos`.
+- `journalctl` na Fedora Server nie je v PATH používateľa v relácii? (bash: jornalctl1 bola preklep používateľa, nie chyba).

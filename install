@@ -534,6 +534,17 @@ def main(a):
             if not root and done.returncode and not may_fail: failed.append(cmd)
             part("steps", (n + 1) / len(todo))
         else: say("   $ " + cmd)
+    if "--go" in flags and not root and os.geteuid() == 0:
+        # steps run as root with the user's HOME: whatever they made under the user's folders stays the user's
+        for name in users():
+            try: pw = pwd.getpwnam(name)
+            except KeyError: continue
+            for sub in (".config/latteos", ".config/quickshell", ".local/share/latteos", ".cache/latteos", ".local/state/latteos"):
+                top = os.path.join(pw.pw_dir, sub)
+                if not os.path.isdir(top): continue
+                os.chown(top, pw.pw_uid, pw.pw_gid)
+                for d, ds, fs in os.walk(top):
+                    for x in [os.path.join(d, n) for n in ds + fs]: os.lchown(x, pw.pw_uid, pw.pw_gid)
     if with_boot:
         part("boot")
         if subprocess.run(["sh", os.path.join(HERE, "patches", "aarambh", "setup-latteos.sh")]).returncode:
