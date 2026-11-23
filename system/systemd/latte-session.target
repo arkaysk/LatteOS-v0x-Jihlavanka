@@ -1,8 +1,10 @@
 # The graphical session for systemd --user. Without it graphical-session.target is not active, and
 # xdg-desktop-portal (Requisite=graphical-session.target) does not start: Flatpak apps then have no file
 # chooser, no settings and no screen sharing.
+# It also starts what apps asked to start at login (~/.config/autostart, /etc/xdg/autostart: Steam, Solaar…):
+# xdg-desktop-autostart.target refuses a manual start, so the session has to want it.
 [Unit]
 Description=LatteOS session
 BindsTo=graphical-session.target
-Wants=graphical-session-pre.target latte-goo.service latte-idle.service latte-guardcorgi.service latte-focus.service latte-lockscreen.service latte-netwatch.timer latte-calwatch.service
+Wants=graphical-session-pre.target latte-goo.service latte-idle.service latte-guardcorgi.service latte-focus.service latte-lockscreen.service latte-netwatch.timer latte-calwatch.service xdg-desktop-autostart.target
 After=graphical-session-pre.target
