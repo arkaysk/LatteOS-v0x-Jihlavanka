@@ -1,0 +1,45 @@
+diff --git a/src/layers.rs b/src/layers.rs
+index 76a57f4..46ea26e 100644
+--- a/src/layers.rs
++++ b/src/layers.rs
+@@ -678,13 +678,22 @@ pub fn covered() -> bool {
+     locked() || MONITORS.lock().unwrap().iter().any(|(_, sc)| sc.0.lock().unwrap().fullscreen)
+ }
+ 
++/// The pointer is over a menu of a window or a program's overlay: they lie over the shell, which draws no cursor there (LatteOS).
++static OVER_MENU: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
++
++pub fn pointer_over_menu(yes: bool) {
++    if OVER_MENU.swap(yes, std::sync::atomic::Ordering::Relaxed) != yes {
++        cursor_as_asked();
++    }
++}
++
+ /// The cursor hidden or shown by what is asked of it now: called again whenever a part of that changes.
+ pub fn cursor_as_asked() {
+     use std::sync::atomic::Ordering::Relaxed;
+     let covered = covered();
+     let shape = SHAPE.lock().unwrap().0;
+     let drawn = SHELL_DRAWS.lock().unwrap().as_ref().is_some_and(|shapes| shape == "default" || shapes.iter().any(|s| s == shape));
+-    let hidden = PROGRAM_HIDES.load(Relaxed) || (drawn && !covered);
++    let hidden = PROGRAM_HIDES.load(Relaxed) || (drawn && !covered && !OVER_MENU.load(Relaxed));
+     if HIDDEN_NOW.swap(hidden, Relaxed) == hidden {
+         return;
+     }
+diff --git a/src/route.rs b/src/route.rs
+index bdd8396..008fb96 100644
+--- a/src/route.rs
++++ b/src/route.rs
+@@ -90,6 +90,12 @@ impl Route {
+                 None => screen::pointer_at(&st, (mx, my)),
+             }
+         };
++        // LatteOS: over a menu of a window or another program's overlay (level 3) Goo's cursor is under it: the session's own is shown
++        let over_menu = match hit {
++            Hit::Client(id, _) => on.0.lock().unwrap().clients.iter().any(|c| c.id == id && c.level == 3),
++            Hit::Scene(_) => false,
++        };
++        layers::pointer_over_menu(over_menu);
+         self.point(hit)
+     }
+ 

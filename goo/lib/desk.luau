@@ -297,8 +297,16 @@ local function dropped(data)
     else into("auto", paths, folder) end
 end
 
+-- the monitor this scene is for: the one it was started on (latte-screens), else the first the compositor names
+local function own_screen()
+    local ok, v = pcall(sys.ask, "env", "LATTE_GOO_SCREEN")
+    if ok and type(v) == "string" and v ~= "" then text.desk_on = v return end
+    run("hyprctl", { "j/monitors" }, function(out) text.desk_on = (out or ""):match('"name":%s*"([^"]+)"') or "" end)
+end
+
 -- main: the scene of the monitor the icons are on; the others keep only the desktop's menu
 function M.start(main)
+    own_screen()
     on("desk_menu", function() if main and fact.desk_icons then desktop_menu() else bare_menu() end end)
     if not main then return end
     run("sh", { "-c", 'printf "%s\\n%s" "${XDG_CONFIG_HOME:-$HOME/.config}/latteos/desktop.json" "${XDG_DATA_HOME:-$HOME/.local/share}/Trash/files"' }, function(out)

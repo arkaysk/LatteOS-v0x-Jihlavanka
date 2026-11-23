@@ -22,11 +22,11 @@ get() {   # get NAME COMMIT
     git -C "$src/$1" checkout -q -f "$2"
     git -C "$src/$1" clean -qfd
 }
-get pleamar dc902feb0ee9058b7db7c2bc2c9d59d9f655fd86          # v0.7.27
+get pleamar 33b2a81ea5a75a56120680a6aaded9bc4517c0ef          # v0.7.31
 for p in apps-reload right-selection steady-glass windows-and-icons window-carry field-select speed-edges-wheel step-hook hollow-body idle-without-surface; do      # speed-edges-wheel after the six before it
     git -C "$src/pleamar" apply "$here/patches/pleamar-$p.patch"
 done
-get pleamar-wm 96f37e486fd90d66d5f68c4b941fd7294dd4553c       # v0.6.15
+get pleamar-wm a9b803aadf1cbdc065b7db6965fc7540a96903c7       # v0.6.35
 for p in "$here"/patches/pleamar-wm-*.patch; do git -C "$src/pleamar-wm" apply "$p"; done
 # Marea (k4ditano/marea-plm, BSD-3): scenes and scripts, and two pieces built below; install copies the tree
 get marea-plm d0cad02814f761531cd3a365ac48e549df03f8b0         # 29. 10. 2026

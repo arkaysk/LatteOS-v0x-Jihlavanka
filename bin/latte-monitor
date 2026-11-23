@@ -698,10 +698,22 @@ def hardware(root="/"):
                 source = "sysfs:/sys/class/drm/" + cardname + "/device/" + sysfs_key
             graphics["items"].append({"id": "gpu:" + pci + ":" + suffix, "name": label, "device": cardname,
                                       "value": raw or None, "unit": "", "source": source, "available": bool(raw)})
+        # the NVIDIA driver puts none of this in sysfs: its tool says it (utilization %, memory MiB, 23. 11.)
+        nvidia = {}
+        if driver == "nvidia":
+            said = out("nvidia-smi", "--query-gpu=pci.bus_id,utilization.gpu,memory.used,memory.total", "--format=csv,noheader,nounits", timeout=4)
+            for row in said.splitlines():
+                cols = [c.strip() for c in row.split(",")]
+                if len(cols) == 4 and cols[0].lower().endswith(pci.lower()[-7:]) and all(c.isdigit() for c in cols[1:]):
+                    nvidia = {"gpu_busy_percent": int(cols[1]), "mem_info_vram_used": int(cols[2]) << 20, "mem_info_vram_total": int(cols[3]) << 20}
         for key, label in (("gpu_busy_percent", "GPU usage"), ("mem_info_vram_used", "Video memory used"),
                            ("mem_info_vram_total", "Video memory total"), ("mem_info_gtt_used", "Graphics shared memory used"),
                            ("mem_info_gtt_total", "Graphics shared memory total")):
             raw = read(os.path.join(dev, key)).strip()
+            if key in nvidia:
+                graphics["items"].append({"id": "gpu:" + pci + ":" + key, "name": label, "device": cardname, "value": nvidia[key],
+                                          "unit": "%" if key == "gpu_busy_percent" else "bytes", "source": "nvidia-smi", "available": True})
+                continue
             try:
                 val = int(raw)
                 unit = "%" if key == "gpu_busy_percent" else "bytes"

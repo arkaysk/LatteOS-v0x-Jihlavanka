@@ -16,7 +16,7 @@ home="$(getent passwd "$user" | cut -d: -f6)"
 
 BUN_VERSION=1.4.5;      BUN_SHA=94559b3b528995a49452f9f2404cec74f2efd7d06e0a000a8cd214b02c3666eb
 REG_VERSION=1.5.4;      REG_SHA=81337595fa34d15aa99eed0313ccc79035ebde42e6a1deb855b2ad6c66b0b053
-STUDIO_VERSION=0.41.0;  STUDIO_SHA=85069b2bccaa6d91aaab6f63893e3d46f92587a0f82466e9bc128e4ee12e5bc6      # GitHub's digest of the asset
+STUDIO_VERSION=0.41.1;  STUDIO_SHA=7599c9701bdf300e18a32f91174addeedd1d4fd2ce02f15dd3ec553cee2aae36      # GitHub's digest of the asset
 AG_REPO=https://github.com/arkaysk/LatteOS-v0x-Jihlavanka.git
 AG_COMMIT=df4d0b915f47163d6f064d0d9d293e69249e9ebd              # branch agent-chats, 22. 11. 2026
 

@@ -1,11 +1,11 @@
 diff --git a/src/lib.rs b/src/lib.rs
-index 501651c..9761385 100644
+index db85c3d..8e0c684 100644
 --- a/src/lib.rs
 +++ b/src/lib.rs
 @@ -35,6 +35,15 @@ pub mod terminal;
  
  pub use platform::{host_keymap, provide_layer_hooks, provide_platform, provide_windows, set_host_keymap, LayerHooks, NestSender, Platform, PlatformWindow};
- pub use gpu::{Frames, NewSheet, Sent, Target, View};
+ pub use gpu::{Frames, NewSheet, Sent, SoleWindow, Target, View};
 +pub use render::{provide_step, HostStep};
 +
 +/// A fact told by the host from any of its threads, as the logic tells one: the scene wakes for it. For what the
@@ -19,7 +19,7 @@ index 501651c..9761385 100644
  pub use wgpu;
  pub use scenes::from_file::read as read_scene;
 diff --git a/src/render.rs b/src/render.rs
-index 64f4d98..667476c 100644
+index ddbc430..39fecfb 100644
 --- a/src/render.rs
 +++ b/src/render.rs
 @@ -466,6 +466,20 @@ impl Cycle {
@@ -43,7 +43,7 @@ index 64f4d98..667476c 100644
  pub fn run(
      instance: wgpu::Instance,
      rx: Receiver<ToRender>,
-@@ -2772,6 +2786,13 @@ pub fn run(
+@@ -2785,6 +2799,13 @@ pub fn run(
              }
          }
  
@@ -57,7 +57,7 @@ index 64f4d98..667476c 100644
          for (kind, data) in &drops {
              if let Some(k) = hovered {
                  let _ = to_logic.send(Event::Received(scene.zones[k].id, kind.clone(), data.clone()));
-@@ -3628,6 +3649,12 @@ pub fn run(
+@@ -3654,6 +3675,12 @@ pub fn run(
          let mut alive = plays;
          // (`PLEAMAR_TIMING`) what keeps it alive, each by its name.
          let mut alive_by: Vec<String> = Vec::new();

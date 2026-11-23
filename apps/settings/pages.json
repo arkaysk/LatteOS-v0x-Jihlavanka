@@ -1,424 +1,445 @@
 [
- {
-  "id": "software",
-  "name": "Software",
-  "icon": "apps",
-  "pages": [
-   {
-    "id": "apps",
-    "name": "Apps",
+  {
+    "id": "software",
+    "name": "Software",
     "icon": "apps",
-    "status": "planned",
-    "words": "install remove uninstall programs store",
-    "elsewhere": "appmanager"
-   },
-   {
-    "id": "updates",
-    "name": "Updates",
-    "icon": "refresh",
-    "status": "planned",
-    "words": "update upgrade system packages flatpak",
-    "elsewhere": "appmanager updates"
-   },
-   {
-    "id": "startup",
-    "name": "Startup and background",
-    "icon": "player-play",
-    "status": "planned",
-    "words": "autostart services boot login tasks",
-    "elsewhere": "monitor startup",
-    "expert": true
-   },
-   {
-    "id": "defaults",
-    "name": "Default apps",
-    "icon": "star",
-    "status": "ready",
-    "words": "browser mail open with file types default app pdf video music pictures"
-   },
-   {
-    "id": "ai",
-    "name": "AI",
-    "icon": "sparkles",
-    "status": "ready",
-    "words": "assistant claude model provider ai turn off"
-   }
-  ]
- },
- {
-  "id": "data",
-  "name": "Data",
-  "icon": "folder",
-  "pages": [
-   {
-    "id": "storage",
-    "name": "Storage",
-    "icon": "disc",
-    "status": "ready",
-    "words": "disk space drives usage free trash folders cleanup"
-   },
-   {
-    "id": "backup",
-    "name": "Backup and restore",
-    "icon": "history",
-    "status": "planned",
-    "words": "snapshot restore copy"
-   },
-   {
-    "id": "sync",
-    "name": "Cloud and sync",
-    "icon": "cloud",
-    "status": "planned",
-    "words": "drive sync accounts"
-   }
-  ]
- },
- {
-  "id": "hardware",
-  "name": "Hardware",
-  "icon": "cpu",
-  "pages": [
-   {
-    "id": "performance",
-    "name": "Performance and graphics",
-    "icon": "activity",
-    "status": "ready",
-    "words": "tier gpu fps speed graphics card blur shadows animations effects",
-    "expert": true
-   },
-   {
-    "id": "displays",
-    "name": "Displays",
-    "icon": "device-desktop",
-    "status": "ready",
-    "words": "monitor resolution refresh scale screen rotate rotation hz main second arrange"
-   },
-   {
-    "id": "sound",
-    "name": "Sound",
-    "icon": "device-speaker",
-    "status": "ready",
-    "words": "volume speaker microphone output input mute headphones"
-   },
-   {
-    "id": "network",
-    "name": "Network",
-    "icon": "network",
-    "status": "planned",
-    "words": "wifi ethernet internet vpn ip dns",
-    "elsewhere": "devices connection"
-   },
-   {
-    "id": "bluetooth",
-    "name": "Bluetooth and devices",
-    "icon": "bluetooth",
-    "status": "planned",
-    "words": "pair headphones mouse keyboard",
-    "elsewhere": "devices"
-   },
-   {
-    "id": "printers",
-    "name": "Printers and scanners",
-    "icon": "printer",
-    "status": "planned",
-    "words": "print scan"
-   },
-   {
-    "id": "power",
-    "name": "Power",
-    "icon": "battery-4",
-    "status": "ready",
-    "words": "battery sleep suspend profile energy"
-   }
-  ]
- },
- {
-  "id": "account",
-  "name": "Account",
-  "icon": "user",
-  "pages": [
-   {
-    "id": "me",
-    "name": "My account",
+    "pages": [
+      {
+        "id": "apps",
+        "name": "Apps",
+        "icon": "apps",
+        "status": "planned",
+        "words": "install remove uninstall programs store",
+        "elsewhere": "appmanager"
+      },
+      {
+        "id": "updates",
+        "name": "Updates",
+        "icon": "refresh",
+        "status": "planned",
+        "words": "update upgrade system packages flatpak",
+        "elsewhere": "appmanager updates"
+      },
+      {
+        "id": "startup",
+        "name": "Startup and background",
+        "icon": "player-play",
+        "status": "planned",
+        "words": "autostart services boot login tasks",
+        "elsewhere": "monitor startup",
+        "expert": true
+      },
+      {
+        "id": "defaults",
+        "name": "Default apps",
+        "icon": "star",
+        "status": "ready",
+        "words": "browser mail open with file types default app pdf video music pictures"
+      },
+      {
+        "id": "ai",
+        "name": "AI",
+        "icon": "sparkles",
+        "status": "ready",
+        "words": "assistant claude model provider ai turn off"
+      }
+    ]
+  },
+  {
+    "id": "data",
+    "name": "Data",
+    "icon": "folder",
+    "pages": [
+      {
+        "id": "storage",
+        "name": "Storage",
+        "icon": "disc",
+        "status": "ready",
+        "words": "disk space drives usage free trash folders cleanup"
+      },
+      {
+        "id": "backup",
+        "name": "Backup and restore",
+        "icon": "history",
+        "status": "planned",
+        "words": "snapshot restore copy"
+      },
+      {
+        "id": "sync",
+        "name": "Cloud and sync",
+        "icon": "cloud",
+        "status": "planned",
+        "words": "drive sync accounts"
+      }
+    ]
+  },
+  {
+    "id": "hardware",
+    "name": "Hardware",
+    "icon": "cpu",
+    "pages": [
+      {
+        "id": "performance",
+        "name": "Performance and graphics",
+        "icon": "activity",
+        "status": "ready",
+        "words": "tier gpu fps speed graphics card blur shadows animations effects",
+        "expert": true
+      },
+      {
+        "id": "displays",
+        "name": "Displays",
+        "icon": "device-desktop",
+        "status": "ready",
+        "words": "monitor resolution refresh scale screen rotate rotation hz main second arrange"
+      },
+      {
+        "id": "sound",
+        "name": "Sound",
+        "icon": "device-speaker",
+        "status": "ready",
+        "words": "volume speaker microphone output input mute headphones"
+      },
+      {
+        "id": "network",
+        "name": "Network",
+        "icon": "network",
+        "status": "planned",
+        "words": "wifi ethernet internet vpn ip dns",
+        "elsewhere": "devices connection"
+      },
+      {
+        "id": "bluetooth",
+        "name": "Bluetooth and devices",
+        "icon": "bluetooth",
+        "status": "planned",
+        "words": "pair headphones mouse keyboard",
+        "elsewhere": "devices"
+      },
+      {
+        "id": "printers",
+        "name": "Printers and scanners",
+        "icon": "printer",
+        "status": "planned",
+        "words": "print scan"
+      },
+      {
+        "id": "power",
+        "name": "Power",
+        "icon": "battery-4",
+        "status": "ready",
+        "words": "battery sleep suspend profile energy"
+      }
+    ]
+  },
+  {
+    "id": "account",
+    "name": "Account",
     "icon": "user",
-    "status": "ready",
-    "words": "name picture profile avatar user"
-   },
-   {
-    "id": "password",
-    "name": "Password and security",
-    "icon": "lock",
-    "status": "ready",
-    "words": "password change key"
-   },
-   {
-    "id": "lock",
-    "name": "Lock and idle",
-    "icon": "lock",
-    "status": "ready",
-    "words": "lock screen idle sleep timeout"
-   },
-   {
-    "id": "screensaver",
-    "name": "Screen saver",
-    "icon": "device-desktop",
-    "status": "planned",
-    "words": "screen saver screensaver idle picture weather rain"
-   },
-   {
-    "id": "loginscreen",
-    "name": "Login screen",
-    "icon": "door-enter",
-    "status": "ready",
-    "words": "login screen greeter news rss feed weather place location sky sign in"
-   }
-  ]
- },
- {
-  "id": "look",
-  "name": "Look",
-  "icon": "palette",
-  "pages": [
-   {
-    "id": "coffee",
-    "name": "Coffee and cup",
-    "icon": "cup",
-    "status": "ready",
-    "words": "colour color theme goo drops windows material glass dark light coffee cup milk water"
-   },
-   {
-    "id": "background",
-    "name": "Background",
-    "icon": "photo",
-    "status": "ready",
-    "words": "wallpaper picture live video desktop file"
-   },
-   {
-    "id": "windows",
-    "name": "Windows",
-    "icon": "app-window",
-    "status": "ready",
-    "words": "tape tiles floating layout arrange glance canvas zones"
-   },
-   {
-    "id": "glass",
-    "name": "Glass",
-    "icon": "glass",
-    "status": "ready",
-    "words": "glass blur see-through transparent frost smoke milk clear side panel windows coffee in glass true glass"
-   },
-   {
-    "id": "transitions",
-    "name": "Transitions and effects",
-    "icon": "sparkles",
-    "status": "ready",
-    "words": "transition effect animation wallpaper slideshow sand fade skwd"
-   },
-   {
-    "id": "drops",
-    "name": "Drops (Goo)",
-    "icon": "droplet",
-    "status": "ready",
-    "words": "goo drops lively weather play bend material"
-   },
-   {
-    "id": "launcher",
-    "under": "drops",
-    "name": "LensGoo",
-    "icon": "search",
-    "status": "ready",
-    "words": "launcher lensgoo lists filters categories apps work media develop fun favourites search"
-   },
-   {
-    "id": "lensshore",
-    "under": "drops",
-    "name": "LensShore",
-    "icon": "sparkles",
-    "status": "ready",
-    "words": "lensshore launcher line ai modes tape emoji symbols kaomoji gif giphy tenor klipy key skin tone columns top bottom"
-   },
-   {
-    "id": "appcloud",
-    "under": "drops",
-    "name": "AppCloud",
-    "icon": "apps",
-    "status": "ready",
-    "words": "appcloud apps grid drawer phone all applications plate time date full screen"
-   },
-   {
-    "id": "bargoo",
-    "under": "drops",
-    "name": "BarGoo",
-    "icon": "layout-columns",
-    "status": "ready",
-    "words": "bargoo taskbar bar windows berries arrangement fixed"
-   },
-   {
-    "id": "dock",
-    "under": "drops",
-    "name": "DockShore",
-    "icon": "layout-columns",
-    "status": "ready",
-    "words": "dock shore pinned icons hide magnify dots size side bottom left right pleamar-wm"
-   },
-   {
-    "id": "powergoo",
-    "under": "drops",
-    "name": "PowerGoo",
-    "icon": "power",
-    "status": "ready",
-    "words": "powergoo account power sleep restart shut down battery performance band"
-   },
-   {
-    "id": "trayshore",
-    "under": "drops",
-    "name": "TrayShore",
-    "icon": "layout-distribute-vertical",
-    "status": "ready",
-    "words": "trayshore tray plate system icons network sound battery right corner"
-   },
-   {
-    "id": "clockgoo",
-    "under": "drops",
-    "name": "ClockGoo",
-    "icon": "clock",
-    "status": "ready",
-    "words": "clock weather place city town world clocks time zones screen time wellbeing bedtime goal clockgoo"
-   },
-   {
-    "id": "queengoo",
-    "under": "drops",
-    "name": "QueenGoo",
-    "icon": "package",
-    "status": "ready",
-    "words": "queengoo app manager device manager"
-   },
-   {
-    "id": "mediagoo",
-    "under": "drops",
-    "name": "MediaGoo",
-    "icon": "music",
-    "status": "ready",
-    "words": "mediagoo music video player play pause volume"
-   },
-   {
-    "id": "marea",
-    "under": "drops",
-    "name": "MareaGoo",
-    "icon": "droplet",
-    "status": "ready",
-    "words": "marea ball companion k4ditano shell notifications finder chat top"
-   },
-   {
-    "id": "camgoo",
-    "under": "drops",
-    "name": "CamGoo",
-    "icon": "camera",
-    "status": "ready",
-    "words": "webcam camera cam live picture view camgoo"
-   },
-   {
-    "id": "quickgoo",
-    "under": "drops",
-    "name": "QuickGoo",
-    "icon": "rocket",
-    "status": "ready",
-    "words": "quickgoo quick launch apps at hand favourites strip"
-   },
-   {
-    "id": "notifications",
-    "name": "Notifications",
-    "icon": "bell",
-    "status": "ready",
-    "words": "do not disturb alerts"
-   },
-   {
-    "id": "lockscreen-look",
-    "name": "Lock screen",
-    "icon": "lock",
-    "status": "planned",
-    "words": "lock screen picture clock notifications widgets weather media calendar"
-   },
-   {
-    "id": "lighting",
-    "name": "Dynamic lighting",
-    "icon": "bulb",
-    "status": "planned",
-    "words": "rgb lighting keyboard mouse led openrgb colour effect"
-   }
-  ]
- },
- {
-  "id": "accessibility",
-  "name": "Accessibility",
-  "icon": "user",
-  "pages": [
-   {
+    "pages": [
+      {
+        "id": "me",
+        "name": "My account",
+        "icon": "user",
+        "status": "ready",
+        "words": "name picture profile avatar user"
+      },
+      {
+        "id": "password",
+        "name": "Password and security",
+        "icon": "lock",
+        "status": "ready",
+        "words": "password change key"
+      },
+      {
+        "id": "lock",
+        "name": "Lock and idle",
+        "icon": "lock",
+        "status": "ready",
+        "words": "lock screen idle sleep timeout"
+      },
+      {
+        "id": "screensaver",
+        "name": "Screen saver",
+        "icon": "device-desktop",
+        "status": "planned",
+        "words": "screen saver screensaver idle picture weather rain"
+      },
+      {
+        "id": "loginscreen",
+        "name": "Login screen",
+        "icon": "door-enter",
+        "status": "ready",
+        "words": "login screen greeter news rss feed weather place location sky sign in"
+      }
+    ]
+  },
+  {
+    "id": "look",
+    "name": "Look",
+    "icon": "palette",
+    "pages": [
+      {
+        "id": "coffee",
+        "name": "Coffee and cup",
+        "icon": "cup",
+        "status": "ready",
+        "words": "colour color theme goo drops windows material glass dark light coffee cup milk water"
+      },
+      {
+        "id": "cursor",
+        "name": "Cursor",
+        "icon": "pointer",
+        "status": "ready",
+        "words": "cursor pointer mouse arrow goo classic system"
+      },
+      {
+        "id": "icons",
+        "name": "Icons",
+        "icon": "photo",
+        "status": "ready",
+        "words": "icons icon set folder file theme papirus adwaita"
+      },
+      {
+        "id": "fonts",
+        "name": "Fonts",
+        "icon": "typography",
+        "status": "planned",
+        "words": "font fonts text letters typeface size"
+      },
+      {
+        "id": "background",
+        "name": "Background",
+        "icon": "photo",
+        "status": "ready",
+        "words": "wallpaper picture live video desktop file"
+      },
+      {
+        "id": "windows",
+        "name": "Windows",
+        "icon": "app-window",
+        "status": "ready",
+        "words": "tape tiles floating layout arrange glance canvas zones"
+      },
+      {
+        "id": "glass",
+        "name": "Glass",
+        "icon": "glass",
+        "status": "ready",
+        "words": "glass blur see-through transparent frost smoke milk clear side panel windows coffee in glass true glass"
+      },
+      {
+        "id": "transitions",
+        "name": "Transitions and effects",
+        "icon": "sparkles",
+        "status": "ready",
+        "words": "transition effect animation wallpaper slideshow sand fade skwd"
+      },
+      {
+        "id": "drops",
+        "name": "Drops (Goo)",
+        "icon": "droplet",
+        "status": "ready",
+        "words": "goo drops lively weather play bend material"
+      },
+      {
+        "id": "launcher",
+        "under": "drops",
+        "name": "LensGoo",
+        "icon": "search",
+        "status": "ready",
+        "words": "launcher lensgoo lists filters categories apps work media develop fun favourites search"
+      },
+      {
+        "id": "lensshore",
+        "under": "drops",
+        "name": "LensShore",
+        "icon": "sparkles",
+        "status": "ready",
+        "words": "lensshore launcher line ai modes tape emoji symbols kaomoji gif giphy tenor klipy key skin tone columns top bottom"
+      },
+      {
+        "id": "appcloud",
+        "under": "drops",
+        "name": "AppCloud",
+        "icon": "apps",
+        "status": "ready",
+        "words": "appcloud apps grid drawer phone all applications plate time date full screen"
+      },
+      {
+        "id": "bargoo",
+        "under": "drops",
+        "name": "BarGoo",
+        "icon": "layout-columns",
+        "status": "ready",
+        "words": "bargoo taskbar bar windows berries arrangement fixed"
+      },
+      {
+        "id": "dock",
+        "under": "drops",
+        "name": "DockShore",
+        "icon": "layout-columns",
+        "status": "ready",
+        "words": "dock shore pinned icons hide magnify dots size side bottom left right pleamar-wm"
+      },
+      {
+        "id": "powergoo",
+        "under": "drops",
+        "name": "PowerGoo",
+        "icon": "power",
+        "status": "ready",
+        "words": "powergoo account power sleep restart shut down battery performance band"
+      },
+      {
+        "id": "trayshore",
+        "under": "drops",
+        "name": "TrayShore",
+        "icon": "layout-distribute-vertical",
+        "status": "ready",
+        "words": "trayshore tray plate system icons network sound battery right corner"
+      },
+      {
+        "id": "clockgoo",
+        "under": "drops",
+        "name": "ClockGoo",
+        "icon": "clock",
+        "status": "ready",
+        "words": "clock weather place city town world clocks time zones screen time wellbeing bedtime goal clockgoo"
+      },
+      {
+        "id": "queengoo",
+        "under": "drops",
+        "name": "QueenGoo",
+        "icon": "package",
+        "status": "ready",
+        "words": "queengoo app manager device manager"
+      },
+      {
+        "id": "mediagoo",
+        "under": "drops",
+        "name": "MediaGoo",
+        "icon": "music",
+        "status": "ready",
+        "words": "mediagoo music video player play pause volume"
+      },
+      {
+        "id": "marea",
+        "under": "drops",
+        "name": "MareaGoo",
+        "icon": "droplet",
+        "status": "ready",
+        "words": "marea ball companion k4ditano shell notifications finder chat top"
+      },
+      {
+        "id": "camgoo",
+        "under": "drops",
+        "name": "CamGoo",
+        "icon": "camera",
+        "status": "ready",
+        "words": "webcam camera cam live picture view camgoo"
+      },
+      {
+        "id": "quickgoo",
+        "under": "drops",
+        "name": "QuickGoo",
+        "icon": "rocket",
+        "status": "ready",
+        "words": "quickgoo quick launch apps at hand favourites strip"
+      },
+      {
+        "id": "notifications",
+        "name": "Notifications",
+        "icon": "bell",
+        "status": "ready",
+        "words": "do not disturb alerts"
+      },
+      {
+        "id": "lockscreen-look",
+        "name": "Lock screen",
+        "icon": "lock",
+        "status": "planned",
+        "words": "lock screen picture clock notifications widgets weather media calendar"
+      },
+      {
+        "id": "lighting",
+        "name": "Dynamic lighting",
+        "icon": "bulb",
+        "status": "planned",
+        "words": "rgb lighting keyboard mouse led openrgb colour effect"
+      }
+    ]
+  },
+  {
     "id": "accessibility",
     "name": "Accessibility",
     "icon": "user",
-    "status": "planned",
-    "words": "contrast zoom large text screen reader"
-   }
-  ]
- },
- {
-  "id": "system",
-  "name": "System",
-  "icon": "settings",
-  "pages": [
-   {
-    "id": "about",
-    "name": "About this computer",
-    "icon": "info-circle",
-    "status": "ready",
-    "words": "version latteos fedora kernel name hardware"
-   },
-   {
-    "id": "language",
-    "name": "Language and region",
-    "icon": "world",
-    "status": "ready",
-    "words": "locale slovak english format region date number currency"
-   },
-   {
-    "id": "time",
-    "name": "Date and time",
-    "icon": "clock-hour-4",
-    "status": "ready",
-    "words": "clock timezone date time zone automatic ntp"
-   },
-   {
-    "id": "keyboard",
-    "name": "Keyboard and shortcuts",
-    "icon": "keyboard",
-    "status": "ready",
-    "words": "keys shortcut layout win super qwerty qwertz switch"
-   },
-   {
-    "id": "guardcorgi",
-    "name": "GuardCorgi",
-    "icon": "shield-check",
-    "status": "ready",
-    "words": "guard watch restart components running keeps alive dog",
-    "expert": true
-   },
-   {
-    "id": "startmode",
-    "name": "Start and safe mode",
-    "icon": "shield-check",
-    "status": "ready",
-    "words": "boot safe mode crash rescue start",
-    "expert": true
-   },
-   {
-    "id": "wmcontrol",
-    "name": "pleamar-wm control centre",
-    "icon": "adjustments-horizontal",
-    "status": "ready",
-    "words": "window manager layouts keys dock build agent control centre pleamar",
-    "run": "pleamar-wm control"
-   }
-  ]
- }
+    "pages": [
+      {
+        "id": "accessibility",
+        "name": "Accessibility",
+        "icon": "user",
+        "status": "planned",
+        "words": "contrast zoom large text screen reader"
+      }
+    ]
+  },
+  {
+    "id": "system",
+    "name": "System",
+    "icon": "settings",
+    "pages": [
+      {
+        "id": "about",
+        "name": "About this computer",
+        "icon": "info-circle",
+        "status": "ready",
+        "words": "version latteos fedora kernel name hardware"
+      },
+      {
+        "id": "language",
+        "name": "Language and region",
+        "icon": "world",
+        "status": "ready",
+        "words": "locale slovak english format region date number currency"
+      },
+      {
+        "id": "time",
+        "name": "Date and time",
+        "icon": "clock-hour-4",
+        "status": "ready",
+        "words": "clock timezone date time zone automatic ntp"
+      },
+      {
+        "id": "keyboard",
+        "name": "Keyboard and shortcuts",
+        "icon": "keyboard",
+        "status": "ready",
+        "words": "keys shortcut layout win super qwerty qwertz switch"
+      },
+      {
+        "id": "guardcorgi",
+        "name": "GuardCorgi",
+        "icon": "shield-check",
+        "status": "ready",
+        "words": "guard watch restart components running keeps alive dog",
+        "expert": true
+      },
+      {
+        "id": "startmode",
+        "name": "Start and safe mode",
+        "icon": "shield-check",
+        "status": "ready",
+        "words": "boot safe mode crash rescue start",
+        "expert": true
+      },
+      {
+        "id": "wmcontrol",
+        "name": "pleamar-wm control centre",
+        "icon": "adjustments-horizontal",
+        "status": "ready",
+        "words": "window manager layouts keys dock build agent control centre pleamar",
+        "run": "pleamar-wm control"
+      }
+    ]
+  }
 ]

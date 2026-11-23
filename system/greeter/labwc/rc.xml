@@ -4,5 +4,9 @@
      from adding its defaults when it finds none. -->
 <labwc_config>
   <core><decoration>none</decoration></core>
-  <keyboard><keybind key="W-Return"><action name="None"/></keybind></keyboard>
+  <keyboard>
+    <!-- Num Lock on when a keyboard is found, so the password's digits can be typed on the pad (labwc-config: <keyboard><numlock>) -->
+    <numlock>on</numlock>
+    <keybind key="W-Return"><action name="None"/></keybind>
+  </keyboard>
 </labwc_config>

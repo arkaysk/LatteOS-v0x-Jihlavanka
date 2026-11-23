@@ -599,7 +599,11 @@ def draw(target, path, fit):
     # The new one comes up before the old one goes, so the background colour never shows through.
     old = own_plain(target)
     if path.lower().endswith(FILMS):
-        argv = ["mpvpaper", "-o", "no-audio loop", "*" if target == "*" else target, path]
+        # mpv keeps a film's proportions and leaves bars where the screen is another shape; "fill" is what a picture gets
+        # from swaybg, so the film too covers the screen and is cut at its edges (panscan), as the pegboard shows it
+        # (the user, 23. 11.: galaxy eyes on the wide monitor had empty places at the sides)
+        film = {"fill": "panscan=1.0", "stretch": "keepaspect=no", "center": "video-unscaled=yes"}.get(fit, "")
+        argv = ["mpvpaper", "-o", ("no-audio loop " + film).strip(), "*" if target == "*" else target, path]
     else:
         # -o first: swaybg applies -i and -m only to the output named before them (to all of them when none is), so a
         # picture for one screen put its -o last lay over every screen, over another screen's film too (22. 11.)

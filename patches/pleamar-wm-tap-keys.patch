@@ -1,5 +1,5 @@
 diff --git a/src/route.rs b/src/route.rs
-index 0d0a3b9..03d4c47 100644
+index 044fe83..4af860e 100644
 --- a/src/route.rs
 +++ b/src/route.rs
 @@ -30,8 +30,12 @@ pub struct Route {
@@ -49,7 +49,7 @@ index 0d0a3b9..03d4c47 100644
          // Let go while a program drags something: straight to the compositor,
          // which drops it wherever the pointer is (a window, a surface, the scene).
          if layers::dragging() && !down {
-@@ -264,6 +282,9 @@ impl Route {
+@@ -268,6 +286,9 @@ impl Route {
              self.super_held = down;
              let _ = self.to_render.send(ToRender::Fact("keys.super", if down { 1.0 } else { 0.0 }));
          }
@@ -57,9 +57,9 @@ index 0d0a3b9..03d4c47 100644
 +            self.spoil_taps(evdev);
 +        }
          // A binding (keys.conf) takes the key before anyone —while locked,
-         // only the ones marked `locked`—.
-         if down {
-@@ -282,6 +303,9 @@ impl Route {
+         // only the ones marked `locked`—. Not while the program with the keyboard
+         // keeps the shortcuts for itself (a virtual machine): they are its keys.
+@@ -287,6 +308,9 @@ impl Route {
                      }
                  }
                  self.bound.push((evdev, later.map(|b| b.action.clone())));
@@ -69,7 +69,7 @@ index 0d0a3b9..03d4c47 100644
                  return;
              }
              // A program's global shortcut (the portal): down now, up when let go.
-@@ -295,6 +319,7 @@ impl Route {
+@@ -300,6 +324,7 @@ impl Route {
              if self.repeating.as_ref().is_some_and(|(c, _)| *c == evdev) {
                  self.repeating = None;
              }

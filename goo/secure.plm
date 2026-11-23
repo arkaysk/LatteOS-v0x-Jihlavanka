@@ -1,6 +1,6 @@
 // The secure attention screen (ROADMAP 6.37): Ctrl+Alt+Del. Its own scene in its own process (bin/latte-secure), not a
 // drop of Goo, so it works when the Goo scene has crashed and in the SAFE session. The screen darkens; on the left a
-// list (Lock · Switch user · Sign out · Change password · Task manager) and Cancel, bottom right network ·
+// card (Lock · Switch user · Sign out · Change password · Task manager) and Cancel, bottom right network ·
 // accessibility · power. Colours are the windows' cup (lib/cup.luau). Arrows + Enter + Esc work, the mouse first.
 language 0.4
 import "lang/sk.plm"
@@ -35,6 +35,16 @@ scene Secure {
     let gold = rgb(c.8.r, c.8.g, c.8.b)
     let coffee = rgb(c.9.r, c.9.g, c.9.b)
     fact light = false
+    // glyphs of the icon font, which the logic fills (secure.luau)
+    text ic0 = ""
+    text ic1 = ""
+    text ic2 = ""
+    text ic3 = ""
+    text ic4 = ""
+    text ic_user = ""
+    text ic_net = ""
+    text ic_acc = ""
+    text ic_pw = ""
 
     fact sel = 0                               // the row the arrows are on: 0..4, 5 is Cancel
     fact armed = -1                            // what was asked once and waits for a second press: 2 sign out, 15 restart, 16 shut down
@@ -56,35 +66,50 @@ scene Secure {
     zone box guard { from: 0, 0; size: W, H; agent: hidden }
     on press guard { power = false }
 
-    text "Security options" { at: W * 0.14, H / 2 - 190; anchor: left center; size: 30; weight: 700; color: #f3ebdd; opacity: fade }
-    text "{who}" { at: W * 0.14, H / 2 - 156; anchor: left center; size: 14; color: #b8a491; opacity: fade }
     text who = ""
     text lbl_out = "Sign out"                  // the logic says "Press again to sign out" while it waits
     text lbl_sleep = "Sleep"
     text lbl_restart = "Restart"
     text lbl_off = "Shut down"
 
-    // ── the list ─────────────────────────────────────────────────────────────────────────────────────────────
+    // ── the card: in the middle, the account at the top, the choices, Cancel ─────────────────────────────────
+    let cx = W / 2
+    let ctop = H / 2 - 249
+    box { at: cx, H / 2 + 6; size: 580, 520; corner: 38; color: #000000; opacity: 0.28 * fade }
+    box { at: cx, H / 2; size: 540, 498; corner: 30; color: ground; opacity: 0.97 * fade }
+    box { at: cx, H / 2; size: 540, 498; corner: 30; color: cream; stroke: 1; opacity: 0.12 * fade }
+    ellipse { at: cx - 218, ctop + 52; radius: 27; color: gold; opacity: 0.22 * fade }
+    text ic_user { at: cx - 218, ctop + 52; anchor: center; size: 26; color: gold; opacity: fade; family: "tabler-icons" }
+    text "Security options" { at: cx - 176, ctop + 42; anchor: left center; size: 23; weight: 700; color: cream; opacity: fade }
+    text "{who}" { at: cx - 176, ctop + 68; anchor: left center; size: 13; color: dim; opacity: fade }
+    box { at: cx, ctop + 100; size: 492, 1; color: cream; opacity: 0.09 * fade }
+
     repeat i in 0..5 {
-        let y = H / 2 - 100 + i * 62
-        box { at: W * 0.14 + 200, y; size: 400, 52; corner: 12; color: if(sel == i and i != 1, raised, rowc); opacity: 0.92 * fade }
-        box { at: W * 0.14 + 4, y; size: 4, 28; corner: 2; color: gold; show: sel == i and i != 1 }
-        zone box row$i { at: W * 0.14 + 200, y; size: 400, 52; cursor: pointer; role: button; active: i != 1; label: pick(i, "Lock", "Switch user", "Sign out", "Change password", "Task manager") }
+        let y = ctop + 140 + i * 60
+        box { at: cx, y; size: 492, 52; corner: 14; color: if(sel == i and i != 1, raised, rowc); opacity: 0.9 * fade }
+        box { at: cx - 244, y; size: 4, 26; corner: 2; color: gold; show: sel == i and i != 1; opacity: fade }
+        box { at: cx - 196, y; size: 36, 36; corner: 11; color: ground; opacity: 0.55 * fade }
+        zone box row$i { at: cx, y; size: 492, 52; cursor: pointer; role: button; active: i != 1; label: pick(i, "Lock", "Switch user", "Sign out", "Change password", "Task manager") }
         on enter row$i { sel = i }
         on press row$i { emit act(i) }
     }
-    text "Lock" { at: W * 0.14 + 24, H / 2 - 100; anchor: left center; size: 17; color: cream; opacity: fade }
-    text "Switch user" { at: W * 0.14 + 24, H / 2 - 47; anchor: left center; size: 17; color: faint; opacity: fade }
-    text "Not available here: sign out to choose another user" { at: W * 0.14 + 24, H / 2 - 29; anchor: left center; size: 11; color: faint; opacity: fade }
-    text "{lbl_out}" { at: W * 0.14 + 24, H / 2 + 24; anchor: left center; size: 17; color: if(armed == 2, gold, cream); opacity: fade }
-    text "Change password" { at: W * 0.14 + 24, H / 2 + 86; anchor: left center; size: 17; color: cream; opacity: fade }
-    text "Task manager" { at: W * 0.14 + 24, H / 2 + 148; anchor: left center; size: 17; color: cream; opacity: fade }
+    text ic0 { at: cx - 196, ctop + 140; anchor: center; size: 19; color: cream; opacity: fade; family: "tabler-icons" }
+    text ic1 { at: cx - 196, ctop + 200; anchor: center; size: 19; color: faint; opacity: fade; family: "tabler-icons" }
+    text ic2 { at: cx - 196, ctop + 260; anchor: center; size: 19; color: if(armed == 2, gold, cream); opacity: fade; family: "tabler-icons" }
+    text ic3 { at: cx - 196, ctop + 320; anchor: center; size: 19; color: cream; opacity: fade; family: "tabler-icons" }
+    text ic4 { at: cx - 196, ctop + 380; anchor: center; size: 19; color: cream; opacity: fade; family: "tabler-icons" }
+    text "Lock" { at: cx - 160, ctop + 140; anchor: left center; size: 17; color: cream; opacity: fade }
+    text "Switch user" { at: cx - 160, ctop + 191; anchor: left center; size: 17; color: faint; opacity: fade }
+    text "Not available here: sign out to choose another user" { at: cx - 160, ctop + 211; anchor: left center; size: 11; color: faint; opacity: fade }
+    text "{lbl_out}" { at: cx - 160, ctop + 260; anchor: left center; size: 17; color: if(armed == 2, gold, cream); opacity: fade }
+    text "Change password" { at: cx - 160, ctop + 320; anchor: left center; size: 17; color: cream; opacity: fade }
+    text "Task manager" { at: cx - 160, ctop + 380; anchor: left center; size: 17; color: cream; opacity: fade }
 
-    box { at: W * 0.14 + 200, H / 2 + 230; size: 400, 48; corner: 12; color: if(sel == 5, gold, coffee); opacity: fade }
-    zone box cancel { at: W * 0.14 + 200, H / 2 + 230; size: 400, 48; cursor: pointer; role: button; label: "Cancel" }
+    box { at: cx, ctop + 454 - 4; size: 492, 48; corner: 24; color: if(sel == 5, gold, coffee); opacity: fade }
+    zone box cancel { at: cx, ctop + 450; size: 492, 48; cursor: pointer; role: button; label: "Cancel" }
     on enter cancel { sel = 5 }
     on press cancel { quit }
-    text "Cancel" { at: W * 0.14 + 200, H / 2 + 230; anchor: center; size: 16; weight: 600; color: if(light, #fffaf1, #17110d); opacity: fade }
+    text "Cancel" { at: cx, ctop + 450; anchor: center; size: 16; weight: 600; color: if(light, #fffaf1, #17110d); opacity: fade }
 
     // ── bottom right: network · accessibility · power ───────────────────────────────────────────────────────
     box { at: W - 396, H - 56; size: 132, 44; corner: 22; color: rowc; opacity: 0.92 * fade }
@@ -96,9 +121,12 @@ scene Secure {
     on press tool0 { emit act(10) }
     on press tool1 { emit act(11) }
     on press tool2 { power = not power }
-    text "Network" { at: W - 396, H - 56; anchor: center; size: 14; color: cream; opacity: fade }
-    text "Accessibility" { at: W - 246, H - 56; anchor: center; size: 14; color: cream; opacity: fade }
-    text "Power" { at: W - 96, H - 56; anchor: center; size: 14; color: if(power, if(light, #fffaf1, #17110d), cream); opacity: fade }
+    text ic_net { at: W - 440, H - 56; anchor: center; size: 17; color: cream; opacity: fade; family: "tabler-icons" }
+    text ic_acc { at: W - 290, H - 56; anchor: center; size: 17; color: cream; opacity: fade; family: "tabler-icons" }
+    text ic_pw { at: W - 140, H - 56; anchor: center; size: 17; color: if(power, if(light, #fffaf1, #17110d), cream); opacity: fade; family: "tabler-icons" }
+    text "Network" { at: W - 382, H - 56; anchor: center; size: 14; color: cream; opacity: fade }
+    text "Accessibility" { at: W - 232, H - 56; anchor: center; size: 14; color: cream; opacity: fade }
+    text "Power" { at: W - 82, H - 56; anchor: center; size: 14; color: if(power, if(light, #fffaf1, #17110d), cream); opacity: fade }
 
     // the power menu opens upwards from its button; the zones come after the guard so they win
     group {

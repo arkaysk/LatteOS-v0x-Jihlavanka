@@ -263,6 +263,7 @@ ShellRoot {
     function camsEdit(change) { const l = JSON.parse(JSON.stringify(webcams)); change(l); camsFile.save(l) }
     Run { id: guardq }
     Run { id: sound }
+    Run { id: cursorq }
     Run { id: opens }
     Run { id: region }
     Run { id: clock }
@@ -543,7 +544,9 @@ ShellRoot {
             Rectangle { anchors.fill: parent; radius: 28; color: Theme.raised; border.width: 2; border.color: Theme.gold
                 Label { anchors.centerIn: parent; anchors.verticalCenterOffset: -14; text: shell.screenNumber(ident.modelData.name) || "–"; font.pixelSize: 120; font.weight: 700 }
                 Label { anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.bottom; anchors.bottomMargin: 18; text: ident.modelData.name; color: Theme.dim; font.pixelSize: 14 } } } }
-    Process { id: tell; onExited: shell.ask() }
+    // (the icon sets are asked again too: the one chosen is marked from what the answer says, and it was not asked after a press,
+    // so a press on another set seemed to do nothing; 23. 11.)
+    Process { id: tell; onExited: { shell.ask(); if (shell.page === "icons") iconsets.ask(["latte-settings", "icons"]); if (shell.page === "cursor") cursorq.ask(["latte-settings", "cursor"]) } }
     function order(args) { tell.running = false; tell.command = args; tell.running = true }
     Timer { interval: 2500; repeat: true; running: shell.page === "sound"; onTriggered: if (!tell.running) shell.ask() }
     property date now: new Date()
@@ -572,7 +575,9 @@ ShellRoot {
     FileView { id: release; path: "/etc/os-release"; printErrors: false; property string pretty: ""
                onLoaded: pretty = (text().match(/^PRETTY_NAME="?([^"\n]*)/m) || ["", ""])[1] }
     onPageChanged: {
-        if (page === "coffee") { coffees.ask(["latte-login", "coffees"]); iconsets.ask(["latte-settings", "icons"]) }
+        if (page === "coffee") coffees.ask(["latte-login", "coffees"])
+        if (page === "icons") iconsets.ask(["latte-settings", "icons"])
+        if (page === "cursor") cursorq.ask(["latte-settings", "cursor"])
         if (page === "about") { machine.ask(["latte-devices", "list"]); activity.running = true; activityFetch.running = true }
         emptying = false
         if (page === "power") profiles.running = true
@@ -866,7 +871,13 @@ ShellRoot {
                             Rectangle { x: parent.width * 0.38; y: 12; width: parent.width * 0.5; height: 8; radius: 4; color: shell.cupOf(parent.parent.parent.modelData.id).cream }
                             Rectangle { x: parent.width * 0.38; y: 28; width: parent.width * 0.36; height: 6; radius: 3; color: shell.cupOf(parent.parent.parent.modelData.id).dim }
                             Rectangle { x: parent.width * 0.38; y: 46; width: 40; height: 16; radius: 8; color: shell.cupOf(parent.parent.parent.modelData.id).gold } } } } }
-            Part { visible: shell.page === "coffee"; width: view.room; title: I18n.tr("Icons"); note: I18n.tr("What files, folders and apps are shown with: on the desktop, in LatteOS's apps and in apps that follow the system.")
+            Part { visible: shell.page === "cursor"; width: view.room; title: I18n.tr("Cursor"); note: I18n.tr("The pointer of the mouse: the classic one of the system, or the drop of goo that stretches as it moves.")
+                Repeater { model: [{ id: "classic", name: QT_TR_NOOP("Classic"), hint: QT_TR_NOOP("the arrow of the system, as in any desktop") },
+                                   { id: "goo", name: QT_TR_NOOP("Goo"), hint: QT_TR_NOOP("a drop of coffee; being reworked") }]
+                    Choice { required property var modelData; width: 220; text: I18n.tr(modelData.name); hint: I18n.tr(modelData.hint)
+                             on: (cursorq.data ? cursorq.data.mode : "goo") === modelData.id
+                             onPressed: { tell.running = false; tell.command = ["latte-settings", "cursor", modelData.id]; tell.running = true } } } }
+            Part { visible: shell.page === "icons"; width: view.room; title: I18n.tr("Icons"); note: I18n.tr("What files, folders and apps are shown with: on the desktop, in LatteOS's apps and in apps that follow the system.")
                 Repeater { model: iconsets.data ? iconsets.data.sets : []
                     Choice { id: set; required property var modelData; width: 200; text: modelData.name; on: iconsets.data.chosen === modelData.id
                              onPressed: { tell.running = false; tell.command = ["latte-settings", "icons", modelData.id]; tell.running = true }
@@ -947,10 +958,25 @@ ShellRoot {
                         color: Theme.dim; font.weight: 600 }
                 Flow { visible: shell.isTile(shell.shownMode); width: view.room; spacing: 8
                     Repeater { model: shell.tileKinds
-                        ModeTile { required property var modelData; width: 96; height: 72; icon: modelData.icon; pic: modelData.pic || null; text: I18n.tr(modelData.name); on: shell.shownMode === modelData.id
+                        ModeTile { id: tk; required property var modelData; width: 96; height: 72; icon: modelData.icon; pic: modelData.pic || null; text: I18n.tr(modelData.name); on: shell.shownMode === modelData.id
                                    hover: tkHit.containsMouse
-                                   MouseArea { id: tkHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                               onClicked: shell.modePick = shell.modePick === parent.modelData.id ? "tiles" : parent.modelData.id } } } }
+                                   // a press picks the kind, a drag puts it on a screen, as the modes above (23. 11.: the kinds could not be dragged)
+                                   MouseArea { id: tkHit; anchors.fill: parent; hoverEnabled: true; preventStealing: true; cursorShape: carrying ? Qt.ClosedHandCursor : Qt.PointingHandCursor
+                                       property point from
+                                       property bool carrying: false
+                                       onPressed: e => { carrying = false; from = Qt.point(e.x, e.y) }
+                                       onPositionChanged: e => {
+                                           if (!pressed || (!carrying && Math.abs(e.x - from.x) + Math.abs(e.y - from.y) < 6)) return
+                                           carrying = true
+                                           const p = mapToItem(overlay, e.x, e.y); modeGhost.icon = tk.modelData.icon; modeGhost.x = p.x - 32; modeGhost.y = p.y - 32; modeGhost.visible = true
+                                           const m = modeBoard.inside(this, e.x, e.y) ? modeBoard.screenAt(modeBoard.at(this, e.x, e.y)) : null
+                                           shell.modeHover = m ? m.name : "" }
+                                       onReleased: e => {
+                                           modeGhost.visible = false
+                                           const m = carrying && modeBoard.inside(this, e.x, e.y) ? modeBoard.screenAt(modeBoard.at(this, e.x, e.y)) : null
+                                           if (m) shell.setMode(tk.modelData.id, m.name)
+                                           else if (!carrying) shell.modePick = shell.modePick === tk.modelData.id ? "tiles" : tk.modelData.id
+                                           shell.modeHover = ""; carrying = false } } } } }
                 // the preview, as pleamar-wm's control centre draws it (control/control.plm): four windows moving to where
                 // the mode would put them, in the cup's colours
                 Label { width: view.room; text: I18n.tr("Preview"); color: Theme.dim; font.pixelSize: 12; font.weight: 650 }

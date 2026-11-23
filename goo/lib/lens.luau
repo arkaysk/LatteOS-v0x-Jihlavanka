@@ -105,7 +105,13 @@ end
 -- lent 300 ms after the card closes (pleamar's grace for a card that follows), so the start waits it out.
 local LET_GO = 350
 local hist_add                           -- below, where LensShore's state is: what was searched, kept for the up arrow (6B.47)
-local function then_do(f) if hist_add then hist_add(typed) end card.close() after(LET_GO, f) end
+-- What was typed is kept (in the history, and `typed` for the caller) and the line is emptied, as in Raycast: after an app
+-- is opened from "fire" the next time the line is empty (the user, 23. 11.). `typed` itself follows the text 140 ms later.
+local function then_do(f)
+    if hist_add then hist_add(typed) end
+    text.lens_q, fact.lens_typed = "", false
+    card.close() after(LET_GO, f)
+end
 
 local function launch(a)
     then_do(function() open.app(a) end)

@@ -1,5 +1,5 @@
 diff --git a/src/agent.rs b/src/agent.rs
-index 1082bf6..a44bd27 100644
+index 6f34866..0fec846 100644
 --- a/src/agent.rs
 +++ b/src/agent.rs
 @@ -655,6 +655,7 @@ impl State {
@@ -10,7 +10,7 @@ index 1082bf6..a44bd27 100644
                  let _ = self.to_render.send(ToRender::Text(pleamar::scene::intern("agent.name"), name));
                  Ok("ok".to_owned())
              }
-@@ -2295,7 +2296,14 @@ impl State {
+@@ -2333,7 +2334,14 @@ impl State {
          if t.slot.is_none() && t.app.is_empty() && t.did != "open" {
              return Ok(());
          }
@@ -26,8 +26,8 @@ index 1082bf6..a44bd27 100644
              Ok(_) => Ok(()),
              Err(why) => {
                  crate::hands::record(serde_json::json!({ "who": who, "slot": t.slot, "app": t.app, "title": t.title, "did": t.did, "what": t.detail, "refused": why }), false);
-@@ -2858,3 +2866,36 @@ mod tests {
-         assert_eq!((small.dimensions(), d), ((10, 10), 1.0));
+@@ -2927,3 +2935,36 @@ mod tests {
+         }
      }
  }
 +

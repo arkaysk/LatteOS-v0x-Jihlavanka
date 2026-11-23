@@ -4,6 +4,7 @@
   <core><gap>4</gap></core>
   <theme><cornerRadius>8</cornerRadius><font name="Inter" size="10"/></theme>
   <keyboard>
+    <numlock>on</numlock>
     <keybind key="W-Return"><action name="Execute" command="foot"/></keybind>
     <keybind key="W-space"><action name="Execute" command="foot -T 'LatteOS SAFE' -e latte-safe"/></keybind>
     <keybind key="W-l"><action name="Execute" command="pleamar --say safe &quot;focus q&quot;"/></keybind>

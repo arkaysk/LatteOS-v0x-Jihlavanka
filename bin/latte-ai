@@ -658,7 +658,7 @@ def estimate(model, sets, hw, quick=False):
     if key not in kept and not quick and os.path.exists(tool):
         try:
             said = subprocess.run([tool, "-m", model, "-c", str(sets["ctx"]), "-ngl", str(sets["ngl"]), "-b", str(sets["batch"]), "-ub", str(sets["ubatch"]),
-                                   "-np", str(sets["parallel"]), "-v"], capture_output=True, text=True, timeout=120, stdin=subprocess.DEVNULL)
+                                   "-np", str(sets["parallel"]), "-v"], capture_output=True, text=True, errors="replace", timeout=120, stdin=subprocess.DEVNULL)
             rows = re.findall(r"breakdown_print: \|   - (.*?)\|(.*)\|", said.stdout + said.stderr)
             # a card: total = free + (self = …) + the rest;  the host: self = …
             cards = [re.match(r" *(\d+) = +(\d+) \+ \( *(\d+) =", r) for n, r in rows if not n.startswith("Host")]
@@ -669,7 +669,7 @@ def estimate(model, sets, hw, quick=False):
                 os.makedirs(ROOM, exist_ok=True)
                 with open(MEASURED, "w") as f:
                     json.dump(kept, f)
-        except (OSError, subprocess.TimeoutExpired):
+        except (OSError, subprocess.TimeoutExpired, ValueError):      # (ValueError: what it said was not text, 23. 11.)
             pass
     if key in kept:
         gpu, total = kept[key]["gpu"] + (eyes if share else 0), kept[key]["gpu"] + kept[key]["host"] + eyes

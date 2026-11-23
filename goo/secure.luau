@@ -1,6 +1,7 @@
 -- Secure attention screen (secure.plm): what each choice does. Nothing here is new: the same commands the lock
 -- screen, PowerGoo and the Settings pages already use. A way out that does not undo asks a second press first.
 require("lib/cup").start()
+local icons = require("lib/icons")
 
 local armed = nil
 local function N(s) return s end            -- marks a text for the translation table
@@ -50,5 +51,7 @@ on("act", function(n)
     elseif ACT[n] then ACT[n]() end
 end)
 
+text.ic0, text.ic1, text.ic2, text.ic3, text.ic4 = icons["lock"], icons["users"] or icons["user"], icons["logout"], icons["key"], icons["activity"]
+text.ic_user, text.ic_net, text.ic_acc, text.ic_pw = icons["user"], icons["network"], icons["settings"], icons["power"]
 paint()
 run("whoami", {}, function(u) text.who = (u or ""):gsub("%s+$", "") end)

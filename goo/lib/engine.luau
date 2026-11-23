@@ -1034,7 +1034,7 @@ local function dock_pin_of(a, b)
         spans[#spans + 1] = { x, x + shore.w }
     end
     if fact.lens_shore and num(fact.lens_edge, 0) ~= 2 and num(fact.lens_b, 0) > num(fact.lens_a, 0) then spans[#spans + 1] = { fact.lens_a, fact.lens_b } end
-    if fact.app_cloud then
+    if fact.app_cloud and not E.side then
         local at = num(fact.cloud_at, -1)
         local x = at > 0.5 and at or 0
         spans[#spans + 1] = { x, x + 168 }
@@ -1127,6 +1127,7 @@ function E.start(opts)
         else log("goo: drops/" .. name .. ": " .. tostring(def)) end
     end
     if opts.side then
+        fact.bar_only = true         -- no plates of the main monitor's dock and AppCloud (parts/drops.plm)
         -- the bar is all such a scene has: switched off, it is off on every monitor
         on("fact:bar_off", function() hidden.bargoo = fact.bar_off or nil if E.apply_hidden() then E.apart() publish() end end)
         E.tell("emit side_hello")

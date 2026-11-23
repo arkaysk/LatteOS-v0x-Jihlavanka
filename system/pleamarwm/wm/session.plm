@@ -1294,8 +1294,11 @@ scene Session {
     fact dock.off = 0
     fact win.nomin = 0
     on change keys.alt { launch "latte-say 'fact alt_held {keys.alt}'" }
+    // LatteOS: Caps Lock and Num Lock, for the small words on TrayShore (goo/parts/shore.plm); told when they change and when Goo asks
+    on change keys.caps { launch "latte-say 'fact caps_on {keys.caps}'" }
+    on change keys.num { launch "latte-say 'fact num_on {keys.num}'" }
     fact dktold = 0
-    on dock_tell { dktold = dktold + 1 }
+    on dock_tell { dktold = dktold + 1; launch "latte-say 'fact caps_on {keys.caps}' 'fact num_on {keys.num}'" }
     // An icon, the room it has along the shore, the shore across, the room
     // of a window put away; and how much the one under the mouse swells.
     let dkic = clamp(dock.size, 32, 72)

@@ -134,7 +134,12 @@ Item {
             title: page.title
             color: "white"
             onClosed: win.destroy()
-            WebEngineView { id: page; anchors.fill: parent; onWindowCloseRequested: win.destroy() }
+            WebEngineView {
+                id: page; anchors.fill: parent; onWindowCloseRequested: win.destroy()
+                // a page's "copy" button (an API key on its page) writes to the clipboard, as in any browser;
+                // reading it (javascriptCanPaste) stays off: a page does not see what the person copied elsewhere
+                settings.javascriptCanAccessClipboard: true
+            }
         }
     }
     Repeater {
@@ -148,6 +153,7 @@ Item {
             x: second ? tabs.width / 2 + 1 : 0
             width: tabs.split ? tabs.width / 2 - 1 : tabs.width
             height: tabs.height
+            settings.javascriptCanAccessClipboard: true      // the "copy" button of a page (an API key) reaches the clipboard (not reading it)
             backgroundColor: Theme.card              // until a page (or one woken from sleep) paints: the app's own, not a white or black flash
             visible: tabs.current === modelData || second
             // one profile per service, on disk: its sign-in is there the next time LensAI is opened, session cookies too,

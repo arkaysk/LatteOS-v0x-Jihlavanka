@@ -24,6 +24,7 @@
   latte-settings account        {"uid", "user", "name", "picture"}: who the user is to the system
   latte-settings password       changes the user's own password to the one on standard input (never an argument);
                                 the system asks for the present one itself. Prints {"ok"} or {"ok": false, "error"}
+  latte-settings cursor [goo|classic]   the pointer: {"mode"}, or makes it the one Goo draws or the system's own
   latte-settings icons          {"chosen", "sets": [{"id", "name", "folder", "file", "trash"}]}: the icon sets this
                                 system has, each with three of its pictures, and the one in use
   latte-settings icons ID       makes that set the one files and apps are shown with (LatteOS's own apps, the
@@ -160,6 +161,28 @@ def wallpapers():
     return [w for w in found if not (w["own"] and same(w["path"]) in ours)]
 
 
+def device_label(d):
+    """What a sound device is called: its description, and where that says "(null)" (a card whose driver gave none: HDMI
+    outputs of a graphics card, found 23. 11.) what else it knows of itself, then its port, then its name made readable."""
+    def good(t):
+        t = (t or "").strip()
+        return t if t and t.lower() not in ("(null)", "null", "none", "unknown") else ""
+    props = d.get("properties") or {}
+    ports = d.get("ports") or []
+    active = d.get("active_port")
+    port = next((good(p.get("description")) for p in ports if p.get("name") == active), "") or next((good(p.get("description")) for p in ports), "")
+    base = next((t for t in (good(d.get("description")), good(props.get("device.description")), good(props.get("node.description")),
+                             good(props.get("alsa.card_name")), good(props.get("node.nick")), good(props.get("device.product.name"))) if t), "")
+    if base and port and port not in base:
+        return base + " · " + port if good(d.get("description")) == "" else base
+    if base:
+        return base
+    if port:
+        return port
+    name = re.sub(r"^(alsa|bluez)_(input|output|card)\.", "", d.get("name", ""))
+    return re.sub(r"[._-]+", " ", name).strip() or d.get("name", "")
+
+
 def sound():
     import subprocess
 
@@ -173,7 +196,7 @@ def sound():
             if d.get("name", "").endswith(".monitor"):
                 continue                    # what a speaker plays, offered as a microphone: not a thing to choose
             levels = [int(v.get("value_percent", "0%").rstrip("%")) for v in (d.get("volume") or {}).values()] or [0]
-            out.append({"name": d["name"], "label": d.get("description") or d["name"], "volume": round(sum(levels) / len(levels) / 100, 2),
+            out.append({"name": d["name"], "label": device_label(d), "volume": round(sum(levels) / len(levels) / 100, 2),
                         "muted": d.get("mute") is True, "default": d["name"] == default})
         return out
 
@@ -308,6 +331,31 @@ def icons(a):
         return {"ok": True}
     return {"chosen": chosen_icons(), "sets": [{"id": i, "name": n, "folder": icon_file(i, "folder"), "file": icon_file(i, "text-x-generic"),
                                                 "trash": icon_file(i, "user-trash")} for i, n in have]}
+
+
+def cursor(a):
+    """The pointer: "goo" (the drop Goo draws) or "classic" (the system's own). Kept in ~/.config/latteos/gooengine.json ›
+    cursor.live, which latte-goo reads again as it changes; without the drop it shows no cursor of its own and the session's is seen."""
+    path = os.path.join(CONFIG, "gooengine.json")
+    try:
+        data = json.load(open(path))
+        if not isinstance(data, dict):
+            data = {}
+    except (OSError, ValueError):
+        data = {}
+    section = data.get("cursor") if isinstance(data.get("cursor"), dict) else {}
+    if a:
+        if a[0] not in ("goo", "classic"):
+            return {"ok": False}
+        section["live"] = a[0] == "goo"
+        data["cursor"] = section
+        os.makedirs(CONFIG, exist_ok=True)
+        tmp = path + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump(data, f, indent=1)
+        os.replace(tmp, path)
+        return {"ok": True}
+    return {"mode": "goo" if section.get("live", True) else "classic"}
 
 
 LOGIN_CONF = "/var/lib/latteos/login/login.conf"
@@ -461,6 +509,9 @@ def main(a):
             return 0
     if a == ["password"]:
         print(json.dumps(password()))
+        return 0
+    if a[:1] == ["cursor"] and len(a) <= 2:
+        print(json.dumps(cursor(a[1:])))
         return 0
     if a[:1] == ["icons"] and len(a) <= 2:
         print(json.dumps(icons(a[1:]), ensure_ascii=False))

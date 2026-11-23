@@ -1,0 +1,60 @@
+diff --git a/src/nest.rs b/src/nest.rs
+index 3af68cc..8f0c47a 100644
+--- a/src/nest.rs
++++ b/src/nest.rs
+@@ -1115,6 +1115,13 @@ fn run(max: usize, to_render: Sender<ToRender>, rx: Channel<ToNest>, ready: std:
+             eprintln!("windows · the keyboard layout could not be copied: {e:?}");
+         }
+     }
++    // LatteOS: Num Lock on for the programs as it is on the session's keyboard (session.rs), from the start
++    if crate::session::numlock_at_start() {
++        let k = state.keyboard.clone();
++        let mut mods = k.modifier_state();
++        mods.num_lock = true;
++        let _ = k.set_modifier_state(mods);
++    }
+     state.write_desktop();
+     // Where a monitor is asked to change (`pleamar-wm output`), beside the
+     // desktop file; a nest inside another compositor answers it has none.
+diff --git a/src/session.rs b/src/session.rs
+index 16bec3c..7b2f698 100644
+--- a/src/session.rs
++++ b/src/session.rs
+@@ -501,7 +501,13 @@ fn run(surfaces: Vec<Surface>, to_render: Sender<ToRender>) -> Result<(), String
+     // The keyboard as the system has it set up, for the scene and for its windows.
+     let keymap = keymap()?;
+     pleamar::set_host_keymap(keymap.get_as_string(xkb::KEYMAP_FORMAT_TEXT_V1));
+-    let keymap = xkb::State::new(&keymap);
++    let mut keymap = xkb::State::new(&keymap);
++    // LatteOS: Num Lock on from the start (the pad is for digits; the one thing every keyboard must do the same each session).
++    // PLEAMAR_WM_NUMLOCK=off leaves it to the person. The programs' keyboard is told in nest.rs.
++    if numlock_at_start() {
++        keymap.update_key(77u32.into(), xkb::KeyDirection::Down); // Num Lock: evdev 69 + 8
++        keymap.update_key(77u32.into(), xkb::KeyDirection::Up);
++    }
+     let _ = to_render.send(ToRender::KeyboardFocus(true));
+     // How keys repeat, for the scene's fields (the programs are told by the compositor).
+     let (rate, delay) = config::get().repeat();
+@@ -540,6 +546,10 @@ fn run(surfaces: Vec<Surface>, to_render: Sender<ToRender>) -> Result<(), String
+     publish(&monitors);
+     let mover = CursorMover::new(drm.clone());
+     let mut state = State { mover, session, drm, monitors, libinput, keyboards: Vec::new(), leds: smithay::reexports::input::Led::empty(), to_render: to_render.clone(), keymap, pointer: first, cursors: Vec::new(), cursor_theme: Theme::load(), cursor_sizes: Vec::new(), cursor_gbm: None, shown: None, playing: None, queued: None, frame: 0, frame_carry: 0.0, frame_timer: None, on_plane: None, cursor_used: Default::default(), cursor_clock: 0, hidden: false, custom: None, scene_cursor: Cursor::Normal, program_cursor: Cursor::Normal, scroll: 0.0, scroll_sideways: 0.0, swipe: None, pinch: None, pinch_to_program: false, last_touch: std::time::Instant::now(), last_input: std::time::Instant::now(), dark_for_idle: false, route: Route::new(to_render), cursor_pictures: Vec::new(), handle: event_loop.handle(), gbm: gbm.clone(), surfaces, cursor_kind, sheets, next_sheet, quit: false, desk_moved: 0.0, desk_moved_at: std::time::Instant::now() };
++    // …and its light, and the scene's `keys.num`, as the keymap has it
++    state.leds = lit_locks(&state.keymap);
++    let num_locked = state.keymap.mod_name_is_active(xkb::MOD_NAME_NUM, xkb::STATE_MODS_LOCKED);
++    state.route.locks(false, num_locked);
+     state.make_cursors(&gbm);
+     // The cursor the scene and the programs ask for, whenever it changes.
+     let (cursor_tx, cursor_rx) = smithay::reexports::calloop::channel::channel::<(bool, Cursor)>();
+@@ -2313,6 +2323,11 @@ fn person_seen() {
+     let _ = std::fs::write(format!("{dir}/person-seen"), now.to_string());
+ }
+ 
++/// Whether Num Lock is on from the start (LatteOS): unless `PLEAMAR_WM_NUMLOCK=off`.
++pub(crate) fn numlock_at_start() -> bool {
++    std::env::var("PLEAMAR_WM_NUMLOCK").map_or(true, |v| v != "off")
++}
++
+ /// A mouse or a touchpad as the configuration says: its acceleration and
+ /// speed, and on a touchpad, tapping, natural scrolling and ignoring it while
+ /// typing.

@@ -12,6 +12,10 @@ part Desk {
     event dk_bare ->                           // a left press on the bare desktop
     event dk_key ->                            // a key: 1 F2, 2 Delete, 3 Enter, 4 Alt+Enter, 5 Ctrl+A, 6 Ctrl+C, 7 Ctrl+X, 8 Ctrl+V, 9 F5, 10 Escape, 11 Ctrl+Z
     fact desk_icons = false
+    // The monitor this scene's desktop is on (lib/desk.luau says it at the start): a surface with no `screens:` is on every
+    // monitor, and each Goo scene (the main one, the one of each other monitor) has its own, so a monitor had two or more
+    // and a right press went to whichever lay on top, whose menu then opened on its scene's monitor (the user, 23. 11.)
+    text desk_on = ""
     model dfile max 128 {
         label: text; icon: image 128, 128; has_icon: bool; pic: text; x: number; y: number; picked: bool; into: bool
         badge: text; has_badge: bool; carry: text
@@ -39,6 +43,7 @@ part Desk {
         margin: 0
         level: bottom
         reserve: -1
+        screens: desk_on
         keyboard: on_demand while desk_icons
         zone box desk_hit { from: 0, 0; size: desk.width, desk.height; label: "Desktop"; role: item }
         on press right desk_hit { tap.x = pointer.x; tap.y = pointer.y; emit desk_menu }

@@ -21,4 +21,20 @@ with tempfile.TemporaryDirectory() as d:
     assert found == ["Own-Q4_K_M.gguf", "lmstudio-community/Foo-GGUF/Foo-Q8_0.gguf"], found
     assert ai.local_mmproj(os.path.join(root, "lmstudio-community/Foo-GGUF/Foo-Q8_0.gguf")).endswith("mmproj-model-f16.gguf")
     assert ai.local_mmproj(os.path.join(root, "Own-Q4_K_M.gguf")).endswith("mmproj-Own-F16.gguf")
+
+# llama-fit-params said something that is not UTF-8 (a model's own name or notes): measuring a model must not throw, or the
+# whole list of models is empty in LensAI (23. 11.: the newest model, not yet measured, took every other one with it)
+with tempfile.TemporaryDirectory() as d:
+    tool = os.path.join(d, "llama-fit-params")
+    with open(tool, "w") as f:
+        f.write("#!/bin/sh\nprintf 'name \\304 broken\\n'\n")
+    os.chmod(tool, 0o755)
+    model = os.path.join(d, "M-Q4_K_M.gguf")
+    open(model, "wb").write(b"x" * 64)
+    ai.local_server = lambda: os.path.join(d, "llama-server")
+    ai.gguf = lambda m: {"layers": 10, "context": 4096}
+    ai.MEASURED, ai.ROOM = os.path.join(d, "measured.json"), d
+    sets = {"ctx": 4096, "ngl": 99, "batch": 512, "ubatch": 512, "parallel": 1}
+    got = ai.estimate(model, sets, {"gpus": [], "ram": 1 << 36}, quick=False)
+    assert got, got
 print("local models: ok")

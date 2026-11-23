@@ -1613,7 +1613,7 @@ checksum = "f6b464fbc74e149a392436b17d523f769e057cb6877f6a5c4618bc6f11800548"
 
 [[package]]
 name = "pleamar"
-version = "0.7.27"
+version = "0.7.31"
 dependencies = [
  "alacritty_terminal",
  "arboard",
@@ -1621,6 +1621,7 @@ dependencies = [
  "bytemuck",
  "chrono",
  "cosmic-text",
+ "fontconfig-parser",
  "glow",
  "image",
  "khronos-egl",

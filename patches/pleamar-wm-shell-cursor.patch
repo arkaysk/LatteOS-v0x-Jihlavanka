@@ -1,8 +1,8 @@
 diff --git a/src/config.rs b/src/config.rs
-index df1f9c9..3cf1dce 100644
+index af82f6e..e42ca85 100644
 --- a/src/config.rs
 +++ b/src/config.rs
-@@ -547,6 +547,28 @@ pub fn idle_hold_path() -> std::path::PathBuf {
+@@ -586,6 +586,28 @@ pub fn idle_hold_path() -> std::path::PathBuf {
      std::path::PathBuf::from(dir).join("pleamar-wm-idle-hold")
  }
  
@@ -79,10 +79,10 @@ index 07a8b8b..67e2a7b 100644
                  }
              }
 diff --git a/src/layers.rs b/src/layers.rs
-index ba70a5c..76a57f4 100644
+index 0877e70..75f6f1f 100644
 --- a/src/layers.rs
 +++ b/src/layers.rs
-@@ -598,9 +598,94 @@ pub fn set_cursor_hidden_sink(tx: channel::Sender<bool>) {
+@@ -633,9 +633,94 @@ pub fn set_cursor_hidden_sink(tx: channel::Sender<bool>) {
      *CURSOR_HIDDEN.lock().unwrap() = Some(tx);
  }
  
@@ -179,10 +179,10 @@ index ba70a5c..76a57f4 100644
      }
      if let Some(tx) = CURSOR_HIDDEN.lock().unwrap().as_ref() {
 diff --git a/src/main.rs b/src/main.rs
-index e863e92..6f2bb15 100644
+index 5136710..5857d23 100644
 --- a/src/main.rs
 +++ b/src/main.rs
-@@ -98,6 +98,30 @@ fn main() {
+@@ -105,6 +105,30 @@ fn main() {
      if args.first().map(String::as_str) == Some("remote") {
          std::process::exit(remote::run(&args[1..]));
      }
@@ -214,10 +214,10 @@ index e863e92..6f2bb15 100644
      // (`idle off-after`) while the session runs, and let them go dark again.
      if args.first().map(String::as_str) == Some("idle") {
 diff --git a/src/session.rs b/src/session.rs
-index 6ac8e01..02dfbeb 100644
+index 008d979..16bec3c 100644
 --- a/src/session.rs
 +++ b/src/session.rs
-@@ -1365,6 +1365,7 @@ impl State {
+@@ -1652,6 +1652,7 @@ impl State {
          // A program's own, on every monitor (as it is: not turned). The
          // theme's stops turning meanwhile.
          if let Some((bo, hot, picture)) = &self.custom {
@@ -225,7 +225,7 @@ index 6ac8e01..02dfbeb 100644
              let (image, hot) = (|| CursorImage { size: Buffer::size(bo), format: Buffer::format(bo), pitch: Buffer::pitch(bo), handle: Buffer::handle(bo) }, *hot);
              let crtcs: Vec<_> = self.monitors.iter().filter_map(|m| m.crtc).collect();
              layers::set_pointer_picture((!self.hidden).then(|| picture.clone()));
-@@ -1382,6 +1383,8 @@ impl State {
+@@ -1669,6 +1670,8 @@ impl State {
          }
          let want = if matches!(self.route.hit, Hit::Client(..)) { self.program_cursor } else { self.scene_cursor };
          // A shape the theme lacks is shown as the arrow.
@@ -234,15 +234,15 @@ index 6ac8e01..02dfbeb 100644
          let want = if self.load_cursor(want.name()) { want } else { Cursor::Normal };
          if !self.load_cursor(want.name()) || self.shown == Some(want) {
              self.queued = None;
-@@ -1629,6 +1632,7 @@ impl State {
-             InputEvent::DeviceRemoved { device } => self.keyboards.retain(|k| *k != device),
-             InputEvent::PointerButton { event } => {
-                 let down = event.state() == ButtonState::Pressed;
-+                layers::pointer_button(down, matches!(self.route.hit, Hit::Scene(_)));
-                 let screens = self.screens();
-                 if self.route.button(&screens, event.button_code(), down) && !down {
-                     self.move_pointer(0.0, 0.0);
-@@ -1877,6 +1881,9 @@ impl State {
+@@ -1928,6 +1931,7 @@ impl State {
+ 
+     /// A button, by its evdev code.
+     fn button(&mut self, code: u32, down: bool) {
++        layers::pointer_button(down, matches!(self.route.hit, Hit::Scene(_)));
+         let screens = self.screens();
+         if self.route.button(&screens, code, down) && !down {
+             self.move_pointer(0.0, 0.0);
+@@ -2265,6 +2269,9 @@ impl State {
      /// Once a second: dark after `idle off-after` seconds without input,
      /// unless a program keeps the screen awake or `pleamar-wm idle hold` was said.
      fn idle_check(&mut self) {
