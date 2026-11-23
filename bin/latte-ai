@@ -887,7 +887,10 @@ def local_preset():
         out += ["[%s]" % local_name(m["id"]), "model = " + m["id"]] + ["%s = %s" % (keys[k], s[k]) for k in keys]
         if not local_settings().get("gpu"):
             out.append("n-gpu-layers = 0")
-        elif "ngl" in mine:
+        elif "ngl" in mine and s["ngl"] != 999:
+            # (999 is "all of them", what the settings window saves with the rest of a model's numbers whether or not the user
+            # touched it: written as a preset it switched off llama.cpp's --fit, so a model that did not fit the card's free
+            # memory (the desktop's own is in it) took all of it and the desktop stalled; 23. 11.)
             out.append("n-gpu-layers = %d" % s["ngl"])
         out += (["mmproj = " + mm] if mm else []) + (["mlock = true"] if s["mlock"] else []) + ([] if s["mmap"] else ["no-mmap = true"]) + [""]
     text = "\n".join(out)
