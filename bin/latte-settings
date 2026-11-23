@@ -161,12 +161,34 @@ def wallpapers():
     return [w for w in found if not (w["own"] and same(w["path"]) in ours)]
 
 
+def pipewire_names():
+    """{node name: description} of the sound devices, from pw-dump: `pactl -f json` cannot write a letter with a mark
+    (Slovak "Vstavaný zvuk") and says "(null)" for the whole description (found live 23. 11.), pw-dump says it in UTF-8."""
+    import subprocess
+    try:
+        found = json.loads(subprocess.run(["pw-dump"], capture_output=True, text=True, timeout=8).stdout or "[]")
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        return {}
+    out = {}
+    for o in found:
+        p = (o.get("info") or {}).get("props") or {}
+        if str(p.get("media.class", "")).startswith("Audio/") and p.get("node.name") and (p.get("node.description") or "").strip():
+            out[p["node.name"]] = p["node.description"].strip()
+    return out
+
+
+NAMES = None                                 # what pipewire_names() said, for sound()
+
+
 def device_label(d):
     """What a sound device is called: its description, and where that says "(null)" (a card whose driver gave none: HDMI
     outputs of a graphics card, found 23. 11.) what else it knows of itself, then its port, then its name made readable."""
     def good(t):
         t = (t or "").strip()
         return t if t and t.lower() not in ("(null)", "null", "none", "unknown") else ""
+    named = (NAMES or {}).get(d.get("name", ""))
+    if named:
+        return named
     props = d.get("properties") or {}
     ports = d.get("ports") or []
     active = d.get("active_port")
@@ -201,6 +223,8 @@ def sound():
         return out
 
     said = lambda *a: subprocess.run(["pactl", *a], capture_output=True, text=True, timeout=8).stdout.strip()
+    global NAMES
+    NAMES = pipewire_names()
     try:
         return {"outputs": listed("sinks", said("get-default-sink")), "inputs": listed("sources", said("get-default-source"))}
     except (OSError, subprocess.TimeoutExpired):

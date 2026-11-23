@@ -239,3 +239,9 @@ Potvrdené v živej relácii: NumLock a nápis v TrayShore fungujú (Caps Lock d
 - [~] **GPU v Monitore a PowerGoo:** `crates/latte-stats` číta NVIDIA cez `nvidia-smi` (pretože sysfs nič nedáva), test pre parser; `bin/latte-monitor` rovnako. **Závisí od toho, či je `nvidia-smi` nainštalované** (`xorg-x11-drv-nvidia-cuda`); Rust nezostavený.
 - [ ] **Prechody a efekty zo SkWall pre otváranie/zatváranie okien a aplikácií** (nie tapety): zatiaľ nerobené, je to funkcia (vybrať kód efektov zo SkWall a napojiť na pleamar-wm / scénu).
 - [ ] **Agentgram zasekol systém po zapnutí:** nerobené (treba živý beh: zaťaženie, `systemctl --user status agentgram`).
+
+#### živý beh 23. 11. (po nasadení, 17:1x)
+- [x] **(null) pri zvuku — príčina nájdená a opravené živo:** `pactl -f json` nevie zapísať písmeno s diakritikou (slovenské „Vstavaný zvuk“, „Analógový“) a vráti „(null)“ (+ 11× „Invalid non-ASCII character“ na stderr). `pw-dump` dáva rovnaké popisy v UTF-8 → `latte-settings sound` ich berie odtiaľ (`pipewire_names()`); overené: „GA104 High Definition Audio Controller Digitálny stereo (HDMI) [TD2760]“, „Vstavaný zvuk Analógový stereo“… Nasadiť (`latte-settings`).
+- [x] **GPU v Monitore/PowerGoo:** `nvidia-smi` na tomto PC je; `latte-stats once` teraz dáva `gpu`, `vram`, `vram_total`, `gpu_temp` (teplota je desatinná „47.66“: parser zaokrúhľuje), `latte-monitor` rovnako; test prešiel. Treba nasadiť `latte-stats` (Rust zostavený a otestovaný lokálne).
+- [x] **LLM v LensAI:** „Moje modely“ ukazuje všetkých 5 (opravené `latte-ai` je nasadené).
+- [ ] **Agentgram „zasekol všetko“:** živo **nereprodukované**: `latte-ai agentgram set on off/on` trvá 1,2 s bez tlaku na CPU/I/O/pamäť (PSI ≤ 0,2), služba beží (580 MB, 1 min CPU za hodinu), karta agentgram v LensAI sa načíta bez zaseknutia. Pravdepodobne sa to zhodovalo s ťažkým buildom/inštaláciou (cargo, `install`). Ak sa to zopakuje: `cat /proc/pressure/{cpu,io,memory}` a `journalctl --user -b` hneď po zaseknutí.

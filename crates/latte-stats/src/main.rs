@@ -53,7 +53,8 @@ fn cpu_temp() -> Option<u64> {
 /// What `nvidia-smi --query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu --format=csv,noheader,nounits`
 /// says of the first card: "37, 1024, 12288, 51" (MiB, °C). A line it cannot read, or "[N/A]", is none.
 fn nvidia_line(text: &str) -> Option<(u64, u64, u64, Option<u64>)> {
-    let f: Vec<u64> = text.lines().next()?.split(',').map(|v| v.trim().parse::<u64>().unwrap_or(u64::MAX)).collect();
+    // (the temperature comes with decimals here: "47.66")
+    let f: Vec<u64> = text.lines().next()?.split(',').map(|v| v.trim().parse::<f64>().ok().filter(|x| *x >= 0.0).map_or(u64::MAX, |x| x.round() as u64)).collect();
     let (busy, used, total) = (*f.first()?, *f.get(1)?, *f.get(2)?);
     if busy == u64::MAX || used == u64::MAX || total == u64::MAX {
         return None;
@@ -137,6 +138,7 @@ mod tests {
     fn nvidia_smi_says_the_card() {
         assert_eq!(super::nvidia_line("37, 1024, 12288, 51\n"), Some((37, 1024 << 20, 12288 << 20, Some(51))));
         assert_eq!(super::nvidia_line("5, 300, 12288, [N/A]"), Some((5, 300 << 20, 12288 << 20, None)));
+        assert_eq!(super::nvidia_line("34, 1322, 12288, 47.66"), Some((34, 1322 << 20, 12288 << 20, Some(48))));
         assert_eq!(super::nvidia_line("[N/A], 1, 2, 3"), None);
         assert_eq!(super::nvidia_line(""), None);
     }
