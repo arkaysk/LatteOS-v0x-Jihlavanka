@@ -1,0 +1,8 @@
+#!/bin/sh
+# latte-marea-say EVENT…: tells Marea (the desktop companion) what the window manager saw, only while she is running.
+# wm/session.plm says it on every change of monitor and every carried window; with Marea off (the default) a bare
+# `pleamar-wm --say marea` found no socket and wrote an error to the session's log each time.
+for s in "${PLEAMAR_SOCKETS:-}" "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"/pleamar-*; do
+    [ -S "$s/marea.sock" ] && exec pleamar-wm --say marea "$@"
+done
+exit 0

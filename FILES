@@ -274,6 +274,7 @@
 /usr/share/latteos/pleamarwm/session.conf               <- system/pleamarwm/session.conf
 /usr/share/latteos/pleamarwm/keys.conf                  <- system/pleamarwm/keys.conf
 /usr/share/latteos/pleamarwm/bin/hyprctl                <- system/pleamarwm/bin/hyprctl
+/usr/share/latteos/pleamarwm/bin/latte-marea-say        <- system/pleamarwm/bin/latte-marea-say
 /usr/share/latteos/pleamarwm/wm/session.plm             <- system/pleamarwm/wm/session.plm
 /usr/share/latteos/pleamarwm/wm/shaders/rain.wgsl       <- system/pleamarwm/wm/shaders/rain.wgsl
 /usr/share/latteos/pleamarwm/wm/shaders/snow.wgsl       <- system/pleamarwm/wm/shaders/snow.wgsl

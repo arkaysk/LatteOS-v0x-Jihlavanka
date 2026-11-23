@@ -3840,15 +3840,15 @@ scene Session {
     }
     // Marea follows the mouse from monitor to monitor: she is told which.
     // (Written out: a launch's text takes no `$k`, and `k` inside it went to Marea as the letter.)
-    on change mon while mon == 0 { launch "pleamar-wm --say marea 'emit pointer_monitor 0'" }
-    on change mon while mon == 1 { launch "pleamar-wm --say marea 'emit pointer_monitor 1'" }
-    on change mon while mon == 2 { launch "pleamar-wm --say marea 'emit pointer_monitor 2'" }
-    on change mon while mon == 3 { launch "pleamar-wm --say marea 'emit pointer_monitor 3'" }
+    on change mon while mon == 0 { launch "latte-marea-say 'emit pointer_monitor 0'" }
+    on change mon while mon == 1 { launch "latte-marea-say 'emit pointer_monitor 1'" }
+    on change mon while mon == 2 { launch "latte-marea-say 'emit pointer_monitor 2'" }
+    on change mon while mon == 3 { launch "latte-marea-say 'emit pointer_monitor 3'" }
     // Marea sits on a window when she is joined to it, and goes where its title bar takes it: she
     // is told when one starts to be carried and when it is let go (which one she works out, from
     // where the mouse is), so she moves with it at the mouse's own pace instead of asking.
-    on change dragging while dragging >= 0 { launch "pleamar-wm --say marea 'emit carry_start'" }
-    on change dragging while dragging < 0 { launch "pleamar-wm --say marea 'emit carry_end'" }
+    on change dragging while dragging >= 0 { launch "latte-marea-say 'emit carry_start'" }
+    on change dragging while dragging < 0 { launch "latte-marea-say 'emit carry_end'" }
     // Tiled or free, on the monitor under the mouse (Super+W; Marea's menu too).
     event toggle_free
     repeat k in 0..4 {
@@ -4163,20 +4163,20 @@ scene Session {
         hop: 1 ~800ms after 16ms
     }
     // Nothing to ride: she stays at home.
-    on ride while win.focus < 0 and not riding and screen.index == 0 { launch "pleamar-wm --say marea 'emit ride_back'" }
+    on ride while win.focus < 0 and not riding and screen.index == 0 { launch "latte-marea-say 'emit ride_back'" }
     // Home: Marea takes over.
     on still hop for 60ms while riding and homing and hop > 0.97 {
         riding = false
         homing = false
         rider = -1
     }
-    on still hop for 60ms while riding and homing and hop > 0.97 and screen.index == 0 { launch "pleamar-wm --say marea 'emit ride_back'" }
+    on still hop for 60ms while riding and homing and hop > 0.97 and screen.index == 0 { launch "latte-marea-say 'emit ride_back'" }
     on still drop for 60ms while falling and drop > 0.97 {
         falling = false
         riding = false
         rider = -1
     }
-    on still drop for 60ms while falling and drop > 0.97 and screen.index == 0 { launch "pleamar-wm --say marea 'emit ride_back'" }
+    on still drop for 60ms while falling and drop > 0.97 and screen.index == 0 { launch "latte-marea-say 'emit ride_back'" }
     repeat i in 0..16 {
         let sc = win.$i.screen
         let carried = dragging == i or (landing == i and win.$i.open and win.$i.screen != landing.to)
