@@ -1,0 +1,112 @@
+diff --git a/src/config.rs b/src/config.rs
+index e42ca85..04ce2bc 100644
+--- a/src/config.rs
++++ b/src/config.rs
+@@ -581,6 +581,12 @@ pub fn write_layout(monitor: &str, name: &str) -> Result<(), String> {
+ /// The file that says the monitors must not go dark (`pleamar-wm idle hold`):
+ /// it is there, or it is not, so that a script can change it while the session
+ /// runs, which `session.conf` (read once) cannot.
++/// LatteOS: where a click on the shell's layout sign says "the next layout" (the file is made, the session takes it away).
++pub fn layout_next_path() -> std::path::PathBuf {
++    let dir = std::env::var("XDG_RUNTIME_DIR").ok().filter(|d| !d.is_empty()).unwrap_or_else(|| "/tmp".into());
++    std::path::PathBuf::from(dir).join("pleamar-wm-layout-next")
++}
++
+ pub fn idle_hold_path() -> std::path::PathBuf {
+     let dir = std::env::var("XDG_RUNTIME_DIR").ok().filter(|d| !d.is_empty()).unwrap_or_else(|| "/tmp".into());
+     std::path::PathBuf::from(dir).join("pleamar-wm-idle-hold")
+diff --git a/src/layers.rs b/src/layers.rs
+index 62a6d86..3078aba 100644
+--- a/src/layers.rs
++++ b/src/layers.rs
+@@ -62,6 +62,8 @@ pub enum ToLayers {
+     Key { id: u64, code: u32, down: bool },
+     /// The keyboard goes back to the windows.
+     KeyboardBack,
++    /// LatteOS: the keyboard's layout (xkb group) the session has now: the programs' keyboard follows it.
++    Layout(u32),
+     /// A monitor (by its name) was put together with what the programs on it
+     /// had drawn: they may draw again.
+     FrameDone(String),
+diff --git a/src/nest.rs b/src/nest.rs
+index 8f0c47a..3829574 100644
+--- a/src/nest.rs
++++ b/src/nest.rs
+@@ -2640,6 +2640,10 @@ impl State {
+                     self.set_focus(self.focus);
+                 }
+             }
++            ToLayers::Layout(group) => {
++                let k = self.keyboard.clone();
++                k.with_xkb_state(self, |mut ctx| ctx.set_layout(smithay::input::keyboard::Layout(group)));
++            }
+             ToLayers::FrameDone(name) => {
+                 let monitor = layers::monitors().iter().position(|m| m.name == name);
+                 self.frame_done(monitor);
+diff --git a/src/session.rs b/src/session.rs
+index 7b2f698..1a01a13 100644
+--- a/src/session.rs
++++ b/src/session.rs
+@@ -673,6 +673,19 @@ fn run(surfaces: Vec<Surface>, to_render: Sender<ToRender>) -> Result<(), String
+             smithay::reexports::calloop::timer::TimeoutAction::ToDuration(Duration::from_secs(1))
+         })
+         .map_err(|e| e.to_string())?;
++    // LatteOS: a click on the layout sign of the shell makes a file; the next layout, and the scene told it, a moment after
++    state.sync_layout();
++    event_loop
++        .handle()
++        .insert_source(smithay::reexports::calloop::timer::Timer::from_duration(Duration::from_millis(150)), |_, _, state: &mut State| {
++            let path = config::layout_next_path();
++            if path.exists() {
++                let _ = std::fs::remove_file(&path);
++                state.next_layout();
++            }
++            smithay::reexports::calloop::timer::TimeoutAction::ToDuration(Duration::from_millis(150))
++        })
++        .map_err(|e| e.to_string())?;
+     layers::set_powered(state.monitors.iter().map(|_| true).collect());
+     state.move_pointer(0.0, 0.0);
+     println!("session · running: Ctrl+Alt+Backspace leaves");
+@@ -2121,6 +2134,34 @@ impl State {
+         }
+     }
+ 
++    /// LatteOS: the keyboard's layout (the xkb group: sk, us…) as the keymap has it, told to the scene (`keys.layout`) and to
++    /// the programs' keyboard when it changes, whichever key changed it.
++    fn sync_layout(&mut self) {
++        use std::sync::atomic::{AtomicU32, Ordering};
++        static LAST: AtomicU32 = AtomicU32::new(u32::MAX);
++        let group = self.keymap.serialize_layout(xkb::STATE_LAYOUT_EFFECTIVE);
++        if LAST.swap(group, Ordering::Relaxed) != group {
++            let _ = self.to_render.send(ToRender::Fact("keys.layout", group as f32));
++            layers::tell(ToLayers::Layout(group));
++        }
++    }
++
++    /// LatteOS: the next layout, as Win+Space gives it; asked by a click on the shell's sign (a file, `layout_next_path`).
++    fn next_layout(&mut self) {
++        let layouts = self.keymap.get_keymap().num_layouts();
++        if layouts < 2 {
++            return;
++        }
++        let now = self.keymap.serialize_layout(xkb::STATE_LAYOUT_EFFECTIVE);
++        let (depressed, latched, locked) = (
++            self.keymap.serialize_mods(xkb::STATE_MODS_DEPRESSED),
++            self.keymap.serialize_mods(xkb::STATE_MODS_LATCHED),
++            self.keymap.serialize_mods(xkb::STATE_MODS_LOCKED),
++        );
++        self.keymap.update_mask(depressed, latched, locked, 0, 0, (now + 1) % layouts);
++        self.sync_layout();
++    }
++
+     fn key(&mut self, code: xkb::Keycode, down: bool) {
+         let sym = self.keymap.key_get_one_sym(code);
+         let name = xkb::keysym_get_name(sym);
+@@ -2131,6 +2172,7 @@ impl State {
+         let locked = |s: &xkb::State, m: &str| s.mod_name_is_active(m, xkb::STATE_MODS_LOCKED);
+         self.route.locks(locked(&self.keymap, xkb::MOD_NAME_CAPS), locked(&self.keymap, xkb::MOD_NAME_NUM));
+         self.light_locks();
++        self.sync_layout();
+         let evdev = code.raw().saturating_sub(8);
+         if down {
+             // The way out, whatever the scene is doing.

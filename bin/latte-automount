@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+"""latte-automount: opens the Windows disks (NTFS) of this computer for the user at the start of the session, as a native
+disk is: no sudo, no clicking them one by one (the user, 23. 11.). Through udisks, as DualBrew does (latte-files mount);
+system/polkit/50-latteos-udisks.rules lets the user at the keyboard do it. Left alone: Windows' own recovery and
+tiny partitions, what is open already, and everything when ~/.config/latteos/automount says "off".
+  latte-automount           opens them, says in ~/.local/state/latteos/automount.log what it did
+  latte-automount list      the partitions it would open"""
+import json
+import os
+import subprocess
+import sys
+import time
+
+CONFIG = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos")
+STATE = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "latteos")
+SKIP_TYPES = {"de94bba4-06d1-4d40-a16a-bfd50179d6ac",           # Windows recovery environment
+              "c12a7328-f81f-11d2-ba4b-00a0c93ec93b",           # EFI system
+              "e3c9e316-0b5c-4db8-817d-f92df00215ae"}           # Microsoft reserved
+SMALL = 2 << 30                                                  # a recovery or a boot partition is smaller than this
+
+
+def partitions():
+    try:
+        out = subprocess.run(["lsblk", "-J", "-b", "-o", "NAME,PATH,FSTYPE,SIZE,MOUNTPOINTS,PARTTYPE,LABEL,RM"],
+                             capture_output=True, text=True, timeout=10).stdout
+        tree = json.loads(out or "{}").get("blockdevices", [])
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        return []
+    found = []
+
+    def walk(n):
+        for c in n.get("children") or []:
+            walk(c)
+        if (n.get("fstype") or "") in ("ntfs", "ntfs3"):
+            found.append(n)
+    for d in tree:
+        walk(d)
+    return found
+
+
+def wanted(p):
+    if any(m for m in (p.get("mountpoints") or []) if m):
+        return False
+    if (p.get("parttype") or "").lower() in SKIP_TYPES or int(p.get("size") or 0) < SMALL:
+        return False
+    return True
+
+
+def log(text):
+    try:
+        os.makedirs(STATE, exist_ok=True)
+        with open(os.path.join(STATE, "automount.log"), "a") as f:
+            f.write("%s %s\n" % (time.strftime("%F %T"), text))
+    except OSError:
+        pass
+
+
+def main(a):
+    if a[:1] == ["list"]:
+        print(json.dumps([p["path"] for p in partitions() if wanted(p)]))
+        return 0
+    try:
+        if open(os.path.join(CONFIG, "automount")).read().strip() == "off":
+            return 0
+    except OSError:
+        pass
+    for p in partitions():
+        if not wanted(p):
+            continue
+        r = subprocess.run(["udisksctl", "mount", "-b", p["path"], "--no-user-interaction"], capture_output=True, text=True, timeout=60)
+        said = (r.stdout + r.stderr).strip().replace("\n", " ")
+        log("%s (%s): %s" % (p["path"], p.get("label") or "", said))
+        if r.returncode != 0 and ("hibernat" in said.lower() or "unclean" in said.lower() or "fast" in said.lower() or "dirty" in said.lower()
+                                  or "ntfs" in said.lower()):
+            subprocess.run(["notify-send", "-a", "LatteOS", "Windows disk %s was not opened" % (p.get("label") or p["path"]),
+                            "Windows probably did not shut down fully (Fast Startup or hibernation). Start Windows and shut it down with Shift + Shut down."],
+                           capture_output=True)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

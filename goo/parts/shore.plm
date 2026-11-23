@@ -24,6 +24,10 @@ part Shore {
     event shore_wheel ->                       // over the volume: 1 up, 0 down
     event shore_hover ->                       // the pointer rests on: 0 the arrow, 1… the signs, 10… the programs
 
+    fact shore_kb = 0                          // the keyboard has more than one layout: its sign stands before the others (lib/shore.luau)
+    fact kb_layout = 0                         // which one is on (pleamar-wm says: wm/session.plm `keys.layout`)
+    text shore_kbname = ""                     // its short name: SK, US
+    event shore_kb_press ->
     fact caps_on = 0                           // Caps Lock and Num Lock are on (pleamar-wm says: wm/session.plm `keys.caps`, `keys.num`)
     fact num_on = 0
     let shore.cy = H - SHORE_H / 2 + 1
@@ -75,6 +79,12 @@ part Shore {
         text shore_net { at: sign.0, shore.cy; anchor: center; size: 19; color: cream; opacity: 90%; family: "tabler-icons" }
         text shore_vol { at: sign.1, shore.cy; anchor: center; size: 19; color: cream; opacity: 90%; family: "tabler-icons" }
         text shore_bat { at: sign.2, shore.cy; anchor: center; size: 19; color: cream; opacity: 90%; show: shore_signs > 2; family: "tabler-icons" }
+        // the keyboard's layout: its name, a press makes it the next (Win+Space does the same)
+        let kb.x = sign.0 - 38
+        box { at: kb.x, shore.cy; size: 36, 30; corner: 9; color: cream; opacity: 10% * kb_hit.hover; show: shore_kb > 0.5 }
+        text shore_kbname { at: kb.x, shore.cy; anchor: center; size: 13; weight: 700; color: cream; opacity: 90%; show: shore_kb > 0.5; family: "Inter" }
+        zone box kb_hit { at: kb.x, shore.cy; size: 38, SHORE_H; cursor: pointer; role: button; label: "Keyboard layout"; active: shore_w > 0 and shore_kb > 0.5 }
+        on press kb_hit { tip.p: 0; emit shore_kb_press }
         // Caps Lock and Num Lock, a small word under the icons, there only while the lock is on (the user, 23. 11.)
         let lock.x = shore.x0 + shore_w / 2
         text "CAPS LOCK" { at: lock.x - if(num_on > 0.5, 30, 0), H - 7; anchor: center; size: 8; weight: 600; color: gold; opacity: 55%; show: caps_on > 0.5; family: "Inter" }

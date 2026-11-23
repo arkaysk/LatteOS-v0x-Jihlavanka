@@ -281,6 +281,9 @@
 /usr/share/latteos/marea-plm/                           <- pleamar:marea-plm/**
 /usr/share/latteos/marea-plm/deriva/target/release/deriva-worker <- pleamar:deriva-worker
 /usr/bin/latte-marea                                    <- bin/latte-marea
+/usr/bin/latte-automount                                <- bin/latte-automount
+/etc/polkit-1/rules.d/50-latteos-udisks.rules           <- system/polkit/50-latteos-udisks.rules
+/etc/udisks2/mount_options.conf                         <- system/udisks2/mount_options.conf
 /usr/share/latteos/labwc/rc.xml                         <- system/labwc/rc.xml
 /usr/share/latteos/whyd/latteos.toml                    <- system/whyd/latteos.toml
 /usr/share/latteos/labwc/autostart                      <- system/labwc/autostart

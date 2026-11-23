@@ -51,10 +51,24 @@ local function battery_glyph()
     local p = tonumber(battery.percent) or 0
     return p >= 75 and "battery-4" or (p >= 50 and "battery-3" or (p >= 25 and "battery-2" or "battery-1"))
 end
+-- the keyboard's layouts, as the session was given them (XKB_DEFAULT_LAYOUT "sk,us"): sk, us
+local layouts_cache
+local function layout_names()
+    if layouts_cache then return layouts_cache end
+    local ok, v = pcall(sys.ask, "env", "XKB_DEFAULT_LAYOUT")
+    layouts_cache = {}
+    if ok and type(v) == "string" then for n in v:gmatch("[^,]+") do layouts_cache[#layouts_cache + 1] = n end end
+    return layouts_cache
+end
+local function show_layout()
+    local names = layout_names()
+    text.shore_kbname = string.upper(names[(tonumber(fact.kb_layout) or 0) + 1] or "")
+end
 local function show_signs()
     text.shore_net, text.shore_vol = icons[net_glyph()] or "", icons[volume_glyph()] or ""
     text.shore_bat = has_battery and (icons[battery_glyph()] or "") or ""
     text.shore_arrow = icons[fact.shore_open and "chevron-down" or "chevron-up"] or ""
+    show_layout()
 end
 -- how long the plate is: the arrow, the programs, the signs
 local function lay_out()
@@ -71,10 +85,12 @@ local function lay_out()
     model.bg = list
     local signs = has_battery and 3 or 2
     fact.shore_signs = signs
+    local kb = #layout_names() >= 2 and 1 or 0
+    fact.shore_kb = kb
     -- hidden as a drop is (Settings › Drops, the look Minimal: "trayshore" in `hidden`, ROADMAP 6.39): no plate at all
     local gone = false
     for _, id in ipairs(E.settings().hidden or {}) do if id == "trayshore" then gone = true end end
-    fact.shore_w = gone and 0 or (65 + 30 * #list + 34 * signs)
+    fact.shore_w = gone and 0 or (65 + 30 * #list + 34 * signs + 38 * kb)
     E.shore(fact.shore_w, HEIGHT)
     show_signs()
 end
@@ -325,6 +341,9 @@ function M.start()
         first = false
     end)
     on("shore_more", M.toggle)
+    -- the keyboard's sign: the next layout (pleamar-wm takes the file away and changes it, wm/session.plm tells the scene back)
+    on("shore_kb_press", function() run("sh", { "-c", 'touch "${XDG_RUNTIME_DIR:-/tmp}/pleamar-wm-layout-next"' }, function() end) end)
+    on("fact:kb_layout", show_signs)
     on("quick_toggle", M.toggle)
     on("shore_sign", function(s)
         if s == 0 then read_clips(function() open_networks() end) else M.toggle() end
