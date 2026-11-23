@@ -1358,9 +1358,9 @@ scene Session {
         // mouse pushes against its edge, or its menu, previews or a carried icon
         // are out. What it keeps clear for the windows, only when it does not hide.
         prop shore.$s = 0 ~rise
-        follow shore.$s = if(free.$s > 0.5 and dock.off < 0.5 and (dock.hide < 0.5 or dk.open.$s or dmenu.$s >= 0 or pv.$s >= 0 or dkdrag.$s >= 0), 1, 0)
+        follow shore.$s = if(s < screens.count and dock.off < 0.5 and (dock.hide < 0.5 or dk.open.$s or dmenu.$s >= 0 or pv.$s >= 0 or dkdrag.$s >= 0), 1, 0)
         prop room.$s = 0 ~rise
-        follow room.$s = if(free.$s > 0.5 and dock.off < 0.5 and dock.hide < 0.5, 1, 0)
+        follow room.$s = if(s < screens.count and dock.off < 0.5 and dock.hide < 0.5, 1, 0)
         fact dk.open.$s = false
         // The item being carried out of it, the one whose windows rise from the
         // water, the one whose menu is open (and the one it was for).
@@ -1385,7 +1385,7 @@ scene Session {
         // a side and in y at the bottom. Along: from dk.a0, centred.
         dk.cr[s] = if(dock.side == 1, 0, if(dock.side == 2, screen.$s.width, screen.$s.height))
         dk.cs[s] = if(dock.side == 1, 1, -1)
-        dk.a0[s] = if(dock.pin == 0 and not dkvert, dock.pinx, if(dock.pin == 1 and not dkvert, dock.pinx - dkw.$s, if(dock.at < 0, if(dkvert, screen.$s.height, screen.$s.width) / 2, dock.at) - dkw.$s / 2))      // LatteOS: where Goo put it along the edge (6.36)
+        dk.a0[s] = if(s == 0 and dock.pin == 0 and not dkvert, dock.pinx, if(s == 0 and dock.pin == 1 and not dkvert, dock.pinx - dkw.$s, if(s > 0 or dock.at < 0, if(dkvert, screen.$s.height, screen.$s.width) / 2, dock.at) - dkw.$s / 2))      // LatteOS: where Goo put it along the edge (6.36); Goo carries only its own monitor's (copy 0), the others stay in the middle
         dk.q[s] = 0 - (dkpl / 2 + 10) + (dkpl + 10) * shore.$s      // LatteOS: the plate stands on the edge, not 14 px off it
         // Where the mouse is along it and how far from its edge.
         dk.ma[s] = if(dkvert, mouse.y, mouse.x)
@@ -1401,13 +1401,13 @@ scene Session {
         dk.hk[s] = clamp(floor(dk.t.$s + 0.5), 0, 11)
         // Hidden, it comes out while the mouse is pushed against its edge, and
         // goes once the mouse has left it (not while one of its menus is out).
-        on change mouse.x + mouse.y * 8192 while dock.hide > 0.5 and not dk.open.$s and free.$s > 0.5 and mon == s and dk.mq.$s <= 2 and dragging < 0 { dk.open.$s = true }
+        on change mouse.x + mouse.y * 8192 while dock.hide > 0.5 and not dk.open.$s and s < screens.count and mon == s and dk.mq.$s <= 2 and dragging < 0 { dk.open.$s = true }
         on change mouse.x + mouse.y * 8192 while dk.open.$s and (mon != s or dk.mq.$s > dk.q.$s + dkpl / 2 + 60) and dmenu.$s < 0 and pv.$s < 0 and dkdrag.$s < 0 { dk.open.$s = false }
         on change dock.hide while dock.hide < 0.5 { dk.open.$s = false }
         // LatteOS DockShore: Goo takes the plate as a wall for its level and drops and puts it in its outline
         // (goo/lib/engine.luau `dock_moved`). Told when where it lies changes, not on every frame of its springs;
         // and again when Goo starts (`dock_tell`). Edges as Goo counts them: 0 bottom, 1 left, 3 right, −1 none.
-        let dkg.edge.$s = if(free.$s > 0.5 and dock.off < 0.5 and (dock.hide < 0.5 or dk.open.$s or dmenu.$s >= 0 or pv.$s >= 0 or dkdrag.$s >= 0), if(dock.side == 2, 3, dock.side), -1)
+        let dkg.edge.$s = if(s < screens.count and dock.off < 0.5 and (dock.hide < 0.5 or dk.open.$s or dmenu.$s >= 0 or pv.$s >= 0 or dkdrag.$s >= 0), if(dock.side == 2, 3, dock.side), -1)
         on change dkg.edge.$s * 100000 + dk.tw.$s + dkpl * 7 + dkg.grow * 13 + dktold while s == 0 { launch "latte-say 'fact dock_edge {dkg.edge.$s}' 'fact dock_len {dk.tw.$s}' 'fact dock_deep {dkpl}' 'fact dock_grow {dkg.grow}' 'fact dock_wm_at {dock.at}' 'fact dock_wm_pin {dock.pin}' 'fact dock_wm_pinx {dock.pinx}' 'emit dock_moved'" }
         repeat j in 0..12 {
             image dockicon.$s.$j = from win.dock.$s.$j.icon, 96, 96
@@ -1479,6 +1479,7 @@ scene Session {
         level: overlay
         screens: each max 4
         open: shore.0 + shore.1 + shore.2 + shore.3 > 0.01 and dock.lift < 0.5
+    group {   // one parent per copy: its z: groups are sorted among themselves, not with the other copies'
     repeat s in 0..4 {
         repeat j in 0..12 { image dkimg.$s.$j = from win.dock.$s.$j.icon, 96, 96 }   // LatteOS: a surface has its own pictures
         group {
@@ -1706,6 +1707,7 @@ scene Session {
             zone box dockmin.$i { at: tx, ty; size: dm.w + 10, dm.h + 10; corner: 8; cursor: pointer; active: (not overview and dock.into < 0.5) and keys.alt < 0.5; label: "{win.$i.title}" }
         }
         on press dockmin.$i { restore win.$i }
+    }
     }
     }
 

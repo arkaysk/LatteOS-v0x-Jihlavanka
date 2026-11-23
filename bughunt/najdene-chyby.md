@@ -272,3 +272,9 @@ Potvrdené v živej relácii: NumLock a nápis v TrayShore fungujú (Caps Lock d
 - Testy: `test_bin.py` night-light a weather padali pod pleamar-wm, lebo skripty sa riadia `XDG_CURRENT_DESKTOP`. Weather pritom posielal `fact snow/rain false` do **živej** plochy. Testy si teraz prostredie určia samy. Nové `tests/test_ai_invite.py`, `test_devices.py`, `test_apps_lock.py` sú v `check.sh`.
 - **Nerobené, funkcie a rozhodnutia:** riadky 1–4 (prihlasovanie, 4. režim okien, popup PowerGoo s lištou, kontextová ponuka), efekty SkWall pre okná, ukazovateľ zaťaženia v inštalátore, výber pružiny pri zatváraní karty.
 - **Nerobené, iba naživo:** výber textu ťahaním vo WebEngineView, blikanie ClockGoo, zatváranie karty (staré snímky pre lens), zaseknutie s Agentgramom, test pleamar-wm `a_draft_is_looked_at_never_run`.
+
+#### 23. 11. (večer, živo) — dock na každom monitore
+- [x] **DockShore na každom monitore (overené na snímke):** príčina potvrdená. Kópie `surface dockshore` (`screens: each`) mali spoločného rodiča pre `z:`, takže sa ich skupiny miešali; teraz je kreslenie v `group { }` pre každú kópiu. `free.$s` nahradilo `s < screens.count`, takže sa nekreslia monitory, ktoré nie sú. Na DP-1 je jedna doska a horný okraj je čistý; HDMI-A-1 má vlastný dock s oknami svojho monitora. Nasadené používateľsky: `~/.config/latteos/pleamar-wm/wm` je kópia (pôvodný odkaz na `/usr` je `wm.link-to-usr`).
+- [x] **Posun docku na hlavnom monitore posúval aj druhý:** `dock.at`/`dock.pin` sú z Goo hlavného monitora; platia teraz iba pre kópiu 0, ostatné sú v strede. Vlastné ťahanie docku na druhom monitore zatiaľ nie je (bočná scéna Goo dock nenesie).
+- [x] `goo/parts/shore.plm`: `let kb.x` (značka klávesnice) zakrýval `kb.x` výberu klávesnicou (krúžok v `keys.plm`, tip v `rows.plm`) → `shkb.x`.
+- Goo beží naživo z `~/.local/share/latteos/goo-live` (kópia `goo/`, `~/.config/systemd/user/latte-goo*.service.d/live-test.conf`); zmazať tieto súbory = späť na `/usr`.

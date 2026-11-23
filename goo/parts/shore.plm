@@ -80,10 +80,10 @@ part Shore {
         text shore_vol { at: sign.1, shore.cy; anchor: center; size: 19; color: cream; opacity: 90%; family: "tabler-icons" }
         text shore_bat { at: sign.2, shore.cy; anchor: center; size: 19; color: cream; opacity: 90%; show: shore_signs > 2; family: "tabler-icons" }
         // the keyboard's layout: its name, a press makes it the next (Win+Space does the same)
-        let kb.x = sign.0 - 38
-        box { at: kb.x, shore.cy; size: 36, 30; corner: 9; color: cream; opacity: 10% * kb_hit.hover; show: shore_kb > 0.5 }
-        text shore_kbname { at: kb.x, shore.cy; anchor: center; size: 13; weight: 700; color: cream; opacity: 90%; show: shore_kb > 0.5; family: "Inter" }
-        zone box kb_hit { at: kb.x, shore.cy; size: 38, SHORE_H; cursor: pointer; role: button; label: "Keyboard layout"; active: shore_w > 0 and shore_kb > 0.5 }
+        let shkb.x = sign.0 - 38
+        box { at: shkb.x, shore.cy; size: 36, 30; corner: 9; color: cream; opacity: 10% * kb_hit.hover; show: shore_kb > 0.5 }
+        text shore_kbname { at: shkb.x, shore.cy; anchor: center; size: 13; weight: 700; color: cream; opacity: 90%; show: shore_kb > 0.5; family: "Inter" }
+        zone box kb_hit { at: shkb.x, shore.cy; size: 38, SHORE_H; cursor: pointer; role: button; label: "Keyboard layout"; active: shore_w > 0 and shore_kb > 0.5 }
         on press kb_hit { tip.p: 0; emit shore_kb_press }
         // Caps Lock and Num Lock, a small word under the icons, there only while the lock is on (the user, 23. 11.)
         let lock.x = shore.x0 + shore_w / 2
