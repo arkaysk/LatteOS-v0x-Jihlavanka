@@ -350,7 +350,13 @@ function M.start()
     end)
     on("shore_sign_right", function(s) if s == 1 then call("audio.mute") end end)
     on("shore_wheel", function(v) if (v or 0) // 2 == 1 then call("audio.step", ((v or 0) % 2 == 1 and 1 or -1) * 0.05) end end)
-    on("shore_bg", function(j) local t = shown_bg[(j or 0) + 1] if t then call("tray.activate", t.key) end end)
+    -- a press: the program's own action; one that has none (Steam, Solaar… say only a menu: "No such method Activate")
+    -- opens its menu instead, as KDE and Windows do
+    on("shore_bg", function(j)
+        local t = shown_bg[(j or 0) + 1]
+        if not t then return end
+        if not pcall(sys.call, "tray.activate", t.key) then open_menu(t) end
+    end)
     on("shore_bg_right", function(j) local t = shown_bg[(j or 0) + 1] if t then open_menu(t) end end)
     -- the same menu for one kept out of the plate (ToolHive: its place is in LensAI), asked by its id and where it was pressed
     -- ("toolhive,X,Y", the pointer then): the card grows from there, not from the shore; emptied so the next press asks anew

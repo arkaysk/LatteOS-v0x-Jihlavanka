@@ -25,6 +25,10 @@ scene GooSide {
     text win_asked = ""
 
     include "parts/drops.plm"
+    // latte-say tells every Goo scene the keyboard's locks and layout (the TrayShore signs, parts/shore.plm, main monitor only)
+    fact caps_on = 0
+    fact num_on = 0
+    fact kb_layout = 0
     include "parts/picks.plm"
     include "parts/body.plm"
     include "parts/cloud.plm"            // AppCloud on this monitor too (Settings › Drops), in its corner
