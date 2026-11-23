@@ -1,0 +1,40 @@
+#!/usr/bin/python3
+# installer-screens: the installer's window on every screen the same (duplicated), not stretched across them all.
+#   cage -- apps/installer-screens qs -n -p apps/installer.qml
+# cage spreads one window over all screens side by side (-m extend), or uses one (-m last); it has no duplicating of
+# its own, but it takes wlr-output-management: every screen at 0,0 in the largest resolution they all have shows the
+# same picture on each. Without one they share, only one screen is used. Then it becomes the command it is given.
+import json, os, subprocess, sys
+
+def randr(*args):
+    return subprocess.run(["wlr-randr", *args], capture_output=True, text=True)
+
+def mirror():
+    try:
+        outs = [o for o in json.loads(randr("--json").stdout) if o.get("enabled")]
+    except (OSError, ValueError):
+        outs = []
+    if len(outs) > 1:
+        sizes = [{(m["width"], m["height"]) for m in o["modes"]} for o in outs]
+        common = set.intersection(*sizes)
+        done = False
+        if common:
+            w, h = max(common, key=lambda s: s[0] * s[1])
+            args = []
+            for o in outs:
+                rate = max(m["refresh"] for m in o["modes"] if (m["width"], m["height"]) == (w, h))
+                args += ["--output", o["name"], "--mode", "%dx%d" % (w, h) + ("@%fHz" % rate if rate else ""), "--pos", "0,0"]
+            done = randr(*args).returncode == 0
+        if not done:
+            # as cage -m last: the last screen alone
+            args = []
+            for o in outs[:-1]:
+                args += ["--output", o["name"], "--off"]
+            randr(*(args + ["--output", outs[-1]["name"], "--pos", "0,0"]))
+
+# whatever goes wrong here, the window still opens (stretched at worst)
+try:
+    mirror()
+except Exception as e:
+    print("installer-screens:", e, file=sys.stderr)
+os.execvp(sys.argv[1], sys.argv[1:])

@@ -3,7 +3,7 @@
 // It runs on labwc with software rendering, so everything here is flat and still: a bar at the bottom, a
 // background, the time. No goo, no springs. From the left: the red SAFE button (the rescue menu), the load
 // figures with the power menu, a terminal, the typing row with its mode (apps, a Linux command), the open
-// windows; on the right the network and the battery.
+// windows; on the right the network and the battery. Behind it all, a line saying the drawing is software's.
 //
 // Positions are plain numbers because a surface's margin takes nothing else: the popups have to be told
 // where the buttons they belong to are. Adding a launcher means shifting what follows it by 46.
@@ -23,17 +23,22 @@ scene Safe {
     }
     permissions {
         run: "foot", "latte-safe", "latte-stats", "labwc", "systemctl", "date", "latte-app"
-        services: "window", "window.*", "battery", "network", "apps", "apps.launch", "clock"
+        services: "window", "window.*", "battery", "network", "apps", "apps.launch", "clock", "auth", "env", "files", "files.write"
     }
 
     let coffee = #1c0f09
     let ink    = #f3ebdd
     let red    = #d6453d
     let rim    = #c9a47a
+    let cream  = ink                           // the names the lock screen (parts/lock.plm) paints with
+
+    // Super+L (bin/latte-lock): SAFE has no lock screen scene and no Goo, so it locks here. Flat and still,
+    // so software rendering paints it at once; the logic is Goo's own lock, lib/lock.luau.
+    include "parts/lock.plm"
 
     service battery as bat { present: bool; percent: number }
     service network as net { online: bool; name: text }
-    service clock as now { time: text }
+    // the clock (`now`) comes with parts/lock.plm
 
     fact power_open = false
     fact mode = 0                              // what the typing row does: 0 finds apps, 1 runs a Linux command
@@ -170,5 +175,7 @@ scene Safe {
         box { from: 0, LEVEL - 1; size: back.width, 3; color: rim; opacity: 70% }
         text now.time { at: back.width - 72, 104; anchor: right center; size: 108; weight: 300; color: ink; family: "Inter" }
         text date { at: back.width - 76, 182; anchor: right center; size: 21; color: ink; opacity: 66%; family: "Inter" }
+        // SAFE always draws without the graphics card (WLR_RENDERER=pixman, bin/latte-session): say so, or slow looks broken.
+        text "Software rendering: the graphics card is not in use, so everything is slower" { at: back.width - 76, 222; anchor: right center; size: 14; color: ink; opacity: 50%; width: back.width - 152; lines: 2; family: "Inter" }
     }
 }

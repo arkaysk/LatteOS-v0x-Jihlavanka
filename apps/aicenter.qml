@@ -1704,7 +1704,9 @@ ShellRoot {
                                     text: I18n.tr("In all {n}.", { n: shell.gb(ld.mem.total) }) + " " + (ld.mem.measured ? I18n.tr("Counted by llama.cpp for these settings, without loading the model.") : I18n.tr("A rough count from the file; llama.cpp counts it exactly once it is downloaded (Runtime).")) } } }
                     Row { spacing: 10
                         Pill { implicitHeight: 34; icon: "check"; strong: ld.changed; text: I18n.tr("Apply")
-                               onPressed: if (ld.changed) { localSet.command = ["latte-ai", "local", "set", ld.model.id].concat(Object.keys(ld.draft).reduce((a, k) => a.concat([k, String(ld.draft[k])]), [])); localSet.running = true } }
+                               // only what was moved: a number kept with the rest became the user's word on it (all
+                               // layers on the card switched off llama.cpp's --fit, bughunt 23. 11.)
+                               onPressed: if (ld.changed) { localSet.command = ["latte-ai", "local", "set", ld.model.id].concat(Object.keys(ld.draft).filter(k => ld.draft[k] !== ld.model.settings[k]).reduce((a, k) => a.concat([k, String(ld.draft[k])]), [])); localSet.running = true } }
                         Pill { implicitHeight: 34; icon: "arrow-back-up"; text: I18n.tr("LatteOS's own"); visible: ld.model.own.length > 0
                                onPressed: { localSet.command = ["latte-ai", "local", "set", ld.model.id].concat(ld.model.own.reduce((a, k) => a.concat([k, "auto"]), [])); localSet.running = true } }
                         Label { text: I18n.tr("The model is loaded anew at the next question."); color: Theme.dim; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter } } }

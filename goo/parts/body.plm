@@ -30,7 +30,7 @@ part Body {
         // on the edge and the light of the rim all follow it. Nothing bends at rest: the lens is worked out
         // while something moves, and costs nothing when still.
         glass: material * 100%
-        lens: material > 0.02 and bends
+        lens: panes > 0.5 and material > 0.02 and bends        // Settings › Glass at 0: no lens
         ripple: 100% * glass_ripple
         shine: pointer
         frost: auto

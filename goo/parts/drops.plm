@@ -218,7 +218,7 @@ part Drops {
     // AppCloud (parts/cloud.plm): the third launcher, a plate in the bottom left corner, there only when it is the one chosen
     fact app_cloud = false
     fact cloud_at = -1                         // its left end carried along the edge (6.36); −1 in the corner
-    let cloud_w = if(app_cloud and not bar_only, 168, 0)
+    let cloud_w = if(app_cloud, 168, 0)               // on every monitor: a side scene has its own (side.plm)
     let cloud.x0 = if(cloud_at < 0, 0, cloud_at)
     let cloud.x1 = cloud.x0 + cloud_w
     fact wall.1.x0 = 0                         // its wall for goo-phys (lib/cloud.luau sets it)

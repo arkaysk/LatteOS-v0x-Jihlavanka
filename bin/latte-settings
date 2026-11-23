@@ -36,8 +36,8 @@
 
 The user's choices are kept in ~/.config/latteos/: `locale` and `keyboard` are read by latte-session when it starts.
 
-A page is opened with `latte-app settings PAGE`. The pages are listed in apps/settings/pages.json, the one list the
-Settings app itself is built from.
+`latte-settings` alone opens the Settings app; a page is opened with `latte-app settings PAGE`. The pages are listed
+in apps/settings/pages.json, the one list the Settings app itself is built from.
 """
 import json
 import os
@@ -163,7 +163,8 @@ def wallpapers():
 
 def pipewire_names():
     """{node name: description} of the sound devices, from pw-dump: `pactl -f json` cannot write a letter with a mark
-    (Slovak "Vstavaný zvuk") and says "(null)" for the whole description (found live 23. 11.), pw-dump says it in UTF-8."""
+    (the Slovak name of built-in audio has a "y" with an acute accent) and says "(null)" for the whole description
+    (found live 23. 11.), pw-dump says it in UTF-8."""
     import subprocess
     try:
         found = json.loads(subprocess.run(["pw-dump"], capture_output=True, text=True, timeout=8).stdout or "[]")
@@ -527,6 +528,12 @@ def account():
 
 
 def main(a):
+    if not a:                    # by itself: the Settings app (bughunt 20. 11.), as `latte-app settings` opens it
+        try:
+            os.execvp("latte-app", ["latte-app", "settings"])
+        except OSError:
+            print("latte-settings: latte-app is not here", file=sys.stderr)
+            return 1
     for word, what in (("storage", storage), ("sizes", sizes), ("account", account)):
         if a == [word]:
             print(json.dumps(what(), ensure_ascii=False))

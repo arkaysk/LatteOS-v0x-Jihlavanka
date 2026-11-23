@@ -951,7 +951,6 @@ local function settings()
     fact.lively = t.lively ~= false
     local m = t.material == "glass" and 1 or tonumber(t.material) or 0
     fact.glassy = software and 0 or math.max(0, math.min(1, m))
-    fact.panes = software and 0 or 1
     fact.glass_ripple = t.ripple == false and 0 or 1
     local pane = type(t.pane) == "table" and t.pane or {}   -- apps/settings.qml: Theme.pane, { r, g, b, a }
     fact.pane_r, fact.pane_g, fact.pane_b, fact.pane_a = tonumber(pane.r) or 0, tonumber(pane.g) or 0, tonumber(pane.b) or 0, tonumber(pane.a) or -1
@@ -967,6 +966,9 @@ local function settings()
     end
     if changed then E.apart() publish() end
     local level = math.max(0, math.min(4, math.floor(tonumber(t.glass) or 1)))
+    -- level 0 is no glass at all: the cards are neither glass nor a lens (card.plm). A lens reads the screen's snapshots,
+    -- and under pleamar-wm they came back stale: a card already shut showed again for a few frames (bughunt 5. 11.)
+    fact.panes = (software or level == 0) and 0 or 1
     -- 4 is True Glass: the cards and the windows clear glass that bends the light (card.plm, system/hypr/latte/glass.lua)
     local clear = level == 4 and not software
     -- the AI's page: as much glass as LatteOS, or what the user chose for it (LensGoo, the right button in the conversation)
@@ -975,6 +977,7 @@ local function settings()
     -- (win_glass: where windows are glass, a press rings in them by itself, parts/cursor.plm)
     E.tell("fact win_glass " .. tostring(windows), "fact lively " .. tostring(fact.lively), "fact glassy " .. tostring(fact.glassy), "fact bends " .. tostring(fact.bends),
            "fact ai_glass " .. tostring(ai_glass), "fact ai_soft " .. tostring(software), "fact true_glass " .. tostring(clear),
+           "fact panes " .. tostring(fact.panes),       -- the side scenes' cards too (side.plm keeps no settings)
            "fact bar_off " .. tostring(hidden.bargoo == true), "fact bar_fixed " .. tostring(t.bar_fixed == true),
            "fact lens_shore " .. tostring(t.lens == "shore"), "fact app_cloud " .. tostring(t.appcloud == true or t.lens == "cloud"))
     if glass_told ~= windows then glass_told = windows wm.glass(windows) end
@@ -1127,7 +1130,7 @@ function E.start(opts)
         else log("goo: drops/" .. name .. ": " .. tostring(def)) end
     end
     if opts.side then
-        fact.bar_only = true         -- no plates of the main monitor's dock and AppCloud (parts/drops.plm)
+        fact.bar_only = true         -- no plate of the main monitor's dock (parts/drops.plm); AppCloud is its own (lib/cloud.luau)
         -- the bar is all such a scene has: switched off, it is off on every monitor
         on("fact:bar_off", function() hidden.bargoo = fact.bar_off or nil if E.apply_hidden() then E.apart() publish() end end)
         E.tell("emit side_hello")

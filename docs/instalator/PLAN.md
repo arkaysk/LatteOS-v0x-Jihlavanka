@@ -128,6 +128,10 @@ slobodná licencia, do COPR nesmie) a založiť ho iba na pokyn (je verejný).
   sprievodcu.
 - **Grafika bez pracovného prostredia:** `cage` (kioskový správca okien z Fedory) priamo z textovej konzoly, v ňom
   sprievodca v Quickshelli na celej obrazovke. Vzhľad z `apps/common` (Theme, I18n, preklady), takže je to už LatteOS.
+  Pri viacerých monitoroch `apps/installer-screens` (`wlr-randr` cez wlr-output-management, ktoré `cage` 0.3.1 berie)
+  dá všetky na 0,0 v najväčšom spoločnom rozlíšení = zrkadlenie; bez spoločného rozlíšenia ostane iba posledný (ako
+  `cage -m last`). Jazyk z `/etc/locale.conf`, keď `sudo` neprinesie `LANG`; numerická klávesnica vždy číslice
+  (`XKB_DEFAULT_OPTIONS=numpad:mac`, `cage` NumLock nezapína, kontrolka ostane zhasnutá).
 - **Postup a posuvník:** `./install --go --progress` vypisuje strojové riadky (`step 3/27 Zostavuje sa pleamar`,
   `percent 41`, `log …`); sprievodca z nich kreslí zoznam a posuvník. Váhy krokov podľa trvania (zostavovanie ťažšie
   ako kopírovanie súborov).

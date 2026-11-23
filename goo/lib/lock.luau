@@ -5,8 +5,8 @@
 -- A shell that dies while it holds the lock leaves the session locked, on purpose. So that the shell that is
 -- started in its place locks again instead of leaving a dead screen, the lock is noted in lock.json.
 local icons = require("lib/icons")
-local card = require("lib/card")
 local M = {}
+local here = false                           -- SAFE: this scene is the only lock screen there is (start{ here = true })
 
 local FILE = "lock.json"
 
@@ -28,7 +28,8 @@ local function lock_here()
 end
 function M.lock()
     if fact.locked then return end
-    card.close()
+    if here then lock_here() return end
+    require("lib/card").close()
     run("latte-lock", { "--scene" }, function(_, code) if code ~= 0 then lock_here() end end)     -- only the scene: latte-lock asks Goo itself
 end
 
@@ -50,7 +51,8 @@ on("lock_try", function()
     end
 end)
 
-function M.start()
+function M.start(opts)
+    here = type(opts) == "table" and opts.here == true
     local ok, user = pcall(sys.ask, "env", "USER")
     text.lock_user = ok and type(user) == "string" and user or ""
     text.g_lock, text.g_go = icons["lock"], icons["arrow-right"]

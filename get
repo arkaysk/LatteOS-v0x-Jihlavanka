@@ -14,13 +14,13 @@ say() { printf '%s\n' "$*"; }
 [ "${ID:-}" = fedora ] && [ "${VERSION_ID:-}" = 45 ] || { say "LatteOS needs Fedora 45 (this is ${PRETTY_NAME:-something else})."; exit 1; }
 curl -fsS -o /dev/null --max-time 10 https://fedoraproject.org || { say "LatteOS: no internet. Connect first (nmtui), then run this again."; exit 1; }
 
-say "LatteOS: preparing the installer (git, cage, seatd, quickshell)…"
+say "LatteOS: preparing the installer (git, cage, seatd, quickshell, wlr-randr)…"
 say "(a few minutes; details in /var/log/latteos-get.log)"
 # dnf5 prints its whole table even with -q: a wall of packages says nothing to a person, so it goes to the log, and
 # the console shows only dnf's own counter on one line (some 300 packages, which can take a quarter of an hour)
 # the result is written whatever it is (set -e would end the group before echo, and an older 0 would be read)
 rm -f /run/latteos-get.rc
-{ rc=0; dnf install -y git cage seatd quickshell rsms-inter-fonts || rc=$?; echo $rc > /run/latteos-get.rc; } 2>&1 \
+{ rc=0; dnf install -y git cage seatd quickshell wlr-randr rsms-inter-fonts || rc=$?; echo $rc > /run/latteos-get.rc; } 2>&1 \
     | tee -a /var/log/latteos-get.log | awk '/^\[ *[0-9]+\/[0-9]+\]/ { split($1 $2, n, /[^0-9]+/); printf "\r   %s / %s   ", n[2], n[3]; fflush() }'
 echo
 [ "$(cat /run/latteos-get.rc 2>/dev/null)" = 0 ] \
@@ -41,13 +41,19 @@ if systemd-detect-virt -q || [ ! -e /dev/dri/renderD128 ]; then tier=software; f
 # own service that pauses the console, shows the window and gives the console back when the window closes. This
 # shell lives inside that console, so it ends here. seatd-launch makes a seat just for the wizard, as root kiosks do;
 # a socket left by a wizard that was killed would stop seatd. sudo leaves no runtime folder, and cage needs one.
-# cage gives the window no frame of its own, so Qt would draw a desktop title bar over it.
+# cage gives the window no frame of its own, so Qt would draw a desktop title bar over it. With two screens and more,
+# apps/installer-screens shows the window on each the same (cage alone would stretch it over them all).
+# The window speaks the language chosen in Fedora's installer (/etc/locale.conf) when sudo brought none (C, POSIX).
+# The keypad always gives digits (numpad:mac), as with NumLock on: cage has no NumLock of its own, and the
+# console's (setleds) does not reach it; the NumLock light stays off.
+lang="${LANG:-}"
+case "$lang" in ""|C|C.*|POSIX) lang="$(sed -n 's/^LANG=//p' /etc/locale.conf 2>/dev/null | tr -d '"' | head -1)" ;; esac
 consoles="$(systemctl list-units --no-legend --plain --state=active 'kmsconvt@*' | awk '{print $1}' | tr '\n' ' ')"
 systemctl reset-failed latteos-installer 2>/dev/null || true
 systemd-run --quiet --collect --unit=latteos-installer \
     --setenv=XDG_RUNTIME_DIR=/run/user/0 --setenv=QT_WAYLAND_DISABLE_WINDOWDECORATION=1 \
     --setenv=LATTE_SHARE="$src" --setenv=LATTE_SRC="$src" --setenv=LATTE_FOR="${SUDO_USER:-}" \
-    --setenv=LANG="${LANG:-C.UTF-8}" --setenv=LATTE_TIER="$tier" \
+    --setenv=LANG="${lang:-C.UTF-8}" --setenv=LATTE_TIER="$tier" --setenv=XKB_DEFAULT_OPTIONS=numpad:mac \
     sh -c 'mkdir -p -m 0700 /run/user/0; rm -f /run/seatd.sock; [ -z "$1" ] || systemctl stop $1
-           seatd-launch -- cage -s -- qs -n -p "$2" >> /var/log/latteos-get.log 2>&1
-           [ -z "$1" ] || systemctl start $1' latteos-installer "$consoles" "$wizard"
+           seatd-launch -- cage -s -- python3 "$3" qs -n -p "$2" >> /var/log/latteos-get.log 2>&1
+           [ -z "$1" ] || systemctl start $1' latteos-installer "$consoles" "$wizard" "$src/apps/installer-screens"

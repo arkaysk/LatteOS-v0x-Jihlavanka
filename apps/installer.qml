@@ -27,11 +27,18 @@ ShellRoot {
         { id: "done", name: QT_TR_NOOP("Done"), icon: "circle-check" } ]
     readonly property var active: steps.filter(s => !s.fedora)
     property int at: 0                          // in `active`
+    property int reached: 0                     // the furthest step seen: back to any before it, and forward again up to it
     readonly property string page: active[at].id
-    function next() { if (at < active.length - 1) at += 1 }
+    function next() { if (at < active.length - 1) { at += 1; reached = Math.max(reached, at) } }
     // a picture of one page without a mouse (tests): LATTE_INSTALLER_PAGE=parts; nothing is run from it
-    Component.onCompleted: { const p = active.findIndex(s => s.id === Quickshell.env("LATTE_INSTALLER_PAGE")); if (p >= 0) at = p }
-    function back() { if (at > 0 && page !== "install" && page !== "done") at -= 1 }
+    Component.onCompleted: { const p = active.findIndex(s => s.id === Quickshell.env("LATTE_INSTALLER_PAGE")); if (p >= 0) { at = p; reached = p } }
+    // the steps are walked by the side, the header's arrows and the keys (after a failed install too, to change the
+    // components); once installed, no more. While it installs the earlier steps can be looked at, not changed (pageCol)
+    readonly property bool installed: active[reached].id === "done"
+    function canGo(k) { return k >= 0 && k <= reached && k !== at && !installed }
+    function goTo(k) { if (canGo(k)) at = k }
+    function back() { goTo(at - 1) }
+    function forward() { goTo(at + 1) }
 
     // ── what the computer is: asked once, shown on "This computer" ──────────────────────────────────────
     property var facts: ({})
@@ -99,7 +106,18 @@ ShellRoot {
     // ── installing: ./install's own lines, read as they come ────────────────────────────────────────────
     property var parts: []                      // [{ name, state: "done" | "now" }]
     property int percent: 0
-    property string log: ""
+    ListModel { id: logLines }                  // [{ t: the line, k: "bad" | "warn" | "good" | "" }], coloured as Fedora's start
+    property bool inTrace: false                // within a Python traceback: its indented lines are the error's too
+    // ponytail: by words, as a person reads them; a package or a crate named "…error" while it is fetched or built stays plain
+    function logKind(l) {
+        if (inTrace) { if (!/^\s/.test(l)) inTrace = false; return "bad" }
+        if (/^Traceback/.test(l)) { inTrace = true; return "bad" }
+        if (/^\s*(Compiling|Checking|Downloaded|Downloading|Fresh|Installing|Upgrading|Reinstalling|Verifying|Preparing|Running scriptlet|Updating|Locking|Adding|Removing|Cleanup)\b/.test(l)) return ""
+        if (/\b(error|errors|fatal|failed|failure|panicked)\b|could not|cannot\b|can't\b/i.test(l)) return "bad"
+        if (/\bwarn(ing|ings)?\b|deprecated/i.test(l)) return "warn"
+        if (/\b(ok|done|complete|completed|success|successful|successfully|finished)\b/i.test(l)) return "good"
+        return ""
+    }
     property real started: 0
     property string failed: ""
     Process { id: run
@@ -110,11 +128,11 @@ ShellRoot {
                 shell.parts = shell.parts.map(p => ({ name: p.name, state: "done" })).concat([{ name: name, state: "now" }])
             } else if (line.startsWith("@mok ")) shell.mok = line.slice(5)
             else if (line.startsWith("@percent ")) shell.percent = parseInt(line.slice(9))
-            else shell.log = (shell.log + line + "\n").slice(-20000)
+            else { logLines.append({ t: line, k: shell.logKind(line) }); if (logLines.count > 800) logLines.remove(0, logLines.count - 800) }
         } }
         onExited: code => { if (code === 0) { shell.parts = shell.parts.map(p => ({ name: p.name, state: "done" })); shell.percent = 100; shell.next() }
                             else shell.failed = I18n.tr("The install stopped. What it said last is below.") } }
-    function install() { parts = []; percent = 0; log = ""; failed = ""; started = Date.now(); next(); run.running = true }
+    function install() { parts = []; percent = 0; logLines.clear(); inTrace = false; failed = ""; started = Date.now(); next(); run.running = true }
     // what is left, from how fast it has gone so far
     readonly property string left: { percent; if (percent < 3 || percent >= 100) return ""
         const m = Math.round((Date.now() - started) / 60000 * (100 - percent) / percent)
@@ -154,8 +172,12 @@ ShellRoot {
         implicitWidth: 1280; implicitHeight: 820          // in cage it is the whole screen anyway
         heading: I18n.tr(shell.active[shell.at].name)
         arrows: true
-        canGoBack: shell.at > 0 && shell.page !== "install" && shell.page !== "done"
+        canGoBack: shell.canGo(shell.at - 1)
+        canGoForward: shell.canGo(shell.at + 1)
         onBack: shell.back()
+        onForward: shell.forward()
+        Shortcut { sequences: ["Up", "Left", StandardKey.Back]; onActivated: shell.back() }
+        Shortcut { sequences: ["Down", "Right", StandardKey.Forward]; onActivated: shell.forward() }
         // every step of an install of its own; Fedora's grey with a tick
         side: [
             Column { x: 14; y: 14; spacing: 4; width: 222
@@ -164,23 +186,27 @@ ShellRoot {
                     Label { text: "LatteOS"; font.pixelSize: 17; font.weight: 700; anchors.verticalCenter: parent.verticalCenter } }
                 Item { width: 1; height: 8 }
                 Repeater { model: shell.steps
-                    Row { required property var modelData; spacing: 10; height: 34; x: 8
+                    Item { id: step; required property var modelData; width: 222; height: 34
                         readonly property int k: shell.active.findIndex(s => s.id === modelData.id)       // (a copy reaches the delegate: by its id)
-                        readonly property bool done: modelData.fedora || k < shell.at
-                        opacity: modelData.fedora ? 0.45 : (k <= shell.at ? 1 : 0.6)
-                        Glyph { name: parent.done ? "check" : parent.modelData.icon; font.pixelSize: 16; anchors.verticalCenter: parent.verticalCenter
-                                color: parent.k === shell.at ? Theme.gold : (parent.done ? Theme.ok : Theme.dim) }
-                        Column { anchors.verticalCenter: parent.verticalCenter
-                            Label { text: I18n.tr(parent.parent.modelData.name); font.weight: parent.parent.k === shell.at ? 700 : 500 }
-                            Label { visible: !!parent.parent.modelData.fedora; text: I18n.tr("done by Fedora"); color: Theme.faint; font.pixelSize: 11 } } } } } ]
+                        readonly property bool done: modelData.fedora || k < shell.reached
+                        Row { x: 8; spacing: 10; height: parent.height
+                            opacity: step.modelData.fedora ? 0.45 : (step.k <= shell.reached ? 1 : 0.6)
+                            Glyph { name: step.done && step.k !== shell.at ? "check" : step.modelData.icon; font.pixelSize: 16; anchors.verticalCenter: parent.verticalCenter
+                                    color: step.k === shell.at ? Theme.gold : (step.done ? Theme.ok : Theme.dim) }
+                            Column { anchors.verticalCenter: parent.verticalCenter
+                                Label { text: I18n.tr(step.modelData.name); font.weight: step.k === shell.at ? 700 : 500 }
+                                Label { visible: !!step.modelData.fedora; text: I18n.tr("done by Fedora"); color: Theme.faint; font.pixelSize: 11 } } }
+                        // a step already seen is pressed to go back to it (or forward again)
+                        MouseArea { anchors.fill: parent; enabled: shell.canGo(step.k); cursorShape: Qt.PointingHandCursor; onClicked: shell.goTo(step.k) } } } } ]
         foot: [
             Row { anchors.right: parent.right; anchors.rightMargin: 20; anchors.verticalCenter: parent.verticalCenter; spacing: 10
-                visible: shell.page !== "install" && shell.page !== "done"
+                visible: shell.page !== "install" && shell.page !== "done" && !run.running
                 Pill { icon: "arrow-right"; strong: true; text: shell.page === "summary" ? I18n.tr("Install") : I18n.tr("Next")
                        onPressed: shell.page === "summary" ? shell.install() : shell.next() } } ]
 
-        Flickable { ScrollGrip {} anchors.fill: parent; contentHeight: pageCol.implicitHeight + 60; clip: true; boundsBehavior: Flickable.StopAtBounds
-            Column { id: pageCol; x: 40; y: 30; width: Math.min(parent.width - 80, 820); spacing: 16
+        Flickable { id: flick; ScrollGrip {} anchors.fill: parent; contentHeight: pageCol.implicitHeight + 60; clip: true; boundsBehavior: Flickable.StopAtBounds
+            // while it installs, the steps before are only looked at
+            Column { id: pageCol; x: 40; y: 30; width: Math.min(parent.width - 80, 820); spacing: 16; enabled: !run.running || shell.page === "install"; opacity: enabled ? 1 : 0.7
 
                 // ── Welcome ──
                 Column { visible: shell.page === "welcome"; width: parent.width; spacing: 14
@@ -251,7 +277,7 @@ ShellRoot {
                     Text2 { text: I18n.tr("It takes about half an hour, most of it building. The computer can be left alone meanwhile.") } }
 
                 // ── Installing: the parts on the left, LatteOS shown on the right, the bar under them ──
-                Item { visible: shell.page === "install"; width: parent.width; height: 360
+                Item { visible: shell.page === "install"; width: parent.width; height: Math.max(360, bar.y + bar.implicitHeight)
                     Column { width: parent.width * 0.45; spacing: 8
                         Repeater { model: shell.parts
                             Row { required property var modelData; spacing: 10
@@ -263,7 +289,7 @@ ShellRoot {
                         Glyph { x: 22; y: 22; name: parent.s.icon; font.pixelSize: 40; color: Theme.gold }
                         Label { x: 22; y: 82; text: I18n.tr(parent.s.title); font.pixelSize: 20; font.weight: 800 }
                         Label { x: 22; y: 116; width: parent.width - 44; wrapMode: Text.WordWrap; color: Theme.dim; text: I18n.tr(parent.s.text) } }
-                    Column { y: 250; width: parent.width; spacing: 8
+                    Column { id: bar; y: 250; width: parent.width; spacing: 8
                         DotBar { width: parent.width; height: 12; segments: 40; value: shell.percent / 100; tint: shell.failed ? Theme.red : Theme.gold }
                         Row { spacing: 16
                             Label { text: shell.percent + " %"; font.weight: 800; color: Theme.gold }
@@ -284,10 +310,16 @@ ShellRoot {
                             Text2 { text: I18n.tr("Without it NVIDIA's driver does not load and LatteOS SAFE opens; the key can be enrolled at any later start.") } } }
                     Pill { icon: "refresh"; strong: true; text: I18n.tr("Restart now"); onPressed: Quickshell.execDetached(["systemctl", "reboot"]) } }
 
-                // what ./install said, for when it goes wrong
-                Rectangle { visible: shell.page === "install" && shell.log !== ""; width: parent.width; height: 160; radius: 14; color: Theme.card; clip: true
-                    Flickable { ScrollGrip {} anchors.fill: parent; anchors.margins: 12; contentHeight: logText.implicitHeight; contentY: Math.max(0, contentHeight - height)
-                        Text { id: logText; width: parent.width; text: shell.log; color: Theme.dim; font.family: "monospace"; font.pixelSize: 11; wrapMode: Text.WrapAnywhere } } }
+                // what ./install said, for when it goes wrong: down to the coffee (above the page's faded end), 160 at least
+                Rectangle { visible: shell.page === "install" && logLines.count > 0; width: parent.width; radius: 14; color: Theme.card; clip: true
+                    height: Math.max(160, flick.height - pageCol.y - y - 40)
+                    ListView { id: logView; ScrollGrip {} anchors.fill: parent; anchors.margins: 12; model: logLines; boundsBehavior: Flickable.StopAtBounds
+                        property bool follow: true          // at the newest line, unless scrolled up to read
+                        onMovementEnded: follow = atYEnd
+                        onCountChanged: if (follow) positionViewAtEnd()
+                        delegate: Text { required property string t; required property string k
+                            width: logView.width; text: t; textFormat: Text.PlainText; font.family: "monospace"; font.pixelSize: 11; wrapMode: Text.WrapAnywhere
+                            color: k === "bad" ? Theme.red : k === "warn" ? Theme.gold : k === "good" ? Theme.ok : Theme.dim } } }
             }
         }
     }

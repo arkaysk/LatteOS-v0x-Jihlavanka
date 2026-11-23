@@ -144,6 +144,7 @@
 /usr/share/latteos/apps/aicenter/marked.umd.js          <- apps/aicenter/marked.umd.js
 /usr/share/latteos/apps/aicenter/ImportDialog.qml       <- apps/aicenter/ImportDialog.qml
 /usr/share/latteos/apps/installer.qml                   <- apps/installer.qml
+/usr/share/latteos/apps/installer-screens               <- apps/installer-screens
 /usr/share/latteos/dualbrew/recipes/smaller-picture.sh  <- system/dualbrew/recipes/smaller-picture.sh
 /usr/share/latteos/dualbrew/recipes/pictures-to-pdf.sh  <- system/dualbrew/recipes/pictures-to-pdf.sh
 /usr/share/latteos/dualbrew/recipes/send-to-phone.sh    <- system/dualbrew/recipes/send-to-phone.sh

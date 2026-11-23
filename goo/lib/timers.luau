@@ -83,16 +83,36 @@ function M.timer_adjust(dir)
 end
 
 -- ── alarms ───────────────────────────────────────────────────────────────────────────────────────────────────
+-- An alarm rings once a day; `last` is the day (%Y-%m-%d) of the time it last rang for. One that came while Goo
+-- was not running (a restart, a crash, a login a little late) still rings when it is back, up to an hour late.
+local LATE = 3600
+-- the alarm's latest time at or before `t`, and its day: today's, or yesterday's when today's has not come yet
+local function due(a, t)
+    local h, m = tostring(a.time or ""):match("^(%d+):(%d+)$")
+    if not h then return nil end
+    local d = os.date("*t", t)
+    local at = os.time({ year = d.year, month = d.month, day = d.day, hour = tonumber(h), min = tonumber(m), sec = 0 })
+    if at > t then at = os.time({ year = d.year, month = d.month, day = d.day - 1, hour = tonumber(h), min = tonumber(m), sec = 0 }) end
+    return at, os.date("%Y-%m-%d", at)
+end
+-- set or switched on now: a time that has already gone by today is not a missed one, it waits for tomorrow
+local function armed(a)
+    local t = os.time()
+    local at, day = due(a, t)
+    a.last = (at and t - at >= 60) and day or ""
+end
 function M.alarm_add()
     local list = all().alarms
     if #list >= 10 then return end
-    list[#list + 1] = { time = string.format("%02d:%02d", M.hour, M.minute), on = true, last = "" }
+    local a = { time = string.format("%02d:%02d", M.hour, M.minute), on = true }
+    armed(a)
+    list[#list + 1] = a
     table.sort(list, function(a, b) return a.time < b.time end)
     save()
 end
 function M.alarm_toggle(i)
     local a = all().alarms[i]
-    if a then a.on, a.last = not a.on, "" save() end
+    if a then a.on = not a.on armed(a) save() end
 end
 function M.alarm_prune()                     -- the ones that are off go
     local keep = {}
@@ -116,11 +136,12 @@ function M.guard(ring, changed)
             d.timer.ends, touched = 0, true
             ring(tr("Timer"), tr("Time is up") .. " (" .. M.clock(d.timer.length) .. ")")
         end
-        local now, today = os.date("%H:%M"), os.date("%Y-%m-%d")
+        local t = os.time()
         for _, a in ipairs(d.alarms) do
-            if a.on and a.time == now and a.last ~= today then
-                a.last, touched = today, true
-                ring(tr("Alarm") .. " " .. now, tr("LatteOS alarm"))
+            local at, day = due(a, t)
+            if a.on and at and t - at < LATE and a.last ~= day then
+                a.last, touched = day, true
+                ring(tr("Alarm") .. " " .. a.time, tr("LatteOS alarm"))
             end
         end
         if touched then save() if changed then changed() end end

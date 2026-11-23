@@ -25,8 +25,10 @@ local function tick()
     local t = os.date("*t")
     text.cloud_hm = string.format("%02d:%02d", t.hour, t.min)
     -- a timer or the stopwatch running takes the date's place, as on ClockGoo (6D.13)
+    -- (a side scene, side.plm, has no ClockGoo keeping the timers: it shows the date only)
     local running, started, left = timers.timer()
-    if started then text.cloud_date = timers.clock(left + (running and 999 or 0))
+    if E.side then text.cloud_date = tr(SHORT[t.wday]) .. " " .. t.day .. ". " .. t.month .. "."
+    elseif started then text.cloud_date = timers.clock(left + (running and 999 or 0))
     elseif timers.all().watch.running then text.cloud_date = timers.clock(timers.elapsed())
     else text.cloud_date = tr(SHORT[t.wday]) .. " " .. t.day .. ". " .. t.month .. "." end
 end

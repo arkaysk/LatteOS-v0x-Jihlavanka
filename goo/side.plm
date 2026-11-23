@@ -13,11 +13,11 @@ scene GooSide {
         reserve: -1
         // sixty frames while something moves; a core that pulses on a still desktop needs no more than twenty
         rate: 60, 20 while stir < 0.001 and card.p < 0.01
-        keyboard: exclusive while card_open or kb
+        keyboard: exclusive while card_open or kb or cloud_grid      // AppCloud's field is typed into
     }
     permissions {
         run: "latte-sky", "latte-login", "hyprctl", "latte-say", "latte-net", "latte-desktop", "foot", "xdg-open", "latte-app"
-        services: "files", "env", "window", "apps", "audio", "clipboard", "clipboard.set"
+        services: "files", "env", "window", "apps", "apps.launch", "audio", "clipboard", "clipboard.set"
     }
 
     event window_mode ->                       // as in goo.plm: Hyprland says how windows are arranged
@@ -27,6 +27,7 @@ scene GooSide {
     include "parts/drops.plm"
     include "parts/picks.plm"
     include "parts/body.plm"
+    include "parts/cloud.plm"            // AppCloud on this monitor too (Settings › Drops), in its corner
     include "parts/bubble.plm"
     shader velvet = file "shaders/velvet.wgsl"
     shader pegboard = file "shaders/pegboard.wgsl"

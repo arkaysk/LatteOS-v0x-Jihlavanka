@@ -4,6 +4,9 @@ local find = require("lib/find")
 local dangerous = require("lib/dangerous")
 local icons = require("lib/icons")
 local open = require("lib/open")
+-- Super+L in SAFE (bin/latte-lock): the lock is this scene's own, and a bar started again after a crash takes it up again
+local lock = require("lib/lock")
+lock.start({ here = true })
 
 text.g_power, text.g_term, text.g_search, text.g_prompt = icons["power"], icons["terminal-2"], icons["search"], icons["prompt"]
 text.g_ai = icons["sparkles"] or icons["message"]

@@ -192,7 +192,9 @@ return function(opts)
         run("latte-login", { "locks" }, function(out) fact.kb_lock = tonumber((out or ""):match("%d")) or 0 end)
     end
     show_locks()
-    every(700, show_locks)
+    -- the lock screen runs all through the session and is seen only while locked: its timers wait till then
+    local function shown() return not LOCK or fact.locked end
+    every(700, function() if shown() then show_locks() end end)
 
     local MACHINE = { "suspend", "reboot", "poweroff" }
     on("machine", function(k)
@@ -208,8 +210,8 @@ return function(opts)
     fact.keep_backdrop = LIVE and not LOCK      -- the lock fades to the desktop it kept
     fill()
     show_date()
-    every(60000, fill)           -- the news, the battery and the sky move on
-    every(30000, show_date)
+    every(60000, function() if shown() then fill() end end)           -- the news, the battery and the sky move on
+    every(30000, function() if shown() then show_date() end end)
     if LOCK then
         local function lock_now()
             if fact.locked then return end
@@ -219,6 +221,7 @@ return function(opts)
             emit("again")
             fill()
             show_date()
+            show_locks()
             after(60, function() emit("intro") end)
         end
         on("lock_now", lock_now)

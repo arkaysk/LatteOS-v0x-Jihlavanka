@@ -74,7 +74,7 @@ part Cloud {
         body {
             gradient: 0, 0 to 0, cl.B, cl.pc, cl.pc 2%, coffee 5%, coffee 95%, cl.pc 98%, cl.pc
             glass: cl.glass * 100%
-            lens: material > 0.02
+            lens: panes > 0.5 and material > 0.02
             frost: 100%
             smoke: cl.glass * 62%
             tint: 22%

@@ -233,7 +233,7 @@ def store(a):
         return cards(ask("/collection/category/%s?page=1&per_page=48" % a[1]), set(flatpaks()))
     if len(a) == 2 and a[0] == "search":
         return cards(ask("/search", keep=3600, post={"query": a[1]}), set(flatpaks()), 30)
-    if len(a) == 2 and a[0] == "app" and re.fullmatch(r"[\w.-]+", a[1]):
+    if len(a) == 2 and a[0] == "app" and re.fullmatch(r"\w[\w.-]*", a[1]):
         return app(a[1])
     return None
 
@@ -249,7 +249,8 @@ def work(*argv):
 
 
 def main(a):
-    valid = len(a) == 2 and re.fullmatch(r"[\w.-]+", a[1]) is not None
+    # An app id starts with a letter or digit: "--all" or "-y" would reach flatpak as its own option.
+    valid = len(a) == 2 and re.fullmatch(r"\w[\w.-]*", a[1]) is not None
     if a == ["installed"]:
         print(json.dumps(installed(), ensure_ascii=False))
     elif a == ["updates"]:

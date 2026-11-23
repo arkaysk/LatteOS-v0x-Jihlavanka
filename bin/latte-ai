@@ -807,8 +807,10 @@ def local_catalog():
     a label with what LM Studio shows in its list (quantization, size, parameters) and what it can do. Embedding and
     speech models are not here (they live in models/embed, models/asr)."""
     import re
-    out = []
+    out, big = [], too_big()
     for m in local_models_all():
+        if m["id"] in big:
+            continue
         g, base = gguf(m["id"]), os.path.basename(m["id"])[:-5]
         quant = re.search(r"(?i)(?:^|[-_.])((?:i?q\d[a-z0-9_]*)|f16|bf16|f32)$", base)
         params = re.search(r"(?i)(?:^|[-_])(\d+(?:\.\d+)?)b(?:[-_]|$)", base)
@@ -870,7 +872,20 @@ def local_name(model):
 ROUTER_PRESET = os.path.join(ROOM, "models.ini")
 
 
-def local_preset():
+def too_big():
+    """The models here that My Models marks "Likely too large for this computer" (estimate, as loaded now): the router
+    is not told of them, so no agent can load one and stall the desktop (bughunt 23. 11.); nor are they offered to
+    agentgram's picker. Settings that make one fit (fewer layers on the card, a shorter context) bring it back."""
+    models = local_models_all()
+    if not models:
+        return set()
+    hw = hardware()
+    if local_settings().get("gpu") and not any(g["vram"] for g in hw["gpus"]):
+        return set()                    # the card's memory unknown (an integrated one, nvidia-smi not answering): no word
+    return {m["id"] for m in models if estimate(m["id"], model_settings(m["id"]), hw, quick=True)["fit"] == "too-big"}
+
+
+def local_preset(big=None):
     """llama.cpp's router presets (INI): a section for each model here, loaded as LensAI › Local LLMs says. The layers on
     the graphics card are left to llama.cpp's --fit unless the user set them: it counts them from the memory free when the
     model loads, so a game that holds the card leaves the model fewer instead of a crash. True when the file changed."""
@@ -882,7 +897,10 @@ def local_preset():
         # the meanings of the conversations' words (the index): small, on the processor, never in the chat's way
         out += ["[%s]" % local_name(embedder()), "model = " + embedder(), "embedding = true", "pooling = mean", "ctx-size = 512",
                 "batch-size = 512", "ubatch-size = 512", "n-gpu-layers = 0", ""]
+    big = too_big() if big is None else big
     for m in local_models_all():
+        if m["id"] in big:
+            continue
         s, mine, mm = model_settings(m["id"]), own.get(os.path.basename(m["id"]), {}), local_mmproj(m["id"])
         out += ["[%s]" % local_name(m["id"]), "model = " + m["id"]] + ["%s = %s" % (keys[k], s[k]) for k in keys]
         if not local_settings().get("gpu"):
@@ -922,7 +940,10 @@ def local_start(model, load=True):
     first, and a margin of the graphics card's memory kept free. Started the first time it is asked, and again when the
     models or their settings changed. Without `load` (model None), only the router: a model asked by name loads then."""
     import time
-    name, changed = local_name(model) if model else "", local_preset()
+    big = too_big()
+    if model and model in big:
+        return False                                           # not in the presets: asking would only restart the router
+    name, changed = local_name(model) if model else "", local_preset(big)
     try:
         known = [m["id"] for m in local_call("/models")["data"]]
     except (OSError, ValueError, KeyError):
@@ -1134,6 +1155,8 @@ def local_ask(messages, model, effort, files, room):
         return "latte-ai: the model file is not on this computer: %s" % model, False, {}
     if not local_server():
         return "latte-ai: llama-server is not installed (LensAI › This computer)", False, {}
+    if model in too_big():
+        return "latte-ai: this model is likely too large for this computer (LensAI › Local LLMs › My Models: fewer layers on the graphics card or a shorter context)", False, {}
     if not local_start(model):
         return "latte-ai: the AI on this computer did not start (see llama-server.log)", False, {}
     talk = [{"role": "system", "content": SYSTEM}] + [{"role": m["role"], "content": m["content"]} for m in messages if m.get("content")][-KEEP:]
@@ -3842,16 +3865,66 @@ def helpers():
             "switches": [dict(v, id=k, on=switched_on(k)) for k, v in SWITCHES.items()], "muted": muted}
 
 
+INVITE_POLL = 5                 # seconds between looks at whether the login is still there
+
+
+def session_alive(sid=None, leader=None):
+    """Whether the login this runs in is still there: its logind session active or online (greetd's PAM gives
+    XDG_SESSION_ID); without one, while the process that started this one's parent (latte-session) lives."""
+    sid = os.environ.get("XDG_SESSION_ID", "") if sid is None else sid
+    if sid:
+        try:
+            state = subprocess.run(["loginctl", "show-session", sid, "-p", "State", "--value"], capture_output=True,
+                                   text=True, timeout=10, stdin=subprocess.DEVNULL)
+        except (OSError, subprocess.TimeoutExpired):
+            return True                 # nobody to ask: as before
+        return state.returncode == 0 and state.stdout.strip() in ("active", "online")
+    leader = INVITE_LEADER if leader is None else leader
+    return not leader or os.path.exists("/proc/%d" % leader)
+
+
+def _grandparent():
+    try:
+        with open("/proc/%d/stat" % os.getppid()) as f:
+            return int(f.read().rsplit(")", 1)[1].split()[1])
+    except (OSError, ValueError, IndexError):
+        return 0
+
+
+INVITE_LEADER = 0               # set when invite starts: latte-session, the parent of the (sleep 60; …) shell
+
+
 def invite():
     """Once, as Omarchy's first run does: no agent is picked for the user, so they are asked to pick one."""
     done = os.path.join(TOGGLES, "..", "done", "agent-invitation")
     if turned_off() or chosen(AGENT_WORD) or os.path.exists(done) or not doers() or not shutil.which("notify-send"):
         return
+    if not session_alive():             # logged out within latte-session's minute: asked at the next login instead
+        return
     os.makedirs(os.path.dirname(done), exist_ok=True)
     open(done, "w").close()
-    a = subprocess.run(["notify-send", "-a", "LatteOS", "--wait", "--action=pick=" + T("Choose"), T("Choose your agent"),
-                        T("Let your favourite agent help with LatteOS: crashes, tasks, questions about this computer.")],
-                       capture_output=True, text=True).stdout.strip()
+    note = subprocess.Popen(["notify-send", "-a", "LatteOS", "--wait", "--action=pick=" + T("Choose"), T("Choose your agent"),
+                             T("Let your favourite agent help with LatteOS: crashes, tasks, questions about this computer.")],
+                            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL, text=True)
+    # `--wait` waits for an answer that never comes once the session is gone: the notice, this and latte-session's
+    # (sleep 60; latte-ai invite) stayed after logging out (bughunt 89). It goes with the login, or after a day.
+    global INVITE_LEADER
+    leader = _grandparent()
+    INVITE_LEADER = leader if leader > 1 else 0
+    import time
+    end = time.monotonic() + 24 * 3600
+    while True:
+        try:
+            note.wait(INVITE_POLL)
+            break
+        except subprocess.TimeoutExpired:
+            if not session_alive() or time.monotonic() > end:
+                break
+    if note.poll() is None:
+        note.kill()
+        note.wait()
+        return
+    a = (note.stdout.read() or "").strip()
     if a == "pick":
         subprocess.Popen(["latte-app", "aicenter", "helpers"], start_new_session=True)
 

@@ -106,8 +106,19 @@ fn root_disk() -> (bool, u64) {
     let Ok(md) = fs::metadata("/") else { return (false, 0) };
     let dev = md.dev();
     let (major, minor) = (((dev >> 8) & 0xfff) | ((dev >> 32) & !0xfff), (dev & 0xff) | ((dev >> 12) & !0xff));
-    let hdd = fs::canonicalize(format!("/sys/dev/block/{major}:{minor}")).map(|p| rotational(&p, 0)).unwrap_or(false);
+    // btrfs gives every subvolume an anonymous device (major 0): the disk is then the mount's source.
+    let sys = if major == 0 { root_source().map(PathBuf::from) } else { Some(PathBuf::from(format!("/sys/dev/block/{major}:{minor}"))) };
+    let hdd = sys.and_then(|p| fs::canonicalize(p).ok()).map(|p| rotational(&p, 0)).unwrap_or(false);
     (hdd, free_gb("/"))
+}
+
+/// `/sys/class/block/<dev>` of the device `/` is mounted from (`/dev/nvme0n1p3`, `/dev/mapper/luks-…` → dm-0).
+fn root_source() -> Option<String> {
+    let mi = fs::read_to_string("/proc/self/mountinfo").ok()?;
+    let src = mi.lines().filter(|l| l.split(' ').nth(4) == Some("/")).filter_map(|l| l.split(" - ").nth(1))
+        .filter_map(|r| r.split(' ').nth(1)).last()?;
+    let dev = fs::canonicalize(src).ok()?;
+    Some(format!("/sys/class/block/{}", dev.file_name()?.to_str()?))
 }
 
 /// LVM, LUKS and RAID are reached through `slaves`, a partition through its parent.
@@ -125,8 +136,10 @@ fn rotational(p: &Path, depth: u8) -> bool {
 
 fn free_gb(path: &str) -> u64 {
     // std has no statvfs and this crate has no dependencies, so `df` answers (~2 ms).
-    std::process::Command::new("df").args(["--output=avail", "-B1G", path]).output().ok()
-        .and_then(|o| String::from_utf8_lossy(&o.stdout).lines().nth(1).and_then(|l| l.trim().parse().ok()))
+    // Bytes, then rounded down: `-B1G` rounds up, so 9.1 GB free would read as 10 and skip the warning.
+    std::process::Command::new("df").args(["--output=avail", "-B1", path]).output().ok()
+        .and_then(|o| String::from_utf8_lossy(&o.stdout).lines().nth(1).and_then(|l| l.trim().parse::<u64>().ok()))
+        .map(|b| b >> 30)
         .unwrap_or(0)
 }
 
@@ -229,6 +242,9 @@ fn intel_family(id: u32) -> GpuFamily {
         0x0100..=0x012f => fam("Intel Gen6 (Sandy Bridge, HD 2000/3000)", 2011, false, "i915 (crocus, OpenGL 3.3)", "", "minimal"),
         0x0150..=0x016f | 0x0402..=0x0d2f | 0x0f30..=0x0f3f => fam("Intel Gen7 (Ivy Bridge, Haswell, Bay Trail)", 2013, true, "i915 (crocus, hasvk)", "", "minimal"),
         0x1602..=0x163f | 0x22b0..=0x22bf => fam("Intel Gen8 (Broadwell, Cherry Trail)", 2015, true, "i915 (iris, anv)", "", "minimal"),
+        // Gen11: Ice Lake (Iris Plus, UHD G1), and the Atom-class Jasper Lake and Elkhart Lake
+        0x8a50..=0x8a7f => fam("Intel Gen11 (Ice Lake, Iris Plus)", 2019, true, "i915 (iris, anv)", "", "eco"),
+        0x4e50..=0x4e7f | 0x4500..=0x457f => fam("Intel Gen11 (Jasper Lake, Elkhart Lake)", 2021, true, "i915 (iris, anv)", "", "minimal"),
         0x4600..=0x46ff | 0x4c80..=0x4cff | 0x9a40..=0x9aff | 0xa700..=0xa7ff | 0x7d00..=0x7dff | 0x6420..=0x64ff
             => fam("Intel Xe (11th generation and newer)", 2020, true, "i915/xe (iris, anv)", "", "eco"),
         0x5690..=0x56ff | 0xe200..=0xe2ff => fam("Intel Arc", 2022, true, "i915/xe (iris, anv)", "", "full"),
@@ -405,6 +421,10 @@ mod tests {
         assert!(gpu_family(&gpu("0x8086", "0x0126", "i915", 0)).unwrap().name.contains("Sandy"));
         assert!(gpu_family(&gpu("0x8086", "0x0412", "i915", 0)).unwrap().name.contains("Gen7"));        // HD 4600
         assert!(gpu_family(&gpu("0x8086", "0x5912", "i915", 0)).unwrap().name.contains("Gen9"));        // HD 630
+        assert!(gpu_family(&gpu("0x8086", "0x8a52", "i915", 0)).unwrap().name.contains("Ice Lake"));    // Iris Plus G7
+        assert!(gpu_family(&gpu("0x8086", "0x4e61", "i915", 0)).unwrap().name.contains("Jasper"));      // UHD (N5100)
+        assert!(gpu_family(&gpu("0x8086", "0x4571", "i915", 0)).unwrap().name.contains("Elkhart"));
+        assert!(gpu_family(&gpu("0x8086", "0x56a0", "i915", 0)).unwrap().name.contains("Arc"));         // A770
     }
 
     #[test]

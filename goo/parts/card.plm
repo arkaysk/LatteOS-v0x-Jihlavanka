@@ -214,7 +214,7 @@ part Card {
     let tb1 = if(card.lite > 0.5, #e6d9c6, #3d2c22)
     let tb2 = if(card.lite > 0.5, #dccdb7, #4a372b)
     let tb3 = if(card.lite > 0.5, #c4b29a, #5a463a)
-    let card.glass = if(card_dock or card_menu, 0, if(true_glass, 1, max(material, card_pane * panes)))                  // the shore is hard: its panel is never glass
+    let card.glass = if(card_dock or card_menu or panes < 0.5, 0, if(true_glass, 1, max(material, card_pane * panes)))                  // the shore is hard: its panel is never glass
     let card.q = clamp(card.p, 0, 1.08)
     prop card.ws = 290 ~grow
     prop card.hs = 60 ~grow
@@ -255,7 +255,8 @@ part Card {
         glass: card.glass * 100%
         ripple: 100% * glass_ripple
         // a pane is frosted as a window is (wm/session.plm): by pleamar itself, not by the compositor's stronger blur
-        lens: material > 0.02 or card.pn
+        // Settings › Glass at 0 (panes 0): no glass and no lens at all, whatever the material is (lib/engine.luau)
+        lens: panes > 0.5 and (material > 0.02 or card.pn)
         shine: pointer
         // True Glass: clearer and bending more; the smoke stays, it is what keeps the writing readable
         // a pane is frosted by pleamar's own glass: the compositor's blur under the goo's surface (PLEAMAR_NO_LENS) left

@@ -2,14 +2,15 @@
 """latte-devices: what this computer is made of, for the Device Manager and for QueenGoo.
 
   latte-devices list      {"computer": {…}, "groups": [{"id", "name", "icon", "devices": [{"name", "detail", "driver",
-                          "state", "note"}]}], "findings": [{"level", "text", "fix"}], "faults": N}
+                          "state", "note"}]}], "findings": [{"level", "text", "fix", "id"?, "args"?}], "faults": N}
   latte-devices faults    N alone: how many devices need attention
   latte-devices protected-memory  SMBIOS memory modules, after administrator authentication
 
 A device is in one group, by what it does: a USB keyboard is an input device, a USB disk a disk. `state` is "ok",
 "no-driver" (the system has nothing that drives it) or "firmware" (its driver asked for a file that is missing);
 `faults` counts those two. A device that is in no other group and has no driver is listed under "other": nothing
-is left out because it is unknown. `findings` is what latte-boot says about this computer as a whole.
+is left out because it is unknown. `findings` is what latte-boot says about this computer as a whole, after what
+went wrong with the drivers: NVIDIA's installed and not running, sound hardware without a card or a profile.
 The regular inventory is read as the user. `protected-memory` asks polkit to run a fixed, read-only helper;
 it returns memory capacity, slot, type and speed only, never SMBIOS serial numbers.
 """
@@ -142,7 +143,7 @@ def disks():
         if d.get("type") != "disk" or re.match(r"(zram|loop|ram)", d.get("name") or ""):
             continue
         size = int(d.get("size") or 0)
-        kind = "USB" if d.get("tran") == "usb" else ("NVMe" if d.get("tran") == "nvme" else ("HDD" if d.get("rota") else "SSD"))
+        kind = "USB" if d.get("tran") == "usb" else ("NVMe" if d.get("tran") == "nvme" else ("HDD" if d.get("rota") in (True, 1, "1") else "SSD"))
         found.append(device(d.get("model") or d["name"], "%s · %s" % (kind, ("%.0f GB" % (size / 1e9)) if size < 1e12 else ("%.1f TB" % (size / 1e12)))))
     return found
 
@@ -173,12 +174,16 @@ def computer():
             "threads": os.cpu_count() or 0, "ram_gb": round(ram), "kernel": os.uname().release, "firmware": dmi("bios_version")}
 
 
-def findings():
+def compat():
+    """latte-boot's word on this computer as a whole ([platform], its findings and graphics cards)."""
     try:
-        told = tomllib.loads(out("latte-boot", "compat", "--toml"))
+        return tomllib.loads(out("latte-boot", "compat", "--toml")).get("platform", {})
     except (tomllib.TOMLDecodeError, ValueError):
-        return []
-    return [{"level": f.get("level", "info"), "text": f.get("text", ""), "fix": f.get("fix", "")} for f in told.get("platform", {}).get("finding", [])]
+        return {}
+
+
+def findings(told):
+    return [{"level": f.get("level", "info"), "text": f.get("text", ""), "fix": f.get("fix", "")} for f in told.get("finding", [])]
 
 
 def protected_memory():
@@ -208,6 +213,52 @@ def no_firmware():
     """The drivers that asked for a firmware file this boot and did not get it, as the kernel's log has it."""
     log = out("journalctl", "-k", "-b", "--no-pager", "-q", "-g", "firmware.*(failed|error)", timeout=8)
     return set(re.findall(r"kernel: (\w[\w-]*) [0-9a-f:.]+: (?:Direct )?firmware", log))
+
+
+def listing(names):
+    return ", ".join(names[:4]) + (" …" if len(names) > 4 else "")
+
+
+def driver_findings(groups, gpus=()):
+    """What did not come out as it should when the drivers were installed and the devices found (bughunt 23. 11.):
+    NVIDIA's driver installed but not the one the card runs on, a sound card the system made nothing of, or a sound
+    card PipeWire found no profile for, and the devices left without a driver or their firmware. Read as the user,
+    each question a few seconds at most. NVIDIA's driver is missed only where latte-boot wants it (`gpus`, its
+    [[platform.gpu]]): an older card stays on nouveau on purpose."""
+    found = []
+    nvidia = [d for d in groups.get("graphics", []) if d["name"].startswith("NVIDIA") and "Audio" not in d["name"]]
+    if any(d["driver"] != "nvidia" for d in nvidia):
+        installed = bool(out("rpm", "-q", "--qf", "%{NAME}", "akmod-nvidia", timeout=5).strip().startswith("akmod-nvidia"))
+        using = next(d["driver"] for d in nvidia if d["driver"] != "nvidia") or "none"
+        if installed:
+            found.append({"id": "nvidia-not-loaded", "level": "warn", "text": "NVIDIA's driver is installed, but the graphics card runs on {driver}: its module was not built or not loaded", "args": {"driver": using},
+                          "fix": "Restart once (akmods builds it at start, its log: /var/cache/akmods/nvidia/); with Secure Boot on, the key must be enrolled in MokManager (mokutil --list-new)"})
+        elif any(g.get("driver", "").startswith("akmod-nvidia") for g in gpus):
+            found.append({"id": "nvidia-missing", "level": "warn", "text": "The NVIDIA graphics card runs on {driver}: NVIDIA's own driver was not installed", "args": {"driver": using},
+                          "fix": "Install it from RPM Fusion: sudo dnf install akmod-nvidia, then restart"})
+    sound = [d for d in groups.get("sound", []) if d["driver"]]
+    if sound:
+        cards = read("/proc/asound/cards")
+        if not cards or "no soundcards" in cards:
+            found.append({"id": "sound-no-card", "level": "warn", "text": "The sound hardware has a driver, but the system found no sound card on it",
+                          "fix": "Its firmware may be missing (sudo dnf install alsa-sof-firmware alsa-ucm), then restart"})
+        else:
+            try:
+                listed = json.loads(out("pactl", "-f", "json", "list", "cards", timeout=5) or "null")
+            except ValueError:
+                listed = None
+            if isinstance(listed, list) and listed and all((c.get("active_profile") or "off") == "off" for c in listed):
+                found.append({"id": "sound-no-profile", "level": "warn", "text": "PipeWire found no profile for any sound card: nothing plays and nothing records",
+                              "fix": "Settings › Hardware › Sound; else systemctl --user restart wireplumber, or the card's firmware (alsa-sof-firmware, alsa-ucm)"})
+    missing = [d["name"] for g in groups.values() for d in g if d["state"] == "no-driver"]
+    if missing:
+        found.append({"id": "no-driver", "level": "warn", "text": "No driver for: {names}", "args": {"names": listing(missing)},
+                      "fix": "Fedora may not have one; RPM Fusion's drivers (sudo dnf install rpmfusion-nonfree-release) or a newer kernel can"})
+    starved = [d["name"] for g in groups.values() for d in g if d["state"] == "firmware"]
+    if starved:
+        found.append({"id": "firmware", "level": "warn", "text": "Firmware missing for: {names}", "args": {"names": listing(starved)},
+                      "fix": "sudo dnf install linux-firmware, then restart"})
+    return found
 
 
 GROUPS = [("displays", "Displays", "device-desktop"), ("graphics", "Graphics", "cpu-2"), ("sound", "Sound", "device-speaker"), ("network", "Network", "network"),
@@ -240,8 +291,13 @@ def everything():
             if d["driver"] and d["driver"].split(", ")[0] in starved:
                 d["state"] = "firmware"
     listed = [{"id": g, "name": name, "icon": icon, "devices": groups[g]} for g, name, icon in GROUPS if groups.get(g)]
-    return {"computer": computer(), "groups": listed, "findings": findings(),
-            "faults": sum(1 for g in listed for d in g["devices"] if d["state"] != "ok")}
+    platform = compat()
+    told = driver_findings(groups, platform.get("gpu", []))
+    # a driver that did not take is a fault too, so QueenGoo says a device needs attention (the devices without a
+    # driver or firmware are counted one by one already)
+    return {"computer": computer(), "groups": listed, "findings": told + findings(platform),
+            "faults": sum(1 for g in listed for d in g["devices"] if d["state"] != "ok")
+                      + sum(1 for f in told if f["id"] not in ("no-driver", "firmware"))}
 
 
 def main(a):

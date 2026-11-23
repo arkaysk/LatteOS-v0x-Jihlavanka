@@ -80,7 +80,7 @@ fn kfd_node(pci_device: &str) -> Option<(u32, bool)> {
 
 /// The performance tier a card can carry, and why.
 /// full: RDNA with 10 GB+, RTX 30+ · standard: Vega, smaller RDNA, RTX 20, GTX 16 · eco: GCN 1–4, GTX 10xx ·
-/// minimal: integrated graphics.
+/// minimal: integrated graphics. Intel Arc cards report no VRAM (only amdgpu does), so they are told by PCI id.
 pub fn tier_for(g: &Gpu) -> (&'static str, String) {
     let vram = if g.vram_mb > 0 { format!(", {} GB VRAM", (g.vram_mb + 512) / 1024) } else { String::new() };
     if g.apu {
@@ -105,9 +105,17 @@ pub fn tier_for(g: &Gpu) -> (&'static str, String) {
             else if id >= 0x1e00 { ("standard", format!("NVIDIA Turing ({}){vram}", g.device)) }
             else { ("eco", format!("NVIDIA Maxwell/Pascal/Volta ({}){vram}", g.device)) }
         }
+        // Alchemist A3xx–A7xx and Battlemage: RTX 3050–3060 class, VRAM unknown, so standard rather than full.
+        "0x8086" if intel_arc(&g.device) => ("standard", format!("Intel Arc ({}){vram}", g.device)),
         "0x8086" if g.vram_mb == 0 => ("minimal", format!("Intel integrated ({})", g.driver)),
         _ => ("standard", format!("{} {}{vram}", g.vendor, g.driver)),
     }
+}
+
+/// A discrete Intel Arc card (Alchemist 0x5690–0x56ff, Battlemage 0xe200–0xe2ff), by PCI device id.
+pub fn intel_arc(device: &str) -> bool {
+    let id = u32::from_str_radix(device.trim_start_matches("0x"), 16).unwrap_or(0);
+    matches!(id, 0x5690..=0x56ff | 0xe200..=0xe2ff)
 }
 
 pub fn gpus() -> Vec<Gpu> {
@@ -137,7 +145,7 @@ pub fn gpus() -> Vec<Gpu> {
         let device = read("device");
         let vram_mb = read("mem_info_vram_total").parse::<u64>().unwrap_or(0) / 1_048_576;
         let (gfx, kfd_apu) = if vendor == "0x1002" { kfd_node(&device).unwrap_or((0, false)) } else { (0, false) };
-        let apu = kfd_apu || (vendor == "0x8086" && driver == "i915" && vram_mb == 0);
+        let apu = kfd_apu || (vendor == "0x8086" && driver == "i915" && vram_mb == 0 && !intel_arc(&device));
         out.push(Gpu { vendor, device, boot_vga: read("boot_vga") == "1", card, driver, connected, vram_mb, gfx, apu });
     }
     out
@@ -170,15 +178,24 @@ pub fn wait_for_drm(timeout: Duration) -> Option<u128> {
 /// The virtual machine this runs in (`virtualbox`, `vmware`, `qemu`…), or `None` on real hardware.
 pub fn virtualization() -> Option<String> {
     let dmi = |f: &str| fs::read_to_string(format!("/sys/class/dmi/id/{f}")).unwrap_or_default().to_lowercase();
-    let id = format!("{} {}", dmi("sys_vendor"), dmi("product_name"));
-    for (needle, name) in [("innotek", "virtualbox"), ("virtualbox", "virtualbox"), ("vmware", "vmware"),
-                           ("qemu", "qemu"), ("kvm", "kvm"), ("microsoft", "hyperv")] {
-        if id.contains(needle) {
-            return Some(name.to_string());
-        }
+    if let Some(v) = virt_from_dmi(&dmi("sys_vendor"), &dmi("product_name")) {
+        return Some(v.to_string());
     }
     let hv = fs::read_to_string("/proc/cpuinfo").map(|s| s.contains(" hypervisor")).unwrap_or(false);
     hv.then(|| "unknown".to_string())
+}
+
+/// The virtual machine named by DMI vendor and product (lowercase). Microsoft also makes Surface laptops:
+/// only its "Virtual Machine" product is Hyper-V.
+pub fn virt_from_dmi(vendor: &str, product: &str) -> Option<&'static str> {
+    let id = format!("{vendor} {product}");
+    for (needle, name) in [("innotek", "virtualbox"), ("virtualbox", "virtualbox"), ("vmware", "vmware"),
+                           ("qemu", "qemu"), ("kvm", "kvm")] {
+        if id.contains(needle) {
+            return Some(name);
+        }
+    }
+    (vendor.contains("microsoft") && product.contains("virtual machine")).then_some("hyperv")
 }
 
 /// What EGL on GBM answers: the same thing a compositor will get.
@@ -357,6 +374,28 @@ mod tests {
         let e = parse_eglinfo("OpenGL ES profile renderer: llvmpipe (LLVM 22.1.8, 256 bits)\nOpenGL ES profile version: OpenGL ES 3.2 Mesa 26.2.3\n");
         assert!(e.gles_at_least(3, 2));
         assert!(e.is_software());
+    }
+
+    #[test]
+    fn dmi_virt() {
+        assert_eq!(virt_from_dmi("microsoft corporation\n", "virtual machine\n"), Some("hyperv"));
+        assert_eq!(virt_from_dmi("microsoft corporation\n", "surface pro 7\n"), None);
+        assert_eq!(virt_from_dmi("microsoft corporation\n", "surface laptop 4\n"), None);
+        assert_eq!(virt_from_dmi("innotek gmbh\n", "virtualbox\n"), Some("virtualbox"));
+        assert_eq!(virt_from_dmi("lenovo\n", "20xw\n"), None);
+    }
+
+    fn intel(device: &str, driver: &str) -> Gpu {
+        Gpu { card: "card0".into(), vendor: "0x8086".into(), device: device.into(), driver: driver.into(),
+              boot_vga: true, connected: 1, vram_mb: 0, gfx: 0, apu: driver == "i915" && !intel_arc(device) }
+    }
+
+    #[test]
+    fn intel_tiers() {
+        assert_eq!(tier_for(&intel("0x56a0", "i915")).0, "standard");   // Arc A770
+        assert_eq!(tier_for(&intel("0xe20b", "xe")).0, "standard");     // Arc B580
+        assert_eq!(tier_for(&intel("0x5917", "i915")).0, "minimal");    // UHD 620
+        assert_eq!(tier_for(&intel("0x8a52", "i915")).0, "minimal");    // Ice Lake Iris Plus
     }
 
     #[test]

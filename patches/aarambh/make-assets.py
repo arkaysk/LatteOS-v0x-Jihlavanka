@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """make-assets.py OUT: the pictures and logos of LatteOS's boot menu theme (patches/aarambh/latteos.c).
 
-OUT/backgrounds/{latteos,safe,windows}.jpg — the coffee cup of the README (docs/screenshots/goo-ooze.png) cut out of
-its cream paper onto espresso, on the right; the top bar and the bottom strip with its fade are baked in, so the theme
+OUT/backgrounds/{latteos,safe}.jpg — the coffee cup of the README (docs/screenshots/goo-ooze.png) cut out of
+its cream paper onto espresso, on the right; windows.jpg — Windows 11's four squares, drawn here, in the cup's place; the top bar and the bottom strip with its fade are baked in, so the theme
 does not blend them line by line each frame. OUT/logos/{latteos,safe}.png — white silhouettes (Aarambh tints them)
 from Tabler Icons. Windows' logo, Restart and Power Off are Aarambh's own.
 """
@@ -48,6 +48,39 @@ def cup_on_espresso():
     return img
 
 
+def windows_mark(size):
+    """Windows 11's mark, drawn: four squares two by two with a narrow gap, each lit from its top left (Microsoft's
+    blues, #4cc2ff to #0067c0), on nothing."""
+    gap = round(size * 0.045)
+    side = (size - gap) // 2
+    tile = Image.new("RGBA", (side, side))
+    px = tile.load()
+    light, deep = (76, 194, 255), (0, 103, 192)
+    for y in range(side):
+        for x in range(side):
+            t = (x + y) / (2 * (side - 1))
+            px[x, y] = tuple(round(light[i] + (deep[i] - light[i]) * t) for i in range(3)) + (255,)
+    mark = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    for at in ((0, 0), (side + gap, 0), (0, side + gap), (side + gap, side + gap)):
+        mark.paste(tile, at)
+    return mark
+
+
+def windows_on_espresso():
+    """Another system on the same PC: Windows' own mark where LatteOS has its cup, with a faint blue glow behind it."""
+    img = Image.new("RGB", (W, H), ESPRESSO)
+    # between the top bar and where the bottom strip's fade begins, so neither darkens it
+    size = round((STRIP - FADE - BAR) * 0.7)
+    cx, cy = W - 570, (BAR + STRIP - FADE) // 2
+    glow = Image.new("L", (W, H))
+    r = size * 0.75
+    ImageDraw.Draw(glow).ellipse((cx - r, cy - r, cx + r, cy + r), fill=60)
+    img.paste(Image.new("RGB", (W, H), (0, 70, 140)), (0, 0), glow.filter(ImageFilter.GaussianBlur(size // 3)))
+    mark = windows_mark(size)
+    img.paste(mark, (cx - size // 2, cy - size // 2), mark)
+    return img
+
+
 def bars(img):
     d = ImageDraw.Draw(img)
     over = Image.new("RGB", (W, FADE), ESPRESSO)
@@ -73,8 +106,8 @@ def main(out):
     # SAFE: the same cup, cooled and dimmer — the same place, something went wrong
     safe = Image.blend(ImageOps.colorize(ImageOps.grayscale(base), ESPRESSO, (170, 160, 150)), Image.new("RGB", (W, H), ESPRESSO), 0.35)
     bars(safe).save(os.path.join(out, "backgrounds/safe.jpg"), quality=90)
-    # Windows: the cup in the dark, another system on the same PC
-    bars(Image.blend(base, Image.new("RGB", (W, H), ESPRESSO), 0.6)).save(os.path.join(out, "backgrounds/windows.jpg"), quality=90)
+    # Windows: its own mark, not our cup (bughunt: the Windows 11 entry showed the coffee cup)
+    bars(windows_on_espresso()).save(os.path.join(out, "backgrounds/windows.jpg"), quality=90)
     logo("coffee", os.path.join(out, "logos/latteos.png"))
     logo("lifebuoy", os.path.join(out, "logos/safe.png"))
 

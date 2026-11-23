@@ -348,8 +348,8 @@ ShellRoot {
                         Rectangle { required property var modelData; width: over.room; height: note.implicitHeight + 28; radius: 16; color: Theme.card
                             Glyph { x: 16; y: 14; name: parent.modelData.level === "info" ? "info-circle" : "alert-triangle"; color: parent.modelData.level === "info" ? Theme.coffee : Theme.gold }
                             Column { id: note; x: 48; y: 14; width: parent.width - 64; spacing: 3
-                                Label { text: parent.parent.modelData.text; width: parent.width; wrapMode: Text.WordWrap }
-                                Label { text: parent.parent.modelData.fix; visible: text !== ""; color: Theme.dim; font.pixelSize: 12; width: parent.width; wrapMode: Text.WordWrap } } } } }
+                                Label { text: I18n.tr(parent.parent.modelData.text, parent.parent.modelData.args); width: parent.width; wrapMode: Text.WordWrap }
+                                Label { text: I18n.tr(parent.parent.modelData.fix); visible: text !== ""; color: Theme.dim; font.pixelSize: 12; width: parent.width; wrapMode: Text.WordWrap } } } } }
             }
 
             // ── one group ─────────────────────────────────────────────────────────────────────────────────

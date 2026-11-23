@@ -835,7 +835,7 @@ with tempfile.TemporaryDirectory() as d:
     for name in ("pkill", "hyprsunset"):
         open(os.path.join(stub, name), "w").write('#!/bin/sh\necho "%s $*" >> "%s/calls"\n' % (name, d))
         os.chmod(os.path.join(stub, name), 0o755)
-    env = dict(os.environ, XDG_CONFIG_HOME=d, PATH=stub + ":" + os.environ["PATH"])
+    env = dict(os.environ, XDG_CONFIG_HOME=d, PATH=stub + ":" + os.environ["PATH"], XDG_CURRENT_DESKTOP="Hyprland")    # under pleamar-wm it is gammastep
     night = lambda *a: subprocess.run([os.path.join(ROOT, "bin", "latte-nightlight"), *a], env=env, capture_output=True).returncode
     word = lambda: open(os.path.join(d, "latteos", "nightlight")).read().strip()
     calls = lambda: open(os.path.join(d, "calls")).read().split("\n")[-2]
@@ -936,7 +936,7 @@ def test_weather():
                        ("pleamar", 'echo "pleamar $*" >> "%s/calls"' % d), ("pgrep", "exit 1"), ("pkill", "exit 0")):
         open(os.path.join(stub, name), "w").write("#!/bin/sh\n" + body + "\n")
         os.chmod(os.path.join(stub, name), 0o755)
-    env = dict(os.environ, PATH=stub + ":" + os.environ["PATH"], LATTE_GOO_DIR="/goo")
+    env = dict(os.environ, PATH=stub + ":" + os.environ["PATH"], LATTE_GOO_DIR="/goo", XDG_CURRENT_DESKTOP="Hyprland")     # under pleamar-wm it would tell the live desktop
     weather = lambda *a: subprocess.run([os.path.join(ROOT, "bin", "latte-weather"), *a], env=env, capture_output=True).returncode
     assert weather() == 2 and weather("hail") == 2
     assert weather("snow") == 0

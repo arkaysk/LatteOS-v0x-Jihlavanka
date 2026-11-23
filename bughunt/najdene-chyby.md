@@ -106,17 +106,17 @@ ho DualBrew pozná (Vyprázdniť Kôš). Nasadené.
 
 - [x] **Pád na 0 % pri Secure Boot + OpenRazer:** `install` volal `dnf()` (kľúč pre DKMS) skôr, než bola funkcia definovaná →
   `UnboundLocalError`. **Opravené** v `6b3c52e` (definícia `dnf()` presunutá nad blok OpenRazer).
-- [ ] **Inštalátor roztiahnutý cez oba monitory:** `cage` predvolene spája výstupy. Návrh: v `get` `cage -s -m last` alebo zrkadlenie
+- [~] (23. 11. noc: zrkadlenie cez `wlr-randr` v cage, `apps/installer-screens`) **Inštalátor roztiahnutý cez oba monitory:** `cage` predvolene spája výstupy. Návrh: v `get` `cage -s -m last` alebo zrkadlenie
   (duplikovať) — používateľ chce duplikovanie.
-- [ ] **Návrat v inštalátore:** po chybe sa nedá vrátiť na predošlé kroky (Súčasti…). Má ísť kliknutím na krok vľavo aj šípkami hore/späť.
-- [ ] **Konzola (log) inštalátora:** pevná výška 160 px (`apps/installer.qml`, r. 288). Má zaberať premenlivé miesto podľa rozlíšenia — ak to
+- [~] (23. 11. noc) **Návrat v inštalátore:** po chybe sa nedá vrátiť na predošlé kroky (Súčasti…). Má ísť kliknutím na krok vľavo aj šípkami hore/späť.
+- [~] (23. 11. noc) **Konzola (log) inštalátora:** pevná výška 160 px (`apps/installer.qml`, r. 288). Má zaberať premenlivé miesto podľa rozlíšenia — ak to
   rozlíšenie dovolí, až po hladinu kávy.
-- [ ] **Farebné riadky v logu** ako pri štarte Fedory: chyby a problémy červené (`error`, `Traceback`, `install: … could not`), varovania
+- [~] (23. 11. noc) **Farebné riadky v logu** ako pri štarte Fedory: chyby a problémy červené (`error`, `Traceback`, `install: … could not`), varovania
   žlté, OK/hotovo zelené, ostatné bežné.
-- [ ] **NumLock vždy zapnutý vopred** (inštalátor, prihlasovanie, relácia).
-- [ ] **Jazyk inštalátora** sa má brať z jazyka, ktorý sa nastavil v inštalátore Fedory (`/etc/locale.conf`, `LANG`). Preklad zatiaľ iba sk;
+- [~] (23. 11. noc: inštalátor iba obchádzka `numpad:mac`, kontrolka nesvieti) **NumLock vždy zapnutý vopred** (inštalátor, prihlasovanie, relácia).
+- [~] (23. 11. noc) **Jazyk inštalátora** sa má brať z jazyka, ktorý sa nastavil v inštalátore Fedory (`/etc/locale.conf`, `LANG`). Preklad zatiaľ iba sk;
   ostatné jazyky predvolene angličtina.
-- [ ] **Zamrznutie počas buildu pleamar/pleamar-wm** (pri `Compiling wayland-protocols`, 29 %): kurzor nereagoval. Podozrenie: `cargo` berie
+- [x] **Zamrznutie počas buildu pleamar/pleamar-wm** (pri `Compiling wayland-protocols`, 29 %): kurzor nereagoval. Podozrenie: `cargo` berie
   všetky jadrá s bežnou prioritou a okno inštalátora (cage + pohyblivá káva) nedostane čas. Návrh: build cez `nice -n 10` (a `ionice`),
   prípadne `-j` = jadrá − 2; počas buildu stíšiť animáciu kávy.
 - [x] **Zamrznutie okna počas buildu:** `install` teraz spúšťa build cez `nice -n 19` + `ionice` a s `CARGO_BUILD_JOBS` = jadrá − 2 (min. 1).
@@ -144,7 +144,7 @@ ho DualBrew pozná (Vyprázdniť Kôš). Nasadené.
 - [ ] **Agentgram nefunguje.** Nerobí sa dnes; pozri `latte-mcp`/agentgram službu, `systemctl --user status`, `journalctl --user -b`.
 - [ ] **ToolHive (`thv`) nefunguje.** Súvisí s agentgramom (skupiny MCP = konektory agentgramu cez `latte-mcp /mcp/SKUPINA`). Nerobí sa dnes.
 - Nástroje pre pozeranie plochy z Claude Code: `~/.claude.json` má `pleamar-desktop` cez `flatpak-spawn --host pleamar-wm agent mcp` (záloha `~/.claude.json.bak-pleamar`); `~/.config/pleamar/session.conf` = `agent on`.
-- [ ] **Ponuka štartu (aarambh): Windows 11 má kávovú šálku** (používateľ 22. 11., po prvom štarte): dlaždica/pozadie Windows má byť **logo Windows 11**, nie naša šálka (`patches/aarambh/make-assets.py` r. 76–77, ROADMAP 3.11).
+- [~] (23. 11. noc: kreslené logo zo štyroch štvorcov) **Ponuka štartu (aarambh): Windows 11 má kávovú šálku** (používateľ 22. 11., po prvom štarte): dlaždica/pozadie Windows má byť **logo Windows 11**, nie naša šálka (`patches/aarambh/make-assets.py` r. 76–77, ROADMAP 3.11).
 - [x] **Po reštarte rovnaká tapeta na oboch monitoroch (22. 11.):** `background.json` bol správny (DP-1 video, HDMI-A-1 obrázok), ale `bin/latte-wall` `draw()` dával `-o MONITOR` swaybg **za** `-i` a `-m`. Podľa manuálu swaybg sa prepínače bez `-o` pred nimi týkajú všetkých výstupov, takže obrázok pre HDMI-A-1 sa kreslil na oboch a ako novší prekryl video mpvpaper na DP-1 (po reštarte vznikne swaybg po mpvpaperi; predtým to bolo naopak). **Opravené v kóde** (`-o` prvé); nasadí sa pri ďalšej inštalácii (`/usr/share/latteos` som neupravoval). Na živej ploche som opravil iba bežiaci swaybg (`swaybg -o HDMI-A-1 -i … -m fill`, `WAYLAND_DISPLAY=pleamar-1`). Neoverené: test pre `draw()` neexistuje (v `tests/` nie je swaybg).
 
 ### 22. 11. 2026 (noc) — reinštalácia od čistej Fedory (nástroj na testovanie inštalátora)
@@ -257,3 +257,18 @@ Potvrdené v živej relácii: NumLock a nápis v TrayShore fungujú (Caps Lock d
 - **SkWall efekty: všetky ponechať** (rozhodnutie používateľa); ostáva osekať ostatné časti SkWall a využiť efekty pri otváraní a zatváraní okien a aplikácií (nerobené).
 - [~] **Disky NTFS ako natívne, bez sudo po každom reštarte:** príčina: `udisks` volá interné disky „system“ (`HintSystem: true` pri `sda2`, `nvme1n1p2`) a na ich pripojenie žiada administrátora. Oprava: `system/polkit/50-latteos-udisks.rules` (užívateľ pri klávesnici v `wheel` smie `filesystem-mount-system` a `unmount-others`), `system/udisks2/mount_options.conf` (kernelový `ntfs3` pred FUSE, vlastník = používateľ), `bin/latte-automount` (po prihlásení otvorí NTFS oddiely ≥ 2 GiB mimo Windows recovery/EFI; log `~/.local/state/latteos/automount.log`; vypnúť: `~/.config/latteos/automount` = `off`). **Neskúšané naživo** (disky som nechal bez zásahu): `latte-automount list` vypísal `/dev/sda2`, `/dev/nvme1n1p2`. Disk, ktorý Windows nechal v hibernácii, `ntfs3` odmietne: oznámenie to povie.
 - [~] **Prepínač klávesnice pri TrayShore:** znak (SK/US) pred ikonami siete a zvuku, stlačenie = ďalšie rozloženie. `patches/pleamar-wm-zz-layout.patch` (zostavený, neskúšaný), `wm/session.plm` (`keys.layout` → `latte-say 'fact kb_layout N'`), `goo/lib/shore.luau` + `goo/parts/shore.plm`, `system/pleamarwm/autostart` (`XKB_DEFAULT_LAYOUT` do prostredia systemd, odkiaľ ho číta Goo). Ukáže sa len pri ≥ 2 rozloženiach. Rozloženia z prihlasovacej obrazovky: `sk,us`.
+
+#### 23. 11. (noc) — dokončovanie opráv (Claude, 4 pomocníci; opravené v kóde, nenasadené, v relácii neskúšané)
+`tests/check.sh` prešiel celý. `pleamar --check` overí scény, no nie Luau, takže zmeny v `.luau` sú iba prečítané.
+- [~] **Inštalátor** (`get`, `apps/installer.qml`, nový `apps/installer-screens`): cage 0.3.1 má iba `-m extend|last`, no prijme nastavenie výstupov cez `wlr-randr`. Obe obrazovky sa preto dajú na 0,0 v najväčšom spoločnom rozlíšení, čo je skutočné zrkadlenie. Bez spoločného rozlíšenia ostane iba posledný monitor. `get` doinštaluje `wlr-randr`. Skúšané v cage bez obrazovky s 2 výstupmi.
+  Kroky: klik na skorší krok vľavo, šípky ‹ › v hlavičke, klávesy hore/vľavo/Alt+vľavo, dopredu iba po už videné kroky. Počas inštalácie sa stránky dajú len pozrieť. Log siaha až po kávu (aspoň 160 px), je farebný (chyby červené, varovania zlaté, OK zelené) a drží posledných 800 riadkov. Jazyk: `LANG` z `/etc/locale.conf`, keď ho sudo neodovzdá. NumLock: cage nastavenie nemá, `XKB_DEFAULT_OPTIONS=numpad:mac` dá na numerickej klávesnici vždy čísla, ale kontrolka nesvieti.
+- [~] **Sklo 0 vypne sklo Goo:** `engine.luau` `fact.panes = 0` pri úrovni 0 (aj pre bočné scény), `card.plm`, `body.plm`, `cloud.plm` majú `lens` iba pri `panes`. Úrovne 1–4 sa nemenia.
+- [~] **AppCloud na druhom monitore:** `side.plm` má `parts/cloud.plm` (doska vľavo dole, iba dátum, bez ťahania Alt). Overiť, či nová služba `apps.launch` nevypýta súhlas.
+- [ ] **DockShore na každom monitore — príčina (hypotéza pomocníka, neoverená):** chyba prekladača pleamar. Kópie pomenovanej plochy `screens: each` nedostanú vlastného rodiča pre `z:` (`compiler.rs` ~4695–4740, na rozdiel od r. 597–605), takže `z_arrange` premieša skupiny všetkých kópií a skupina `s=1` sa kreslí pod transformáciou kópie 0 (DP-1). Navrhovaná oprava: kreslenie `surface dockshore` v `system/pleamarwm/wm/session.plm` (r. ~1482–1709) obaliť do `group { }` bez `z:`, potom znova odstrániť `free.$s` (overiť po prihlásení). Skúšobná kópia s `--check` ok je v scratchpade relácie. Kandidát do `patches/issues/`.
+- [~] **latte-ai:** `invite` končí s odhlásením (logind, inak latte-session; strop 24 h). Modely „too-big“ nie sú v presete routera ani v katalógu agentgramu. **Rozhodnúť:** nedajú sa zvoliť ani v chate LensGoo (používateľ ich nemôže vynútiť). „Moje modely“ ukladá iba zmenené čísla. Starý `~/.config/latteos/local-ai.json` má stále `ngl 999` a veľké `ctx`: pri každom modeli stlačiť „Vlastné LatteOS“.
+- [~] **DeviceManager** hlási: NVIDIA ovládač nainštalovaný, ale karta beží na nouveau; NVIDIA bez vlastného ovládača; zvuk bez karty ALSA; PipeWire bez profilu; zariadenia bez ovládača alebo firmvéru. Na tomto PC nič, čo je správne.
+- [~] `latte-settings` bez argumentov otvorí Nastavenia.
+- [~] **Nízka (17. 11.):** latte-hw: Surface nie je VM (iba Microsoft „Virtual Machine“), Intel Arc „standard“, Ice/Jasper/Elkhart Lake v tabuľke. Varovanie HDD na btrfs: koreň sa hľadá cez `mountinfo`. Voľné miesto z bajtov, zaokrúhlené nadol. `latte-apps --all` → použitie. Zmeškaný budík zazvoní do 1 h a dvakrát nezazvoní. Zámok obrazovky sťahuje správy iba zamknutý. **SAFE sa dá zamknúť:** Super+L (vyhľadávanie v SAFE presunuté na **Super+S**), lišta SAFE použije plochý zámok Goo. V SAFE nie je zámok pri nečinnosti. SAFE ukazuje oznam o softvérovom kreslení.
+- Testy: `test_bin.py` night-light a weather padali pod pleamar-wm, lebo skripty sa riadia `XDG_CURRENT_DESKTOP`. Weather pritom posielal `fact snow/rain false` do **živej** plochy. Testy si teraz prostredie určia samy. Nové `tests/test_ai_invite.py`, `test_devices.py`, `test_apps_lock.py` sú v `check.sh`.
+- **Nerobené, funkcie a rozhodnutia:** riadky 1–4 (prihlasovanie, 4. režim okien, popup PowerGoo s lištou, kontextová ponuka), efekty SkWall pre okná, ukazovateľ zaťaženia v inštalátore, výber pružiny pri zatváraní karty.
+- **Nerobené, iba naživo:** výber textu ťahaním vo WebEngineView, blikanie ClockGoo, zatváranie karty (staré snímky pre lens), zaseknutie s Agentgramom, test pleamar-wm `a_draft_is_looked_at_never_run`.

@@ -6,8 +6,13 @@
 #   2. not there (being restarted, or a SAFE session that has none): started, and asked again for up to 3 s;
 #   3. the Goo scene's own simple lock (goo/parts/lock.plm).
 # --scene: only 1, for Goo itself (it falls back to its own lock), so the two never ask each other in a ring.
+# SAFE (labwc, software rendering) has neither: its bar locks (goo/safe.plm with parts/lock.plm, flat and still).
 # Exit 1 when nothing took the lock.
 s="${PLEAMAR_SOCKETS:-${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/pleamar}/lockscreen.sock"   # pleamar-wm's session: a folder of its own
+if [ "${LATTE_MODE:-}" = safe ]; then
+    [ "${1:-}" = --scene ] && exit 1
+    exec pleamar --say safe "emit lock_now" >/dev/null 2>&1
+fi
 scene() { [ -S "$s" ] && pleamar --say lockscreen "emit lock_now" >/dev/null 2>&1; }
 scene && exit 0
 [ "${1:-}" = --scene ] && exit 1
