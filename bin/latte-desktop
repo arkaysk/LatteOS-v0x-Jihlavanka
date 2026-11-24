@@ -18,9 +18,11 @@
 flag="${XDG_CONFIG_HOME:-$HOME/.config}/latteos/desktop-icons"
 status() { [ "$(cat "$flag" 2>/dev/null)" = off ] && echo off || echo on; }
 trash="${XDG_DATA_HOME:-$HOME/.local/share}/Trash/files"
+nl="
+"; tab="$(printf '\t')"
 folder() { d="$(xdg-user-dir DESKTOP 2>/dev/null)"; { [ -n "$d" ] && [ "$d" != "$HOME" ]; } || d="$HOME/Desktop"; mkdir -p "$d" "$trash"; printf '%s' "$d"; }
 # a launcher's own name, in the user's language if it has one
-called() { n="$(grep -m1 "^Name\[${LANG%%_*}\]=" "$1" | cut -d= -f2-)"; [ -n "$n" ] || n="$(grep -m1 '^Name=' "$1" | cut -d= -f2-)"; printf '%s' "$n"; }
+called() { n="$(grep -m1 "^Name\[${LANG%%_*}\]=" "$1" | cut -d= -f2-)"; [ -n "$n" ] || n="$(grep -m1 '^Name=' "$1" | cut -d= -f2-)"; printf '%s' "$n" | tr -d '\t'; }
 # the icon theme's names (what the theme has, so that a kind it lacks gets its generic icon)
 names() {
     t="$(gsettings get org.gnome.desktop.interface icon-theme 2>/dev/null | tr -d "'")"
@@ -35,6 +37,9 @@ list)
     printf '#\t%s\t%s\n' "$d" "$(ls -A "$trash" | wc -l)"
     for f in "$d"/*; do
         [ -e "$f" ] || [ -L "$f" ] || continue
+        # one line a file, its fields apart by tabs: a name with a line break or a tab in it made an icon of its own,
+        # pointing anywhere (~/Dokumenty, and Delete put that in the Trash); such a file is not shown (the audit, 24. 11.)
+        case "$f" in *"$nl"*|*"$tab"*) continue ;; esac
         at="$(stat -L -c '%s	%Y' -- "$f" 2>/dev/null)"
         if [ -d "$f" ]; then printf '%s\t%s\t1\tfolder\t%s\n' "$f" "${f##*/}" "$at"; continue; fi
         case "$f" in *.desktop) n="$(called "$f")"; printf '%s\t%s\t0\t%s\t%s\n' "$f" "${n:-${f##*/}}" "$(grep -m1 '^Icon=' "$f" | cut -d= -f2-)" "$at"; continue ;; esac

@@ -876,7 +876,10 @@ ShellRoot {
                                    { id: "goo", name: QT_TR_NOOP("Goo"), hint: QT_TR_NOOP("a drop of coffee; being reworked") }]
                     Choice { required property var modelData; width: 220; text: I18n.tr(modelData.name); hint: I18n.tr(modelData.hint)
                              on: (cursorq.data ? cursorq.data.mode : "goo") === modelData.id
-                             onPressed: { tell.running = false; tell.command = ["latte-settings", "cursor", modelData.id]; tell.running = true } } } }
+                             onPressed: { tell.running = false; tell.command = ["latte-settings", "cursor", modelData.id]; tell.running = true }
+                        // what it looks like: the system's arrow, or a drop of the coffee (24. 11.: the cards were empty)
+                        Glyph { anchors.centerIn: parent; name: parent.parent.modelData.id === "goo" ? "droplet" : "pointer"; font.pixelSize: 44
+                                color: parent.parent.modelData.id === "goo" ? Theme.gold : Theme.cream } } } }
             Part { visible: shell.page === "icons"; width: view.room; title: I18n.tr("Icons"); note: I18n.tr("What files, folders and apps are shown with: on the desktop, in LatteOS's apps and in apps that follow the system.")
                 Repeater { model: iconsets.data ? iconsets.data.sets : []
                     Choice { id: set; required property var modelData; width: 200; text: modelData.name; on: iconsets.data.chosen === modelData.id
@@ -1275,9 +1278,27 @@ ShellRoot {
                                                    { id: "klipy", name: "Klipy", url: "https://partner.klipy.com/" }]
                 Repeater { model: gifPart.sources
                     Pill { required property var modelData; text: modelData.name; strong: gifPart.source === modelData.id; onPressed: goo.set("lens_gif_source", modelData.id) } }
-                Field { id: gifKey; width: Math.min(420, view.room); icon: "key"; secret: true; hint: I18n.tr("The service's key (API key)")
-                        text: goo.kept["lens_gif_key_" + gifPart.source] || ""; onAccepted: goo.set("lens_gif_key_" + gifPart.source, text.trim()) }
-                Pill { text: I18n.tr("Save the key"); icon: "check"; strong: true; onPressed: goo.set("lens_gif_key_" + gifPart.source, gifKey.text.trim()) }
+                // the key goes to the system's keyring, as LensAI's do (bin/latte-gif key); Goo's settings only say that there is one
+                // (a key kept there before 24. 11. moves to the keyring when it is saved again)
+                readonly property bool inRing: goo.kept["lens_gif_in_" + source] === true || (goo.kept["lens_gif_key_" + source] || "") !== ""
+                function keep(word) {
+                    gifStore.src = source
+                    gifStore.word = word
+                    gifStore.environment = { "LATTE_GIF_KEY": word }
+                    gifStore.command = ["latte-gif", "key", source]
+                    gifStore.running = true
+                }
+                Process { id: gifStore; property string src; property string word
+                    stdout: StdioCollector { id: gifSaid }
+                    onExited: { let ok = false; try { ok = JSON.parse(gifSaid.text).ok === true } catch (e) {}
+                                if (!ok) return
+                                const k = {}; k["lens_gif_key_" + src] = ""; k["lens_gif_in_" + src] = word !== ""
+                                goo.setMany(k); gifKey.text = "" } }
+                Field { id: gifKey; width: Math.min(420, view.room); icon: "key"; secret: true
+                        hint: gifPart.inRing ? I18n.tr("A key is kept in the keyring; type a new one to change it") : I18n.tr("The service's key (API key)")
+                        onAccepted: if (text.trim() !== "") gifPart.keep(text.trim()) }
+                Pill { text: I18n.tr("Save the key"); icon: "check"; strong: true; onPressed: if (gifKey.text.trim() !== "") gifPart.keep(gifKey.text.trim()) }
+                Pill { visible: gifPart.inRing; text: I18n.tr("Remove the key"); icon: "trash"; onPressed: gifPart.keep("") }
                 Pill { text: I18n.tr("Where to get a key"); icon: "external-link"
                        onPressed: Quickshell.execDetached(["latte-open", String(gifPart.sources.find(x => x.id === gifPart.source).url)]) } }
 
@@ -1725,7 +1746,8 @@ ShellRoot {
                 Repeater { model: [{ t: 0, name: QT_TR_NOOP("Upright") }, { t: 1, name: QT_TR_NOOP("On its left side") }, { t: 2, name: QT_TR_NOOP("Upside down") }, { t: 3, name: QT_TR_NOOP("On its right side") }]
                     Pill { required property var modelData; text: I18n.tr(modelData.name); strong: shell.screenHere !== null && shell.screenHere.transform === modelData.t
                            onPressed: shell.changeScreen(shell.screenHere.name, { transform: modelData.t }) } } }
-            Part { visible: shell.page === "displays" && (shell.screenList.length > 1 || screensWord.value === "duplicate"); width: view.room; title: I18n.tr("More than one screen")
+            // pleamar-wm shows no monitor as another's copy (`pleamar-wm output` has no mirror): there each is a desktop of its own, so no choice
+            Part { visible: shell.page === "displays" && !shell.onPleamar && (shell.screenList.length > 1 || screensWord.value === "duplicate"); width: view.room; title: I18n.tr("More than one screen")
                    note: I18n.tr("Extended, each screen is a desktop of its own. Duplicated, they all show the main one's picture.")
                 Pill { icon: "layout-columns"; text: I18n.tr("Extend"); strong: screensWord.value !== "duplicate"
                        onPressed: { screensWord.value = "extend"; shell.order(["hyprctl", "eval", "latte.duplicate(false)"]) } }

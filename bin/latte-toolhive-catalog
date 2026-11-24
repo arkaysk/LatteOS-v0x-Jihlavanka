@@ -21,6 +21,7 @@ import sys
 import time
 import urllib.parse
 import urllib.request
+from datetime import datetime
 
 HOME = os.path.expanduser("~")
 CONFIG = os.path.join(os.environ.get("XDG_CONFIG_HOME") or HOME + "/.config", "latteos", "toolhive-registry.yaml")
@@ -100,6 +101,21 @@ def export():
     return {"servers": len(servers), "skills": len(skills), "file": OUT}
 
 
+def now_done(st, start):
+    """Synced: complete (now, or before and still within its interval, so the server will not sync it again now),
+    or failed in this run (a failure left from a run before does not count)."""
+    if st.get("phase") == "complete":
+        return True
+    # a source the server has never tried is "failed" too, as it starts on an empty database (the first run of
+    # a new install): "No previous sync status found", lastAttempt its own start; that is no failure yet
+    if st.get("message") == "No previous sync status found":
+        return False
+    try:
+        return st.get("phase") == "failed" and datetime.fromisoformat(st.get("lastAttempt")).timestamp() >= start - 1
+    except (TypeError, ValueError):
+        return False
+
+
 def main(a):
     if not SERVER:
         print("latte-toolhive-catalog: thv-registry-api is not installed", file=sys.stderr)
@@ -114,18 +130,7 @@ def main(a):
                                   stdout=open(os.path.join(ROOM, "registry.log"), "w"), stderr=subprocess.STDOUT,
                                   env=dict(os.environ, PGPASSFILE=HOME + "/.pgpass"))
         # every source synced (or failed) once, at most 20 min: its first sync starts a minute or two in
-        from datetime import datetime
         start, done = time.time(), {}
-
-        def now_done(st):
-            """Synced: complete (now, or before and still within its interval, so the server will not sync it again now),
-            or failed in this run (a failure left from a run before does not count)."""
-            if st.get("phase") == "complete":
-                return True
-            try:
-                return st.get("phase") == "failed" and datetime.fromisoformat(st.get("lastAttempt")).timestamp() >= start - 1
-            except (TypeError, ValueError):
-                return False
         for _ in range(240):
             time.sleep(5)
             if server.poll() is not None:
@@ -136,7 +141,7 @@ def main(a):
             except (OSError, ValueError):
                 continue
             done = {k: v.get("phase", "") for k, v in got.items()}
-            if got and all(now_done(v) for v in got.values()):
+            if got and all(now_done(v, start) for v in got.values()):
                 break
         out = export()
         if not out:

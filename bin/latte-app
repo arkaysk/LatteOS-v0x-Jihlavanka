@@ -25,4 +25,10 @@ fi
 qs=qs
 if [ -x /usr/lib64/latteos/qs-web ]; then qs=/usr/lib64/latteos/qs-web; fi
 if [ "$app" = aicenter ] && [ "$qs" != qs ]; then export LATTE_WEB=1; fi
+# In a scope of its own under the user's systemd, not in the unit of whoever opened it: opened from Goo it was in
+# latte-goo.service, and Goo starting again (or falling) closed it (24. 11.)
+if [ -z "${LATTE_APP_SCOPED:-}" ] && [ -S "${XDG_RUNTIME_DIR:-/nonexistent}/systemd/private" ] && command -v systemd-run >/dev/null; then
+    LATTE_APP_SCOPED=1 LATTE_APP_ARGS="$(printf '%s\n' "$@")" exec systemd-run --user --scope --quiet --collect --slice=app.slice \
+        --unit="app-latteos-$app-$$" -- "$qs" -n -p "$share/apps/$app.qml"
+fi
 LATTE_APP_ARGS="$(printf '%s\n' "$@")" exec "$qs" -n -p "$share/apps/$app.qml"

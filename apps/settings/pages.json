@@ -372,12 +372,12 @@
   {
     "id": "accessibility",
     "name": "Accessibility",
-    "icon": "user",
+    "icon": "accessible",
     "pages": [
       {
         "id": "accessibility",
         "name": "Accessibility",
-        "icon": "user",
+        "icon": "accessible",
         "status": "planned",
         "words": "contrast zoom large text screen reader"
       }

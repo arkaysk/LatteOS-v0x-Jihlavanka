@@ -1,0 +1,28 @@
+--- a/src/platform/desktop.rs
++++ b/src/platform/desktop.rs
+@@ -200,6 +200,13 @@
+     let mut launch = Command::new("setsid");
+     crate::child_env(&mut launch);
+     launch.arg("-f");
++    // In a scope of its own from the first instruction (as flatpak does), under the user's systemd: else it is in the
++    // shell's own unit, and stopping or restarting the shell takes it along. A program that moves itself into a scope
++    // later (Electron's VS Code) left behind what it had already started (its GPU process): «GPU process isn't usable»,
++    // and it fell each time the shell started again.
++    if std::env::var_os("XDG_RUNTIME_DIR").is_some_and(|d| std::path::Path::new(&d).join("systemd/private").exists()) && which("systemd-run") {
++        launch.args(["systemd-run", "--user", "--scope", "--quiet", "--collect", "--slice=app.slice", "--"]);
++    }
+     // On its own it would have nothing to talk to (its stdin is /dev/null):
+     // the user's terminal runs it, the one xdg-terminal-exec says. If two
+     // entries run the same command and one wants a terminal, it gets one.
+@@ -220,6 +227,11 @@
+     Ok(())
+ }
+ 
++/// Whether a program is on PATH.
++fn which(program: &str) -> bool {
++    std::env::split_paths(&std::env::var_os("PATH").unwrap_or_default()).any(|d| d.join(program).is_file())
++}
++
+ /// Launchers of Electron apps that are scripts: the program they start is found
+ /// at run time, so the folder of the file named says nothing.
+ const ELECTRON_SCRIPTS: &[&str] = &["discord"];

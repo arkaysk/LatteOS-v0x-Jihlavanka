@@ -330,8 +330,30 @@ def icon_file(theme, name):
                     for ending in (".svg", ".png"):
                         path = os.path.join(root, theme, folder, name + ending)
                         if os.path.exists(path):
-                            return path
+                            return drawable(path)
     return ""
+
+
+def drawable(path):
+    """The picture as Qt can show it: an SVG with filters or masks (Adwaita's trash, packages, spreadsheets) came out as a
+    black square in the apps (Qt SVG), so it is drawn to a PNG once by librsvg (GdkPixbuf), kept in the cache; else as it is."""
+    if not path.endswith(".svg"):
+        return path
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            if "<filter" not in f.read():
+                return path
+        out = os.path.join(os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"), "latteos", "icons",
+                           path.strip("/").replace("/", "_")[:-4] + ".png")
+        if not os.path.exists(out) or os.path.getmtime(out) < os.path.getmtime(path):
+            import gi
+            gi.require_version("GdkPixbuf", "2.0")
+            from gi.repository import GdkPixbuf
+            os.makedirs(os.path.dirname(out), exist_ok=True)
+            GdkPixbuf.Pixbuf.new_from_file_at_size(path, 128, 128).savev(out, "png", [], [])
+        return out
+    except Exception:                                    # no GdkPixbuf or librsvg: the SVG as it is
+        return path
 
 
 def chosen_icons():

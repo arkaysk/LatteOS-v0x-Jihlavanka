@@ -51,6 +51,8 @@ local M = {}
 
 local CARD_W, CARD_H, WAVE_AT = 600, 580, 502            -- a family of cards that keep one size (`uniform`) is this wide and at least this tall
 local ROWS, ROWS2, ROWS3, ITEMS, TABS = 40, 12, 6, 6, 6        -- what the scene's models hold (ITEMS: buttons or tiles in a line unless `per` says)
+-- the scene numbers the rows of card2 from ROWS and of card_foot from ROWS + ROWS2 (parts/rows.plm `CardRow(r, base…)`):
+-- change one, change both (14.–24. 11. they were 24 and 60, and LensShore's strip of modes did nothing)
 local CELLS = 10                             -- a line holds at most this many (parts/card.plm `items max`)
 local RISE = 74                             -- how far from the edge the owner steps to be the card's ear
 local engine                                -- set by lib/engine.luau, which owns the drops

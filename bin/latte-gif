@@ -5,10 +5,14 @@
                                            with no query what is trending; 8 a page; "preview" a small GIF downloaded
   latte-gif get SOURCE ID URL              the whole GIF downloaded once (for pasting it as a picture): its path
 
-SOURCE is giphy, tenor or klipy; the key is in LATTE_GIF_KEY (not on the command line, where any process could read it).
-Nothing is asked of a service without a key. Kept in ~/.cache/latteos/gif/.
+  latte-gif key SOURCE                     keeps the key given in LATTE_GIF_KEY in the system's keyring (Secret Service,
+                                           as LensAI's keys); an empty one takes it out. {"ok": true|false}
+  latte-gif has SOURCE                     {"key": true|false}: whether the keyring holds one
+
+SOURCE is giphy, tenor or klipy. The key comes from LATTE_GIF_KEY (not on the command line, where any process could
+read it), else from the keyring. Nothing is asked of a service without a key. Kept in ~/.cache/latteos/gif/.
 """
-import concurrent.futures, json, os, sys, urllib.error, urllib.parse, urllib.request
+import concurrent.futures, json, os, subprocess, sys, urllib.error, urllib.parse, urllib.request
 
 CACHE = os.path.join(os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"), "latteos", "gif")
 PER = 8
@@ -92,8 +96,31 @@ def keep(source, ident, url, size):
     return path
 
 
+def keyring(source, value=None):
+    """The service's key in the system's keyring: read it (value None), keep it, or take it out (""). The read: "" when
+    there is none or no keyring; keeping and taking out: whether it worked."""
+    attrs = ["latteos", "gif", "source", source]
+    try:
+        if value is None:
+            r = subprocess.run(["secret-tool", "lookup"] + attrs, capture_output=True, text=True, timeout=20)
+            return r.stdout.strip() if r.returncode == 0 else ""
+        if value == "":
+            subprocess.run(["secret-tool", "clear"] + attrs, capture_output=True, timeout=20)
+            return True
+        return subprocess.run(["secret-tool", "store", "--label", "LatteOS GIF: " + source.capitalize()] + attrs,
+                              input=value, capture_output=True, text=True, timeout=20).returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return "" if value is None else False
+
+
 def main(a):
-    key = os.environ.get("LATTE_GIF_KEY", "").strip()
+    if len(a) >= 2 and a[0] == "key" and a[1] in SOURCES:
+        print(json.dumps({"ok": keyring(a[1], os.environ.get("LATTE_GIF_KEY", "").strip())}))
+        return 0
+    if len(a) >= 2 and a[0] == "has" and a[1] in SOURCES:
+        print(json.dumps({"key": keyring(a[1]) != ""}))
+        return 0
+    key = os.environ.get("LATTE_GIF_KEY", "").strip() or (keyring(a[1]) if len(a) >= 2 and a[0] == "search" and a[1] in SOURCES else "")
     if len(a) >= 2 and a[0] == "search" and a[1] in SOURCES:
         if not key:
             print(json.dumps({"items": [], "more": False, "error": "key"}))

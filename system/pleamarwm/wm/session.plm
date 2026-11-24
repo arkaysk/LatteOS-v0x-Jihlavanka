@@ -1147,12 +1147,15 @@ scene Session {
     // water covers them all ──
     event workspace
     event move_to_workspace
+    event latte_to_screen
     event workspace_next
     event workspace_previous
     event workspace_to_left
     event workspace_to_right
     on workspace(v) { workspace v }
     on move_to_workspace(v) while win.focus >= 0 { send win(win.focus) to workspace v }
+    // the window with the keyboard to another monitor (by its number): the window bar's menu, through system/pleamarwm/bin/hyprctl
+    on latte_to_screen(v) while win.focus >= 0 and v < screens.count { send win(win.focus) to v }
     let ws.mon = win.shown[mon]
     let ws.last = win.used[mon] + 1
     on workspace_next { workspace min(ws.mon + 1, ws.last) }

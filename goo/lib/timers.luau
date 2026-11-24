@@ -103,7 +103,7 @@ local function armed(a)
 end
 function M.alarm_add()
     local list = all().alarms
-    if #list >= 10 then return end
+    if #list >= 6 then return end                        -- as many as the card shows (clockgoo.luau, clock.plm): one beyond rang unseen
     local a = { time = string.format("%02d:%02d", M.hour, M.minute), on = true }
     armed(a)
     list[#list + 1] = a

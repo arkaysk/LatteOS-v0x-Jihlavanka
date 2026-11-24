@@ -48,6 +48,10 @@ UID = os.getuid()
 RUN = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "latteos")
 STATE = os.path.join(RUN, "guardcorgi.json")
 EVERY, MISSES, TRIES, WINDOW, REST = 5, 2, 5, 300, 300
+# the session's own start: the guard starts with it, before the wallpaper, the password agent and the clipboard's
+# watcher (the session's autostart starts them a few seconds in); not yet there then is no fault (24. 11.: every login
+# wrote "wallpaper down", 99 of them, and the GuardCorgi window showed the wallpaper as what goes wrong most)
+STARTING = 20
 # the history outlives a restart of the computer: the overview counts the days since the last problem
 LOG = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "latteos", "guardcorgi.log")
 LOG_KEEP = 5000
@@ -526,6 +530,7 @@ def watch():
     seen = {c["pid"] for c in crashes(1)}
     looked = 0
     mended = restarts()
+    born = time.monotonic()
 
     def look():
         nonlocal looked, mended
@@ -573,6 +578,8 @@ def watch():
                         c["state"] = "up"
                     c["missed"], c["told"] = 0, False
                     continue
+                if now - born < STARTING and c["state"] == "up" and not c["restarts"]:
+                    continue                                    # still starting with the session
                 c["missed"] += 1
                 if c["missed"] == 1:
                     note("down", ident, "not running")

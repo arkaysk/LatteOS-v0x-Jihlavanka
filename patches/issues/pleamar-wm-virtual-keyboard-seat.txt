@@ -1,0 +1,33 @@
+TITLE
+With `agent on`, wtype (zwp_virtual_keyboard_v1) types on an agent's seat: nothing has its keyboard, nothing arrives
+
+BODY
+**Version:** pleamar-wm 0.6.35 (`a9b803a`), on pleamar 0.7.31. Reproduced in `pleamar-wm headless`.
+
+**What happens:** with `agent on` in session.conf, the session announces three `wl_seat`s: yours ("pleamar") first,
+then the agents' ("cua-agent", "cua-agent-2"). wtype binds every seat it is told of and keeps the last one, so it asks
+for its virtual keyboard on `cua-agent-2`. There nothing has the keyboard, and that seat's clipboard is the agent's own:
+`wtype abc` types nothing into the window you are in, and `wtype -M ctrl -k v` pastes nothing. With `agent off` there
+is one seat and wtype works. (`WAYLAND_DEBUG=1 wtype x` shows the three binds and `create_virtual_keyboard` on the last.)
+
+LatteOS pastes what was chosen in its clipboard's list, and an emoji, with Ctrl+V through wtype; that never worked.
+
+**Reproduce (headless):**
+
+```sh
+printf 'agent on\n' > /tmp/pwm/session.conf; : > /tmp/pwm/autostart
+PLEAMAR_WM_CONFIG=/tmp/pwm/session.conf PLEAMAR_WM_AUTOSTART=/tmp/pwm/autostart pleamar-wm headless &
+# its WAYLAND_DISPLAY is in its first lines
+WAYLAND_DISPLAY=pleamar-2 foot sh -c 'cat > /tmp/pwm/got' &
+sleep 2; printf pasted | WAYLAND_DISPLAY=pleamar-2 wl-copy
+WAYLAND_DISPLAY=pleamar-2 wtype -M ctrl -M shift -k v -m shift -m ctrl -k Return
+cat /tmp/pwm/got     # empty; "pasted" with the change below
+```
+
+**The change we run** (`nest.rs`, in place of `smithay::delegate_virtual_keyboard_manager!(State)`): a virtual keyboard
+asked for on a seat that is not yours is made on yours, when the program has bound yours too; one that bound only an
+agent's seat keeps it. Smithay's `Seat::client_seats` gives the program's own `wl_seat` of yours, and the request goes
+on to smithay's handler unchanged otherwise. The whole patch is LatteOS's `patches/pleamar-wm-zzz-virtual-keyboard.patch`.
+
+An alternative, if you would rather keep a program's choice: announce the agents' seats before yours (wtype, and most
+tools that take one seat, keep the first or the last), or not announce them to programs that never get an agent's focus.

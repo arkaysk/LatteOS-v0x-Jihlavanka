@@ -13,6 +13,7 @@ python3 tests/test_import.py
 python3 tests/test_acp.py
 python3 tests/test_local_models.py
 python3 tests/test_mcp.py
+python3 tests/test_toolhive_catalog.py
 python3 tests/test_skill_named.py
 python3 tests/test_ai_invite.py
 python3 tests/test_devices.py
@@ -25,6 +26,13 @@ done
 for f in get patches/*.sh system/session-env.sh system/libexec/* system/kernel-install/* tests/screen.sh tests/press tests/test_screens.sh tests/test_guardcorgi.sh; do
     case "$(head -1 "$f")" in *python*) python3 -c 'import sys; compile(open(sys.argv[1]).read(), sys.argv[1], "exec")' "$f" ;; *) bash -n "$f" ;; esac
 done
+# polkit names its actions in lower case (org.freedesktop.udisks2.…): a rule for a name that is not one never
+# matches, and nothing says so (24. 11.: NTFS disks still asked for a password)
+if command -v pkaction >/dev/null; then
+    for id in $(grep -oh '"org\.[a-zA-Z0-9.-]*"' system/polkit/*.rules | tr -d '"'); do
+        pkaction --action-id "$id" >/dev/null 2>&1 || { echo "system/polkit: no polkit action $id (pkaction --action-id)"; exit 1; }
+    done
+fi
 # a shader is loaded as built: the built file must be the one its source gives
 built="$(mktemp)"
 for f in apps/common/shaders/*.frag; do

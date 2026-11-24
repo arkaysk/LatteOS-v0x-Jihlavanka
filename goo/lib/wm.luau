@@ -93,6 +93,9 @@ function M.show_desktop() eval("latte.desk.show()") end
 -- the band along an edge that windows leave to the drops: 0 bottom, 1 left, 2 top, 3 right
 function M.band(edge) eval(string.format("latte.band(%q, %q)", ({ [0] = "bottom", "left", "top", "right" })[edge] or "bottom", SCREEN)) end
 local ON_PLEAMARWM = (function() local ok, v = pcall(sys.ask, "env", "XDG_CURRENT_DESKTOP") return ok and v == "pleamar" end)()
+-- what the window manager does for a window (M.win): on pleamar-wm snapping to a zone and "always on top" are not
+-- there yet (system/pleamarwm/bin/hyprctl, ROADMAP 1D.06-1D.09), so menus leave them out instead of doing nothing
+M.can = { snap = not ON_PLEAMARWM, pin = not ON_PLEAMARWM }
 function M.logout()
     -- SIGTERM is how pleamar-wm is asked to leave: it ends with 0, which latte-session takes as a logout
     if ON_PLEAMARWM then run("sh", { "-c", "exec pkill -TERM -x pleamar-wm" })

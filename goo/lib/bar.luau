@@ -112,15 +112,19 @@ local function menu(w, net)
         { label = tr("Restore"), glyph = "arrows-minimize", run = act(w.away and "activate" or "restore") },
         { label = tr("Minimize"), glyph = "minus", off = w.away or mode == 0, run = act("minimize") },
         { label = tr("Maximize"), glyph = "arrows-maximize", off = w.maximized, run = act("maximize") },
-        { label = tr("Layout"), glyph = "layout-grid", sub = {
-            zone("left", N("Left half"), "layout-sidebar"), zone("right", N("Right half"), "layout-sidebar-right"),
-            zone("tl", N("Top left"), "layout-grid"), zone("tr", N("Top right"), "layout-grid"),
-            zone("bl", N("Bottom left"), "layout-grid"), zone("br", N("Bottom right"), "layout-grid"),
-            zone("center", N("Center"), "focus-centered") } },
-        { label = tr("Always on top (all desktops)"), glyph = "pin", on = w.pinned, run = act("pin") },
         { label = tr("Move to desktop"), glyph = "stack-2", sub = desks },
         { label = tr("Close"), glyph = "x", hint = "Alt+F4", danger = true, line = true, run = act("close") },
     }
+    if wm.can.pin then
+        table.insert(rows, 4, { label = tr("Always on top (all desktops)"), glyph = "pin", on = w.pinned, run = act("pin") })
+    end
+    if wm.can.snap then
+        table.insert(rows, 4, { label = tr("Layout"), glyph = "layout-grid", sub = {
+            zone("left", N("Left half"), "layout-sidebar"), zone("right", N("Right half"), "layout-sidebar-right"),
+            zone("tl", N("Top left"), "layout-grid"), zone("tr", N("Top right"), "layout-grid"),
+            zone("bl", N("Bottom left"), "layout-grid"), zone("br", N("Bottom right"), "layout-grid"),
+            zone("center", N("Center"), "focus-centered") } })
+    end
     if #screens > 1 then
         table.insert(rows, #rows, { label = tr("Move to screen"), glyph = "device-desktop", sub = screens })
     end

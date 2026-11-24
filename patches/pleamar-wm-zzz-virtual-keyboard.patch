@@ -1,0 +1,37 @@
+--- a/src/nest.rs
++++ b/src/nest.rs
+@@ -5713,7 +5713,33 @@
+ smithay::delegate_xdg_activation!(State);
+ smithay::delegate_idle_notify!(State);
+ smithay::delegate_idle_inhibit!(State);
+-smithay::delegate_virtual_keyboard_manager!(State);
++// A virtual keyboard (wtype) types into your seat, not an agent's. A program that binds every seat
++// and keeps the last one announced (wtype does) asked for it on an agent's, where nothing has the
++// keyboard and the clipboard is the agent's own: Ctrl+V from it pasted nothing (LatteOS pastes
++// what was chosen in its clipboard's list that way). One that binds only an agent's keeps it.
++smithay::reexports::wayland_server::delegate_global_dispatch!(State: [smithay::reexports::wayland_protocols_misc::zwp_virtual_keyboard_v1::server::zwp_virtual_keyboard_manager_v1::ZwpVirtualKeyboardManagerV1: smithay::wayland::virtual_keyboard::VirtualKeyboardManagerGlobalData] => VirtualKeyboardManagerState);
++smithay::reexports::wayland_server::delegate_dispatch!(State: [smithay::reexports::wayland_protocols_misc::zwp_virtual_keyboard_v1::server::zwp_virtual_keyboard_v1::ZwpVirtualKeyboardV1: smithay::wayland::virtual_keyboard::VirtualKeyboardUserData<State>] => VirtualKeyboardManagerState);
++impl Dispatch<smithay::reexports::wayland_protocols_misc::zwp_virtual_keyboard_v1::server::zwp_virtual_keyboard_manager_v1::ZwpVirtualKeyboardManagerV1, ()> for State {
++    fn request(
++        state: &mut Self,
++        client: &Client,
++        resource: &smithay::reexports::wayland_protocols_misc::zwp_virtual_keyboard_v1::server::zwp_virtual_keyboard_manager_v1::ZwpVirtualKeyboardManagerV1,
++        request: smithay::reexports::wayland_protocols_misc::zwp_virtual_keyboard_v1::server::zwp_virtual_keyboard_manager_v1::Request,
++        data: &(),
++        dh: &DisplayHandle,
++        data_init: &mut DataInit<'_, Self>,
++    ) {
++        use smithay::reexports::wayland_protocols_misc::zwp_virtual_keyboard_v1::server::zwp_virtual_keyboard_manager_v1::Request;
++        let request = match request {
++            Request::CreateVirtualKeyboard { seat, id } if !state.seat.owns(&seat) => {
++                let seat = state.seat.client_seats(client).into_iter().next().unwrap_or(seat);
++                Request::CreateVirtualKeyboard { seat, id }
++            }
++            other => other,
++        };
++        <VirtualKeyboardManagerState as Dispatch<_, (), Self>>::request(state, client, resource, request, data, dh, data_init)
++    }
++}
+ smithay::delegate_text_input_manager!(State);
+ smithay::delegate_input_method_manager!(State);
+ smithay::delegate_pointer_constraints!(State);

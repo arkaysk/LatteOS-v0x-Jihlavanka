@@ -1,0 +1,47 @@
+#!/bin/sh
+# tools/latte-deploy: what changed in this repository since the last install, onto this system, and nothing else.
+# Not part of the install (not in FILES): for the PC LatteOS is developed on, between installs.
+#
+#   tools/latte-deploy          says which files differ (as the user, nothing changed)
+#   sudo tools/latte-deploy --go   puts them in place, brings the packages FILES needs that are missing (wtype…),
+#                               and writes GuardCorgi's list of LatteOS's files anew
+#
+# How: ./install --go --root STAGE (as the user who asked, so builds stay theirs), then every staged file that is not
+# the same on the system. /var/lib/latteos/login/login.conf is left: the stage does not know where the user is.
+# After it: sign out and in again (Goo, pleamar-wm and its scene start anew).
+set -eu
+here="$(cd "$(dirname "$0")/.." && pwd)"
+user="${SUDO_USER:-$(id -un)}"
+stage="$(mktemp -d /tmp/latte-deploy.XXXXXX)"
+chmod 755 "$stage"
+trap 'rm -rf "$stage"' EXIT
+as_user() { if [ "$(id -u)" = 0 ]; then runuser -u "$user" -- "$@"; else "$@"; fi; }
+chown "$user": "$stage" 2>/dev/null || true
+as_user sh -c "cd '$here' && ./install --go --root '$stage' >'$stage.log' 2>&1" || { cat "$stage.log"; echo "latte-deploy: install --root failed"; exit 1; }
+changed=""
+for f in $(cd "$stage" && find . -type f | sed 's|^\./|/|' | sort); do
+    [ "$f" = /var/lib/latteos/login/login.conf ] && continue
+    if [ "$(id -u)" = 0 ] || [ -r "$f" ]; then cmp -s "$stage$f" "$f" 2>/dev/null && continue; fi
+    changed="$changed $f"
+done
+rm -f "$stage.log"
+[ -n "$changed" ] || { echo "latte-deploy: the system has it all"; exit 0; }
+echo "latte-deploy: differ:"; for f in $changed; do echo "   $f"; done
+if [ "${1:-}" != "--go" ]; then echo "(sudo tools/latte-deploy --go puts them in place)"; exit 0; fi
+[ "$(id -u)" = 0 ] || { echo "latte-deploy: --go with sudo"; exit 1; }
+relog=""
+for f in $changed; do
+    mkdir -p "$(dirname "$f")"
+    install -m "$(stat -c %a "$stage$f")" "$stage$f" "$f"           # a new file, so a running program keeps its old one
+    case "$f" in /usr/bin/pleamar-wm|/usr/share/latteos/pleamarwm/*) relog=1 ;; esac
+done
+restorecon -R $changed 2>/dev/null || true
+# packages FILES names as needed or in a group the installer takes by default, missing here
+missing="$(cd "$here" && ./install 2>/dev/null | sed -n 's/^ *\(optional: \)\{0,1\}sudo dnf install //p' | tr ' ' '\n' | grep -x -e wtype || true)"
+[ -z "$missing" ] || dnf install -y $missing
+latte-guardcorgi manifest >/dev/null 2>&1 || true
+# Goo from a copy for testing (~/.local/share/latteos/goo-live and its drop-ins) gives way to the one just put in /usr
+home="$(getent passwd "$user" | cut -d: -f6)"
+rm -f "$home"/.config/systemd/user/latte-goo.service.d/live-test.conf "$home"/.config/systemd/user/latte-goo-side@.service.d/live-test.conf
+# Goo is not restarted here: VS Code (XWayland) falls with SIGTRAP when Goo starts again under it (24. 11.); a new login does it
+echo "latte-deploy: done; sign out and in again"

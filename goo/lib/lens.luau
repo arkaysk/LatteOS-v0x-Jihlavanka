@@ -1385,7 +1385,7 @@ local function strip()
         local word = shore.view ~= "files" and tr(m.label) or ""
         chips[#chips + 1] = { label = word, glyph = m.glyph, on = m.id == now, keep = true, skip = true, run = function() go_mode(m.id) end }
     end
-    return { pills = chips, per = #chips, line = true }
+    return { pills = chips, per = #chips, line = true, wheel = function(d) step_mode(-d) end }      -- the wheel turns the modes: down the next one
 end
 
 -- the list nearest the line first: at the bottom edge it reads upwards, so its rows under the heading turn round
@@ -1947,7 +1947,7 @@ local function shore_commands(q)
     local front
     for _, w in ipairs(shore.wins or {}) do if w.front then front = w end end
     if front then
-        for _, z in ipairs(WINDOW_ZONES) do
+        for _, z in ipairs(wm.can.snap and WINDOW_ZONES or {}) do
             list[#list + 1] = { id = "win:" .. z[1], name = tr(N("Window")) .. ": " .. tr(z[2]), keywords = { "window" }, glyph = "layout-columns",
                                 run = function() then_do(function() wm.win("snap", front.address, z[1]) end) end }
         end

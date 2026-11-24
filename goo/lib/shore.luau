@@ -12,6 +12,7 @@ local E = require("lib/engine")
 local card = require("lib/card")
 local icons = require("lib/icons")
 local clipboard = require("lib/clips")
+local open = require("lib/open")
 -- N marks a text for the translation table (tests/check.sh looks for it); tr() translates it where it is shown.
 local function N(s) return s end
 
@@ -108,8 +109,10 @@ end
 local function read_clips(then_do) clipboard.read(8, 60, function(list) clips = list then_do() end) end
 local function refresh()
     if card.id() ~= "shore" then return end
+    -- only what shows live state is drawn again: a program's menu, the Wi-Fi password, "forget" and the keyboard's
+    -- menu stay as they are (each change of the network or the sound put the main panel back over them; the audit, 24. 11.)
     if showing == "networks" then open_networks(true) elseif showing == "devices" then open_devices(true)
-    elseif showing == "sound" then open_sound(true) else open_main(true) end
+    elseif showing == "sound" then open_sound(true) elseif showing == "main" then open_main(true) end
 end
 local function back() return { label = tr("Back"), glyph = "chevron-left", keep = true, run = function() open_main() end } end
 
@@ -219,6 +222,34 @@ local function menu_rows(key, items)
     for i = 2, #rows do if rows[i - 1].after then rows[i].line = true end end
     return rows
 end
+-- the keyboard sign's right button (as Windows 11's language sign): the layouts by their names, the one typed in
+-- ticked, a press turns to it; the character map and Settings › Keyboard
+local layout_full = {}                      -- "sk" → "Slovak", as latte-settings names them (in the user's language)
+local function open_keyboard()
+    showing = "keyboard"
+    local names, now = layout_names(), (tonumber(fact.kb_layout) or 0) + 1
+    local rows = { { head = true, label = tr("Keyboard layout"), line = true } }
+    for i, code in ipairs(names) do
+        local steps = (i - now) % math.max(#names, 1)
+        rows[#rows + 1] = { label = layout_full[code] or string.upper(code), hint = string.upper(code), on = i == now, glyph = i == now and "check" or "keyboard",
+                            run = function()
+                                -- pleamar-wm turns to the next one at each touch (patches/pleamar-wm-zz-layout.patch)
+                                if steps > 0 then run("sh", { "-c", 'for i in $(seq ' .. steps .. '); do touch "${XDG_RUNTIME_DIR:-/tmp}/pleamar-wm-layout-next"; sleep 0.2; done' }, function() end) end
+                            end }
+    end
+    rows[#rows + 1] = { label = tr("Character map"), glyph = "cursor-text", line = true, run = function() run("gtk-launch", { "gucharmap" }, function() end) end }
+    rows[#rows + 1] = { label = tr("Keyboard settings"), glyph = "settings", run = function() open.settings("keyboard") end }
+    panel(rows, { width = 300 })
+    if next(layout_full) == nil then
+        run("latte-settings", { "keyboard" }, function(out)
+            local ok, d = pcall(json.decode, out or "")
+            if not ok or type(d) ~= "table" or type(d.layouts) ~= "table" then return end
+            for _, l in ipairs(d.layouts) do if l.id and l.name then layout_full[l.id] = l.name end end
+            if next(layout_full) ~= nil and showing == "keyboard" and card.id() == "shore" then open_keyboard() end
+        end)
+    end
+end
+
 local function open_menu(t)
     local ok, items = pcall(sys.ask, "tray.menu", t.key)
     -- Electron's tray says no title, only "App_status_icon_1": its name without the rest
@@ -344,6 +375,7 @@ function M.start()
     -- the keyboard's sign: the next layout (pleamar-wm takes the file away and changes it, wm/session.plm tells the scene back)
     on("shore_kb_press", function() run("sh", { "-c", 'touch "${XDG_RUNTIME_DIR:-/tmp}/pleamar-wm-layout-next"' }, function() end) end)
     on("fact:kb_layout", show_signs)
+    on("shore_kb_right", function() open_keyboard() end)
     on("quick_toggle", M.toggle)
     on("shore_sign", function(s)
         if s == 0 then read_clips(function() open_networks() end) else M.toggle() end

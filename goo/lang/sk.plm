@@ -13,6 +13,8 @@ library Slovak {
         "Num Lock" = "Num Lock"
         "Caps Lock · Num Lock" = "Caps Lock · Num Lock"
         "Keyboard layout" = "Rozloženie klávesnice"
+        "Character map" = "Mapa znakov"
+        "Keyboard settings" = "Nastavenia klávesnice"
         "English" = "Slovenčina"      // the language's own name: the chip shows the one in use
         "Last crash" = "Posledný pád"
         "News" = "Novinky"
@@ -968,6 +970,7 @@ library Slovak {
         "Save the key" = "Uložiť kľúč"
         "Skin tone" = "Odtieň pleti"
         "The service's key (API key)" = "Kľúč služby (API key)"
+        "A key is kept in the keyring; type a new one to change it" = "Kľúč je uložený v kľúčenke; zmeníš ho napísaním nového"
         "Where it lies" = "Kde leží"
         "Where to get a key" = "Kde získať kľúč"
         "Activities" = "Aktivity"
@@ -3077,7 +3080,7 @@ library Slovak {
         "Setting the system up" = "Nastavujem systém"
         // the installer's components: the notes of FILES's optional lines, without their pointers into the source
         "a film as the desktop's background" = "Film ako pozadie plochy"
-        "the clipboard in the shore's panel and LensShore: what was copied, QR codes, the text in pictures" = "Schránka v paneli pobrežia a v LensShore: čo sa skopírovalo, QR kódy, text z obrázkov"
+        "the clipboard in the shore's panel and LensShore: what was copied, QR codes, the text in pictures; wtype pastes the chosen one (and an emoji) into the window" = "Schránka v paneli pobrežia a v LensShore: čo sa skopírovalo, QR kódy, text z obrázkov; wtype vloží vybrané (aj emoji) do okna"
         "LensShore's emoji and symbols: the list, their names, their pictures" = "Emoji a symboly v LensShore: zoznam, mená, obrázky"
         "LatteOS as an MCP server for the AI agents" = "LatteOS ako server MCP pre agentov AI"
         "the launcher: amounts in units and money, written loosely (qalc; rates from the ECB)" = "Spúšťač: jednotky a meny napísané voľne (qalc; kurzy z ECB)"

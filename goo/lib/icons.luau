@@ -248,6 +248,7 @@ return {
     ["upload"] = "\u{EB47}",
     ["usb"] = "\u{F00C}",
     ["user"] = "\u{EB4D}",
+    ["accessible"] = "\u{EBA9}",
     ["video"] = "\u{ED22}",
     ["volume"] = "\u{EB51}",
     ["volume-2"] = "\u{EB4F}",

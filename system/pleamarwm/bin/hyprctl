@@ -7,6 +7,7 @@ import glob
 import json
 import os
 import re
+import shutil
 import socket
 import subprocess
 import sys
@@ -39,10 +40,36 @@ def monitors():
     shown = many(["win.shown.%d" % i for i in range(len(lines))])
     for i, (_, name, w, h, x, y, mhz, focused, scale) in enumerate(lines):
         ws = int(shown["win.shown.%d" % i] or 1)
-        out.append({"id": i, "name": name, "description": name, "make": "", "model": "", "width": int(w), "height": int(h),
+        make, model = edid(name)
+        out.append({"id": i, "name": name, "description": " ".join(p for p in (make, model) if p) or name, "make": make, "model": model, "width": int(w), "height": int(h),
                     "refreshRate": int(mhz) / 1000, "x": int(x), "y": int(y), "scale": float(scale), "focused": focused == "1",
                     "transform": kept_turn(name), "dpmsStatus": True, "mirrorOf": "none", "availableModes": modes(name, int(mhz) / 1000), "vrr": False, "activeWorkspace": {"id": ws, "name": str(ws)}})
     return out
+
+
+def edid(name):
+    """A monitor's maker and model as its EDID says them (as Hyprland gives them; pleamar-wm says only the connector):
+    the maker's PNP code by hwdata's list, the model from the monitor's name descriptor. ("", "") when there is none."""
+    for path in glob.glob("/sys/class/drm/card*-%s/edid" % name):
+        try:
+            with open(path, "rb") as f:
+                e = f.read()
+        except OSError:
+            continue
+        if len(e) < 128:
+            continue
+        v = (e[8] << 8) | e[9]
+        code = "".join(chr(((v >> s) & 31) + 64) for s in (10, 5, 0))
+        model = next((e[o + 5:o + 18].split(b"\n")[0].decode("ascii", "replace").strip() for o in (54, 72, 90, 108)
+                      if e[o:o + 3] == b"\0\0\0" and e[o + 3] == 0xFC), "")
+        make = code
+        try:
+            with open("/usr/share/hwdata/pnp.ids", encoding="utf-8", errors="replace") as f:
+                make = next((line.split("\t", 1)[1].strip() for line in f if line.startswith(code + "\t")), code)
+        except OSError:
+            pass
+        return make, model
+    return "", ""
 
 
 def pids():
@@ -121,6 +148,17 @@ def emits(expr):
     if expr.startswith("latte.win.sounding("):
         now = {int(n) for n in re.findall(r'"0x(\d+)"', expr)}
         return ["fact snd.%d %d" % (k, k in now) for k in range(16)]
+    # a window to another desktop (0: a new one, after the last used on its monitor) or to another monitor, by
+    # name: the window bar's menu (goo/lib/bar.luau); the scene sends the window with the keyboard (wm/session.plm)
+    m = re.match(r'latte\.win\.(to_desk|to_screen)\("0x(\d+)",\s*(?:(\d+)|"([^"]+)")\)', expr)
+    if m:
+        what, slot = m.group(1), m.group(2)
+        if what == "to_desk":
+            on = say("get win.%s.screen" % slot) or "0"          # win.pools.N: the desktops of monitor N that have windows
+            desk = int(m.group(3) or 0) or max(int(float(say("get win.pools." + on) or 1)), int(float(say("get win.used." + on) or 0))) + 1
+            return ["emit latte_focus " + slot, "emit move_to_workspace %d" % desk]
+        to = next((s["id"] for s in monitors() if s["name"] == m.group(4)), None)
+        return [] if to is None else ["emit latte_focus " + slot, "emit latte_to_screen %d" % to]
     m = re.match(r'latte\.win\.(\w+)\("0x(\d+)"', expr)
     if m:
         what, slot = m.group(1), m.group(2)
@@ -153,6 +191,8 @@ def emits(expr):
     m = re.match(r"latte\.taskbar\(([012])\)", expr)
     if m:
         return ["fact dock.off %d" % (m.group(1) != "1"), "fact win.nomin %d" % (m.group(1) == "2")]
+    if expr == "latte.win.expect()":                 # Hyprland's opening animation for the next window (goo/lib/born.luau): pleamar-wm has its own
+        return []
     if expr == "latte.dock.tell()":                  # Goo started again: DockShore tells it where its plate lies
         return ["emit dock_tell"]
     # the buttons in the header of LatteOS's apps (apps/common/AppWindow.qml): the window with the keyboard
@@ -399,6 +439,11 @@ def evaluate(expr):
     elif "hl.dsp.exit()" in expr:
         subprocess.run(["pkill", "-TERM", "-x", "pleamar-wm"])
     elif "send_shortcut" in expr:
+        # Ctrl+V for what was chosen in the clipboard's list (goo/lib/wm.luau `paste`): wtype's keyboard, on the
+        # user's seat (patches/pleamar-wm-zzz-virtual-keyboard.patch); what was chosen is on the clipboard anyway
+        if not shutil.which("wtype"):
+            print("hyprctl (pleamar-wm): wtype is not installed, nothing pasted (it is on the clipboard)", file=sys.stderr)
+            return
         slot = re.search(r"address:0x(\d+)", expr)
         if slot:
             say("emit latte_focus " + slot.group(1))
@@ -438,6 +483,8 @@ def main(args):
         evaluate(args[1])
     elif "-j" in args:
         print(json.dumps(query(next((a for a in args if a != "-j"), ""))))
+    elif args[:1] and args[0].startswith("j/"):     # Hyprland's short form of -j (goo/lib/desk.luau: j/monitors)
+        print(json.dumps(query(args[0][2:])))
     elif args[:1] == ["monitors"]:
         subprocess.run(["pleamar-wm", "hyprctl", "monitors"])
     elif args[:1] == ["dispatch"] and dpms(" ".join(args[1:])):
@@ -454,4 +501,17 @@ def main(args):
 if __name__ == "__main__":
     if os.environ.get("XDG_CURRENT_DESKTOP") != "pleamar" or not os.environ.get("PLEAMAR_SOCKETS"):
         os.execv("/usr/bin/hyprctl", ["hyprctl"] + sys.argv[1:])
-    main(sys.argv[1:])
+    try:
+        main(sys.argv[1:])
+    except BrokenPipeError:                     # the asker stopped reading
+        pass
+    except Exception:                           # said where it can be read, not only to ABRT, which throws it away
+        import traceback
+        try:
+            log = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "latteos", "hyprctl.log")
+            with open(log, "a") as f:
+                f.write("%s hyprctl %s\n%s\n" % (time.strftime("%Y-%m-%d %H:%M:%S"), sys.argv[1:], traceback.format_exc()))
+        except OSError:
+            pass
+        traceback.print_exc()
+        sys.exit(1)

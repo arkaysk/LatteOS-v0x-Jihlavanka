@@ -133,7 +133,7 @@ part Rows {
                         for r in card { CardRow(r, 0, card.iw) }
                     }
                     column tail {
-                        for r in card_foot { CardRow(r, 60, card.iw) }
+                        for r in card_foot { CardRow(r, 52, card.iw) }      // 52 = ROWS + ROWS2 of goo/lib/card.luau: the numbers its presses are bound to
                     }
                 }
                 space if(card_w2 > 0, 8, 0)
@@ -169,7 +169,7 @@ part Rows {
                         zone box cal_ground { from: 0, 40; size: card.sw, 40; active: card_open and cal_on; agent: hidden }
                         on scroll cal_ground { emit cal_step(if(wheel > 0, 0, 1)) }
                     }
-                    for r in card2 { CardRow(r, 24, card.sw) }
+                    for r in card2 { CardRow(r, 40, card.sw) }          // 40 = ROWS of goo/lib/card.luau (was 24: a press there ran a row of the first column)
                 }
             }
         }

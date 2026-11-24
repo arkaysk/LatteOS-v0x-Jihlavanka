@@ -27,6 +27,7 @@ part Shore {
     fact shore_kb = 0                          // the keyboard has more than one layout: its sign stands before the others (lib/shore.luau)
     fact kb_layout = 0                         // which one is on (pleamar-wm says: wm/session.plm `keys.layout`)
     text shore_kbname = ""                     // its short name: SK, US
+    event shore_kb_right ->
     event shore_kb_press ->
     fact caps_on = 0                           // Caps Lock and Num Lock are on (pleamar-wm says: wm/session.plm `keys.caps`, `keys.num`)
     fact num_on = 0
@@ -85,6 +86,7 @@ part Shore {
         text shore_kbname { at: shkb.x, shore.cy; anchor: center; size: 13; weight: 700; color: cream; opacity: 90%; show: shore_kb > 0.5; family: "Inter" }
         zone box kb_hit { at: shkb.x, shore.cy; size: 38, SHORE_H; cursor: pointer; role: button; label: "Keyboard layout"; active: shore_w > 0 and shore_kb > 0.5 }
         on press kb_hit { tip.p: 0; emit shore_kb_press }
+        on press right kb_hit { tip.p: 0; emit shore_kb_right }                       // its menu: the layouts, the character map, Settings
         // Caps Lock and Num Lock, a small word under the icons, there only while the lock is on (the user, 23. 11.)
         let lock.x = shore.x0 + shore_w / 2
         text "CAPS LOCK" { at: lock.x - if(num_on > 0.5, 30, 0), H - 7; anchor: center; size: 8; weight: 600; color: gold; opacity: 55%; show: caps_on > 0.5; family: "Inter" }

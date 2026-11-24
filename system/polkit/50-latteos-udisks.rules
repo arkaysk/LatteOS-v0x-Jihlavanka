@@ -2,8 +2,8 @@
 // other, without sudo: udisks calls an internal disk "system" and asks an administrator for it, and every start of the computer
 // the user had to open them one by one with sudo (23. 11.). Only for the user at the keyboard, in the group wheel.
 polkit.addRule(function(action, subject) {
-    var ids = ["org.freedesktop.UDISKS2.filesystem-mount-system",
-               "org.freedesktop.UDISKS2.filesystem-unmount-others"];
+    var ids = ["org.freedesktop.udisks2.filesystem-mount-system",
+               "org.freedesktop.udisks2.filesystem-unmount-others"];
     if (ids.indexOf(action.id) >= 0 && subject.local && subject.active && subject.isInGroup("wheel")) {
         return polkit.Result.YES;
     }

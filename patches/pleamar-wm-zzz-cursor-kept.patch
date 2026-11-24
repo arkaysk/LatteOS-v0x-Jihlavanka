@@ -1,0 +1,37 @@
+--- a/src/session.rs
++++ b/src/session.rs
+@@ -391,6 +391,10 @@
+     hidden: bool,
+     /// Or one it draws itself: on the card, with its tip, and as a picture.
+     custom: Option<(gbm::BufferObject<()>, (i32, i32), std::sync::Arc<(Vec<u8>, (i32, i32))>)>,
++    /// The ones it drew before, kept a little longer: the cursor thread may still be setting one on another
++    /// monitor's plane (NVIDIA's call waits for that monitor's refresh), and a buffer freed under it was
++    /// «no cursor (No such file or directory)», the shape left as it was (two monitors, Steam and games).
++    custom_before: std::collections::VecDeque<gbm::BufferObject<()>>,
+     /// What the scene asks for, and what a program's surface under the pointer does.
+     scene_cursor: Cursor,
+     program_cursor: Cursor,
+@@ -545,7 +549,7 @@
+     // night light found no ramps on any monitor until monitors changed (plugged, moved).
+     publish(&monitors);
+     let mover = CursorMover::new(drm.clone());
+-    let mut state = State { mover, session, drm, monitors, libinput, keyboards: Vec::new(), leds: smithay::reexports::input::Led::empty(), to_render: to_render.clone(), keymap, pointer: first, cursors: Vec::new(), cursor_theme: Theme::load(), cursor_sizes: Vec::new(), cursor_gbm: None, shown: None, playing: None, queued: None, frame: 0, frame_carry: 0.0, frame_timer: None, on_plane: None, cursor_used: Default::default(), cursor_clock: 0, hidden: false, custom: None, scene_cursor: Cursor::Normal, program_cursor: Cursor::Normal, scroll: 0.0, scroll_sideways: 0.0, swipe: None, pinch: None, pinch_to_program: false, last_touch: std::time::Instant::now(), last_input: std::time::Instant::now(), dark_for_idle: false, route: Route::new(to_render), cursor_pictures: Vec::new(), handle: event_loop.handle(), gbm: gbm.clone(), surfaces, cursor_kind, sheets, next_sheet, quit: false, desk_moved: 0.0, desk_moved_at: std::time::Instant::now() };
++    let mut state = State { mover, session, drm, monitors, libinput, keyboards: Vec::new(), leds: smithay::reexports::input::Led::empty(), to_render: to_render.clone(), keymap, pointer: first, cursors: Vec::new(), cursor_theme: Theme::load(), cursor_sizes: Vec::new(), cursor_gbm: None, shown: None, playing: None, queued: None, frame: 0, frame_carry: 0.0, frame_timer: None, on_plane: None, cursor_used: Default::default(), cursor_clock: 0, hidden: false, custom: None, custom_before: Default::default(), scene_cursor: Cursor::Normal, program_cursor: Cursor::Normal, scroll: 0.0, scroll_sideways: 0.0, swipe: None, pinch: None, pinch_to_program: false, last_touch: std::time::Instant::now(), last_input: std::time::Instant::now(), dark_for_idle: false, route: Route::new(to_render), cursor_pictures: Vec::new(), handle: event_loop.handle(), gbm: gbm.clone(), surfaces, cursor_kind, sheets, next_sheet, quit: false, desk_moved: 0.0, desk_moved_at: std::time::Instant::now() };
+     // …and its light, and the scene's `keys.num`, as the keymap has it
+     state.leds = lit_locks(&state.keymap);
+     let num_locked = state.keymap.mod_name_is_active(xkb::MOD_NAME_NUM, xkb::STATE_MODS_LOCKED);
+@@ -589,7 +593,13 @@
+         .handle()
+         .insert_source(custom_rx, move |event, _, state: &mut State| {
+             if let smithay::reexports::calloop::channel::Event::Msg(picture) = event {
+-                state.custom = picture.and_then(|p| custom_cursor(&gbm_custom, &p));
++                let new = picture.and_then(|p| custom_cursor(&gbm_custom, &p));
++                if let Some((old, ..)) = std::mem::replace(&mut state.custom, new) {
++                    state.custom_before.push_back(old);
++                    if state.custom_before.len() > 4 {
++                        state.custom_before.pop_front();
++                    }
++                }
+                 state.shown = None;
+                 state.show_cursor();
+             }

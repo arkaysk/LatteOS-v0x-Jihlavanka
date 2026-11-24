@@ -10,7 +10,10 @@ local NAMES = { giphy = "Giphy", tenor = "Tenor", klipy = "Klipy" }
 local st = { view = "trending", page = 1, query = nil, got = nil, asked = nil, busy = false }
 
 local function source(env) local s = env.settings.lens_gif_source return NAMES[s] and s or "giphy" end
+-- the key: in the keyring since 24. 11. (bin/latte-gif; Settings says `lens_gif_in_SOURCE` = true), or one kept in the
+-- settings before then, which is handed on as it is
 local function key(env) return env.settings["lens_gif_key_" .. source(env)] or "" end
+local function has_key(env) return key(env) ~= "" or env.settings["lens_gif_in_" .. source(env)] == true end
 local function favs(env) env.kept.gif_favs = env.kept.gif_favs or {} return env.kept.gif_favs end
 local function recent(env) env.kept.gif_recent = env.kept.gif_recent or {} return env.kept.gif_recent end
 
@@ -64,7 +67,7 @@ end
 
 function M.sections(q, env)
     local out = {}
-    if key(env) == "" then
+    if not has_key(env) then
         out[#out + 1] = { { label = (tr("GIFs come from {source}: put in its key in the Settings"):gsub("{source}", NAMES[source(env)])),
                             glyph = "key", run = env.open_settings } }
         return out
