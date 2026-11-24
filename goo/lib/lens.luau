@@ -1378,6 +1378,14 @@ local function step_mode(d)
     local m = list[math.clamp(at + d, 1, #list)]
     if m then go_mode(m.id) end
 end
+-- one notch of the wheel, one mode: over the strip both it and the panel's wheel (lens_swipe) hear the same notch
+local notched = false
+local function notch(d)
+    if notched then return end
+    notched = true
+    after(120, function() notched = false end)
+    step_mode(d)
+end
 local function strip()
     local chips, now = {}, mode_of(shore.view)
     for _, m in ipairs(shore_modes()) do
@@ -1385,7 +1393,7 @@ local function strip()
         local word = shore.view ~= "files" and tr(m.label) or ""
         chips[#chips + 1] = { label = word, glyph = m.glyph, on = m.id == now, keep = true, skip = true, run = function() go_mode(m.id) end }
     end
-    return { pills = chips, per = #chips, line = true, wheel = function(d) step_mode(-d) end }      -- the wheel turns the modes: down the next one
+    return { pills = chips, per = #chips, line = true, wheel = function(d) notch(-d) end }      -- the wheel turns the modes: down the next one
 end
 
 -- the list nearest the line first: at the bottom edge it reads upwards, so its rows under the heading turn round
@@ -2307,16 +2315,11 @@ local function shore_start()
     end)
     -- the wheel over the panel turns the tape: a mouse's notch turns it once; a touchpad's fingers come in small pieces,
     -- gathered until they are worth three notches, and the same gesture does not turn it again until they rest
-    local swiped, swipe_rest, swipe_done, notched = 0, nil, false, false
+    local swiped, swipe_rest, swipe_done = 0, nil, false
     on("lens_swipe", function(v)
         v = (tonumber(v) or 0) / 1000
         if v == 0 or card.id() ~= "lens" then return end
-        if math.abs(v) >= 0.99 then
-            if notched then return end
-            notched = true
-            after(120, function() notched = false end)
-            return step_mode(v > 0 and 1 or -1)
-        end
+        if math.abs(v) >= 0.99 then return notch(v > 0 and 1 or -1) end
         if swipe_rest then cancel(swipe_rest) end
         swipe_rest = after(250, function() swiped, swipe_done, swipe_rest = 0, false, nil end)
         if swipe_done then return end
