@@ -1378,12 +1378,12 @@ local function step_mode(d)
     local m = list[math.clamp(at + d, 1, #list)]
     if m then go_mode(m.id) end
 end
--- one notch of the wheel, one mode: over the strip both it and the panel's wheel (lens_swipe) hear the same notch
-local notched = false
-local function notch(d)
-    if notched then return end
-    notched = true
-    after(120, function() notched = false end)
+-- one notch of the wheel, one mode: over the strip both it and the panel's wheel (lens_swipe) hear the same notch.
+-- In `shore`, not a local of its own: this file is at Luau's limit of 200 locals (one more and LensGoo did not load)
+function shore.notch(d)
+    if shore.notched then return end
+    shore.notched = true
+    after(120, function() shore.notched = false end)
     step_mode(d)
 end
 local function strip()
@@ -1393,7 +1393,7 @@ local function strip()
         local word = shore.view ~= "files" and tr(m.label) or ""
         chips[#chips + 1] = { label = word, glyph = m.glyph, on = m.id == now, keep = true, skip = true, run = function() go_mode(m.id) end }
     end
-    return { pills = chips, per = #chips, line = true, wheel = function(d) notch(-d) end }      -- the wheel turns the modes: down the next one
+    return { pills = chips, per = #chips, line = true, wheel = function(d) shore.notch(-d) end }      -- the wheel turns the modes: down the next one
 end
 
 -- the list nearest the line first: at the bottom edge it reads upwards, so its rows under the heading turn round
@@ -2319,7 +2319,7 @@ local function shore_start()
     on("lens_swipe", function(v)
         v = (tonumber(v) or 0) / 1000
         if v == 0 or card.id() ~= "lens" then return end
-        if math.abs(v) >= 0.99 then return notch(v > 0 and 1 or -1) end
+        if math.abs(v) >= 0.99 then return shore.notch(v > 0 and 1 or -1) end
         if swipe_rest then cancel(swipe_rest) end
         swipe_rest = after(250, function() swiped, swipe_done, swipe_rest = 0, false, nil end)
         if swipe_done then return end

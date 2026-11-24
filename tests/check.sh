@@ -33,6 +33,26 @@ if command -v pkaction >/dev/null; then
         pkaction --action-id "$id" >/dev/null 2>&1 || { echo "system/polkit: no polkit action $id (pkaction --action-id)"; exit 1; }
     done
 fi
+# Luau keeps a chunk's locals in at most 200 registers: a file past it does not load at all, and pleamar --check does
+# not read Luau (24. 11.: two more locals in goo/lib/lens.luau and LensGoo was gone). Counted at the top level.
+python3 - <<'PY'
+import glob, re, sys
+bad = []
+for path in sorted(glob.glob("goo/**/*.luau", recursive=True)):
+    n = 0
+    for line in open(path, encoding="utf-8"):
+        if re.match(r"local\s+function\s+\w+", line):
+            n += 1
+        else:
+            m = re.match(r"local\s+([\w\s,]+?)(=|$)", line)
+            if m:
+                n += len([x for x in m.group(1).split(",") if x.strip()])
+    if n > 198:
+        bad.append("%s: %d locals at the top level (Luau loads at most ~198): put new ones in a table" % (path, n))
+if bad:
+    print("\n".join(bad))
+    sys.exit(1)
+PY
 # a shader is loaded as built: the built file must be the one its source gives
 built="$(mktemp)"
 for f in apps/common/shaders/*.frag; do

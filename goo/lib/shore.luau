@@ -128,6 +128,84 @@ local function ask_password(ssid)
               return false
           end } })
 end
+-- What NetworkManager knows beyond pleamar's `network` (nmcli, read when the page opens): the VPNs and whether the radios
+-- are off (airplane mode), and on asking the connection's details, as Windows 11's network properties
+local vpns, airplane = {}, false
+local C = { env = { LC_ALL = "C" } }          -- nmcli says yes and enabled in the user's language otherwise
+local function read_extra(then_do)
+    run("nmcli", { "-t", "-f", "NAME,TYPE,ACTIVE", "connection", "show" }, function(out)
+        local list = {}
+        for line in string.gmatch(out or "", "[^\n]+") do
+            local name, kind, active = string.match(line, "^(.*):([%w-]+):(%a+)$")
+            if name and (kind == "vpn" or kind == "wireguard") then list[#list + 1] = { name = name:gsub("\\:", ":"), active = active == "yes" } end
+        end
+        vpns = list
+        run("nmcli", { "-t", "radio", "all" }, function(r)
+            local wifi = select(2, string.match(r or "", "^(%a+):(%a+)")) or "enabled"
+            airplane = wifi == "disabled" and not blue.powered
+            if then_do then then_do() end
+        end, C)
+    end, C)
+end
+local function open_details()
+    showing = "details"
+    run("sh", { "-c", 'export LC_ALL=C; d=$(nmcli -t -f DEVICE,STATE device | awk -F: \'$2=="connected"{print $1; exit}\'); [ -n "$d" ] || exit 0; '
+               .. 'nmcli -t -f GENERAL.DEVICE,GENERAL.TYPE,GENERAL.HWADDR,IP4.ADDRESS,IP4.GATEWAY,IP4.DNS,IP6.ADDRESS,CAPABILITIES.SPEED device show "$d"; '
+               .. 'nmcli -t -f ACTIVE,SSID,RATE,SIGNAL,SECURITY,FREQ device wifi list ifname "$d" --rescan no 2>/dev/null | grep "^yes:"' }, function(out)
+        if showing ~= "details" then return end
+        local v, dns = {}, {}
+        for line in string.gmatch(out or "", "[^\n]+") do
+            local k, val = string.match(line, "^([%w%.%[%]_-]+):(.*)$")
+            if k and k:find("^IP4%.DNS") then dns[#dns + 1] = val
+            elseif k and k ~= "yes" then v[k:gsub("%[%d+%]$", "")] = v[k:gsub("%[%d+%]$", "")] or val end
+            if line:find("^yes:") then
+                local f = {}
+                for part in string.gmatch((line:gsub("\\:", "\1")) .. ":", "([^:]*):") do f[#f + 1] = part:gsub("\1", ":") end
+                v.ssid, v.rate, v.signal, v.security, v.freq = f[2], f[3], f[4], f[5], f[6]
+            end
+        end
+        local rows = { { label = tr("Back"), glyph = "chevron-left", keep = true, run = function() open_networks() end },
+                       { head = true, label = tr("PROPERTIES"), line = true } }
+        local function row(label, value, glyph)      -- what is not known is left out; each can be copied
+            if (value or "") == "" or value == "--" then return end
+            rows[#rows + 1] = { label = value, hint = label, glyph = glyph, copy = value, quiet = true }
+        end
+        do
+            row(tr("Network"), v.ssid, "wifi")
+            row(tr("Adapter"), (v["GENERAL.DEVICE"] or "") .. ((v["GENERAL.TYPE"] or "") ~= "" and ("  ·  " .. v["GENERAL.TYPE"]) or ""), "network")
+            row(tr("IPv4 address"), v["IP4.ADDRESS"], "world")
+            row(tr("Gateway"), v["IP4.GATEWAY"], "router")
+            row(tr("DNS servers"), table.concat(dns, ", "), "server")
+            row(tr("IPv6 address"), v["IP6.ADDRESS"], "world")
+            row(tr("Speed"), v.rate or v["CAPABILITIES.SPEED"], "gauge")
+            row(tr("Signal"), v.signal and (v.signal .. " %") or nil, "antenna-bars-5")
+            local mhz = tonumber(string.match(v.freq or "", "%d+"))
+            row(tr("Band"), mhz and ((mhz >= 5925 and "6 GHz" or mhz >= 4900 and "5 GHz" or "2,4 GHz") .. "  ·  " .. v.freq) or v.freq, "wave-sine")
+            row(tr("Security"), v.security, "lock")
+            row(tr("Physical address (MAC)"), v["GENERAL.HWADDR"], "fingerprint")
+        end
+        if #rows == 2 then rows[#rows + 1] = { label = tr("Not connected"), glyph = "wifi-off", quiet = true } end
+        rows[#rows + 1] = { label = tr("Network settings"), glyph = "settings", line = true, run = function() open.settings("network") end }
+        panel(rows, { width = 380 })
+    end)
+end
+local function ask_hidden()
+    showing = "password"
+    panel({ back(), { label = tr("A hidden network"), glyph = "wifi", quiet = true, line = true } },
+          { width = 320, field = { hint = tr("The network's name (SSID)"), submit = function(ssid)
+              ssid = (ssid or ""):gsub("^%s+", ""):gsub("%s+$", "")
+              if ssid == "" then return false end
+              panel({ back(), { label = ssid, glyph = "lock", quiet = true, line = true } },
+                    { width = 320, field = { hint = tr("Password (empty for an open network)"), secret = true, submit = function(pw)
+                        local args = { "device", "wifi", "connect", ssid }
+                        if (pw or "") ~= "" then args[#args + 1] = "password" args[#args + 1] = pw end
+                        args[#args + 1] = "hidden" args[#args + 1] = "yes"
+                        run("nmcli", args, function() open_networks() end, C)
+                        return false
+                    end } })
+              return false
+          end } })
+end
 open_networks = function(keep)
     showing = "networks"
     local rows = { back() }
@@ -135,7 +213,7 @@ open_networks = function(keep)
         rows[#rows + 1] = { label = "Wi-Fi", glyph = net.wifi and "wifi" or "wifi-off", on = net.wifi == true, hint = tr(net.wifi and N("on") or N("off")), keep = true, line = true,
                             run = function() call("network.wifi", not net.wifi) end }
     end
-    if net.kind == "wired" and net.online then rows[#rows + 1] = { label = tr("Wired network"), glyph = "network", hint = tr("connected"), quiet = true } end
+    if net.kind == "wired" and net.online then rows[#rows + 1] = { label = tr("Wired network"), glyph = "network", hint = tr("connected"), more = true, keep = true, run = open_details } end
     if (net.error or "none") ~= "none" then rows[#rows + 1] = { label = tr(WHY[net.error] or WHY.failed), glyph = "alert-triangle", danger = true, quiet = true } end
     for i, n in ipairs(net.networks or {}) do
         if i > 12 then break end
@@ -148,17 +226,37 @@ open_networks = function(keep)
                 else ask_password(n.ssid) end
             end,
             right = function()
-                if not n.known then return end
-                panel({ { label = tr("Back"), glyph = "chevron-left", keep = true, run = function() open_networks() end },
-                            { label = tr("Forget this network"), glyph = "trash", danger = true, line = true, keep = true,
-                              run = function() call("network.forget", n.ssid) open_networks() end } }, { width = 320 })
+                local menu = { { label = tr("Back"), glyph = "chevron-left", keep = true, run = function() open_networks() end } }
+                if n.active then menu[#menu + 1] = { label = tr("Properties"), glyph = "info-circle", line = true, keep = true, run = open_details } end
+                if n.known then menu[#menu + 1] = { label = tr("Forget this network"), glyph = "trash", danger = true, line = not n.active, keep = true,
+                                                     run = function() call("network.forget", n.ssid) open_networks() end } end
+                if #menu == 1 then return end
+                panel(menu, { width = 320 })
                 showing = "forget"
             end,
         }
     end
     if net.wifi and #(net.networks or {}) == 0 then rows[#rows + 1] = { label = tr("Looking for networks…"), glyph = "wifi-1", quiet = true, line = true } end
+    if has_wifi and net.wifi then rows[#rows + 1] = { label = tr("A hidden network…"), glyph = "wifi-off", line = true, keep = true, run = ask_hidden } end
+    -- the VPNs NetworkManager has: a press turns one on or off
+    for i, v in ipairs(vpns) do
+        rows[#rows + 1] = { label = v.name, glyph = "shield-lock", on = v.active, hint = tr(v.active and N("connected") or N("off")), line = i == 1, keep = true,
+                            run = function() run("nmcli", { "connection", v.active and "down" or "up", "id", v.name }, function() read_extra(function() open_networks(true) end) end, C) end }
+    end
+    -- airplane mode: every radio off (Wi-Fi, mobile, Bluetooth), as on Windows; again: Wi-Fi and Bluetooth back
+    rows[#rows + 1] = { label = tr("Airplane mode"), glyph = "plane", on = airplane, hint = tr(airplane and N("on") or N("off")), line = true, keep = true,
+                        run = function()
+                            local off = not airplane
+                            run("nmcli", { "radio", "all", off and "off" or "on" }, function() read_extra(function() open_networks(true) end) end, C)
+                            call("bluetooth.power", not off)
+                        end }
+    if net.online then rows[#rows + 1] = { label = tr("Properties"), glyph = "info-circle", keep = true, run = open_details } end
+    rows[#rows + 1] = { label = tr("Network settings"), glyph = "settings", run = function() open.settings("network") end }
     panel(rows, { width = 320, keep = keep })
-    if not keep and net.wifi then call("network.scan") end
+    if not keep then
+        if net.wifi then call("network.scan") end
+        read_extra(function() if showing == "networks" then open_networks(true) end end)
+    end
 end
 
 -- ── Bluetooth devices ────────────────────────────────────────────────────────────────────────────────────────
@@ -189,22 +287,63 @@ open_devices = function(keep)
 end
 
 -- ── where the sound goes and comes from ──────────────────────────────────────────────────────────────────────
+-- As Windows 11's sound flyout: the volume, the speaker it goes to, each app that plays with a volume of its own (the
+-- volume mixer: pleamar's `audio.apps`, `audio.app_volume`, `audio.app_mute`), the microphone, and Settings › Sound.
+local function output_glyph(name)
+    local n = string.lower(name or "")
+    if n:find("headphone", 1, true) or n:find("headset", 1, true) then return "headphones" end
+    if n:find("hdmi", 1, true) or n:find("displayport", 1, true) then return "device-tv" end
+    if n:find("usb", 1, true) or n:find("bluetooth", 1, true) or n:find("bluez", 1, true) then return "device-speaker" end
+    return "device-speaker"
+end
 open_sound = function(keep)
     showing = "sound"
     local rows = { back(), { head = true, label = tr("OUTPUT"), line = true } }
-    for i, o in ipairs(audio.outputs or {}) do
-        if i > 6 then break end
-        rows[#rows + 1] = { label = o.name or "", glyph = "device-speaker", on = o.default == true, keep = true, run = function() call("audio.default", o.id) end }
+    if audio.volume ~= nil then
+        rows[#rows + 1] = { slide = true, glyph = volume_glyph(), label = output_name() ~= "" and output_name() or tr("Volume"), value = audio.volume,
+                            off = audio.muted == true, hint = percent(audio.volume), run = function() call("audio.mute") end,
+                            set = function(v) call("audio.volume", v) end, wheel = function(dir) call("audio.step", dir * 0.05) end }
+    end
+    local outs = audio.outputs or {}
+    if #outs > 1 then
+        for i, o in ipairs(outs) do
+            if i > 6 then break end
+            rows[#rows + 1] = { label = o.name or "", glyph = output_glyph(o.name), on = o.default == true, line = i == 1, keep = true,
+                                run = function() call("audio.default", o.id) end }
+        end
+    end
+    -- each app that plays now: its own volume, a press on its sign mutes it
+    local apps = audio.apps or {}
+    if #apps > 0 then
+        rows[#rows + 1] = { head = true, label = tr("VOLUME MIXER"), line = true }
+        for i, a in ipairs(apps) do
+            if i > 8 then break end
+            local name = (a.name or "") ~= "" and a.name or ((a.binary or "") ~= "" and a.binary or tr("An app"))
+            local id = tonumber(a.id)
+            -- a slider says no name (parts/rows.plm): the app's name above it, what it plays beside
+            local what = (a.title or "") ~= "" and a.title ~= name and a.title or ""
+            rows[#rows + 1] = { label = name, hint = #what > 28 and (string.sub(what, 1, 26) .. "…") or what, glyph = "app-window", quiet = true, line = i > 1 }
+            rows[#rows + 1] = { slide = true, glyph = a.muted and "volume-off" or (a.playing and "volume" or "volume-2"), label = name,
+                                value = tonumber(a.volume) or 0, off = a.muted == true, hint = percent(a.volume),
+                                run = function() if id then call("audio.app_mute", id) end end,
+                                set = function(v) if id then call("audio.app_volume", id, v) end end,
+                                wheel = function(dir) if id then call("audio.app_volume", id, math.clamp((tonumber(a.volume) or 0) + dir * 0.05, 0, 1)) end end }
+        end
     end
     rows[#rows + 1] = { head = true, label = tr("INPUT"), line = true }
     rows[#rows + 1] = { slide = true, glyph = audio.input_muted and "microphone-off" or "microphone", label = tr("Microphone"), value = audio.input or 0,
                         off = audio.input_muted == true, hint = percent(audio.input), run = function() call("audio.input_mute") end,
                         set = function(v) call("audio.input", v) end, wheel = function(dir) call("audio.input", math.clamp((audio.input or 0) + dir * 0.05, 0, 1)) end }
-    for i, o in ipairs(audio.inputs or {}) do
-        if i > 4 then break end
-        rows[#rows + 1] = { label = o.name or "", glyph = "microphone", on = o.default == true, keep = true, run = function() call("audio.default", o.id) end }
+    local ins = audio.inputs or {}
+    if #ins > 1 then
+        for i, o in ipairs(ins) do
+            if i > 4 then break end
+            rows[#rows + 1] = { label = o.name or "", glyph = "microphone", on = o.default == true, keep = true,
+                                run = function() call("audio.default", o.id) end }
+        end
     end
-    panel(rows, { width = 340, keep = keep })
+    rows[#rows + 1] = { label = tr("Sound settings"), glyph = "settings", line = true, run = function() open.settings("sound") end }
+    panel(rows, { width = 360, keep = keep })
 end
 
 -- ── a background program's own menu ──────────────────────────────────────────────────────────────────────────
